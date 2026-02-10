@@ -1,3 +1,9 @@
+// app.ts or index.ts
+import dotenv from "dotenv";
+dotenv.config(); 
+
+// ... the rest of your imports
+
 import express, { Application } from "express";
 import cookieParser from "cookie-parser";
 import expressupload from "express-fileupload";

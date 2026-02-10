@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/UserService.js";
 import { UpdateUserDto, UserRole } from "../types/userTypes.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 export class UserController {
   static async getProfile(req: Request, res: Response, next: NextFunction) {

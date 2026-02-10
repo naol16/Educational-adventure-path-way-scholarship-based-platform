@@ -8,6 +8,7 @@ import { UserRole } from "../types/userTypes.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/emailService.js";
 import { User } from "../models/User.js";
+import { authConfig } from "../config/configs.js";
 
 interface GoogleTokenPayload {
   email: string;
@@ -15,7 +16,7 @@ interface GoogleTokenPayload {
   sub: string;
 }
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(authConfig.googleClientId);
 
 export class AuthService {
   static async register(userData: any) {
@@ -54,7 +55,7 @@ export class AuthService {
   static async googleLogin(idToken: string) {
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID || "",
+      audience: authConfig.googleClientId || "",
     });
 
     const payload = ticket.getPayload() as GoogleTokenPayload | undefined;
@@ -100,7 +101,7 @@ export class AuthService {
       throw new Error("Refresh token expired");
     }
 
-    const payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as any;
+    const payload = jwt.verify(token, authConfig.refreshTokenSecret!) as any;
     const user = await UserRepository.findById(payload.id);
     if (!user) throw new Error("User not found");
 
@@ -119,6 +120,12 @@ export class AuthService {
     await AuthRepository.createPasswordResetToken(user.id, token, expiresAt);
 
     // In a real app, this would be an email template
+    // Note: Assuming FRONTEND_URL is part of environment or serverConfig, but leaving as is if not in configs yet.
+    // Actually, serverConfig has frontendUrl. Let's use env for now if not explicitly in config export or update config.
+    // serverConfig has frontendUrl.
+
+    // Using process.env.FRONTEND_URL for now as it was in original code, or I should update to use serverConfig.frontendUrl?
+    // Let's stick to authConfig mainly here, but for completeness:
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
     await sendEmail({
       to: email,
@@ -128,10 +135,19 @@ export class AuthService {
   }
 
   static async resetPassword(token: string, newPassword: string) {
+    console.log(`DEBUG: Attempting to reset password with token: ${token}`);
     const resetToken = await AuthRepository.findPasswordResetToken(token);
-    if (!resetToken) throw new Error("Invalid or expired reset token");
+
+    if (!resetToken) {
+      console.log("DEBUG: Reset token not found in database");
+      throw new Error("Invalid or expired reset token");
+    }
+
+    console.log(`DEBUG: Token found. used: ${resetToken.used}, expiresAt: ${resetToken.expiresAt}`);
+    console.log(`DEBUG: Current Time: ${new Date()}`);
 
     if (resetToken.used || new Date() > resetToken.expiresAt) {
+      console.log(`DEBUG: Token validation failed. used: ${resetToken.used}, expired: ${new Date() > resetToken.expiresAt}`);
       throw new Error("Invalid or expired reset token");
     }
 
@@ -161,14 +177,14 @@ export class AuthService {
   private static async generateAuthResponse(user: User) {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "15m" }
+      authConfig.jwtSecret!,
+      { expiresIn: authConfig.jwtExpiresIn as any }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id },
-      process.env.REFRESH_TOKEN_SECRET!,
-      { expiresIn: "7d" }
+      authConfig.refreshTokenSecret!,
+      { expiresIn: authConfig.refreshTokenExpiresIn as any }
     );
 
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

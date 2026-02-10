@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "../types/authTypes.js";
@@ -9,6 +10,7 @@ export const authenticate = (
   next: NextFunction,
 ) => {
   try {
+    dotenv.config();
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

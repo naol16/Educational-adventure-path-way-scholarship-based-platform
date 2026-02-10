@@ -10,6 +10,7 @@ import {
     BelongsTo,
     Default,
     CreatedAt,
+    Index,
 } from "sequelize-typescript";
 import { User } from "./User.js";
 
@@ -30,35 +31,37 @@ export class PasswordResetToken extends Model {
         allowNull: false,
         field: 'user_id'
     })
-    userId!: number;
+    declare userId: number;
 
     @BelongsTo(() => User)
-    user!: User;
+    declare user: User;
 
     @Unique
+    @Index
     @Column({
         type: DataType.TEXT,
         allowNull: false,
     })
-    token!: string;
+    declare token: string;
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
         field: 'expires_at'
     })
-    expiresAt!: Date;
+    declare expiresAt: Date;
 
     @Default(false)
     @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
     })
-    used!: boolean;
+    declare used: boolean;
 
     @CreatedAt
-    @Column({ 
-         type: DataType.DATE,
-        field: 'created_at' })
+    @Column({
+        type: DataType.DATE,
+        field: 'created_at'
+    })
     declare createdAt: Date;
 }

@@ -6,24 +6,19 @@ import { PasswordResetToken } from "../models/PasswordResetToken.js";
 
 dotenv.config();
 
+import { dbConfig } from "./configs.js";
+
 // Determine connection options based on environment
 const dbOptions: SequelizeOptions = {
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    username: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "auth_system",
+    host: dbConfig.host,
+    port: dbConfig.port,
+    username: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.name,
     logging: false, // Set to console.log to see SQL queries
 
     // Handle SSL for production
-    dialectOptions: process.env.NODE_ENV === "production"
-        ? {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        }
-        : undefined as any,
+    ...(dbConfig.ssl && { dialectOptions: { ssl: dbConfig.ssl } }),
 };
 
 export const sequelize = new Sequelize({

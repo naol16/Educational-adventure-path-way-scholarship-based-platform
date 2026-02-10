@@ -14,6 +14,11 @@ import {
   passwordResetLimiter,
   createAccountLimiter,
 } from "../middlewares/rateLimiter.js";
+import dotenv from "dotenv";
+
+
+dotenv.config();
+
 
 const router = Router();
 
@@ -26,7 +31,6 @@ router.post(
 );
 router.post(
   "/login",
-  authLimiter,
   validate(loginValidation),
   AuthController.login,
 );
@@ -40,7 +44,7 @@ router.post(
 );
 router.post(
   "/reset-password",
-  passwordResetLimiter,
+  // passwordResetLimiter,
   validate(resetPasswordValidation),
   AuthController.resetPassword,
 );

@@ -29,28 +29,29 @@ export class RefreshToken extends Model {
         allowNull: false,
         field: 'user_id'
     })
-    userId!: number;
+    declare userId: number;
 
     @BelongsTo(() => User)
-    user!: User;
+    declare user: User;
 
     @Unique
     @Column({
         type: DataType.TEXT,
         allowNull: false,
     })
-    token!: string;
+    declare token: string;
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
         field: 'expires_at'
     })
-    expiresAt!: Date;
+    declare expiresAt: Date;
 
-        @CreatedAt
-        @Column({ 
-            type: DataType.DATE,
-            field: 'created_at' })
-        declare createdAt: Date;
+    @CreatedAt
+    @Column({
+        type: DataType.DATE,
+        field: 'created_at'
+    })
+    declare createdAt: Date;
 }
