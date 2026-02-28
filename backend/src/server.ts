@@ -3,11 +3,14 @@ import { connectSequelize } from "./config/sequelize.js";
 import configs from "./config/configs.js";
 // import { createTables, seedAdminUser } from "./utils/databaseMigration.js"; // Migration is now handled by Sequelize sync or manual scripts
 
-//Temporary
+// Temporary unhandled rejection logging
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
-//up to here temporary
+
+import { startScholarshipCron } from "./automation/scholarshipCron.js";
+import { seedScholarshipSources } from "./scripts/seedScholarships.js";
+
 async function start() {
   console.log("Initializing server...");
 
@@ -25,8 +28,14 @@ async function start() {
   // Load configurations and connect to DB asynchronously
   try {
     await connectSequelize();
+
+    // Initialize Scholarship Ingestion System
+    await seedScholarshipSources();
+    startScholarshipCron();
+
   } catch (err) {
     console.error("Failed to connect to database:", err);
   }
 }
+
 start();
