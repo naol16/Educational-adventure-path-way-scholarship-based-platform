@@ -254,6 +254,8 @@ export class CounselorService {
       student.academicHistory,
       student.countryInterest,
       student.academicStatus,
+      student.fieldOfStudy,
+      student.researchArea,
       student.extractedData,
     ]
       .filter(Boolean)

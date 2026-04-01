@@ -105,4 +105,23 @@ export class ScholarshipTrackingService {
 
         return events;
     }
+
+    static async getDashboardStats(studentId: number) {
+        const tracked = await ScholarshipTrackingRepository.getTrackedScholarships(studentId);
+        
+        const now = new Date();
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+        return {
+            savedCount: tracked.filter(t => t.status === 'NOT_STARTED').length,
+            appliedCount: tracked.filter(t => t.status === 'APPLIED').length,
+            deadlineCount: tracked.filter(t => {
+                const deadline = t.manualDeadline || t.scholarship?.deadline;
+                if (!deadline) return false;
+                const dDate = new Date(deadline);
+                return dDate >= now && dDate <= thirtyDaysFromNow;
+            }).length
+        };
+    }
 }

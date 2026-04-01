@@ -166,4 +166,21 @@ export class ScholarshipTrackingController {
             next(error);
         }
     }
+
+    static async getDashboardStats(req: Request, res: Response, next: NextFunction) {
+        try {
+            const student = await StudentRepository.findByUserId(req.user!.id);
+            if (!student) {
+                return res.status(404).json({ error: "Student profile not found" });
+            }
+
+            const stats = await ScholarshipTrackingService.getDashboardStats(student.id);
+            res.json({
+                status: "success",
+                data: stats
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

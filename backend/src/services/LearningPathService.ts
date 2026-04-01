@@ -25,9 +25,14 @@ export class LearningPathService {
   ) {
     const overallBand = evaluation.evaluation?.overall_band || 0;
     const level = this.mapScoreToLevel(overallBand);
+    const normalizedExamType =
+      examType && examType.toUpperCase() === "TOEFL" ? "TOEFL" : "IELTS";
 
     // 1. Fetch 5 videos per skill matching the student's level and exam type
-    const videoMap = await VideoService.getFivePerType(level, examType);
+    const videoMap = await VideoService.getFivePerType(
+      level,
+      normalizedExamType,
+    );
 
     const videoSections = {
       reading: videoMap["reading"]?.map((v) => v.id) || [],
@@ -59,8 +64,10 @@ export class LearningPathService {
     };
 
     // 4. Extract Competency Gap and Curriculum Map
-    const competencyGapAnalysis = evaluation.evaluation?.competency_gap_analysis || null;
-    const curriculumMap = evaluation.evaluation?.adaptive_curriculum_map || null;
+    const competencyGapAnalysis =
+      evaluation.evaluation?.competency_gap_analysis || null;
+    const curriculumMap =
+      evaluation.evaluation?.adaptive_curriculum_map || null;
 
     // 5. Persist the learning path
     await LearningPathRepository.upsert(studentId, {
@@ -70,7 +77,7 @@ export class LearningPathService {
       competencyGapAnalysis,
       curriculumMap,
       proficiencyLevel: level,
-      examType,
+      examType: normalizedExamType,
     });
   }
 
@@ -121,7 +128,8 @@ export class LearningPathService {
       };
     }
 
-    const progressPercentage = totalVideos === 0 ? 0 : Math.round((completedVideos / totalVideos) * 100);
+    const progressPercentage =
+      totalVideos === 0 ? 0 : Math.round((completedVideos / totalVideos) * 100);
     // Update the record in the database
     if (path.currentProgressPercentage !== progressPercentage) {
       path.currentProgressPercentage = progressPercentage;
@@ -135,7 +143,7 @@ export class LearningPathService {
       learningMode: path.learningModeSections,
       competencyGapAnalysis: path.competencyGapAnalysis,
       curriculumMap: path.curriculumMap,
-      current_progress_percentage: progressPercentage
+      current_progress_percentage: progressPercentage,
     };
   }
 }

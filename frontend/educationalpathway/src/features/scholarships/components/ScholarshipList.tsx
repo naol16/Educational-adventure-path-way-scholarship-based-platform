@@ -5,13 +5,17 @@ import { Scholarship, ScholarshipFilters } from "../types";
 import { getScholarships } from "../api/get-scholarships";
 import { ScholarshipCard } from "./ScholarshipCard";
 import { Loader2, Search } from "lucide-react";
-import { Input, Button } from "@/components/ui";
+import { Button } from "@/components/ui";
 
-export const ScholarshipList = () => {
+interface ScholarshipListProps {
+  filters: ScholarshipFilters;
+  activeTab: string;
+}
+
+export const ScholarshipList = ({ filters, activeTab }: ScholarshipListProps) => {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<ScholarshipFilters>({});
 
   useEffect(() => {
     const fetchScholarships = async () => {
@@ -19,7 +23,15 @@ export const ScholarshipList = () => {
 
       try {
         const data = await getScholarships(filters);
-        setScholarships(data);
+        
+        // Frontend filtering for labs if API doesn't handle saved/applied yet
+        let filteredData = data;
+        if (activeTab === 'saved') {
+          // Placeholder filtering logic
+          filteredData = data.filter(s => s.matchScore && s.matchScore > 85); 
+        }
+        
+        setScholarships(filteredData);
         setError(null);
       } catch (err: any) {
         console.error("Failed to fetch scholarships", err);
@@ -30,94 +42,57 @@ export const ScholarshipList = () => {
     };
 
     fetchScholarships();
-  }, [filters]);
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.currentTarget);
-
-    setFilters({
-      ...filters,
-      query: formData.get("query") as string,
-    });
-  };
+  }, [filters, activeTab]);
 
   return (
     <div className="space-y-6">
-
-      {/* Search */}
-      <form
-  onSubmit={handleSearch}
-  className="flex items-center gap-2 max-w-md"
->
-  <div className="relative flex-1">
-
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-    <Input
-      name="query"
-      placeholder="Search scholarships..."
-      className="pl-9 h-10"
-    />
-
-  </div>
-
-  <Button
-    type="submit"
-    size="icon"
-    className="h-10 w-10 primary-gradient text-primary-foreground cursor-pointer"
-  >
-    <Search className="h-4 w-4" />
-  </Button>
-</form>
-
       {/* Loading */}
       {loading ? (
-        <div className="flex justify-center py-20">
-
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary/40" />
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Finding Matches...</p>
         </div>
       ) : error ? (
-        <div className="text-center py-20 bg-destructive/5 rounded-lg border border-destructive/20">
+        <div className="text-center py-16 bg-destructive/5 rounded-xl border border-destructive/10">
           <p className="text-destructive font-medium mb-4">{error}</p>
           {error.includes("onboarded") && (
             <Button 
-               onClick={() => window.location.href = '/onboarding'}
-               className="primary-gradient text-primary-foreground"
+               onClick={() => window.location.href = '/dashboard/student/profile'}
+               className="primary-gradient text-primary-foreground font-bold rounded-xl"
             >
-              Complete Profile
+              Complete Your Profile
             </Button>
           )}
         </div>
       ) : scholarships.length > 0 ? (
-
         /* Results Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
           {scholarships.map((s, idx) => (
             <ScholarshipCard
               key={s.id ?? idx}
               scholarship={s}
             />
           ))}
-
         </div>
-
       ) : (
-
         /* Empty State */
-        <div className="text-center py-20 bg-muted rounded-lg border-2 border-dashed border-border">
-
-          <p className="text-muted-foreground font-medium">
-            No scholarships found. Try adjusting your search or filters.
+        <div className="text-center py-24 bg-muted/20 rounded-xl border-2 border-dashed border-border/50 px-4">
+          <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+             <Search className="h-8 w-8 text-muted-foreground/40" />
+          </div>
+          <h3 className="font-bold text-lg mb-1">No Matching Scholarships</h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto text-balance">
+            Try adjusting your search filters or completing more of your profile to find more opportunities.
           </p>
-
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="ghost" 
+            className="mt-6 text-xs font-bold text-primary hover:bg-primary/5"
+          >
+            REFRESH DISCOVERY
+          </Button>
         </div>
-
       )}
-
     </div>
   );
 };

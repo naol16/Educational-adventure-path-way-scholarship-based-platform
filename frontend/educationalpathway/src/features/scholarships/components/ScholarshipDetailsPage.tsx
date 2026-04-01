@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Scholarship } from "@/features/scholarships/types";
 import { getScholarship } from "@/features/scholarships/api/get-scholarships";
+import { useAuth } from "@/providers/auth-context";
 import { 
   Button, 
   Card, 
@@ -19,14 +20,34 @@ import {
   GraduationCap, 
   ExternalLink,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Target,
+  Zap,
+  Check,
+  TrendingUp,
+  TrendingDown,
+  Sparkles
 } from "lucide-react";
-import Link from "next/link";
 import { motion } from "framer-motion";
+
+interface CriteriaMatch {
+  label: string;
+  studentValue: string;
+  requiredValue: string;
+  isMatched: boolean;
+  icon: any;
+}
+
+const safeString = (val: any) => {
+  if (Array.isArray(val)) return val.join(", ");
+  return val || "";
+};
 
 export default function ScholarshipDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,246 +71,310 @@ export default function ScholarshipDetailsPage() {
     fetchDetails();
   }, [id]);
 
+  const matchingCriteria = useMemo(() => {
+    if (!scholarship || !user) return [];
+
+    const criteria: CriteriaMatch[] = [];
+
+    // 1. Degree Level Match
+    const studentDegree = safeString(user.preferredDegreeLevel || user.degreeSeeking).toLowerCase();
+    const scholarshipDegrees = (scholarship.degreeLevels || []).map(d => d.toLowerCase());
+    const degreeMatch = scholarshipDegrees.length === 0 || scholarshipDegrees.some(d => studentDegree.includes(d) || d.includes(studentDegree));
+    
+    criteria.push({
+      label: "Degree Level",
+      studentValue: safeString(user.preferredDegreeLevel) || "Any Level",
+      requiredValue: scholarship.degreeLevels?.join(", ") || "All Levels",
+      isMatched: degreeMatch,
+      icon: GraduationCap
+    });
+
+    // 2. Country Match
+    const studentCountries = safeString(user.preferredCountries).toLowerCase();
+    const scholarshipCountry = (scholarship.country || "").toLowerCase();
+    const countryMatch = !scholarship.country || studentCountries.includes(scholarshipCountry);
+
+    criteria.push({
+      label: "Location",
+      studentValue: safeString(user.preferredCountries) || "Global",
+      requiredValue: scholarship.country || "International",
+      isMatched: countryMatch,
+      icon: MapPin
+    });
+
+    // 3. GPA Match
+    const studentGpa = parseFloat(user.gpa || user.calculatedGpa || "0");
+    const hasGpaReq = scholarship.requirements?.toLowerCase().includes("gpa");
+    const gpaMatch = studentGpa >= 3.0; 
+
+    criteria.push({
+      label: "Academic",
+      studentValue: `GPA: ${studentGpa || "N/A"}`,
+      requiredValue: hasGpaReq ? "Required" : "Flexible",
+      isMatched: gpaMatch,
+      icon: Target
+    });
+
+    // 4. Funding Type
+    const studentFunding = safeString(user.preferredFundingType || user.fundingRequirement).toLowerCase();
+    const scholarshipFunding = (scholarship.fundType || "").toLowerCase();
+    const fundingMatch = !scholarshipFunding || studentFunding.includes(scholarshipFunding) || scholarshipFunding.includes(studentFunding);
+
+    criteria.push({
+      label: "Funding",
+      studentValue: safeString(user.preferredFundingType) || "Any",
+      requiredValue: scholarship.fundType || "Grant",
+      isMatched: fundingMatch,
+      icon: DollarSign
+    });
+
+    return criteria;
+  }, [scholarship, user]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="relative">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <div className="absolute inset-0 bg-primary/10 blur-xl rounded-full" />
-        </div>
-        <p className="text-muted-foreground animate-pulse text-sm font-medium">
-          Analyzing match data...
-        </p>
+        <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest animate-pulse">Analyzing Match Analysis...</p>
       </div>
     );
   }
 
   if (error || !scholarship) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="p-4 rounded-full bg-destructive/10 text-destructive mb-6">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 space-y-6">
+        <div className="p-4 rounded-xl bg-destructive/5 text-destructive border border-destructive/10">
           <AlertCircle className="h-10 w-10" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Error Loading Scholarship</h2>
-        <p className="text-muted-foreground mb-8 text-center max-w-md">
-          {error || "We couldn't find the scholarship you're looking for."}
-        </p>
-        <Button onClick={() => router.back()} className="primary-gradient text-white px-8 h-11">
-          Go Back
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Scholarship Not Found</h2>
+        <Button onClick={() => router.back()} variant="outline" className="rounded-xl px-10 h-12 font-bold transition-all hover:bg-muted">
+          Return to Explorer
         </Button>
       </div>
     );
   }
 
-  const matchScore = scholarship.matchScore || 0;
-  const matchReason = scholarship.matchReason || "This scholarship aligns with your academic profile and preferences.";
-  const deadline = scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString() : "Rolling";
+  const matchScore = Math.round(scholarship.matchScore || 0);
+  const deadline = scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "Rolling";
+
+  const getMatchInfo = (score: number) => {
+    if (score >= 85) return { label: "High Compatibility", description: "Highly Recommended", color: "text-emerald-500", bgColor: "bg-emerald-500/10", icon: TrendingUp };
+    if (score >= 65) return { label: "Good Match", description: "Recommended", color: "text-primary", bgColor: "bg-primary/10", icon: CheckCircle2 };
+    if (score >= 40) return { label: "Moderate Match", description: "Potential Fit", color: "text-orange-500", bgColor: "bg-orange-500/10", icon: Zap };
+    return { label: "Low Compatibility", description: "Consider Requirements", color: "text-destructive", bgColor: "bg-destructive/10", icon: TrendingDown };
+  };
+
+  const matchInfo = getMatchInfo(matchScore);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-20">
-      {/* Navigation & Header */}
-      <div className="flex flex-col gap-6">
+    <div className="max-w-6xl mx-auto space-y-10 pb-24 px-4 sm:px-6">
+      
+      {/* Header Navigation */}
+      <div className="flex items-center justify-between">
         <button 
           onClick={() => router.back()}
-          className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+          className="group flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-all uppercase tracking-widest"
         >
-          <div className="p-1 rounded-lg group-hover:bg-muted transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-          </div>
+          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
           Back to list
         </button>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3 flex-1">
-            <div className="flex flex-wrap gap-2">
-              <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 px-3 py-1">
-                {scholarship.fundType || "Scholarship"}
-              </Badge>
-              {scholarship.country && (
-                <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1">
-                  <MapPin className="h-3 w-3" />
-                  {scholarship.country}
-                </Badge>
-              )}
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
-              {scholarship.title}
-            </h1>
-          </div>
-
-          <a 
-            href={scholarship.originalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 h-12 px-8 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:scale-[1.02] active:scale-[0.98] shadow-blue-500/20 transition-all"
-          >
-            Apply Now
-            <ExternalLink className="h-5 w-5" />
-          </a>
-        </div>
+        <Badge variant="outline" className="bg-muted text-muted-foreground border-border/60 font-black text-[9px] tracking-widest uppercase py-1 px-3 rounded-md">
+          REF: #{scholarship.id}
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Details */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card border border-border p-5 rounded-lg flex items-start gap-4">
-              <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-green-500/10 text-green-600 shrink-0">
-                <DollarSign className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Amount</p>
-                <p className="font-bold text-foreground">{scholarship.amount || "Varies"}</p>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-14">
+        
+        {/* Left Column: Principal Scholarship Info */}
+        <div className="lg:col-span-8 space-y-12">
+          
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2">
+               <Badge className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] tracking-widest uppercase px-3 py-1">
+                 {scholarship.fundType || "Full Scholarship"}
+               </Badge>
             </div>
-            
-            <div className="bg-card border border-border p-5 rounded-lg flex items-start gap-4">
-              <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 shrink-0">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Deadline</p>
-                <p className="font-bold text-foreground">{deadline}</p>
-              </div>
-            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-[1.1] text-balance">
+              {scholarship.title}
+            </h1>
 
-            <div className="bg-card border border-border p-5 rounded-lg flex items-start gap-4">
-              <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
-                <GraduationCap className="h-5 w-5" />
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+                 <MapPin size={14} className="text-primary" />
+                 <span className="text-xs font-bold">{scholarship.country || "Global"}</span>
               </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Eligibility</p>
-                <p className="font-bold text-foreground text-sm leading-tight line-clamp-2">
-                  {scholarship.degreeLevels?.join(", ") || "All Levels"}
-                </p>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                 <Calendar size={14} className="text-emerald-500" />
+                 <span className="text-xs font-bold text-emerald-600">Deadline: {deadline}</span>
               </div>
             </div>
           </div>
 
-          {/* Description */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              Description
-            </h2>
-            <div className="bg-card border border-border p-6 rounded-lg">
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {scholarship.description || "No detailed description available for this scholarship."}
-              </p>
-            </div>
-          </section>
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Award Value</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                    <DollarSign size={18} />
+                  </div>
+                  <p className="text-xl font-black text-foreground truncate">{scholarship.amount || "Varies"}</p>
+                </div>
+             </div>
+             <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Study Level</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <GraduationCap size={18} />
+                  </div>
+                  <p className="text-xl font-black text-foreground truncate">{scholarship.degreeLevels?.[0] || "All"}</p>
+                </div>
+             </div>
+             <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Intake</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                    <Clock size={18} />
+                  </div>
+                  <p className="text-xl font-black text-foreground truncate">{scholarship.intakeSeason || "2024/25"}</p>
+                </div>
+             </div>
+          </div>
 
-          {/* Requirements if available */}
-          {scholarship.requirements && (
+          {/* Criteria Matching Section */}
+          <div className="space-y-8">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-xs font-black text-foreground uppercase tracking-widest">Eligibility Breakdown</h2>
+              <span className="text-[10px] font-bold text-muted-foreground/40 italic">Live Comparison</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {matchingCriteria.map((c, i) => (
+                  <div key={i} className={`p-5 rounded-2xl border transition-all duration-300 ${c.isMatched ? 'border-emerald-500/2 bg-emerald-500/2' : 'border-border/50 bg-card hover:bg-muted/20'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${c.isMatched ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground shadow-xs'}`}>
+                          <c.icon size={16} />
+                        </div>
+                        <span className="text-xs font-black text-foreground tracking-tight">{c.label}</span>
+                      </div>
+                      <div className={`h-4 w-4 rounded-full flex items-center justify-center ${c.isMatched ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
+                         {c.isMatched ? <Check size={10} strokeWidth={4} /> : <span className="text-[8px] font-bold">!</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 border-t border-border/40 pt-4">
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest mb-1">Scholarship Needs</p>
+                        <p className="text-xs font-bold text-foreground truncate" title={c.requiredValue}>{c.requiredValue}</p>
+                      </div>
+                      <div className="min-w-0 text-right border-l border-border/30 pl-4">
+                        <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest mb-1 text-right">You</p>
+                        <p className={`text-xs font-bold truncate ${c.isMatched ? 'text-emerald-600' : 'text-foreground/60'}`} title={c.studentValue}>{c.studentValue}</p>
+                      </div>
+                    </div>
+                  </div>
+               ))}
+            </div>
+          </div>
+
+          {/* Content sections */}
+          <div className="space-y-12">
             <section className="space-y-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                Requirements
-              </h2>
-              <div className="bg-card border border-border p-6 rounded-lg">
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap italic">
-                  {scholarship.requirements}
-                </p>
+              <div className="flex items-center gap-2">
+                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">Description</h3>
+                 <div className="flex-1 h-px bg-border/40" />
+              </div>
+              <div className="text-base text-muted-foreground leading-relaxed text-balance">
+                {scholarship.description || "The scholarship provider has not yet listed a full detailed description."}
               </div>
             </section>
-          )}
+
+            {scholarship.requirements && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-2">
+                   <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">Requirements</h3>
+                   <div className="flex-1 h-px bg-border/40" />
+                </div>
+                <div className="p-8 rounded-2xl bg-muted/40 border border-border/50 font-medium text-foreground italic leading-[1.8] text-sm">
+                  "{scholarship.requirements}"
+                </div>
+              </section>
+            )}
+          </div>
         </div>
 
-        {/* Right Column: AI Analysis */}
-        <div className="space-y-8">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card border-2 border-primary/20 rounded-lg overflow-hidden shadow-primary/5"
-          >
-            <div className="primary-gradient p-6 text-white">
-              <h3 className="text-sm font-bold uppercase tracking-widest opacity-80 mb-6">AI Match Analysis</h3>
-              
-              <div className="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/10">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-black">{Math.round(matchScore)}</span>
-                    <span className="text-xl font-bold opacity-70">%</span>
-                  </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest mt-2 opacity-80">Match Probability</p>
-                </div>
-                
-                <div className="relative h-20 w-20 flex items-center justify-center">
-                  <svg className="h-full w-full -rotate-90">
-                    <circle 
-                      cx="40" cy="40" r="36" 
-                      fill="transparent" 
-                      stroke="rgba(255,255,255,0.2)" 
-                      strokeWidth="6" 
-                    />
-                    <circle 
-                      cx="40" cy="40" r="36" 
-                      fill="transparent" 
-                      stroke="white" 
-                      strokeWidth="6" 
-                      strokeDasharray={2 * Math.PI * 36}
-                      strokeDashoffset={2 * Math.PI * 36 * (1 - matchScore / 100)}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <CheckCircle2 className="absolute h-8 w-8 text-white" />
-                </div>
-              </div>
-            </div>
+        {/* Right Column: AI Score & Action Container */}
+        <div className="lg:col-span-4 lg:relative">
+           <motion.div 
+             initial={{ opacity: 0, scale: 0.98 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="sticky top-24 space-y-6"
+           >
+              {/* Refactored AI Match Card */}
+              <div className="bg-card border border-border/80 shadow-2xl shadow-primary/5 rounded-4xl p-8 space-y-10 overflow-hidden group">
+                 <div className={`absolute top-0 right-0 w-32 h-32 ${matchInfo.bgColor} rounded-full blur-3xl -mr-16 -mt-16 transition-colors duration-500`} />
+                 
+                 <div className="space-y-3 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                       <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[4px]">Match Probability</p>
+                       <div className="flex items-center justify-center gap-2">
+                          <matchInfo.icon size={16} className={matchInfo.color} />
+                          <span className={`${matchInfo.color} text-xs font-black uppercase tracking-widest`}>{matchInfo.label}</span>
+                       </div>
+                    </div>
+                    
+                    <div className="text-8xl font-black text-foreground tracking-tighter flex items-center justify-center gap-1 group-hover:scale-105 transition-transform">
+                       {matchScore}
+                       <span className={`text-2xl font-bold ${matchInfo.color}`}>%</span>
+                    </div>
 
-            <div className="p-6 space-y-6">
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Why this matches you</h4>
-                <div className="bg-muted/50 rounded-lg p-4 border border-border">
-                  <p className="text-sm text-foreground leading-relaxed italic">
-                    "{matchReason}"
-                  </p>
-                </div>
-              </div>
+                    <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full ${matchInfo.bgColor} ${matchInfo.color} text-[10px] font-black uppercase tracking-widest border border-current opacity-30`}>
+                       {matchInfo.description}
+                    </div>
+                 </div>
 
-              <div className="p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                  <AlertCircle className="h-4 w-4" />
-                </div>
-                <p className="text-[11px] text-primary/80 leading-relaxed font-medium">
-                  Matches your interest in <strong>{scholarship.country || 'International'}</strong> studies and <strong>{scholarship.fundType || 'Fully Funded'}</strong> opportunities.
-                </p>
-              </div>
+                 {/* Match Progress Gauge */}
+                 <div className="space-y-2">
+                    <div className="h-3 w-full bg-muted rounded-full p-[3px] border border-border/20 shadow-inner">
+                       <motion.div 
+                         initial={{ width: 0 }}
+                         animate={{ width: `${matchScore}%` }}
+                         transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                         className={`h-full rounded-full shadow-lg ${matchScore >= 85 ? 'bg-emerald-500 shadow-emerald-500/20' : matchScore >= 40 ? 'bg-primary shadow-primary/20' : 'bg-destructive shadow-destructive/20'}`}
+                       />
+                    </div>
+                 </div>
 
-              <div className="pt-2">
-                <a 
-                  href={scholarship.originalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center justify-center gap-2 w-full py-4 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300"
-                >
-                  Confirm & Apply
-                  <ExternalLink className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </a>
-                <p className="text-[10px] text-center text-muted-foreground mt-4">
-                  Official website: {new URL(scholarship.originalUrl).hostname}
-                </p>
-              </div>
-            </div>
-          </motion.div>
+                 <div className="bg-muted px-6 py-5 rounded-2xl border border-border/40 relative">
+                    <Zap className="absolute -top-2 -right-2 h-6 w-6 text-primary fill-primary/20 p-1 bg-card rounded-lg border border-border/40" />
+                    <p className="text-xs font-bold text-foreground/80 leading-relaxed italic text-balance text-center">
+                       "{scholarship.matchReason || "Our AI recommends this opportunity based on your strategic field of focus and location preference."}"
+                    </p>
+                 </div>
 
-          <Card className="rounded-lg border-border bg-muted/30">
-            <CardBody className="p-6">
-              <h4 className="font-bold text-foreground mb-4">Tips for Application</h4>
-              <ul className="space-y-3">
-                {[
-                  "Highlight your field of study in your SOP",
-                  "Prepare transcripts in PDF format",
-                  "Mention your English proficiency scores",
-                  "Check for intake seasons for " + (scholarship.intakeSeason || "2024/25")
-                ].map((tip, i) => (
-                  <li key={i} className="flex gap-3 text-xs text-muted-foreground leading-relaxed">
-                    <span className="h-4 w-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] shrink-0">{i+1}</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </CardBody>
-          </Card>
+                 <div className="space-y-4 pt-4">
+                    <a 
+                      href={scholarship.originalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-4 w-full h-16 primary-gradient text-white font-black text-sm rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      BEGIN APPLICATION
+                      <ExternalLink size={18} />
+                    </a>
+                    
+                    <button className="w-full h-16 rounded-2xl border border-border/80 text-xs font-black uppercase tracking-widest hover:bg-muted transition-all active:scale-[0.98]">
+                      SAVE OPPORTUNITY
+                    </button>
+                 </div>
+
+                 <p className="text-[9px] text-center text-muted-foreground/40 font-bold uppercase tracking-wider pt-2 flex items-center justify-center gap-2 opacity-50">
+                    <CheckCircle2 size={10} /> Verified Enrollment Link
+                 </p>
+              </div>
+           </motion.div>
         </div>
       </div>
     </div>

@@ -39,6 +39,26 @@ const difficultyColors: Record<string, string> = {
   Easy: "bg-success/10 text-success border-success/20",
 };
 
+function normalizeAssessmentResult(payload: any) {
+  if (!payload) return null;
+  if (
+    payload.evaluation ||
+    payload.overall_band !== undefined ||
+    payload.feedback_report
+  ) {
+    return payload;
+  }
+  if (
+    payload.data &&
+    (payload.data.evaluation ||
+      payload.data.overall_band !== undefined ||
+      payload.data.feedback_report)
+  ) {
+    return payload.data;
+  }
+  return payload;
+}
+
 export function AssessmentResultView({
   testId,
   examType,
@@ -54,10 +74,13 @@ export function AssessmentResultView({
       try {
         setLoading(true);
         const res = await getAssessmentResult(testId);
-        if (res.status === "success" && res.data) {
-          setResultData(res.data);
-        } else if (res.status === "failed") {
-          setError(`Evaluation failed: ${res.reason || "Unknown error"}`);
+        const normalized = normalizeAssessmentResult(res);
+        if (normalized?.status === "failed") {
+          setError(
+            `Evaluation failed: ${normalized.reason || "Unknown error"}`,
+          );
+        } else if (normalized) {
+          setResultData(normalized);
         } else {
           setError("Result not found or still processing.");
         }
@@ -273,7 +296,7 @@ export function AssessmentResultView({
                       >
                         {tag.replace(/_/g, " ")}
                       </span>
-                    )
+                    ),
                   )}
                 </div>
               </div>

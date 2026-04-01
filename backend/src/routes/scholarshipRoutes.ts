@@ -14,6 +14,7 @@ router.get("/:id", authenticate, ScholarshipController.getDetails);
 // Tracking & Deadline Management
 router.post("/track/:scholarshipId", authenticate, ScholarshipTrackingController.track);
 router.get("/tracked", authenticate, ScholarshipTrackingController.getWatchlist);
+router.get("/dashboard/stats", authenticate, ScholarshipTrackingController.getDashboardStats);
 router.patch("/track/deadline/:id", authenticate, ScholarshipTrackingController.updateDeadline);
 router.patch("/track/status/:id", authenticate, ScholarshipTrackingController.updateStatus);
 router.patch("/track/notification-settings/:id", authenticate, ScholarshipTrackingController.updateNotificationSettings);

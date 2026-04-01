@@ -204,6 +204,40 @@ button {
   border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.dark .glass-card {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-600 to-teal-800;
+}
+
+.dark .gradient-text {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-400 to-teal-500;
+}
+
+.stat-card-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.2;
+  z-index: -1;
+}
+
 /* ---------------- TYPOGRAPHY ---------------- */
 
 .h1 { @apply text-4xl font-extrabold tracking-tight md:text-5xl; font-family: var(--font-serif); }

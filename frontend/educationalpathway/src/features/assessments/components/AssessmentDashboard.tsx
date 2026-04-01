@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import { generateAssessment, getAssessmentProgress } from "../api/assessment-api";
+import {
+  generateAssessment,
+  getAssessmentProgress,
+} from "../api/assessment-api";
 import { toast } from "react-hot-toast";
 
 interface ProgressItem {
@@ -44,7 +47,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [examType, setExamType] = useState<"IELTS" | "TOEFL">("IELTS");
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(
+    "Medium",
+  );
   const [progressData, setProgressData] = useState<ProgressItem[]>([]);
 
   useEffect(() => {
@@ -55,9 +60,12 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
     try {
       setLoadingStats(true);
       const res = await getAssessmentProgress();
-      if (res && res.data) {
-        setProgressData(res.data);
-      }
+      const progressItems = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+          ? res.data
+          : [];
+      setProgressData(progressItems);
     } catch (error) {
       console.error("Error fetching progress:", error);
     } finally {
@@ -68,7 +76,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const handleStartExam = async () => {
     try {
       setLoading(true);
-      toast.loading("Generating your personalized assessment...", { id: "generating" });
+      toast.loading("Generating your personalized assessment...", {
+        id: "generating",
+      });
       const res = await generateAssessment({ examType, difficulty });
       toast.dismiss("generating");
       toast.success("Assessment ready!");
@@ -82,8 +92,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   };
 
   const getOverallAverages = () => {
-    if (progressData.length === 0) return { band: "0.0", tests: 0, best: "0.0" };
-    const numericBands = progressData.map((d) => parseFloat(String(d.overallBand)));
+    if (progressData.length === 0)
+      return { band: "0.0", tests: 0, best: "0.0" };
+    const numericBands = progressData.map((d) =>
+      parseFloat(String(d.overallBand)),
+    );
     const sum = numericBands.reduce((a, b) => a + b, 0);
     const best = Math.max(...numericBands);
     return {
@@ -130,7 +143,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
           <CardBody className="p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-label text-muted-foreground">Avg Band Score</p>
+                <p className="text-label text-muted-foreground">
+                  Avg Band Score
+                </p>
                 <h3 className="text-4xl font-black mt-2 text-primary">
                   {averages.band}
                 </h3>
@@ -141,7 +156,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
             </div>
             <p className="text-xs text-muted-foreground mt-3">
               Best score:{" "}
-              <span className="font-semibold text-foreground">{averages.best}</span>
+              <span className="font-semibold text-foreground">
+                {averages.best}
+              </span>
             </p>
           </CardBody>
         </Card>
@@ -171,7 +188,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Target Band:{" "}
-                <span className="font-bold text-foreground">{thresholdBand}+</span>
+                <span className="font-bold text-foreground">
+                  {thresholdBand}+
+                </span>
               </p>
             </div>
             <div>
@@ -246,8 +265,8 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                             ? d === "Easy"
                               ? "bg-success text-white border-success"
                               : d === "Medium"
-                              ? "bg-warning text-white border-warning"
-                              : "bg-destructive text-white border-destructive"
+                                ? "bg-warning text-white border-warning"
+                                : "bg-destructive text-white border-destructive"
                             : "bg-transparent border-border text-foreground hover:bg-muted"
                         }`}
                       >
@@ -288,7 +307,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   {chartData.map((item, i) => {
                     const h = Math.max(
                       8,
-                      (parseFloat(String(item.overallBand)) / 9) * 96
+                      (parseFloat(String(item.overallBand)) / 9) * 96,
                     );
                     return (
                       <motion.div
@@ -380,7 +399,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                                 year: "numeric",
                                 month: "short",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </p>
                         </div>
