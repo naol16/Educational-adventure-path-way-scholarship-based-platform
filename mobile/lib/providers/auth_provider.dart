@@ -48,7 +48,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String name,
     required String email,
     required String password,
-    String role = 'STUDENT',
+    String role = 'student',
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {

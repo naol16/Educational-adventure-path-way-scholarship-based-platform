@@ -63,7 +63,7 @@ class AuthApiService {
     required String name,
     required String email,
     required String password,
-    String role = 'STUDENT',
+    String role = 'student',
   }) async {
     final response = await _http.post(
       Uri.parse(ApiConfig.apiPath('/api/auth/register')),
