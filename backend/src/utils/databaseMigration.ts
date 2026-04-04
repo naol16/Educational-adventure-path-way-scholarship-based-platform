@@ -44,30 +44,3 @@ export const seedAdminUser = async () => {
     console.error("Error seeding admin user:", error);
   }
 };
-
-export const seedSampleUsers = async () => {
-  try {
-    const studentPassword = await bcrypt.hash("Student@123", 10);
-    const counselorPassword = await bcrypt.hash("Counselor@123", 10);
-
-    await UserRepository.createIfNotExists({
-      name: "Sample Student",
-      email: "student@example.com",
-      password: studentPassword,
-      role: UserRole.STUDENT,
-      is_active: true
-    });
-
-    await UserRepository.createIfNotExists({
-      name: "Sample Counselor",
-      email: "counselor@example.com",
-      password: counselorPassword,
-      role: UserRole.COUNSELOR,
-      is_active: true
-    });
-
-    console.log(" Sample users seeded successfully");
-  } catch (error) {
-    console.error("Error seeding sample users:", error);
-  }
-};

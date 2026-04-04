@@ -27,6 +27,7 @@ export class CounselorMessage extends Model {
     type: DataType.INTEGER,
     allowNull: false,
     field: "sender_user_id",
+    onDelete: "CASCADE",
   })
   declare senderUserId: number;
 
@@ -35,6 +36,7 @@ export class CounselorMessage extends Model {
     type: DataType.INTEGER,
     allowNull: false,
     field: "recipient_user_id",
+    onDelete: "CASCADE",
   })
   declare recipientUserId: number;
 

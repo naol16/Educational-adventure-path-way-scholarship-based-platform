@@ -46,6 +46,10 @@ export const activateUser = async (id: number): Promise<void> => {
   await api.put(`/user/${id}/activate`);
 };
 
+export const deleteUser = async (id: number): Promise<void> => {
+  await api.delete(`/user/${id}`);
+};
+
 export const getAllCounselors = async (): Promise<any[]> => {
   const response = await api.get('/counselors/admin/list');
   return response.data || [];

@@ -60,6 +60,10 @@ export class StaticStrategy implements ScrapingStrategy {
 
         const html = response.data;
         const $ = cheerio.load(html);
+        
+        // Remove noisy elements before extracting text
+        $('script, style, nav, header, footer, iframe, noscript, svg, aside, .menu, .nav, .header, .footer, #header, #footer').remove();
+        
         const text = $('body').text();
 
         // Detect Cloudflare or other block pages in static response
@@ -213,7 +217,15 @@ export class BrowserStrategy implements ScrapingStrategy {
             await page.waitForTimeout(3000);
 
             const html = await page.content();
-            const text = await page.evaluate(() => document.body.innerText);
+            
+            const text = await page.evaluate(() => {
+                // Remove noisy elements from the DOM clone to get clean text
+                const elementsToRemove = document.querySelectorAll(
+                    'script, style, nav, header, footer, iframe, noscript, svg, aside, [role="navigation"], [role="banner"], [role="contentinfo"]'
+                );
+                elementsToRemove.forEach(e => e.remove());
+                return document.body.innerText;
+            });
 
             // Detect if we landed on a block page
             if (isBlockedPage(text)) {
@@ -281,7 +293,13 @@ export class BrowserProxyStrategy implements ScrapingStrategy {
             } catch { }
 
             const html = await page.content();
-            const text = await page.evaluate(() => document.body.innerText);
+            const text = await page.evaluate(() => {
+                const elementsToRemove = document.querySelectorAll(
+                    'script, style, nav, header, footer, iframe, noscript, svg, aside, [role="navigation"], [role="banner"], [role="contentinfo"]'
+                );
+                elementsToRemove.forEach(e => e.remove());
+                return document.body.innerText;
+            });
 
             if (isBlockedPage(text)) {
                 throw new Error('Still blocked even with proxy/headed browser');

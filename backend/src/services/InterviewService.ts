@@ -41,6 +41,29 @@ function normalizeLevel(level?: string): ProficiencyLevel {
 }
 
 export class InterviewService {
+  private static memoryCache = new Map<string, string>();
+
+  private static async setCached(key: string, value: string, ttl: number) {
+    try {
+      await redisConnection.set(key, value, "EX", ttl);
+      console.log(`✅ Stored in Redis: ${key}`);
+    } catch (e) {
+      console.warn(`⚠️ Redis storage failed for ${key}, falling back to memory.`);
+      this.memoryCache.set(key, value);
+      setTimeout(() => this.memoryCache.delete(key), ttl * 1000);
+    }
+  }
+
+  private static async getCached(key: string) {
+    try {
+      const val = await redisConnection.get(key);
+      if (val) return val;
+    } catch (e) {
+      console.warn(`⚠️ Redis retrieval failed for ${key}, falling back to memory.`);
+    }
+    return this.memoryCache.get(key) || null;
+  }
+
   static async generateInterview(examType: string, proficiencyLevel?: string) {
     const interviewId = uuidv4();
     const normalizedExamType = normalizeExamType(examType);
@@ -102,10 +125,9 @@ export class InterviewService {
       proficiency_level: normalizedLevel,
     };
 
-    await redisConnection.set(
+    await this.setCached(
       `interview:${interviewId}`,
       JSON.stringify(interview),
-      "EX",
       7200,
     );
 
@@ -113,7 +135,7 @@ export class InterviewService {
   }
 
   static async getInterview(interviewId: string) {
-    const stored = await redisConnection.get(`interview:${interviewId}`);
+    const stored = await this.getCached(`interview:${interviewId}`);
     if (!stored) {
       return null;
     }
@@ -122,7 +144,7 @@ export class InterviewService {
   }
 
   static async submitInterview(interviewId: string, responses: unknown) {
-    const stored = await redisConnection.get(`interview:${interviewId}`);
+    const stored = await this.getCached(`interview:${interviewId}`);
     if (!stored) {
       throw new Error("Interview session not found or expired.");
     }
@@ -170,10 +192,9 @@ export class InterviewService {
       evaluation,
     };
 
-    await redisConnection.set(
+    await this.setCached(
       `interview-result:${interviewId}`,
       JSON.stringify(result),
-      "EX",
       7200,
     );
 
@@ -181,7 +202,7 @@ export class InterviewService {
   }
 
   static async getInterviewResult(interviewId: string) {
-    const stored = await redisConnection.get(`interview-result:${interviewId}`);
+    const stored = await this.getCached(`interview-result:${interviewId}`);
     if (!stored) {
       return null;
     }

@@ -29,19 +29,8 @@ export class MatchingService {
       );
     }
 
-    // --- CACHING LAYER ---
-    const filterHash = filters ? JSON.stringify(filters) : "none";
-    const cacheKey = `scholarship_matches:${userId}:${student.profileHash || "no_hash"}:${filterHash}`;
-    
-    try {
-      const cachedResults = await redisConnection.get(cacheKey);
-      if (cachedResults) {
-        console.log(`[MatchingService] Returning CACHED scholarship matches for student ${userId}`);
-        return JSON.parse(cachedResults);
-      }
-    } catch (err) {
-      console.warn("[MatchingService] Redis cache failed, skipping cache lookup:", err);
-    }
+    // Removed the full list cache block because it caused stale discrepancies with the individual detail views.
+    // Instead, we will fetch candidates and quickly hydrate them with the individual AI caches.
 
     // Try to refresh embedding but don't crash if AI service is down
     try {
@@ -75,28 +64,62 @@ export class MatchingService {
       return [];
     }
 
-    // Phase 2: AI Re-ranking (Increased to 20 to cover ALL top candidates for consistency)
-    const topCandidates = candidates.slice(0, 20); 
-    const remainingCandidates = candidates.slice(20);
-
+    // Phase 2: AI Re-ranking check using individual cache synchronization
     try {
-      const aiResults = await AIService.rankScholarships(
-        student.toJSON(),
-        topCandidates,
-      );
+      // 1. Fetch individual cached AI scores first to sync with details page
+      const aiCachePipeline = redisConnection.pipeline();
+      candidates.forEach(c => aiCachePipeline.get(`ai_match:${userId}:${c.id}`));
+      let cachedIndividualRaw: any[] = [];
+      try {
+        cachedIndividualRaw = await aiCachePipeline.exec() || [];
+      } catch (err) {
+        console.warn("[MatchingService] Failed to pipeline fetch ai_match:", err);
+      }
 
-      // Map AI scores back to top candidates
-      const rankedMatches = topCandidates.map((c) => {
-        const aiMatch = aiResults.find(
-          (r: any) => String(r.id) === String(c.id),
-        );
+      const cachedAiMap = new Map<number | string, any>();
+      candidates.forEach((c, i) => {
+        const val = cachedIndividualRaw[i]?.[1];
+        if (val) {
+          try { cachedAiMap.set(c.id, JSON.parse(val)); } catch {}
+        }
+      });
 
-        let score = c.matchScore || MatchingService.calculateHeuristicScore(student, c);
-        let reason = "High-precision match based on academic profile similarity.";
+      // 2. Identify candidates that DO NOT have an AI cache and send top 20 uncached ones to AI
+      const topCandidates = candidates.filter(c => !cachedAiMap.has(c.id)).slice(0, 20);
 
-        if (aiMatch) {
+      if (topCandidates.length > 0) {
+        try {
+          const aiResults = await AIService.rankScholarships(student.toJSON(), topCandidates);
+          
+          // Save valid AI results to the individual caches
+          const savePipeline = redisConnection.pipeline();
+          aiResults.forEach((r: any) => {
+            savePipeline.set(`ai_match:${userId}:${r.id}`, JSON.stringify(r), "EX", 3600 * 24);
+            cachedAiMap.set(Number(r.id), r);
+          });
+          await savePipeline.exec();
+        } catch (err: any) {
+             if (err.status === 429 || err.message?.includes("429")) {
+                console.warn("[MatchingService] AI Rate limit hit (429). Falling back to hybrid vector-heuristic scoring.");
+             } else {
+                console.error("[MatchingService] AI Re-ranking failed:", err);
+             }
+        }
+      }
+
+      // 3. Map all candidates using the synced AI map or hybrid fallback
+      const finalResults = candidates.map((c) => {
+        const aiMatch = cachedAiMap.get(c.id) || cachedAiMap.get(String(c.id));
+        let score = c.matchScore || 0;
+        let reason = null;
+
+        if (aiMatch && aiMatch.match_score) {
           score = aiMatch.match_score;
           reason = aiMatch.match_reason;
+        } else {
+          // Pure hybrid for unranked candidates
+          const hScore = MatchingService.calculateHeuristicScore(student, c);
+          score = Math.round((score * 0.7) + (hScore * 0.3));
         }
 
         return {
@@ -104,68 +127,15 @@ export class MatchingService {
           matchScore: score,
           matchReason: reason,
         };
-      });
-
-      // Pure hybrid for remaining candidates (skipped by AI)
-      const unrankedMatches = remainingCandidates.map((c) => {
-        const hScore = MatchingService.calculateHeuristicScore(student, c);
-        const vectorScore = c.matchScore || 0;
-        const finalScore = Math.round((vectorScore * 0.7) + (hScore * 0.3));
-        
-        return {
-          ...c,
-          matchScore: finalScore,
-          matchReason: null,
-        };
-      });
-
-      const finalResults = [...rankedMatches, ...unrankedMatches].sort(
-        (a, b) => (b.matchScore || 0) - (a.matchScore || 0),
-      );
-
-      // --- STORE IN CACHE ---
-      try {
-        await redisConnection.set(cacheKey, JSON.stringify(finalResults), "EX", 1800); // 30 minutes
-      } catch (err) {
-        console.warn("[MatchingService] Failed to cache scholarship results:", err);
-      }
+      }).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
       return finalResults;
     } catch (err: any) {
-      if (err.status === 429 || err.message?.includes("429")) {
-        console.warn(
-          "[MatchingService] AI Rate limit hit (429). Falling back to hybrid vector-heuristic scoring.",
-        );
-      } else {
-        console.error(
-          "[MatchingService] AI Re-ranking failed, falling back to hybrid scores:",
-          err,
-        );
-      }
-
-      // Hybrid fallback strategy
-      const results = candidates
-        .map((c) => {
-          const hScore = MatchingService.calculateHeuristicScore(student, c);
-          const vectorScore = c.matchScore || 0;
-          const finalScore = Math.round((vectorScore * 0.7) + (hScore * 0.3));
-          
-          return {
-            ...c,
-            matchScore: finalScore,
-            matchReason: null,
-          };
-        })
-        .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-
-      // --- STORE IN CACHE (shorter ttl for fallbacks) ---
-      try {
-        await redisConnection.set(cacheKey, JSON.stringify(results), "EX", 300); // 5 minutes for fallback
-      } catch (cacheErr) {
-        console.warn("[MatchingService] Failed to cache fallback matching results:", cacheErr);
-      }
-
-      return results;
+      console.error("[MatchingService] List mapping failed, falling back:", err);
+      return candidates.map(c => ({
+          ...c,
+          matchScore: Math.round(((c.matchScore || 0) * 0.7) + (MatchingService.calculateHeuristicScore(student, c) * 0.3))
+      })).sort((a,b) => (b.matchScore || 0) - (a.matchScore || 0));
     }
   }
 

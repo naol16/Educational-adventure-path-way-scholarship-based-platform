@@ -31,7 +31,7 @@ export class AuthController {
 
   static async googleLogin(req: Request, res: Response, next: NextFunction) {
     try {
-      const { credential, idToken, id_token } = req.body;
+      const { credential, idToken, id_token, role } = req.body;
       const token = credential || idToken || id_token;
 
       if (!token) {
@@ -39,7 +39,7 @@ export class AuthController {
         return;
       }
 
-      const result = await AuthService.googleLogin(token);
+      const result = await AuthService.googleLogin(token, role);
       res.cookie("refreshToken", result.refreshToken, AuthController.getCookieOptions());
       res.json({
         user: result.user,

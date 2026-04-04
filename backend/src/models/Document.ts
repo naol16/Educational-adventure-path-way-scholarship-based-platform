@@ -28,6 +28,7 @@ export class Document extends Model {
     type: DataType.INTEGER,
     allowNull: false,
     field: "student_id",
+    onDelete: 'CASCADE'
   })
   declare studentId: number;
 
@@ -36,6 +37,7 @@ export class Document extends Model {
     type: DataType.INTEGER,
     allowNull: true,
     field: "counselor_id",
+    onDelete: 'CASCADE'
   })
   declare counselorId: number | null;
 

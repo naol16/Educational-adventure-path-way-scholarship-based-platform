@@ -12,8 +12,8 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
   return response.data;
 };
 
-export const googleLogin = async (credential: string): Promise<AuthResponse> => {
-  const response = await api.post('/auth/google-login', { credential });
+export const googleLogin = async (credential: string, role?: string): Promise<AuthResponse> => {
+  const response = await api.post('/auth/google-login', { credential, role });
   return response.data;
 };
 

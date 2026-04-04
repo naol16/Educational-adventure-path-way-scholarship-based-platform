@@ -26,7 +26,8 @@ export class Notification extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'user_id'
+        field: 'user_id',
+        onDelete: 'CASCADE'
     })
     declare userId: number;
 

@@ -18,8 +18,18 @@ export const ScholarshipCard = ({ scholarship }: ScholarshipCardProps) => {
 
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.2 }}
+      layout
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+      whileHover={{ y: -6, scale: 1.02, zIndex: 10 }}
+      transition={{ 
+        duration: 0.2, 
+        type: "spring", 
+        stiffness: 400, 
+        damping: 25 
+      }}
+      className="h-full"
     >
       <Card className="rounded-2xl border border-border/50 bg-card hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
         <CardBody className="p-6 flex flex-col h-full">

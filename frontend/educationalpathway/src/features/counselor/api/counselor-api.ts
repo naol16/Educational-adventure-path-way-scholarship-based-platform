@@ -36,8 +36,26 @@ export const getCounselorProfile = async () => {
   return response.data;
 };
 
-export const updateCounselorProfile = async (data: any) => {
-  const response = await api.put('/counselors/profile', data);
+export const updateCounselorProfile = async (payload: any) => {
+  const formData = new FormData();
+  
+  // Append all fields to FormData
+  Object.keys(payload).forEach(key => {
+    const value = payload[key];
+    if (value !== undefined && value !== null) {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (typeof value === 'object') {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, String(value));
+      }
+    }
+  });
+
+  const response = await api.put('/counselors/profile', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
   return response.data;
 };
 
@@ -56,8 +74,26 @@ export const updateBookingStatus = async (id: number, status: string) => {
   return response.data;
 };
 
-export const applyAsCounselor = async (data: any) => {
-  const response = await api.post('/counselors/apply', data);
+export const applyAsCounselor = async (payload: any) => {
+  const formData = new FormData();
+  
+  // Append all fields to FormData
+  Object.keys(payload).forEach(key => {
+    const value = payload[key];
+    if (value !== undefined && value !== null) {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (typeof value === 'object') {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, String(value));
+      }
+    }
+  });
+
+  const response = await api.post('/counselors/apply', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
   return response.data;
 };
 

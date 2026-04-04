@@ -212,7 +212,7 @@ export function SignupForm({
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
-                      googleLogin(credentialResponse.credential);
+                      googleLogin(credentialResponse.credential, formData.role);
                     }
                   }}
                   onError={() => setError("Google Signup Failed")}

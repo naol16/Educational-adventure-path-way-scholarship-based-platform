@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { getAllCounselors, updateCounselorVerification } from '../api/admin-api';
-import { Button, Card, CardBody, ConfirmModal } from '@/components/ui';
-import { Loader2, Check, X, FileText, User as UserIcon, ExternalLink, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button, ConfirmModal } from '@/components/ui';
+import { Loader2, Check, X, FileText, User as UserIcon, ExternalLink, ShieldCheck, Mail, MapPin, Briefcase, GraduationCap } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export const CounselorManagement = () => {
   const [counselors, setCounselors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [targetId, setTargetId] = useState<number | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedCounselor, setSelectedCounselor] = useState<any | null>(null);
 
   const fetchCounselors = async () => {
     setLoading(true);
@@ -34,6 +34,9 @@ export const CounselorManagement = () => {
     try {
       await updateCounselorVerification(id, 'verified');
       toast.success('Counselor accepted and verified');
+      if (selectedCounselor && selectedCounselor.id === id) {
+        setSelectedCounselor({ ...selectedCounselor, verificationStatus: 'verified' });
+      }
       fetchCounselors();
     } catch (error) {
       toast.error('Failed to accept counselor');
@@ -50,6 +53,9 @@ export const CounselorManagement = () => {
     try {
       await updateCounselorVerification(targetId, 'rejected');
       toast.success('Counselor application rejected');
+      if (selectedCounselor && selectedCounselor.id === targetId) {
+        setSelectedCounselor({ ...selectedCounselor, verificationStatus: 'rejected' });
+      }
       fetchCounselors();
     } catch (error) {
       toast.error('Failed to reject counselor');
@@ -59,8 +65,9 @@ export const CounselorManagement = () => {
     }
   };
 
-  const toggleExpand = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
+  const handleReview = (counselor: any) => {
+    setSelectedCounselor(counselor);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -71,191 +78,345 @@ export const CounselorManagement = () => {
     );
   }
 
+  // DETAILS VIEW (SECTION-BASED, NO CARDS)
+  if (selectedCounselor) {
+    return (
+      <div className="space-y-12 pb-24 max-w-6xl mx-auto px-4">
+        {/* Header Navigation */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border pb-8">
+          <div className="flex items-center gap-6">
+            <Button 
+               variant="ghost" 
+               onClick={() => setSelectedCounselor(null)}
+               className="h-10 px-0 hover:bg-transparent text-primary font-black uppercase text-xs tracking-widest flex items-center gap-2 group"
+            >
+              <div className="h-8 w-8 rounded-full border border-primary/20 flex items-center justify-center group-hover:bg-primary/5 transition-colors">←</div>
+              Back to List
+            </Button>
+            <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-4">
+              {selectedCounselor.profileImageUrl ? (
+                <img 
+                  src={selectedCounselor.profileImageUrl} 
+                  alt={selectedCounselor.name} 
+                  className="h-12 w-12 rounded-full object-cover border-2 border-primary/20"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-primary font-black">
+                  {selectedCounselor.name?.charAt(0)}
+                </div>
+              )}
+              <div>
+                <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter leading-none">{selectedCounselor.name}</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2 opacity-60 flex items-center gap-2">
+                  <ShieldCheck size={12} className="text-primary" /> Counselor Application Review
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+             {selectedCounselor.verificationStatus === 'pending' ? (
+                <>
+                  <Button 
+                    variant="outline"
+                    className="border-destructive/30 text-destructive font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg hover:bg-destructive/5"
+                    onClick={() => handleReject(selectedCounselor.id)}
+                  >
+                    Reject Application
+                  </Button>
+                  <Button 
+                    className="primary-gradient text-white font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all"
+                    onClick={() => handleAccept(selectedCounselor.id)}
+                  >
+                    Verify & Approve
+                  </Button>
+                </>
+             ) : (
+                <div className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest border ${
+                  selectedCounselor.verificationStatus === 'verified' ? 'bg-success/5 text-success border-success/20' : 'bg-destructive/5 text-destructive border-destructive/20'
+                }`}>
+                  Status: {selectedCounselor.verificationStatus}
+                </div>
+             )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          {/* Main Content Area */}
+          <div className="lg:col-span-8 space-y-16">
+            {/* Biography Section */}
+            <section className="space-y-6">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+                 <UserIcon size={16} /> Candidate Biography
+              </h3>
+              <div className="p-8 bg-muted/30 border border-border/50 rounded-2xl italic text-lg leading-relaxed text-foreground/80 font-medium">
+                "{selectedCounselor.bio || 'No professional biography provided.'}"
+              </div>
+              <div className="grid grid-cols-2 gap-8 pt-4">
+                 <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Years of Experience</p>
+                    <p className="text-3xl font-black text-foreground">{selectedCounselor.yearsOfExperience || 0} Years</p>
+                 </div>
+                 <div className="space-y-1 text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Hourly Rate</p>
+                    <p className="text-3xl font-black text-foreground">${selectedCounselor.hourlyRate || 0}/hr</p>
+                 </div>
+              </div>
+            </section>
+
+            {/* Employment & Academic Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-border/40">
+               <section className="space-y-6">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+                     <Briefcase size={16} /> Profession
+                  </h3>
+                  <div className="space-y-6">
+                     <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current Position</span>
+                        <p className="text-lg font-bold mt-1">{selectedCounselor.currentPosition || 'N/A'}</p>
+                     </div>
+                     <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Organization</span>
+                        <p className="text-lg font-bold mt-1">{selectedCounselor.organization || 'N/A'}</p>
+                     </div>
+                  </div>
+               </section>
+
+               <section className="space-y-6">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+                     <GraduationCap size={16} /> Education
+                  </h3>
+                  <div className="space-y-6">
+                     <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Highest Degree</span>
+                        <p className="text-lg font-bold mt-1">{selectedCounselor.highestEducationLevel || 'N/A'}</p>
+                     </div>
+                     <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">University</span>
+                        <p className="text-lg font-bold mt-1">{selectedCounselor.universityName || 'N/A'}</p>
+                     </div>
+                  </div>
+               </section>
+            </div>
+
+            {/* Tags Section */}
+            <section className="space-y-8 pt-8 border-t border-border/40">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-4">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Fields of Study</h4>
+                     <div className="flex flex-wrap gap-2">
+                        {(() => {
+                           try {
+                              const fields = JSON.parse(selectedCounselor.fieldsOfStudy || '[]');
+                              return fields.length > 0 ? fields.map((f: string) => (
+                                 <span key={f} className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-black uppercase tracking-tighter">{f}</span>
+                              )) : <span className="text-sm font-bold opacity-40 italic">Not specified</span>;
+                           } catch {
+                              return <span className="text-base font-bold text-foreground">{selectedCounselor.fieldsOfStudy || 'N/A'}</span>;
+                           }
+                        })()}
+                     </div>
+                  </div>
+                  <div className="space-y-4">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Expertise Areas</h4>
+                     <div className="flex flex-wrap gap-2">
+                        {(() => {
+                           try {
+                              const expertise = JSON.parse(selectedCounselor.areasOfExpertise || '[]');
+                              return expertise.length > 0 ? expertise.map((e: string) => (
+                                 <span key={e} className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-md text-[10px] font-black uppercase tracking-tighter">{e}</span>
+                              )) : <span className="text-sm font-bold opacity-40 italic">Not specified</span>;
+                           } catch {
+                              return <span className="text-base font-bold text-foreground">{selectedCounselor.areasOfExpertise || 'N/A'}</span>;
+                           }
+                        })()}
+                     </div>
+                  </div>
+               </div>
+            </section>
+          </div>
+
+          {/* Verification Sidebar (Plain, no cards) */}
+          <div className="lg:col-span-4 space-y-12">
+            <section className="space-y-8">
+               <div className="space-y-2">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Identity & Contact</h3>
+                  <div className="pt-4 space-y-6">
+                     <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Mail size={18} /></div>
+                        <div>
+                           <p className="text-[9px] font-black uppercase text-muted-foreground">Email Address</p>
+                           <p className="text-sm font-bold">{selectedCounselor.email}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><MapPin size={18} /></div>
+                        <div>
+                           <p className="text-[9px] font-black uppercase text-muted-foreground">Location</p>
+                           <p className="text-sm font-bold">{selectedCounselor.city}, {selectedCounselor.countryOfResidence}</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6 pt-8 border-t border-border/40">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+                     <FileText size={16} /> Review Verifications
+                  </h3>
+                  <div className="space-y-4">
+                     <div className="group flex flex-col p-6 bg-muted/10 border border-border/40 rounded-xl hover:border-primary/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                           <FileText className="text-primary" size={24} />
+                           <div className="flex items-center gap-2">
+                              <a href={selectedCounselor.cvUrl || selectedCounselor.documentUrl} target="_blank" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View</a>
+                              <span className="text-muted-foreground opacity-20">|</span>
+                              <a href={selectedCounselor.cvUrl || selectedCounselor.documentUrl} download className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Download</a>
+                           </div>
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest mt-4">Professional CV</span>
+                        <span className="text-[9px] text-muted-foreground mt-1 font-bold">Verify academic credentials</span>
+                     </div>
+
+                     <div className="group flex flex-col p-6 bg-muted/10 border border-border/40 rounded-xl hover:border-warning/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                           <UserIcon className="text-warning" size={24} />
+                           <div className="flex items-center gap-2">
+                              <a href={selectedCounselor.idCardUrl} target="_blank" className="text-[10px] font-black uppercase tracking-widest text-warning hover:underline">View</a>
+                              <span className="text-muted-foreground opacity-20">|</span>
+                              <a href={selectedCounselor.idCardUrl} download className="text-[10px] font-black uppercase tracking-widest text-warning hover:underline">Download</a>
+                           </div>
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest mt-4">Identity Card</span>
+                        <span className="text-[9px] text-muted-foreground mt-1 font-bold">Standard government ID</span>
+                     </div>
+
+                     <div className="group flex flex-col p-6 bg-muted/10 border border-border/40 rounded-xl hover:border-success/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                           <Check className="text-success" size={24} />
+                           <div className="flex items-center gap-2">
+                              <a href={selectedCounselor.selfieUrl} target="_blank" className="text-[10px] font-black uppercase tracking-widest text-success hover:underline">View</a>
+                              <span className="text-muted-foreground opacity-20">|</span>
+                              <a href={selectedCounselor.selfieUrl} download className="text-[10px] font-black uppercase tracking-widest text-success hover:underline">Download</a>
+                           </div>
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest mt-4">Persona Selfie</span>
+                        <span className="text-[9px] text-muted-foreground mt-1 font-bold">Real-time person verification</span>
+                     </div>
+
+                     {selectedCounselor.certificateUrls && (
+                       <div className="group flex flex-col p-6 bg-muted/10 border border-border/40 rounded-xl hover:border-primary/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                             <ShieldCheck className="text-primary" size={24} />
+                             <div className="flex items-center gap-2">
+                                <a href={selectedCounselor.certificateUrls} target="_blank" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View</a>
+                                <span className="text-muted-foreground opacity-20">|</span>
+                                <a href={selectedCounselor.certificateUrls} download className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Download</a>
+                             </div>
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-widest mt-4">Certificates & Awards</span>
+                          <span className="text-[9px] text-muted-foreground mt-1 font-bold">Additional supporting credentials</span>
+                       </div>
+                     )}
+                  </div>
+               </div>
+            </section>
+          </div>
+        </div>
+
+        <ConfirmModal
+          isOpen={isRejectModalOpen}
+          onClose={() => setIsRejectModalOpen(false)}
+          onConfirm={confirmReject}
+          title="Reject Counselor"
+          description="Confirm rejection of this applicant. This action cannot be undone easily."
+          confirmText="Reject Application"
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="space-y-1">
-          <h2 className="h2 text-2xl md:text-3xl font-black primary-gradient bg-clip-text text-transparent">Counselor Verification</h2>
-          <p className="text-muted-foreground text-sm font-medium">Review and verify counselor expertise and identity</p>
+    <div className="space-y-12 max-w-7xl mx-auto px-4 lg:px-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 border-b border-border pb-10">
+        <div className="space-y-4">
+          <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Counselor Inbox</h2>
+          <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Review, verify and authenticate student-facing experts
+          </p>
         </div>
         
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full">
-          <ShieldCheck size={16} className="text-primary" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary">Admin Control Panel</span>
+        <div className="flex flex-col items-end gap-2">
+           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Status Overview</span>
+           <div className="flex items-center gap-6 text-xs font-bold font-mono">
+              <span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-warning" /> {counselors.filter(c => c.verificationStatus === 'pending').length} Pending</span>
+              <span className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-success" /> {counselors.filter(c => c.verificationStatus === 'verified').length} Verified</span>
+           </div>
         </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="divide-y divide-border border-y border-border">
         {counselors.length > 0 ? (
           counselors.map((counselor, idx) => (
             <motion.div
               key={counselor.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: idx * 0.03 }}
+              onClick={() => handleReview(counselor)}
+              className="group py-6 px-4 lg:px-8 hover:bg-muted/30 cursor-pointer transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-6"
             >
-              <Card className={`border-border transition-all duration-300 ${expandedId === counselor.id ? 'ring-2 ring-primary/20 shadow-xl' : 'hover:shadow-md'}`}>
-                <CardBody className="p-0">
-                  {/* Summary Bar */}
-                  <div 
-                    className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => toggleExpand(counselor.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full primary-gradient text-white flex items-center justify-center font-black text-xl shadow-lg ring-2 ring-background">
-                        {counselor.name?.charAt(0) || 'A'}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg flex items-center gap-2">
-                          {counselor.name}
-                          {counselor.verificationStatus === 'verified' && <Check size={14} className="text-success" />}
-                        </h3>
-                        <p className="text-xs text-muted-foreground font-medium">{counselor.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="hidden md:block text-right">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Specialization</p>
-                        <p className="text-sm font-bold text-foreground">{counselor.areasOfExpertise || 'General Advising'}</p>
-                      </div>
-
-                      <div className="text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Status</p>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                          counselor.verificationStatus === 'verified' ? 'bg-success/10 text-success' : 
-                          counselor.verificationStatus === 'rejected' ? 'bg-destructive/10 text-destructive' : 
-                          'bg-warning/10 text-warning animate-pulse'
-                        }`}>
-                          {counselor.verificationStatus}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {counselor.verificationStatus === 'pending' && (
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAccept(counselor.id)}
-                              className="w-8 h-8 p-0 rounded-full hover:bg-success/20 text-success"
-                              title="Verify Counselor"
-                            >
-                              <Check size={16} strokeWidth={3} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReject(counselor.id)}
-                              className="w-8 h-8 p-0 rounded-full hover:bg-destructive/20 text-destructive"
-                              title="Reject Application"
-                            >
-                              <X size={16} strokeWidth={3} />
-                            </Button>
-                          </div>
-                        )}
-                        {expandedId === counselor.id ? <ChevronUp size={20} className="text-muted-foreground" /> : <ChevronDown size={20} className="text-muted-foreground" />}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content */}
-                  <AnimatePresence>
-                    {expandedId === counselor.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-muted/20 border-t border-border"
-                      >
-                        <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
-                          {/* Profile Data */}
-                          <div className="space-y-8">
-                            <div className="space-y-4">
-                              <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                <UserIcon size={14} /> Professional Profile
-                              </h4>
-                              <div className="bg-background/50 rounded-2xl p-6 border border-border/50">
-                                <p className="text-sm leading-relaxed text-foreground/80 italic">"{counselor.bio || 'No bio provided.'}"</p>
-                                <div className="mt-6 grid grid-cols-2 gap-4 border-t border-border/50 pt-6">
-                                  <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Exp Level</p>
-                                    <p className="font-bold text-sm">{counselor.yearsOfExperience || 0} Years</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hourly Rate</p>
-                                    <p className="font-bold text-sm">${counselor.hourlyRate || 0}/hr</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Verification Documents */}
-                          <div className="space-y-6">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                              <FileText size={14} /> Identity Documents
-                            </h4>
-                            <div className="grid grid-cols-1 gap-4">
-                              {/* CV */}
-                              <div className="space-y-2">
-                                <p className="text-[10px] font-black text-muted-foreground uppercase opacity-60">Full Resume</p>
-                                <a 
-                                  href={counselor.documentUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all ${counselor.documentUrl ? 'border-primary/20 bg-primary/5 hover:bg-primary/10' : 'border-border opacity-50 pointer-events-none'}`}
-                                >
-                                  <FileText className="text-primary mb-2" size={24} />
-                                  <span className="text-[10px] font-bold">View CV</span>
-                                  {counselor.documentUrl && <ExternalLink size={10} className="mt-1" />}
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Bottom Actions */}
-                        {counselor.verificationStatus === 'pending' && (
-                          <div className="px-8 py-6 bg-primary/5 border-t border-primary/10 flex justify-end gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="border-destructive/20 text-destructive hover:bg-destructive/10 font-bold text-xs uppercase"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(counselor.id);
-                              }}
-                            >
-                              Reject Application
-                            </Button>
-                            <Button 
-                              className="primary-gradient text-white font-bold text-xs uppercase tracking-widest px-8 shadow-lg shadow-primary/20"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAccept(counselor.id);
-                              }}
-                            >
-                              Approve Counselor
-                            </Button>
-                          </div>
-                        )}
-                      </motion.div>
+              <div className="flex items-center gap-6 min-w-0 flex-1">
+                 <div className="h-14 w-14 rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden shrink-0 group-hover:border-primary/50 transition-colors">
+                    {counselor.profileImageUrl ? (
+                      <img src={counselor.profileImageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-foreground font-black text-xl">{counselor.name?.charAt(0) || 'A'}</span>
                     )}
-                  </AnimatePresence>
-                </CardBody>
-              </Card>
+                 </div>
+                 <div className="min-w-0">
+                    <h3 className="font-black text-foreground text-xl tracking-tight leading-none group-hover:text-primary transition-colors flex items-center gap-3">
+                      {counselor.name}
+                      {counselor.verificationStatus === 'verified' && <Check size={18} className="text-success" />}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-3">
+                       <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-widest"><Mail size={12} className="opacity-50" /> {counselor.email}</span>
+                       <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-widest"><Briefcase size={12} className="opacity-50" /> {counselor.currentPosition || 'Generalist'}</span>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex items-center gap-12 shrink-0">
+                 <div className="hidden xl:block">
+                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Experience</p>
+                    <p className="text-sm font-black text-foreground">{counselor.yearsOfExperience || 0} Years</p>
+                 </div>
+                 
+                 <div>
+                    <span className={`px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2 border ${
+                       counselor.verificationStatus === 'verified' ? 'bg-success/5 text-success border-success/20' : 
+                       counselor.verificationStatus === 'rejected' ? 'bg-destructive/5 text-destructive border-destructive/20' : 
+                       'bg-warning/5 text-warning border-warning/20'
+                     }`}>
+                       <span className={`h-1 w-1 rounded-full ${counselor.verificationStatus === 'verified' ? 'bg-success' : counselor.verificationStatus === 'rejected' ? 'bg-destructive' : 'bg-warning'}`} />
+                       {counselor.verificationStatus}
+                    </span>
+                 </div>
+
+                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ExternalLink size={20} className="text-primary" />
+                 </div>
+              </div>
             </motion.div>
           ))
         ) : (
-          <Card className="border-dashed border-2 border-border bg-transparent">
-            <CardBody className="py-20 text-center">
-              <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6 text-muted-foreground">
-                <UserIcon size={40} />
-              </div>
-              <h3 className="text-xl font-bold text-foreground">No counselor applications found</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto mt-2">When experts apply to join the platform, their profiles will appear here for verification.</p>
-            </CardBody>
-          </Card>
+          <div className="py-32 text-center">
+            <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-6 text-muted-foreground">
+              <UserIcon size={24} />
+            </div>
+            <h3 className="text-xl font-black text-foreground uppercase tracking-tight">No counselors found</h3>
+            <p className="text-muted-foreground text-sm font-medium mt-2">The approval queue is currently empty.</p>
+          </div>
         )}
       </div>
 
@@ -263,11 +424,10 @@ export const CounselorManagement = () => {
         isOpen={isRejectModalOpen}
         onClose={() => setIsRejectModalOpen(false)}
         onConfirm={confirmReject}
-        title="Reject Counselor"
-        description="Are you sure you want to reject this counselor application? The user will be notified of this decision."
-        confirmText="Reject Application"
+        title="Reject Application"
+        description="Are you sure you want to permanently reject this counselor?"
+        confirmText="Confirm Rejection"
       />
     </div>
   );
 };
-

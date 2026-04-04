@@ -139,6 +139,10 @@ export class UserService {
     return UserRepository.update(id, { isActive: true });
   }
 
+  static async deleteUser(id: number): Promise<boolean> {
+    return UserRepository.delete(id);
+  }
+
   static async getAdminStats() {
     const totalUsers = await UserRepository.countAll();
     const students = await UserRepository.countByRole(UserRole.STUDENT);

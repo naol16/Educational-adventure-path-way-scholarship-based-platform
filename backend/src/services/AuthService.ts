@@ -54,7 +54,7 @@ export class AuthService {
     return this.generateAuthResponse(user);
   }
 
-  static async googleLogin(idToken: string) {
+  static async googleLogin(idToken: string, role?: string) {
     if (!idToken) {
       throw new Error("Google ID Token is required");
     }
@@ -70,12 +70,16 @@ export class AuthService {
     const { email, name, sub: googleId } = payload;
     let user = await UserRepository.findByEmail(email);
 
+    // Determine the role: if a valid role is provided, use it; otherwise default to STUDENT
+    const validRoles = [UserRole.STUDENT, UserRole.COUNSELOR];
+    const assignedRole = role && validRoles.includes(role as UserRole) ? (role as UserRole) : UserRole.STUDENT;
+
     if (!user) {
       user = await UserService.createUser({
         name: name || "Google User",
         email,
         googleId,
-        role: UserRole.STUDENT,
+        role: assignedRole,
       });
     } else if (!user.googleId) {
       // Link Google ID to existing account

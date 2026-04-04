@@ -13,25 +13,53 @@ const model = new ChatGoogleGenerativeAI({
   model: configs.GEMINI_MODEL as string,
   apiKey: configs.GEMINI_API_KEY as string,
   temperature: 0.0,
-  maxOutputTokens: 8192,
+  maxOutputTokens: 16384, // Increased to avoid truncation on detailed evaluations
 });
 
 export class AssessmentService {
   public static sanitizeJSONString(str: string): string {
     let cleaned = str.trim();
-    if (cleaned.startsWith("```json")) {
-      cleaned = cleaned.substring(7);
-    } else if (cleaned.startsWith("```")) {
-      cleaned = cleaned.substring(3);
-    }
-    if (cleaned.endsWith("```")) {
-      cleaned = cleaned.substring(0, cleaned.length - 3);
+    // 1. Remove markdown fragments if they exist anywhere
+    cleaned = cleaned.replace(/```json\s?/g, "");
+    cleaned = cleaned.replace(/```\s?/g, "");
+
+    // 2. Extract the actual JSON block using first { and last }
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
     }
 
-    // Replace unescaped control characters EXCEPT newlines and carriage returns
+    // 3. Remove control characters
     cleaned = cleaned.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, "");
 
     return cleaned.trim();
+  }
+
+  /**
+   * Attempts to fix a truncated JSON string by appending missing closing braces.
+   */
+  private static rescueTruncatedJSON(jsonStr: string): string {
+    let str = jsonStr.trim();
+    const openBraces = (str.match(/\{/g) || []).length;
+    const closeBraces = (str.match(/\}/g) || []).length;
+    const openBrackets = (str.match(/\[/g) || []).length;
+    const closeBrackets = (str.match(/\]/g) || []).length;
+
+    // If it ends mid-key or mid-value, try to close it roughly
+    if (str.endsWith(",") || str.split('"').length % 2 === 0) {
+      // Very rough trim to last safe end if in middle of string
+      if (str.split('"').length % 2 === 0) {
+        const lastQuote = str.lastIndexOf('"');
+        str = str.substring(0, lastQuote);
+      }
+      str = str.replace(/,$/, "");
+    }
+
+    for (let i = 0; i < openBrackets - closeBrackets; i++) str += "]";
+    for (let i = 0; i < openBraces - closeBraces; i++) str += "}";
+
+    return str;
   }
 
   /**
@@ -247,7 +275,7 @@ export class AssessmentService {
                - Include targeted vocabulary packs.
             
             4. INSTRUCTIONAL NOTES & FEEDBACK:
-               - For EACH skill (Reading, Listening, Writing, Speaking), generate a highly detailed "Actionable Study Note" (min 1000 characters).
+               - For EACH skill (Reading, Listening, Writing, Speaking), generate a highly detailed "Actionable Study Note" (min 500 characters).
                - Tone: Professional and analytical.
                - ETHIOPIAN CONTEXT: Incorporate Ethiopian analogies, real-world scenarios, or culturally relevant content to increase engagement without losing international testing rigor.
             
@@ -323,18 +351,19 @@ export class AssessmentService {
     let evaluation;
     let rawJson = "";
     try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      rawJson = jsonMatch ? jsonMatch[0] : response;
-      evaluation = JSON.parse(AssessmentService.sanitizeJSONString(rawJson));
-      console.log(evaluation);
+      rawJson = AssessmentService.sanitizeJSONString(response);
+      try {
+        evaluation = JSON.parse(rawJson);
+      } catch (innerError) {
+        // AI truncated? Attempt rescue.
+        const rescued = AssessmentService.rescueTruncatedJSON(rawJson);
+        evaluation = JSON.parse(rescued);
+        console.warn("⚠️ AI response was truncated but rescued successfully.");
+      }
+      console.log("✅ Evaluation Parsed Successfully");
     } catch (error) {
-      console.error("Failed to parse evaluation AI response:", response);
-
-      console.error(
-        "Sanitized JSON that failed parsing:",
-        AssessmentService.sanitizeJSONString(rawJson),
-      );
-      console.error(error);
+      console.error("❌ Failed to parse evaluation AI response:", response);
+      console.error("Sanitized JSON that failed parsing:", rawJson);
       throw new Error(
         "Assessment evaluation failed due to invalid AI response.",
       );

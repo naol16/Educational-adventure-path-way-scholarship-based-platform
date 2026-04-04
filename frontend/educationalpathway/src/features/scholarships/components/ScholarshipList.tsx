@@ -6,6 +6,7 @@ import { getScholarships } from "../api/get-scholarships";
 import { ScholarshipCard } from "./ScholarshipCard";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ScholarshipListProps {
   filters: ScholarshipFilters;
@@ -66,14 +67,16 @@ export const ScholarshipList = ({ filters, activeTab }: ScholarshipListProps) =>
         </div>
       ) : scholarships.length > 0 ? (
         /* Results Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {scholarships.map((s, idx) => (
-            <ScholarshipCard
-              key={s.id ?? idx}
-              scholarship={s}
-            />
-          ))}
-        </div>
+        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence mode="popLayout">
+            {scholarships.map((s, idx) => (
+              <ScholarshipCard
+                key={s.id || `card-${idx}`}
+                scholarship={s}
+              />
+            ))}
+          </AnimatePresence>
+        </motion.div>
       ) : (
         /* Empty State */
         <div className="text-center py-24 bg-muted/20 rounded-xl border-2 border-dashed border-border/50 px-4">

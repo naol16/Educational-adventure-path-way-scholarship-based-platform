@@ -36,7 +36,8 @@ export class ChatMessage extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'sender_id'
+        field: 'sender_id',
+        onDelete: 'CASCADE'
     })
     declare senderId: number;
 
