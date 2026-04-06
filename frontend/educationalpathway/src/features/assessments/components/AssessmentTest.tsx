@@ -86,6 +86,27 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function normalizeAssessmentResult(payload: any) {
+  if (!payload) return null;
+  if (
+    payload.evaluation ||
+    payload.overall_band !== undefined ||
+    payload.feedback_report ||
+    payload.status === "failed"
+  ) {
+    return payload;
+  }
+  if (
+    payload.data &&
+    (payload.data.evaluation ||
+      payload.data.overall_band !== undefined ||
+      payload.data.feedback_report)
+  ) {
+    return payload.data;
+  }
+  return payload;
+}
+
 export function AssessmentTest({ examData, onComplete }: Props) {
   const blueprint = examData.data || examData;
   const testId = blueprint.test_id || "";
@@ -264,13 +285,18 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     pollIntervalRef.current = setInterval(async () => {
       try {
         const res = await getAssessmentResult(testId);
-        if (res.status === "success") {
-          clearPollInterval();
-          setResult(res.data);
-          setIsSubmitting(false);
-        } else if (res.status === "failed") {
+        const normalized = normalizeAssessmentResult(res);
+
+        if (normalized?.status === "failed") {
           clearPollInterval();
           toast.error("Evaluation failed.");
+          setIsSubmitting(false);
+        } else if (
+          normalized &&
+          (normalized.evaluation || normalized.overall_band !== undefined)
+        ) {
+          clearPollInterval();
+          setResult(normalized);
           setIsSubmitting(false);
         }
         // Otherwise keep polling (waiting/active)
@@ -558,10 +584,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               </Card>
               <div className="space-y-5 h-140 overflow-y-auto custom-scrollbar pr-2">
                 {sections.reading?.questions?.map((q: any, i: number) => (
-                  <Card
-                    key={q.id || i}
-                    className="border border-border"
-                  >
+                  <Card key={q.id || i} className="border border-border">
                     <CardBody className="p-5">
                       <p className="font-semibold text-sm mb-4">
                         {i + 1}. {q.question}
@@ -650,10 +673,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               </Card>
               <div className="space-y-5 h-140 overflow-y-auto custom-scrollbar pr-2">
                 {sections.listening?.questions?.map((q: any, i: number) => (
-                  <Card
-                    key={q.id || i}
-                    className="border border-border"
-                  >
+                  <Card key={q.id || i} className="border border-border">
                     <CardBody className="p-5">
                       <p className="font-semibold text-sm mb-4">
                         {i + 1}. {q.question}

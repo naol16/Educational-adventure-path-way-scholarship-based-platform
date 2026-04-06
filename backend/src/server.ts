@@ -9,7 +9,6 @@ import { SocketService } from "./services/SocketService.js";
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
 import { assessmentWorker } from "./workers/AssessmentWorker.js";
 import { seedScholarshipSources } from "./scripts/seedScholarships.js";
-import { seedTestData } from "./scripts/seedsampleactuallscholarship.js";
 
 // Temporary: Global unhandled rejection handler for debugging
 process.on('unhandledRejection', (reason, promise) => {
@@ -46,10 +45,9 @@ async function start() {
         console.warn("⚠️ Assessment worker skipped (Redis not connected)");
     }
 
-    // // Initialize Scholarship Ingestion System
+    // Initialize Scholarship Ingestion System
     // await seedScholarshipSources();
     // startScholarshipCron();
-    // seedTestData();
 
   } catch (err) {
     console.error("Failed to connect to database:", err);

@@ -31,10 +31,10 @@ export class Student extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'user_id'
+        field: 'user_id',
+        onDelete: 'CASCADE'
     })
     declare userId: number;
-
     @Column({
         type: DataType.DECIMAL(3, 2),
         allowNull: true,
@@ -357,7 +357,7 @@ export class Student extends Model {
 
     // Embedding fields for vector search (added from dev branch)
     @Column({
-        type: 'HALFVEC(3072)',
+        type: 'VECTOR(3072)',
         allowNull: true,
     })
     declare embedding: any;

@@ -15,3 +15,8 @@ export const getRecommendedScholarships = async (): Promise<Scholarship[]> => {
   const response = await api.get('/scholarships/recommendations');
   return response.data;
 };
+
+export const getDashboardStats = async () => {
+  const response = await api.get('/scholarships/dashboard/stats');
+  return response.data;
+};

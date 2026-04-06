@@ -32,6 +32,7 @@ export const validate = (validations: any[]) => {
     }
 
     console.log('[validate] validation failed, sending 400');
+    console.log('[validate] validation errors:', JSON.stringify(errors.array(), null, 2));
     res.status(400).json({
       success: false,
       errors: errors.array()
@@ -195,10 +196,10 @@ export const updateBookingStatusValidation = [
 export const applyAsCounselorValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Bio must not exceed 2000 characters'),
+    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 500 }).withMessage('Areas of expertise must not exceed 500 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
   body('hourlyRate')
     .optional()
     .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')
@@ -206,16 +207,28 @@ export const applyAsCounselorValidation = [
   body('yearsOfExperience')
     .optional()
     .isInt({ min: 0 }).withMessage('Years of experience must be a non-negative integer')
-    .toInt()
+    .toInt(),
+  body('phoneNumber').optional().trim(),
+  body('countryOfResidence').optional().trim(),
+  body('city').optional().trim(),
+  body('currentPosition').optional().trim(),
+  body('organization').optional().trim(),
+  body('highestEducationLevel').optional().trim(),
+  body('universityName').optional().trim(),
+  body('studyCountry').optional().trim(),
+  body('fieldsOfStudy').optional().trim(),
+  body('languages').optional().trim(),
+  body('weeklySchedule').optional().isString(),
+  body('consultationModes').optional()
 ];
 
 export const updateCounselorProfileValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Bio must not exceed 2000 characters'),
+    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 500 }).withMessage('Areas of expertise must not exceed 500 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
   body('hourlyRate')
     .optional()
     .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')
@@ -223,7 +236,19 @@ export const updateCounselorProfileValidation = [
   body('yearsOfExperience')
     .optional()
     .isInt({ min: 0 }).withMessage('Years of experience must be a non-negative integer')
-    .toInt()
+    .toInt(),
+  body('phoneNumber').optional().trim(),
+  body('countryOfResidence').optional().trim(),
+  body('city').optional().trim(),
+  body('currentPosition').optional().trim(),
+  body('organization').optional().trim(),
+  body('highestEducationLevel').optional().trim(),
+  body('universityName').optional().trim(),
+  body('studyCountry').optional().trim(),
+  body('fieldsOfStudy').optional().trim(),
+  body('languages').optional().trim(),
+  body('weeklySchedule').optional().isString(),
+  body('consultationModes').optional()
 ];
 
 export const counselorDirectoryValidation = [

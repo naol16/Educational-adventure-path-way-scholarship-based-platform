@@ -17,7 +17,8 @@ import {
 export class CounselorController {
   static async apply(req: Request, res: Response, next: NextFunction) {
     try {
-      const counselor = await CounselorService.applyAsCounselor(req.user!.id, req.body as CreateCounselorDto);
+      const files = req.files || {};
+      const counselor = await CounselorService.applyAsCounselor(req.user!.id, req.body as CreateCounselorDto, files);
       res.status(201).json({
         success: true,
         message: 'Counselor application submitted successfully. Pending verification.',
@@ -66,7 +67,8 @@ export class CounselorController {
 
   static async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.updateProfile(req.user!.id, req.body as UpdateCounselorDto);
+      const files = req.files || {};
+      const data = await CounselorService.updateProfile(req.user!.id, req.body as UpdateCounselorDto, files);
       res.status(200).json({ success: true, message: 'Profile updated successfully', data });
     } catch (error) {
       next(error);

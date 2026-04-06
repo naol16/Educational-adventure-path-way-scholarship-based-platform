@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import { createTables, seedAdminUser, seedSampleUsers } from "../utils/databaseMigration.js";
+import { createTables, seedAdminUser } from "../utils/databaseMigration.js";
 import configs from "../config/configs.js";
 
 const initDB = async () => {
@@ -45,7 +45,6 @@ const initDB = async () => {
     try {
         await createTables();
         await seedAdminUser();
-        await seedSampleUsers();
         console.log("Database initialization complete!");
         process.exit(0);
     } catch (error) {

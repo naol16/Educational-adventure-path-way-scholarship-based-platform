@@ -27,7 +27,8 @@ export class LearningPathProgress extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'student_id'
+        field: 'student_id',
+        onDelete: 'CASCADE'
     })
     declare studentId: number;
 

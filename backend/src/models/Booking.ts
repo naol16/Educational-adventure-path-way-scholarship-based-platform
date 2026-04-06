@@ -28,7 +28,8 @@ export class Booking extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'student_id'
+        field: 'student_id',
+        onDelete: 'CASCADE'
     })
     declare studentId: number;
 
@@ -36,7 +37,8 @@ export class Booking extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'counselor_id'
+        field: 'counselor_id',
+        onDelete: 'CASCADE'
     })
     declare counselorId: number;
 

@@ -18,6 +18,7 @@ import { CounselorReviewRepository } from "../repositories/CounselorReviewReposi
 import { DocumentRepository } from "../repositories/DocumentRepository.js";
 import { CounselorMessageRepository } from "../repositories/CounselorMessageRepository.js";
 import { NotificationService } from "./NotificationService.js";
+import { FileService } from "./FileService.js";
 import {
   AdminVerificationDto,
   AdminVisibilityDto,
@@ -55,7 +56,7 @@ const httpError = (statusCode: number, message: string) =>
   Object.assign(new Error(message), { statusCode });
 
 export class CounselorService {
-  static async applyAsCounselor(userId: number, dto: CreateCounselorDto): Promise<CounselorResponse> {
+  static async applyAsCounselor(userId: number, dto: CreateCounselorDto, files?: any): Promise<CounselorResponse> {
     const existingCounselor = await CounselorRepository.findByUserId(userId);
     
     // If already exists and already onboarded, prevent re-application
@@ -63,12 +64,27 @@ export class CounselorService {
       throw httpError(409, "User already has a counselor profile");
     }
 
+    // Handle file uploads if any
+    let profileImageUrl = dto.profileImageUrl;
+    let cvUrl = dto.cvUrl;
+    let certificateUrls = dto.certificateUrls;
+    let idCardUrl = dto.idCardUrl;
+    let selfieUrl = dto.selfieUrl;
+
+    if (files) {
+      if (files.profileImageUrl) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
+      if (files.cvUrl) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
+      if (files.certificateUrls) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
+      if (files.idCardUrl) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
+      if (files.selfieUrl) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
+    }
+
     let counselor;
     if (existingCounselor) {
       // Update existing unonboarded profile
       counselor = await CounselorRepository.update(userId, {
         bio: dto.bio || existingCounselor.bio,
-        areasOfExpertise: dto.areasOfExpertise || dto.specializations?.join(", ") || existingCounselor.areasOfExpertise,
+        areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || existingCounselor.areasOfExpertise),
         hourlyRate: Number(dto.hourlyRate) || existingCounselor.hourlyRate,
         yearsOfExperience: Number(dto.yearsOfExperience) || existingCounselor.yearsOfExperience,
         verificationStatus: "pending",
@@ -76,51 +92,53 @@ export class CounselorService {
         phoneNumber: dto.phoneNumber || existingCounselor.phoneNumber,
         countryOfResidence: dto.countryOfResidence || existingCounselor.countryOfResidence,
         city: dto.city || existingCounselor.city,
-        specializedCountries: dto.specializedCountries || existingCounselor.specializedCountries,
+        specializedCountries: dto.specializedCountries ? (typeof dto.specializedCountries === 'string' ? dto.specializedCountries : JSON.stringify(dto.specializedCountries)) : existingCounselor.specializedCountries,
         currentPosition: dto.currentPosition || existingCounselor.currentPosition,
         organization: dto.organization || existingCounselor.organization,
         highestEducationLevel: dto.highestEducationLevel || existingCounselor.highestEducationLevel,
         universityName: dto.universityName || existingCounselor.universityName,
         studyCountry: dto.studyCountry || existingCounselor.studyCountry,
-        languages: dto.languages || existingCounselor.languages,
-        fieldsOfStudy: dto.fieldsOfStudy || existingCounselor.fieldsOfStudy,
+        languages: dto.languages ? (typeof dto.languages === 'string' ? dto.languages : JSON.stringify(dto.languages)) : existingCounselor.languages,
+        fieldsOfStudy: dto.fieldsOfStudy ? (typeof dto.fieldsOfStudy === 'string' ? dto.fieldsOfStudy : JSON.stringify(dto.fieldsOfStudy)) : existingCounselor.fieldsOfStudy,
         weeklySchedule: dto.weeklySchedule || existingCounselor.weeklySchedule,
         sessionDuration: dto.sessionDuration || existingCounselor.sessionDuration,
-        consultationModes: dto.consultationModes ? JSON.stringify(dto.consultationModes) : existingCounselor.consultationModes,
-        profileImageUrl: dto.profileImageUrl || existingCounselor.profileImageUrl,
-        cvUrl: dto.cvUrl || existingCounselor.cvUrl,
-        certificateUrls: dto.certificateUrls || existingCounselor.certificateUrls,
+        consultationModes: dto.consultationModes ? (typeof dto.consultationModes === 'string' ? dto.consultationModes : JSON.stringify(dto.consultationModes)) : existingCounselor.consultationModes,
+        profileImageUrl: profileImageUrl || existingCounselor.profileImageUrl,
+        cvUrl: cvUrl || existingCounselor.cvUrl,
+        certificateUrls: certificateUrls || existingCounselor.certificateUrls,
+        idCardUrl: idCardUrl || existingCounselor.idCardUrl,
+        selfieUrl: selfieUrl || existingCounselor.selfieUrl,
       });
     } else {
       // Create new profile
       counselor = await CounselorRepository.create({
         userId,
       bio: dto.bio || "",
-      areasOfExpertise: dto.areasOfExpertise || dto.specializations?.join(", ") || "",
+      areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || ""),
       hourlyRate: Number(dto.hourlyRate) || 0,
       yearsOfExperience: Number(dto.yearsOfExperience) || 0,
       verificationStatus: "pending",
       isActive: true,
       isOnboarded: dto.isOnboarded || false,
-      idCardUrl: dto.idCardUrl || null,
-      selfieUrl: dto.selfieUrl || null,
+      idCardUrl: idCardUrl || null,
+      selfieUrl: selfieUrl || null,
       phoneNumber: dto.phoneNumber || null,
       countryOfResidence: dto.countryOfResidence || null,
       city: dto.city || null,
-      specializedCountries: dto.specializedCountries || null,
+      specializedCountries: dto.specializedCountries ? (typeof dto.specializedCountries === 'string' ? dto.specializedCountries : JSON.stringify(dto.specializedCountries)) : null,
       currentPosition: dto.currentPosition || null,
       organization: dto.organization || null,
       highestEducationLevel: dto.highestEducationLevel || null,
       universityName: dto.universityName || null,
       studyCountry: dto.studyCountry || null,
-      languages: dto.languages || null,
-      fieldsOfStudy: dto.fieldsOfStudy || null,
+      languages: dto.languages ? (typeof dto.languages === 'string' ? dto.languages : JSON.stringify(dto.languages)) : null,
+      fieldsOfStudy: dto.fieldsOfStudy ? (typeof dto.fieldsOfStudy === 'string' ? dto.fieldsOfStudy : JSON.stringify(dto.fieldsOfStudy)) : null,
       weeklySchedule: dto.weeklySchedule || null,
       sessionDuration: dto.sessionDuration || 60,
-      consultationModes: dto.consultationModes ? JSON.stringify(dto.consultationModes) : null,
-      profileImageUrl: dto.profileImageUrl || null,
-      cvUrl: dto.cvUrl || null,
-      certificateUrls: dto.certificateUrls || null,
+      consultationModes: dto.consultationModes ? (typeof dto.consultationModes === 'string' ? dto.consultationModes : JSON.stringify(dto.consultationModes)) : null,
+      profileImageUrl: profileImageUrl || null,
+      cvUrl: cvUrl || null,
+      certificateUrls: certificateUrls || null,
       extractedData: JSON.stringify(this.mergeMetadata(null, dto)),
       });
     }
@@ -250,11 +268,13 @@ export class CounselorService {
     if (!student) throw httpError(404, "Student profile not found");
 
     const studentProfileSignal = [
-      student.studyPreferences,
-      student.academicHistory,
+      typeof student.studyPreferences === 'object' ? JSON.stringify(student.studyPreferences) : student.studyPreferences,
+      typeof student.academicHistory === 'object' ? JSON.stringify(student.academicHistory) : student.academicHistory,
       student.countryInterest,
       student.academicStatus,
-      student.extractedData,
+      student.fieldOfStudy,
+      student.researchArea,
+      typeof student.extractedData === 'object' ? JSON.stringify(student.extractedData) : student.extractedData,
     ]
       .filter(Boolean)
       .join(" ")
@@ -275,17 +295,35 @@ export class CounselorService {
         const expertiseText = (counselor.areasOfExpertise || "").toLowerCase();
         if (expertiseText && this.hasTokenOverlap(expertiseText, studentProfileSignal)) {
           recommendationScore += 2;
-          matchReasons.push("specialization aligns with student profile");
+          matchReasons.push("Expertise aligns with your academic focus");
         }
 
-        if (metadata.currentUniversity && studentProfileSignal.includes(metadata.currentUniversity.toLowerCase())) {
-          recommendationScore += 2;
-          matchReasons.push("same target/current university context");
+        // Check target study countries
+        const counselorCountries = [
+            counselor.studyCountry, 
+            counselor.specializedCountries, 
+            counselor.countryOfResidence
+        ].join(" ").toLowerCase();
+        
+        const studentCountries = (student.countryInterest || "").toLowerCase();
+        
+        if (studentCountries && counselorCountries && this.hasTokenOverlap(counselorCountries, studentCountries)) {
+            recommendationScore += 5;
+            matchReasons.push(`Direct experience in your target country`);
         }
 
-        if (metadata.currentDegreeLevel && studentProfileSignal.includes(metadata.currentDegreeLevel.toLowerCase())) {
+        // Check target universe/institution
+        const uniName = (counselor.universityName || metadata.currentUniversity || "").toLowerCase();
+        if (uniName && uniName.length > 3 && studentProfileSignal.includes(uniName)) {
+          recommendationScore += 4;
+          matchReasons.push("Attended your prospective university");
+        }
+
+        // Check degree level alignment
+        const degLevel = (counselor.highestEducationLevel || metadata.currentDegreeLevel || "").toLowerCase();
+        if (degLevel && studentProfileSignal.includes(degLevel)) {
           recommendationScore += 1;
-          matchReasons.push("degree level alignment");
+          matchReasons.push("Education level alignment");
         }
 
         const base = this.formatCounselorResponse(counselor, (counselor as any).user || null);
@@ -315,37 +353,52 @@ export class CounselorService {
     };
   }
 
-  static async updateProfile(userId: number, dto: UpdateCounselorDto): Promise<CounselorResponse> {
+  static async updateProfile(userId: number, dto: UpdateCounselorDto, files?: any): Promise<CounselorResponse> {
     const counselor = await CounselorRepository.findByUserId(userId);
     if (!counselor) throw httpError(404, "Counselor profile not found");
 
+    // Handle file uploads if any
+    let profileImageUrl = dto.profileImageUrl;
+    let cvUrl = dto.cvUrl;
+    let certificateUrls = dto.certificateUrls;
+    let idCardUrl = dto.idCardUrl;
+    let selfieUrl = dto.selfieUrl;
+
+    if (files) {
+      if (files.profileImageUrl) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
+      if (files.cvUrl) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
+      if (files.certificateUrls) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
+      if (files.idCardUrl) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
+      if (files.selfieUrl) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
+    }
+
     await counselor.update({
       bio: dto.bio ?? counselor.bio,
-      areasOfExpertise: dto.areasOfExpertise ?? dto.specializations?.join(", ") ?? counselor.areasOfExpertise,
+      areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") ?? counselor.areasOfExpertise),
       hourlyRate: dto.hourlyRate !== undefined ? (Number(dto.hourlyRate) || 0) : counselor.hourlyRate,
       yearsOfExperience: dto.yearsOfExperience !== undefined ? (Number(dto.yearsOfExperience) || 0) : counselor.yearsOfExperience,
       extractedData: JSON.stringify(this.mergeMetadata(counselor.extractedData, dto)),
       isOnboarded: dto.isOnboarded ?? counselor.isOnboarded,
       documentUrl: dto.documentUrl ?? counselor.documentUrl,
-      idCardUrl: dto.idCardUrl ?? counselor.idCardUrl,
-      selfieUrl: dto.selfieUrl ?? counselor.selfieUrl,
+      idCardUrl: idCardUrl ?? counselor.idCardUrl,
+      selfieUrl: selfieUrl ?? counselor.selfieUrl,
       phoneNumber: dto.phoneNumber ?? counselor.phoneNumber,
       countryOfResidence: dto.countryOfResidence ?? counselor.countryOfResidence,
       city: dto.city ?? counselor.city,
-      specializedCountries: dto.specializedCountries ?? counselor.specializedCountries,
+      specializedCountries: dto.specializedCountries ? (typeof dto.specializedCountries === 'string' ? dto.specializedCountries : JSON.stringify(dto.specializedCountries)) : counselor.specializedCountries,
       currentPosition: dto.currentPosition ?? counselor.currentPosition,
       organization: dto.organization ?? counselor.organization,
       highestEducationLevel: dto.highestEducationLevel ?? counselor.highestEducationLevel,
       universityName: dto.universityName ?? counselor.universityName,
       studyCountry: dto.studyCountry ?? counselor.studyCountry,
-      languages: dto.languages ?? counselor.languages,
-      fieldsOfStudy: dto.fieldsOfStudy ?? counselor.fieldsOfStudy,
+      languages: dto.languages ? (typeof dto.languages === 'string' ? dto.languages : JSON.stringify(dto.languages)) : counselor.languages,
+      fieldsOfStudy: dto.fieldsOfStudy ? (typeof dto.fieldsOfStudy === 'string' ? dto.fieldsOfStudy : JSON.stringify(dto.fieldsOfStudy)) : counselor.fieldsOfStudy,
       weeklySchedule: dto.weeklySchedule ?? counselor.weeklySchedule,
       sessionDuration: dto.sessionDuration ?? counselor.sessionDuration,
-      consultationModes: dto.consultationModes ? JSON.stringify(dto.consultationModes) : counselor.consultationModes,
-      profileImageUrl: dto.profileImageUrl ?? counselor.profileImageUrl,
-      cvUrl: dto.cvUrl ?? counselor.cvUrl,
-      certificateUrls: dto.certificateUrls ?? counselor.certificateUrls,
+      consultationModes: dto.consultationModes ? (typeof dto.consultationModes === 'string' ? dto.consultationModes : JSON.stringify(dto.consultationModes)) : counselor.consultationModes,
+      profileImageUrl: profileImageUrl ?? counselor.profileImageUrl,
+      cvUrl: cvUrl ?? counselor.cvUrl,
+      certificateUrls: certificateUrls ?? counselor.certificateUrls,
     });
 
     const user = await User.findByPk(userId);
@@ -666,9 +719,25 @@ export class CounselorService {
 
   static async adminList(): Promise<CounselorResponse[]> {
     const counselors = await Counselor.findAll({
-      include: [{ model: User, as: "user", attributes: ["name", "email"] }],
+      include: [{ 
+        model: User, 
+        as: "user", 
+        attributes: ["id", "name", "email"] 
+      }],
     });
-    return counselors.map((counselor) => this.formatCounselorResponse(counselor, (counselor as any).user || null));
+
+    return await Promise.all(counselors.map(async (c) => {
+      const plain = c.get({ plain: true });
+      let u = plain.user || plain.User || (c as any).user || (c as any).User || null;
+      
+      // ABSOLUTE FALLBACK: If join failed for some reason, look up manually
+      if (!u) {
+        console.warn(`[adminList] Join failure for Counselor ${c.id}, attempting direct lookup for User ${c.userId}`);
+        u = await User.findByPk(c.userId, { attributes: ["id", "name", "email"] });
+      }
+      
+      return this.formatCounselorResponse(c, u);
+    }));
   }
 
   static async updateVisibility(counselorId: number, dto: AdminVisibilityDto): Promise<CounselorResponse> {

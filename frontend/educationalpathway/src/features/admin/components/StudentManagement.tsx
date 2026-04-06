@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { User } from '@/features/auth/types';
-import { getAllUsers } from '../api/admin-api';
+import { getAllUsers, deleteUser } from '../api/admin-api';
 
 import { Button, Card, CardBody } from '@/components/ui';
 import { Loader2, Edit, Trash2, Mail } from 'lucide-react';
@@ -41,7 +41,7 @@ export const StudentManagement = () => {
     if (!studentToDelete) return;
 
     try {
-      // In a real app, call delete API: await deleteUser(studentToDelete);
+      await deleteUser(studentToDelete);
       toast.success('Student deleted');
       fetchStudents();
     } catch {

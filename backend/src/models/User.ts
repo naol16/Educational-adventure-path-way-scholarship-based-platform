@@ -16,6 +16,7 @@ import { RefreshToken } from "./RefreshToken.js";
 import { PasswordResetToken } from "./PasswordResetToken.js";
 import { Consultation } from "./Consultation.js";
 import { Counselor } from "./Counselor.js";
+import { Notification } from "./Notification.js";
 import { UserRole } from "../types/userTypes.js";
 
 @Table({
@@ -97,18 +98,21 @@ export class User extends Model {
 
 
     // Associations
-    @HasMany(() => RefreshToken)
+    @HasMany(() => RefreshToken, { onDelete: 'CASCADE' })
     refreshTokens!: RefreshToken[];
 
-    @HasMany(() => PasswordResetToken)
+    @HasMany(() => PasswordResetToken, { onDelete: 'CASCADE' })
     passwordResetTokens!: PasswordResetToken[];
 
-    @HasMany(() => Consultation, 'student_id')
+    @HasMany(() => Consultation, { foreignKey: 'student_id', onDelete: 'CASCADE' })
     consultationsAsStudent!: Consultation[];
 
-    @HasMany(() => Consultation, 'counselor_id')
+    @HasMany(() => Consultation, { foreignKey: 'counselor_id', onDelete: 'CASCADE' })
     consultationsAsCounselor!: Consultation[];
 
-    @HasOne(() => Counselor)
+    @HasOne(() => Counselor, { onDelete: 'CASCADE' })
     counselor!: Counselor;
+
+    @HasMany(() => Notification, { onDelete: 'CASCADE' })
+    notifications!: Notification[];
 }

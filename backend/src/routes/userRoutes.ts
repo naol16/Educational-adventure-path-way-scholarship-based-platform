@@ -69,4 +69,11 @@ router.put(
   UserController.activateUser,
 );
 
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(UserRole.ADMIN),
+  UserController.deleteUser,
+);
+
 export default router;
