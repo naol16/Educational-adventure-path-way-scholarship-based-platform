@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -55,4 +56,26 @@ Map<String, dynamic> decodeJsonObject(http.Response r) {
     );
   }
   return map;
+}
+
+void logRequest(String method, Uri uri, {Map<String, String>? headers, Object? body}) {
+  if (kDebugMode) {
+    debugPrint('--- HTTP REQUEST ---');
+    debugPrint('$method $uri');
+    if (headers != null) debugPrint('Headers: $headers');
+    if (body != null) debugPrint('Body: $body');
+    debugPrint('--------------------');
+  }
+}
+
+void logResponse(http.Response response) {
+  if (kDebugMode) {
+    debugPrint('--- HTTP RESPONSE ---');
+    debugPrint('${response.statusCode} ${response.request?.url}');
+    debugPrint('Body: ${response.body}');
+    if (response.headers.containsKey('set-cookie')) {
+      debugPrint('Set-Cookie: ${response.headers['set-cookie']}');
+    }
+    debugPrint('---------------------');
+  }
 }

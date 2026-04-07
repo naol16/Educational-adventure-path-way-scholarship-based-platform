@@ -41,7 +41,10 @@ class ApiClient {
     final uri = Uri.parse(ApiConfig.apiPath('/api/auth/refresh-token'));
     final headers = await _headers(withAuth: false);
     headers['Cookie'] = 'refreshToken=$refresh';
+    
+    logRequest('POST', uri, headers: headers);
     final response = await _http.post(uri, headers: headers);
+    logResponse(response);
 
     if (response.statusCode != 200) return false;
 
@@ -71,10 +74,11 @@ class ApiClient {
       if (query != null && query.isNotEmpty) {
         uri = uri.replace(queryParameters: {...uri.queryParameters, ...query});
       }
-      return _http.get(
-        uri,
-        headers: await _headers(withAuth: auth, accessToken: access),
-      );
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      logRequest('GET', uri, headers: headers);
+      final response = await _http.get(uri, headers: headers);
+      logResponse(response);
+      return response;
     }
 
     if (!auth) return once(null);
@@ -95,11 +99,12 @@ class ApiClient {
   }) async {
     Future<http.Response> once(String? access) async {
       final uri = Uri.parse(ApiConfig.apiPath(path));
-      return _http.post(
-        uri,
-        headers: await _headers(withAuth: auth, accessToken: access),
-        body: body == null ? null : jsonEncode(body),
-      );
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      final encodedBody = body == null ? null : jsonEncode(body);
+      logRequest('POST', uri, headers: headers, body: encodedBody);
+      final response = await _http.post(uri, headers: headers, body: encodedBody);
+      logResponse(response);
+      return response;
     }
 
     if (!auth) return once(null);
@@ -120,11 +125,12 @@ class ApiClient {
   }) async {
     Future<http.Response> once(String? access) async {
       final uri = Uri.parse(ApiConfig.apiPath(path));
-      return _http.patch(
-        uri,
-        headers: await _headers(withAuth: auth, accessToken: access),
-        body: body == null ? null : jsonEncode(body),
-      );
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      final encodedBody = body == null ? null : jsonEncode(body);
+      logRequest('PATCH', uri, headers: headers, body: encodedBody);
+      final response = await _http.patch(uri, headers: headers, body: encodedBody);
+      logResponse(response);
+      return response;
     }
 
     if (!auth) return once(null);

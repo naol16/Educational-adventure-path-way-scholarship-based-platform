@@ -65,19 +65,24 @@ class AuthApiService {
     required String password,
     String role = 'student',
   }) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/auth/register'));
+    final headers = const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {
+      'name': name,
+      'email': email,
+      'password': password,
+      'role': role,
+    };
+    logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
-      Uri.parse(ApiConfig.apiPath('/api/auth/register')),
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'password': password,
-        'role': role,
-      }),
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
     );
+    logResponse(response);
     final session = _sessionFromLoginResponse(response);
     await _persistSession(session);
     return session;
@@ -87,28 +92,38 @@ class AuthApiService {
     required String email,
     required String password,
   }) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/auth/login'));
+    final headers = const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {'email': email, 'password': password};
+    logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
-      Uri.parse(ApiConfig.apiPath('/api/auth/login')),
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'email': email, 'password': password}),
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
     );
+    logResponse(response);
     final session = _sessionFromLoginResponse(response);
     await _persistSession(session);
     return session;
   }
 
   Future<AuthSession> googleLogin({required String idToken}) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/auth/google-login'));
+    final headers = const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {'credential': idToken};
+    logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
-      Uri.parse(ApiConfig.apiPath('/api/auth/google-login')),
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'credential': idToken}),
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
     );
+    logResponse(response);
     final session = _sessionFromLoginResponse(response);
     await _persistSession(session);
     return session;
