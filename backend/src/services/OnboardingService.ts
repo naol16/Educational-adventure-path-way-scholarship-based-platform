@@ -97,7 +97,11 @@ export class OnboardingService {
                 academicHistory: updateData.academicHistory ? (typeof updateData.academicHistory === 'string' ? updateData.academicHistory : JSON.stringify(updateData.academicHistory)) : "[]",
                 studyPreferences: updateData.studyPreferences || "",
                 intakeSeason: updateData.intakeSeason || null,
-                fundingRequirement: updateData.preferredFundingType || updateData.fundingType || updateData.fundingRequirement || null,
+                fundingRequirement: (updateData.preferredFundingType || updateData.fundingType || updateData.fundingRequirement) 
+                    ? (typeof (updateData.preferredFundingType || updateData.fundingType || updateData.fundingRequirement) === 'string' 
+                        ? (updateData.preferredFundingType || updateData.fundingType || updateData.fundingRequirement) 
+                        : JSON.stringify(updateData.preferredFundingType || updateData.fundingType || updateData.fundingRequirement)) 
+                    : null,
                 gender: updateData.gender || null,
                 age: updateData.age || null,
                 workExperience: updateData.workExperience ? (typeof updateData.workExperience === 'string' ? updateData.workExperience : JSON.stringify(updateData.workExperience)) : null,
