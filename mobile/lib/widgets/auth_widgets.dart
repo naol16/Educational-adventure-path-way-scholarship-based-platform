@@ -75,6 +75,9 @@ class CustomTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final bool isPassword;
   final TextEditingController controller;
+  final ValueChanged<String>? onChanged;
+  final TextInputType keyboardType;
+  final int maxLines;
 
   const CustomTextField({
     super.key,
@@ -82,6 +85,9 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.isPassword = false,
     required this.controller,
+    this.onChanged,
+    this.keyboardType = TextInputType.text,
+    this.maxLines = 1,
   });
 
   @override
@@ -91,6 +97,9 @@ class CustomTextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: isPassword,
+        onChanged: onChanged,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: AppColors.textLight),

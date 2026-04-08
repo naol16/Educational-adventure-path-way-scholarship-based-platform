@@ -92,6 +92,13 @@ class AuthNotifier extends AsyncNotifier<User?> {
       return await _authService.fetchCurrentUser();
     });
   }
+
+  Future<void> completeOnboarding(Map<String, dynamic> data) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      return await _authService.updateProfile(data);
+    });
+  }
 }
 
 final authProvider = AsyncNotifierProvider<AuthNotifier, User?>(AuthNotifier.new);

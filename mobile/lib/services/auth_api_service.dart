@@ -157,5 +157,54 @@ class AuthApiService {
     }
   }
 
+  Future<User> updateProfile(Map<String, dynamic> data) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/onboarding/update-profile'));
+    final request = http.MultipartRequest('PUT', uri);
+
+    final accessToken = await _tokens.readAccessToken();
+    if (accessToken != null) {
+      request.headers['Authorization'] = 'Bearer $accessToken';
+    }
+    request.headers['Accept'] = 'application/json';
+
+    // Separate files from other fields
+    for (final entry in data.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      if (value == null) continue;
+
+      if (key == 'documents' && value is Map<String, dynamic>) {
+        for (final docEntry in value.entries) {
+          final filePath = docEntry.value;
+          if (filePath is String && filePath.isNotEmpty) {
+            final file = await http.MultipartFile.fromPath(docEntry.key, filePath);
+            request.files.add(file);
+          }
+        }
+      } else if (value is List) {
+        request.fields[key] = jsonEncode(value);
+      } else if (value is Map) {
+        request.fields[key] = jsonEncode(value);
+      } else {
+        request.fields[key] = value.toString();
+      }
+    }
+
+    logRequest('PUT (Multipart)', uri, headers: request.headers, body: request.fields);
+    final streamedResponse = await _http.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    logResponse(response);
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throwForResponse(response, fallback: 'Failed to update profile');
+    }
+
+    final map = decodeJsonObject(response);
+    // The backend might return the user in a 'user' field or as the root
+    final userMap = asJsonMap(map['user']) ?? map;
+    return User.fromJson(userMap);
+  }
+
   void close() => _http.close();
 }
