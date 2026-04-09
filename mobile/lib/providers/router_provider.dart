@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/screens.dart';
+import '../features/core/screens/main_layout_screen.dart';
 import 'auth_provider.dart';
 
 /// Notifies [GoRouter] when [authProvider] changes so top-level [redirect] runs again.
@@ -82,7 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const MainLayoutScreen(),
       ),
     ],
   );

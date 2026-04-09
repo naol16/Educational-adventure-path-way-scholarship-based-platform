@@ -12,6 +12,7 @@ import '../providers/onboarding_provider.dart';
 import '../utils/app_colors.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/onboarding_widgets.dart';
+import '../widgets/matching_analysis_overlay.dart';
 
 class StudentOnboardingScreen extends ConsumerStatefulWidget {
   const StudentOnboardingScreen({super.key});
@@ -24,6 +25,9 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 3;
+  bool _isAnalyzing = false;
+  bool _isUploading = false;
+  bool _animFinished = false;
 
   @override
   void dispose() {
@@ -48,13 +52,22 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
   }
 
   Future<void> _submit() async {
+    setState(() {
+      _isAnalyzing = true;
+      _isUploading = true;
+      _animFinished = false;
+    });
+
     try {
       await ref.read(onboardingProvider.notifier).submit();
-      if (mounted) {
-        context.go('/home');
-      }
+      _isUploading = false;
+      _checkNavigate();
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+          _isUploading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to submit: $e')),
         );
@@ -62,8 +75,23 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
     }
   }
 
+  void _checkNavigate() {
+    if (!_isUploading && _animFinished && _isAnalyzing && mounted) {
+      context.go('/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isAnalyzing) {
+      return MatchingAnalysisOverlay(
+        onComplete: () {
+          _animFinished = true;
+          _checkNavigate();
+        },
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(

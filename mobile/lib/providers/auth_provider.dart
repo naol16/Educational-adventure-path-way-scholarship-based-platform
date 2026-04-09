@@ -29,6 +29,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
       final session = await _authService.login(email: email, password: password);
       return session.user;
     });
+    if (state.hasError) throw state.error!;
   }
 
   Future<void> register({
@@ -47,6 +48,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
       );
       return session.user;
     });
+    if (state.hasError) throw state.error!;
   }
 
   Future<void> loginWithGoogle() async {
@@ -98,6 +100,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     state = await AsyncValue.guard(() async {
       return await _authService.updateProfile(data);
     });
+    if (state.hasError) throw state.error!;
   }
 }
 
