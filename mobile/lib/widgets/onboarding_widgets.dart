@@ -93,7 +93,7 @@ class SelectableCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (trailing != null) trailing!,
+            ?trailing,
             if (isSelected && trailing == null)
               const Icon(
                 Icons.check_circle,
@@ -134,7 +134,7 @@ class UploadBox extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: hasFile
-              ? AppColors.iconBackground.withOpacity(0.5)
+              ? AppColors.iconBackground.withValues(alpha: 0.5)
               : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
