@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
-import '../utils/app_colors.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../utils/design_system.dart';
 
 // 1. The Green Progress Bar at the top
 class StepProgress extends StatelessWidget {
@@ -21,26 +22,39 @@ class StepProgress extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "$title ($currentStep/$totalSteps)".toUpperCase(),
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textLight,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: DesignSystem.headingStyle(fontSize: 18),
+            ),
+            Text(
+              "$currentStep of $totalSteps",
+              style: DesignSystem.labelStyle(color: DesignSystem.emerald),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         Row(
           children: List.generate(totalSteps, (index) {
+            final isActive = index < currentStep;
             return Expanded(
               child: Container(
-                margin: const EdgeInsets.only(right: 4),
-                height: 4,
+                margin: EdgeInsets.only(right: index == totalSteps - 1 ? 0 : 8),
+                height: 6,
                 decoration: BoxDecoration(
-                  color: index < currentStep
-                      ? AppColors.primary
-                      : AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isActive
+                      ? DesignSystem.emerald
+                      : DesignSystem.glassWhite,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isActive ? [
+                    BoxShadow(
+                      color: DesignSystem.emerald.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ] : null,
                 ),
               ),
             );
@@ -70,37 +84,34 @@ class SelectableCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.iconBackground : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textDark,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: GlassContainer(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+          borderRadius: 20,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: DesignSystem.bodyStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
+                  ).copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-            ?trailing,
-            if (isSelected && trailing == null)
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 20,
-              ),
-          ],
+              if (trailing != null) 
+                trailing!
+              else if (isSelected)
+                const Icon(
+                  LucideIcons.checkCircle2,
+                  color: DesignSystem.emerald,
+                  size: 20,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -129,47 +140,49 @@ class UploadBox extends StatelessWidget {
     final bool hasFile = fileName != null;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: hasFile
-              ? AppColors.iconBackground.withValues(alpha: 0.5)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: hasFile ? AppColors.primary : AppColors.border,
-            width: hasFile ? 1.5 : 1,
-          ),
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: 24,
         child: hasFile
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _buildPreview(),
+            ? Stack(
+                children: [
+                   ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildPreview(),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.check, color: DesignSystem.emerald, size: 14),
+                    ),
+                  )
+                ],
               )
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.inputBackground,
+                      color: DesignSystem.emerald.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.upload_file,
-                      color: AppColors.textLight,
-                      size: 24,
+                    child: const Icon(
+                      LucideIcons.uploadCloud,
+                      color: DesignSystem.emerald,
+                      size: 28,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: AppColors.textDark,
-                    ),
+                    style: DesignSystem.bodyStyle(fontSize: 14).copyWith(fontWeight: FontWeight.w700),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -177,10 +190,7 @@ class UploadBox extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: 10,
-                    ),
+                    style: DesignSystem.labelStyle(color: Colors.white38),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -213,7 +223,7 @@ class UploadBox extends StatelessWidget {
         future: _renderPdfFirstPage(path),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: DesignSystem.emerald));
           }
           if (snapshot.hasData && snapshot.data != null) {
             return Image(
@@ -250,23 +260,25 @@ class UploadBox extends StatelessWidget {
   }
 
   Widget _buildFileFallback() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.insert_drive_file, color: AppColors.primary, size: 32),
-        const SizedBox(height: 4),
-        Text(
-          fileName ?? "File",
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+    return Container(
+      color: DesignSystem.glassWhite,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(LucideIcons.fileText, color: DesignSystem.emerald, size: 32),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              fileName ?? "File",
+              style: DesignSystem.labelStyle(color: DesignSystem.emerald, fontSize: 10),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -288,21 +300,29 @@ class CustomPillChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.iconBackground : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? DesignSystem.emerald : DesignSystem.glassWhite,
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? DesignSystem.emerald : DesignSystem.glassBorder,
           ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: DesignSystem.emerald.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ] : null,
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: isSelected ? AppColors.primary : AppColors.textDark,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
+          style: DesignSystem.bodyStyle(
+            color: isSelected ? Colors.white : Colors.white70,
+            fontSize: 13,
+          ).copyWith(fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500),
         ),
       ),
     );
@@ -329,40 +349,37 @@ class CustomDropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            color: AppColors.textDark,
-          ),
+          style: DesignSystem.labelStyle(),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            height: 56,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              color: DesignSystem.inputBackground,
+              borderRadius: BorderRadius.circular(18),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
                     hint,
-                    style: TextStyle(
+                    style: DesignSystem.bodyStyle(
                       color: hint.contains('Select') || hint.contains('/')
-                          ? AppColors.textLight
-                          : AppColors.textDark,
-                      fontSize: 15,
+                          ? Colors.white38
+                          : Colors.white,
+                      fontSize: 14,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const Icon(
-                  Icons.keyboard_arrow_down,
-                  color: AppColors.textLight,
+                  LucideIcons.chevronDown,
+                  color: Colors.white38,
+                  size: 20,
                 ),
               ],
             ),
@@ -390,25 +407,34 @@ class CustomCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          SizedBox(
-            height: 24,
-            width: 24,
-            child: Checkbox(
-              value: value,
-              onChanged: onChanged,
-              activeColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Row(
+          children: [
+            Container(
+              height: 24,
+              width: 24,
+              decoration: BoxDecoration(
+                color: value ? DesignSystem.emerald : DesignSystem.glassWhite,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: value ? DesignSystem.emerald : DesignSystem.glassBorder,
+                ),
               ),
+              child: value ? const Icon(LucideIcons.check, color: Colors.white, size: 16) : null,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label, 
+                style: DesignSystem.bodyStyle(fontSize: 14)
+              )
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+

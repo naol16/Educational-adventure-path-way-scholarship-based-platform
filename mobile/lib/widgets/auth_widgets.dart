@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../utils/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../utils/design_system.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isOutlined;
   final Widget? icon;
+  final bool isLoading;
 
   const PrimaryButton({
     super.key,
@@ -16,55 +18,85 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
   });
 
-  final bool isLoading;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 56,
       child: isOutlined
           ? OutlinedButton.icon(
               onPressed: isLoading ? null : onPressed,
               icon: icon ?? const SizedBox.shrink(),
               label: Text(
                 text,
-                style: const TextStyle(
-                  color: AppColors.textDark,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.black12),
+                side: BorderSide(color: DesignSystem.glassBorder),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
+                backgroundColor: DesignSystem.glassWhite,
               ),
             )
-          : ElevatedButton(
-              onPressed: isLoading ? null : onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          : Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                elevation: 0,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : onPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 0,
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (icon != null) ...[
+                            icon!,
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            text,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
-                    )
-                  : Text(
-                      text,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+              ),
             ),
     );
   }
@@ -94,29 +126,36 @@ class CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextField(
-        controller: controller,
-        obscureText: isPassword,
-        onChanged: onChanged,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: const TextStyle(color: AppColors.textLight),
-          prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.textLight) : null,
-          filled: true,
-          fillColor: AppColors.inputBackground,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      child: Container(
+        height: maxLines > 1 ? null : 56,
+        decoration: BoxDecoration(
+          color: DesignSystem.inputBackground,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        alignment: Alignment.center,
+        child: TextField(
+          controller: controller,
+          obscureText: isPassword,
+          onChanged: onChanged,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: GoogleFonts.inter(
+              color: Colors.white38,
+              fontSize: 14,
+            ),
+            prefixIcon: prefixIcon != null 
+                ? Icon(prefixIcon, color: Colors.white38, size: 20) 
+                : null,
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
           ),
         ),
       ),
     );
   }
-}
+}
