@@ -1,0 +1,536 @@
+import 'package:mobile/features/core/theme/design_system.dart';
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+
+import 'package:mobile/models/models.dart';
+import 'package:mobile/features/scholarships/providers/scholarship_providers.dart';
+
+import 'package:mobile/features/core/widgets/glass_container.dart';
+import '../widgets/scholarship_match_card.dart';
+import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
+
+class DiscoverScreen extends ConsumerStatefulWidget {
+  const DiscoverScreen({super.key});
+
+  @override
+  ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
+}
+
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+  int _activeTabIndex = 0; // 0: Matched, 1: Saved, 2: Applied
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      ref.read(scholarshipMatchFiltersProvider.notifier).update(
+            (state) => state.copyWith(query: query),
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matchedAsync = ref.watch(scholarshipMatchesProvider);
+    final watchlistAsync = ref.watch(scholarshipWatchlistProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.transparent, // Let MainLayout handle the background
+      body: Stack(
+        children: [
+          // Background Glows
+          Positioned(
+            top: -50,
+            right: -50,
+            child: DesignSystem.buildBlurCircle(
+              DesignSystem.emerald.withOpacity(0.08),
+              200,
+            ),
+          ),
+
+          SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(scholarshipMatchesProvider.notifier).reload();
+                await ref.read(scholarshipWatchlistProvider.notifier).reload();
+              },
+              backgroundColor: DesignSystem.cardColor,
+              color: DesignSystem.emerald,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 15),
+                    _buildTopHeader(),
+                    const SizedBox(height: 25),
+                    _buildSearchBar(),
+                    const SizedBox(height: 25),
+                    _buildTabSwitcher(),
+                    const SizedBox(height: 30),
+
+                    // Content based on tab
+                    if (_activeTabIndex == 0)
+                      _buildMatchedContent(matchedAsync)
+                    else
+                      _buildTrackedContent(watchlistAsync, _activeTabIndex),
+
+                    const SizedBox(height: 120),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Floating Sparkle Button (AI Discovery Trigger)
+          Positioned(
+            bottom: 100,
+            right: 20,
+            child: _buildFloatingSparkleButton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            const CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(
+                'https://api.dicebear.com/7.x/avataaars/png?seed=Alex',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Discover",
+              style: GoogleFonts.plusJakartaSans(
+                color: DesignSystem.emerald,
+                fontWeight: FontWeight.w800,
+                fontSize: 24,
+              ),
+            ),
+          ],
+        ),
+        const Icon(LucideIcons.sliders, color: Colors.white70, size: 20),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 55,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.search, color: Colors.white24, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    style: GoogleFonts.inter(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: "Search scholarships...",
+                      hintStyle: TextStyle(color: Colors.white24),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 15),
+        Container(
+          height: 55,
+          width: 55,
+          decoration: BoxDecoration(
+            color: DesignSystem.emerald.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Icon(LucideIcons.filter, color: DesignSystem.emerald, size: 22),
+        )
+      ],
+    );
+  }
+
+  Widget _buildTabSwitcher() {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          _buildTab("Matched", 0),
+          _buildTab("Saved", 1),
+          _buildTab("Applied", 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int index) {
+    bool active = _activeTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _activeTabIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: active ? DesignSystem.emerald : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                color: active ? Colors.black : Colors.white54,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchedContent(AsyncValue<List<MatchedScholarship>> async) {
+    return async.when(
+      data: (list) {
+        if (list.isEmpty) {
+          return _buildEmptyState("No scholarships found matching your profile.");
+        }
+
+        // Hero card for the top match
+        final topMatch = list.first;
+        final listItems = list.skip(1).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPathfinderHeroCard(topMatch),
+            const SizedBox(height: 35),
+            Text(
+              "Curated For Your Pathway",
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...listItems.map((s) => ScholarshipMatchCard(
+                  title: s.title,
+                  university: s.country ?? 'International',
+                  matchPercent: "${s.matchScore}%",
+                  aiInsight: s.matchReason ?? "AI recommends this based on your profile.",
+                  fundingType: s.fundType ?? "Scholarship",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScholarshipDetailScreen(scholarshipId: s.id),
+                      ),
+                    );
+                  },
+                )),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 50),
+          child: CircularProgressIndicator(color: DesignSystem.emerald),
+        ),
+      ),
+      error: (e, st) => _buildEmptyState("Error loading scholarships: $e"),
+    );
+  }
+
+  Widget _buildTrackedContent(AsyncValue<List<TrackedScholarship>> async, int tabIndex) {
+    return async.when(
+      data: (list) {
+        final filteredList = list.where((t) {
+          if (tabIndex == 1) return t.status != 'APPLIED'; // Saved
+          return t.status == 'APPLIED'; // Applied
+        }).toList();
+
+        if (filteredList.isEmpty) {
+          return _buildEmptyState(
+            tabIndex == 1
+                ? "You haven't saved any scholarships yet."
+                : "No applied scholarships found.",
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tabIndex == 1 ? "Saved Opportunities" : "Your Applications",
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...filteredList.map((t) => ScholarshipMatchCard(
+                  title: t.scholarship!.title,
+                  university: t.scholarship!.country ?? 'International',
+                  matchPercent: "${t.scholarship!.matchScore}%",
+                  aiInsight: t.scholarship!.matchReason ?? "Saved to your watchlist.",
+                  fundingType: t.scholarship!.fundType ?? "Scholarship",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScholarshipDetailScreen(scholarshipId: t.scholarship!.id),
+                      ),
+                    );
+                  },
+                )),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 50),
+          child: CircularProgressIndicator(color: DesignSystem.emerald),
+        ),
+      ),
+      error: (e, st) => _buildEmptyState("Error loading tracked scholarships: $e"),
+    );
+  }
+
+  Widget _buildEmptyState(String msg) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 60),
+        child: Column(
+          children: [
+            Icon(LucideIcons.searchX, size: 48, color: Colors.white.withOpacity(0.1)),
+            const SizedBox(height: 16),
+            Text(
+              msg,
+              style: DesignSystem.bodyStyle(color: Colors.white38),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPathfinderHeroCard(MatchedScholarship s) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.sparkles, color: DesignSystem.emerald, size: 14),
+                        const SizedBox(width: 5),
+                        Text(
+                          "PATHFINDER'S TOP CHOICE",
+                          style: GoogleFonts.plusJakartaSans(
+                            color: DesignSystem.emerald,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      s.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 15),
+              _buildCircularGauge("${s.matchScore}%"),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (s.matchReason != null)
+            Container(
+              padding: const EdgeInsets.all(15),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: DesignSystem.emerald.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "\"AI Insight: ${s.matchReason}\"",
+                style: GoogleFonts.inter(
+                  color: DesignSystem.emerald,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ScholarshipDetailScreen(scholarshipId: s.id),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [DesignSystem.emerald, DesignSystem.emerald.withOpacity(0.7)],
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "View Scholarship",
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 15),
+              GlassContainer(
+                padding: const EdgeInsets.all(15),
+                borderRadius: 15,
+                child: const Icon(LucideIcons.bookmark, color: Colors.white, size: 20),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularGauge(String val) {
+    double score = double.tryParse(val.replaceAll('%', '')) ?? 0;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: CircularProgressIndicator(
+            value: score / 100,
+            strokeWidth: 4,
+            backgroundColor: Colors.white10,
+            valueColor: const AlwaysStoppedAnimation(DesignSystem.emerald),
+          ),
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              val,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              "MATCH",
+              style: GoogleFonts.inter(
+                color: Colors.white38,
+                fontSize: 7,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFloatingSparkleButton() {
+    return GestureDetector(
+      onTap: () async {
+        // Trigger Discovery logic could go here
+        await ref.read(scholarshipMatchesProvider.notifier).reload();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(colors: [DesignSystem.emerald, Color(0xFF34D399)]),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x6610B981),
+              blurRadius: 20,
+              spreadRadius: 2,
+            )
+          ],
+        ),
+        child: const Icon(LucideIcons.sparkles, color: Colors.black, size: 28),
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../utils/app_colors.dart';
-import 'scholarship_detail_screen.dart';
+import 'package:mobile/features/core/theme/app_colors.dart';
+import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
 
 class ScholarshipListScreen extends StatelessWidget {
   const ScholarshipListScreen({super.key});
@@ -32,7 +32,9 @@ class ScholarshipListScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ScholarshipDetailScreen()),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ScholarshipDetailScreen(scholarshipId: index)),
                 );
               },
               child: Padding(
@@ -95,3 +97,10 @@ class ScholarshipListScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
