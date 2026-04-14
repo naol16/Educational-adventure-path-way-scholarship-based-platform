@@ -2,12 +2,20 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/features/chat/screens/pathfinder_chat_screen.dart';
+import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
+import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
+import 'package:mobile/features/scholarships/screens/tracked_scholarships_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardDataProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A), // Deep Slate Background
       body: Stack(
@@ -26,34 +34,74 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  _buildHeader(),
-                  const SizedBox(height: 30),
-                  _buildWelcomeText(),
-                  const SizedBox(height: 25),
-                  _buildPathfinderCard(),
-                  const SizedBox(height: 25),
-                  _buildStatsRow(),
-                  const SizedBox(height: 25),
-                  _buildProfileStrength(),
-                  const SizedBox(height: 25),
-                  _buildUpcomingSession(),
-                  const SizedBox(height: 25),
-                  _buildSectionHeader("Top Recommendations", showViewAll: true),
-                  _buildScholarshipCard("Global Excellence Fellowship", "Stanford University • California", "FULL FUNDING", "98% Match"),
-                  _buildScholarshipCard("Tomorrow's Leader Award", "Oxford University • UK", "PARTIAL GRANT", "92% Match"),
-                  const SizedBox(height: 25),
-                  _buildSectionHeader("Expert Mentors"),
-                  _buildMentorsRow(),
-                  const SizedBox(height: 100), // Space for bottom nav
-                ],
-              ),
-            ),
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        _buildHeader(state.user?.name),
+                        const SizedBox(height: 30),
+                        _buildWelcomeText(state.user?.name),
+                        const SizedBox(height: 25),
+                        _buildPathfinderCard(context, state.recommendations.length),
+                        const SizedBox(height: 25),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const TrackedScholarshipsScreen()),
+                            );
+                          },
+                          child: _buildStatsRow(
+                            state.savedCount,
+                            state.appliedCount,
+                            state.dueSoonCount,
+                          ),
+                        ),
+                        const SizedBox(height: 25),
+                        InkWell(
+                          onTap: () => context.push('/onboarding'),
+                          borderRadius: BorderRadius.circular(28),
+                          child: _buildProfileStrength(state.profileStrength),
+                        ),
+                        const SizedBox(height: 25),
+                        _buildUpcomingSession(),
+                        const SizedBox(height: 25),
+                        _buildSectionHeader("Top Recommendations", showViewAll: true),
+                        ...state.recommendations.map((sch) => InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ScholarshipDetailScreen(scholarshipId: sch.id),
+                                ),
+                              ),
+                              child: _buildScholarshipCard(
+                                sch.title,
+                                sch.country ?? "Global Opportunity",
+                                sch.fundType ?? "Funding Available",
+                                "${sch.matchScore}% Match",
+                              ),
+                            )),
+                        if (state.recommendations.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                "No matches found yet. Complete your profile!",
+                                style: GoogleFonts.inter(color: Colors.white38, fontSize: 14),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 25),
+                        _buildSectionHeader("Expert Mentors"),
+                        _buildMentorsRow(),
+                        const SizedBox(height: 100), // Space for bottom nav
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -80,14 +128,14 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // --- HEADER SECTION ---
-  Widget _buildHeader() {
+  Widget _buildHeader(String? name) {
     return Row(
       children: [
         Stack(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 22,
-              backgroundImage: NetworkImage('https://api.dicebear.com/7.x/avataaars/png?seed=Alex'),
+              backgroundImage: NetworkImage('https://api.dicebear.com/7.x/avataaars/png?seed=${name ?? 'Alex'}'),
             ),
             Positioned(
               right: 0,
@@ -126,13 +174,14 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeText() {
+  Widget _buildWelcomeText(String? name) {
+    final firstName = name?.split(' ').first ?? 'Alex';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("Welcome back", style: GoogleFonts.inter(color: Colors.white54, fontSize: 14)),
         Text(
-          "Level up your future,\nAlex",
+          "Level up your future,\n$firstName",
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
             fontSize: 28,
@@ -145,7 +194,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // --- PATHFINDER AI CARD ---
-  Widget _buildPathfinderCard() {
+  Widget _buildPathfinderCard(BuildContext context, int matchCount) {
     return _buildGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +208,9 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            "3 New Scholarships match your profile perfectly today.",
+            matchCount > 0 
+              ? "$matchCount New Scholarships match your profile perfectly today."
+              : "Ask Pathfinder to find the perfect scholarship for you.",
             style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 20),
@@ -172,12 +223,33 @@ class DashboardScreen extends StatelessWidget {
             ),
             child: TextField(
               style: GoogleFonts.inter(color: Colors.white),
+              textInputAction: TextInputAction.send,
+              onSubmitted: (val) {
+                if(val.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PathfinderChatScreen(initialMessage: val),
+                    ),
+                  );
+                }
+              },
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                 border: InputBorder.none,
                 hintText: "Ask Pathfinder anything...",
                 hintStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 14),
-                suffixIcon: const Icon(LucideIcons.mic, color: Color(0xFF10B981), size: 20),
+                suffixIcon: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PathfinderChatScreen(),
+                      ),
+                    );
+                  },
+                  child: const Icon(LucideIcons.mic, color: Color(0xFF10B981), size: 20),
+                ),
               ),
             ),
           )
@@ -187,13 +259,13 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // --- STATS ROW ---
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(int saved, int applied, int dueSoon) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildStatItem(LucideIcons.bookmark, "12", "SAVED", Colors.amber),
-        _buildStatItem(LucideIcons.send, "4", "APPLIED", const Color(0xFF10B981)),
-        _buildStatItem(LucideIcons.clock, "2", "DUE SOON", const Color(0xFFF43F5E)),
+        _buildStatItem(LucideIcons.bookmark, saved.toString(), "SAVED", Colors.amber),
+        _buildStatItem(LucideIcons.send, applied.toString(), "APPLIED", const Color(0xFF10B981)),
+        _buildStatItem(LucideIcons.clock, dueSoon.toString(), "DUE SOON", const Color(0xFFF43F5E)),
       ],
     );
   }
@@ -219,7 +291,12 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // --- PROFILE STRENGTH ---
-  Widget _buildProfileStrength() {
+  Widget _buildProfileStrength(double strength) {
+    final percentage = (strength * 100).toInt();
+    String level = "Beginner";
+    if (percentage > 80) level = "Expert";
+    else if (percentage > 40) level = "Intermediate";
+
     return _buildGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,16 +305,16 @@ class DashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Profile Strength", style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
-              Text("65%", style: GoogleFonts.plusJakartaSans(color: const Color(0xFF10B981), fontWeight: FontWeight.bold)),
+              Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: const Color(0xFF10B981), fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
-          Text("Intermediate", style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(level, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: 0.65,
+              value: strength,
               minHeight: 8,
               backgroundColor: Colors.white.withOpacity(0.1),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),

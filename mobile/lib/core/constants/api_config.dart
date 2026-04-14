@@ -14,10 +14,3 @@ class ApiConfig {
     return '$baseUrl$p';
   }
 }
-
-
-
-
-
-
-

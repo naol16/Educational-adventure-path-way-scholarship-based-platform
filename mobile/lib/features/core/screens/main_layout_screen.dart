@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/features/dashboard/screens/dashboard_screen.dart';
 import 'package:mobile/features/interview/screens/interview_screen.dart';
 import 'package:mobile/features/scholarships/screens/discover_screen.dart';
@@ -20,20 +21,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     const DashboardScreen(),
     const DiscoverScreen(),
     const InterviewScreen(), // Pathway
-    const Center(child: Text('Mentors', style: TextStyle(color: Colors.white))),
-    const Center(child: Text('Inbox', style: TextStyle(color: Colors.white))),
+    const Center(
+      child: Text('Mentors', style: TextStyle(color: Colors.white)),
+    ),
+    const Center(
+      child: Text('Inbox', style: TextStyle(color: Colors.white)),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignSystem.background,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
+          IndexedStack(index: _currentIndex, children: _screens),
           _buildBottomNav(),
         ],
       ),
@@ -46,16 +49,18 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       left: 0,
       right: 0,
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            height: 100,
-            padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10),
+            height: 64, // Compact professional height
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B).withOpacity(0.8),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              color: const Color(0xFF0F172A).withOpacity(0.95),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withOpacity(0.05),
+                  width: 1,
+                ),
+              ),
             ),
             child: Row(
               children: [
@@ -74,43 +79,30 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     bool isActive = _currentIndex == index;
+    final color = isActive ? const Color(0xFF10B981) : Colors.white.withOpacity(0.4);
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? DesignSystem.emerald.withOpacity(0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? DesignSystem.emerald : Colors.white24,
-              size: 20,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 22,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: DesignSystem.labelStyle(
-                color: isActive ? DesignSystem.emerald : Colors.white24,
-                fontSize: 9,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-
-
-
-
-
-
-

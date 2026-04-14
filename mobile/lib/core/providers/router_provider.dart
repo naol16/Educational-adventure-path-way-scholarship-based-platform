@@ -51,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (!auth.isOnboarded && !onOnboarding) {
           return '/onboarding';
         }
-        if (auth.isOnboarded && (onGuestAuthFlow || onOnboarding)) {
+        if (auth.isOnboarded && onGuestAuthFlow) {
           return '/home';
         }
       } else {

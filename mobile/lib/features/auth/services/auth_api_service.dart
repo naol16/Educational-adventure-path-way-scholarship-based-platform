@@ -202,8 +202,8 @@ class AuthApiService {
     }
 
     final map = decodeJsonObject(response);
-    // The backend might return the user in a 'user' field or as the root
-    final userMap = asJsonMap(map['user']) ?? map;
+    // The backend might return the user in a 'data' field (onboarding complete), 'user' field (auth endpoints), or as the root
+    final userMap = asJsonMap(map['data']) ?? asJsonMap(map['user']) ?? map;
     return User.fromJson(userMap);
   }
 
