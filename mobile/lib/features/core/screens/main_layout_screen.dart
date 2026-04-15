@@ -7,16 +7,17 @@ import 'package:mobile/features/interview/screens/interview_screen.dart';
 import 'package:mobile/features/scholarships/screens/discover_screen.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 
-class MainLayoutScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/providers/navigation_provider.dart';
+
+class MainLayoutScreen extends ConsumerStatefulWidget {
   const MainLayoutScreen({super.key});
 
   @override
-  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+  ConsumerState<MainLayoutScreen> createState() => _MainLayoutScreenState();
 }
 
-class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  int _currentIndex = 0;
-
+class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const DiscoverScreen(),
@@ -31,26 +32,28 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(navigationIndexProvider);
+
     return Scaffold(
       backgroundColor: DesignSystem.background,
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          IndexedStack(index: _currentIndex, children: _screens),
-          _buildBottomNav(),
+          IndexedStack(index: currentIndex, children: _screens),
+          _buildBottomNav(currentIndex),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(int currentIndex) {
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: ClipRRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaY: 10, sigmaX: 10),
           child: Container(
             height: 64, // Compact professional height
             decoration: BoxDecoration(
@@ -64,11 +67,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             ),
             child: Row(
               children: [
-                Expanded(child: _buildNavItem(LucideIcons.home, "Home", 0)),
-                Expanded(child: _buildNavItem(LucideIcons.compass, "Discover", 1)),
-                Expanded(child: _buildNavItem(LucideIcons.trendingUp, "Pathway", 2)),
-                Expanded(child: _buildNavItem(LucideIcons.graduationCap, "Mentors", 3)),
-                Expanded(child: _buildNavItem(LucideIcons.mail, "Inbox", 4)),
+                Expanded(child: _buildNavItem(LucideIcons.home, "Home", 0, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.compass, "Discover", 1, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.trendingUp, "Pathway", 2, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.graduationCap, "Mentors", 3, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.mail, "Inbox", 4, currentIndex)),
               ],
             ),
           ),
@@ -77,12 +80,12 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isActive = _currentIndex == index;
+  Widget _buildNavItem(IconData icon, String label, int index, int currentIndex) {
+    bool isActive = currentIndex == index;
     final color = isActive ? const Color(0xFF10B981) : Colors.white.withOpacity(0.4);
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => ref.read(navigationIndexProvider.notifier).state = index,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

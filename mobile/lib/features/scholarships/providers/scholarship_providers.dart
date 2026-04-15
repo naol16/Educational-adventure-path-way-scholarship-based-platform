@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/models/models.dart';
 import 'package:mobile/features/scholarships/services/scholarship_api_service.dart';
@@ -95,26 +96,66 @@ class ScholarshipWatchlistNotifier extends AsyncNotifier<List<TrackedScholarship
   }
 
   Future<void> toggleWatchlist(int scholarshipId) async {
-    final prev = state;
-    state = const AsyncLoading();
+    final oldData = state.valueOrNull ?? [];
+    final isTracked = oldData.any((s) => s.scholarshipId == scholarshipId);
+
+    // Optimistic Update
+    if (isTracked) {
+      state = AsyncValue.data(oldData.where((s) => s.scholarshipId != scholarshipId).toList());
+    } else {
+      // For adding, we don't have the full model yet, so we show loading
+      state = const AsyncLoading();
+    }
+
     try {
-      await _api.toggleTrackScholarship(scholarshipId);
+      if (isTracked) {
+        await _api.untrackScholarship(scholarshipId);
+      } else {
+        await _api.trackScholarship(scholarshipId);
+      }
       await reload();
     } catch (e) {
-      state = prev; // Restore state
-      throw Exception('Failed to update tracking status: $e');
+      state = AsyncValue.data(oldData); // REVERT on error
+      throw Exception('Failed to update watchlist: $e');
     }
   }
 
   Future<void> updateStatus(int scholarshipId, String status) async {
-    final prev = state;
-    state = const AsyncLoading();
+    final oldData = state.valueOrNull ?? [];
+    
+    // Optimistic Update: Modify the local state immediately
+    state = AsyncValue.data(
+      oldData.map((s) => s.scholarshipId == scholarshipId ? s.copyWith(status: status) : s).toList()
+    );
+
     try {
       await _api.updateTrackedStatus(scholarshipId, status);
+      await reload(); // Refresh from server to ensure sync
+    } catch (e) {
+      state = AsyncValue.data(oldData); // REVERT on error
+      debugPrint('Update status error: $e');
+    }
+  }
+
+  /// Specialized method for the "Begin Application" flow
+  Future<void> trackAndApply(int scholarshipId) async {
+    final oldData = state.valueOrNull ?? [];
+    final isAlreadyTracked = oldData.any((s) => s.scholarshipId == scholarshipId);
+
+    if (isAlreadyTracked) {
+      await updateStatus(scholarshipId, 'APPLIED');
+      return;
+    }
+
+    // If not tracked, we must add it first
+    state = const AsyncLoading();
+    try {
+      await _api.trackScholarship(scholarshipId);
+      await _api.updateTrackedStatus(scholarshipId, 'APPLIED');
       await reload();
     } catch (e) {
-      state = prev;
-      throw Exception('Failed to update application status: $e');
+      state = AsyncValue.data(oldData);
+      debugPrint('Track and apply error: $e');
     }
   }
 }
