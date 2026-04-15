@@ -179,9 +179,17 @@ class AuthApiService {
         for (final docEntry in value.entries) {
           final filePath = docEntry.value;
           if (filePath is String && filePath.isNotEmpty) {
+            if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+              continue; // file is already uploaded, skip re-uploading
+            }
             final file = await http.MultipartFile.fromPath(docEntry.key, filePath);
             request.files.add(file);
           }
+        }
+      } else if (key == 'avatar' && value is String && value.isNotEmpty) {
+        if (!value.startsWith('http')) {
+          final file = await http.MultipartFile.fromPath('avatar', value);
+          request.files.add(file);
         }
       } else if (value is List) {
         request.fields[key] = jsonEncode(value);

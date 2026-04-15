@@ -144,6 +144,58 @@ class ApiClient {
     return response;
   }
 
+  Future<http.Response> put(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) async {
+    Future<http.Response> once(String? access) async {
+      final uri = Uri.parse(ApiConfig.apiPath(path));
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      final encodedBody = body == null ? null : jsonEncode(body);
+      logRequest('PUT', uri, headers: headers, body: encodedBody);
+      final response = await _http.put(uri, headers: headers, body: encodedBody);
+      logResponse(response);
+      return response;
+    }
+
+    if (!auth) return once(null);
+
+    var access = await _tokens.readAccessToken();
+    var response = await once(access);
+    if (response.statusCode == 401 && await _tryRefresh()) {
+      access = await _tokens.readAccessToken();
+      response = await once(access);
+    }
+    return response;
+  }
+
+  Future<http.Response> delete(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) async {
+    Future<http.Response> once(String? access) async {
+      final uri = Uri.parse(ApiConfig.apiPath(path));
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      final encodedBody = body == null ? null : jsonEncode(body);
+      logRequest('DELETE', uri, headers: headers, body: encodedBody);
+      final response = await _http.delete(uri, headers: headers, body: encodedBody);
+      logResponse(response);
+      return response;
+    }
+
+    if (!auth) return once(null);
+
+    var access = await _tokens.readAccessToken();
+    var response = await once(access);
+    if (response.statusCode == 401 && await _tryRefresh()) {
+      access = await _tokens.readAccessToken();
+      response = await once(access);
+    }
+    return response;
+  }
+
   void close() => _http.close();
 
   /// Clears tokens when refresh or repeated 401 indicates session is dead.
