@@ -10,6 +10,8 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/providers/navigation_provider.dart';
 
+import 'package:mobile/features/learning_path/screens/mastery_hub_screen.dart';
+
 class MainLayoutScreen extends ConsumerStatefulWidget {
   const MainLayoutScreen({super.key});
 
@@ -21,9 +23,7 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const DiscoverScreen(),
-    const Center(
-      child: Text('Pathway', style: TextStyle(color: Colors.white)),
-    ),
+    const MasteryHubScreen(),
     const Center(
       child: Text('Mentors', style: TextStyle(color: Colors.white)),
     ),

@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:mobile/features/interview/providers/interview_provider.dart';
 import 'package:mobile/features/interview/models/evaluation_model.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/features/core/widgets/glass_container.dart';
+import 'package:mobile/features/core/theme/design_system.dart';
 
 class InterviewScreen extends ConsumerStatefulWidget {
   const InterviewScreen({super.key});
@@ -16,37 +17,41 @@ class InterviewScreen extends ConsumerStatefulWidget {
   ConsumerState<InterviewScreen> createState() => _InterviewScreenState();
 }
 
-class _InterviewScreenState extends ConsumerState<InterviewScreen> {
+class _InterviewScreenState extends ConsumerState<InterviewScreen> with SingleTickerProviderStateMixin {
   late final AudioRecorder _audioRecorder;
-  final ScrollController _scrollController = ScrollController();
-
-  final Color _pineGreen = const Color(0xFF10B981);
-  final Color _deepSlate = const Color(0xFF0F172A);
+  late AnimationController _pulseController;
+  final TextEditingController _countryController = TextEditingController(text: "USA");
+  final TextEditingController _universityController = TextEditingController(text: "Stanford University");
 
   @override
   void initState() {
     super.initState();
     _audioRecorder = AudioRecorder();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _audioRecorder.dispose();
-    _scrollController.dispose();
+    _pulseController.dispose();
+    _countryController.dispose();
+    _universityController.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 200, 
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+  String _formatTime(int seconds) {
+    final mins = (seconds ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return "$mins:$secs";
   }
 
   Future<void> _startRecording() async {
+    final state = ref.read(interviewProvider);
+    if (state.isMuted) return;
+
     try {
       if (await _audioRecorder.hasPermission()) {
         final dir = await getApplicationDocumentsDirectory();
@@ -65,13 +70,15 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
   }
 
   Future<void> _stopRecording() async {
+    final state = ref.read(interviewProvider);
+    if (!state.isRecording) return;
+
     try {
       final path = await _audioRecorder.stop();
       ref.read(interviewProvider.notifier).toggleRecording(false);
       
       if (path != null) {
         await ref.read(interviewProvider.notifier).submitAudio(path);
-        Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
       }
     } catch (e) {
        debugPrint("Stop Recording Error: $e");
@@ -82,243 +89,314 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(interviewProvider);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!state.isEvaluating && state.evaluationData == null) {
-          _scrollToBottom();
-      }
-    });
-
     return Scaffold(
-      backgroundColor: _deepSlate,
-      appBar: AppBar(
-        title: Text('Visa Mock Interview', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (state.messages.length > 2 && state.evaluationData == null && !state.isEvaluating)
-            TextButton.icon(
-              onPressed: () {
-                ref.read(interviewProvider.notifier).endInterview();
-              },
-              icon: Icon(LucideIcons.checkCircle, color: _pineGreen),
-              label: Text('Finish', style: GoogleFonts.inter(color: _pineGreen, fontWeight: FontWeight.bold)),
-            ),
-        ],
-      ),
+      backgroundColor: DesignSystem.background,
       body: Stack(
         children: [
+          // Background Glows
           Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _pineGreen.withOpacity(0.05),
-              ),
-            ),
+            top: 200, 
+            left: 50, 
+            child: DesignSystem.buildBlurCircle(DesignSystem.emerald.withOpacity(0.08), 300)
           ),
+
           SafeArea(
             child: state.isLoading
-                ? Center(child: CircularProgressIndicator(color: _pineGreen))
+                ? const Center(child: CircularProgressIndicator(color: DesignSystem.emerald))
                 : state.evaluationData != null 
                     ? _buildEvaluationResults(state.evaluationData!)
-                    : _buildChatInterface(state),
+                    : _buildLiveInterface(state),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChatInterface(InterviewState state) {
+  Widget _buildLiveInterface(InterviewState state) {
     if (state.messages.isEmpty && !state.isLoading) {
-      return Center(
-        child: ElevatedButton.icon(
-          onPressed: () => ref.read(interviewProvider.notifier).startInterview(),
-          icon: const Icon(LucideIcons.play),
-          label: Text("Start Interview", style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _pineGreen,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        ),
-      );
+      return _buildSetupView();
     }
-
-    final displayMessages = state.messages.where((m) => m['role'] != 'system').toList();
 
     return Column(
       children: [
-        if (state.isEvaluating)
-           Padding(
-             padding: const EdgeInsets.all(16.0),
-             child: Center(
-               child: Column(
-                 children: [
-                   CircularProgressIndicator(color: _pineGreen),
-                   const SizedBox(height: 16),
-                   Text("Evaluating performance...", style: GoogleFonts.inter(color: Colors.white70)),
-                 ],
-               )
-             ),
-           ),
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80), // Extra padding for bottom nav
-            itemCount: displayMessages.length,
-            itemBuilder: (context, index) {
-              final msg = displayMessages[index];
-              final isUser = msg['role'] == 'user';
-              
-              return Align(
-                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isUser ? _pineGreen : Colors.white.withOpacity(0.05),
-                    border: Border.all(color: isUser ? Colors.transparent : Colors.white.withOpacity(0.1)),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isUser ? 20 : 0),
-                      bottomRight: Radius.circular(isUser ? 0 : 20),
-                    ),
-                  ),
-                  child: Text(
-                    msg['content'],
-                    style: GoogleFonts.inter(
-                      color: isUser ? Colors.white : Colors.white.withOpacity(0.9),
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              );
-            },
+        const SizedBox(height: 20),
+        _buildHeader(state.remainingSeconds),
+        const SizedBox(height: 40),
+        _buildQuestionCard(state.currentPrompt),
+        const Spacer(),
+        
+        // THE GLOWING AI ORB
+        GestureDetector(
+          onLongPressStart: (_) => _startRecording(),
+          onLongPressEnd: (_) => _stopRecording(),
+          child: _buildAIOrb(state.isRecording, state.isMuted),
+        ),
+        
+        const SizedBox(height: 20),
+        Text(
+          state.isMuted 
+              ? "Microphone Muted" 
+              : (state.isRecording ? "Listening..." : (state.isSending ? "Processing..." : "Hold to Talk")),
+          style: GoogleFonts.inter(
+            color: state.isMuted ? Colors.redAccent : DesignSystem.emerald.withOpacity(0.7), 
+            fontWeight: FontWeight.bold, 
+            letterSpacing: 1
           ),
         ),
         
-        if (state.error != null)
-           Padding(
-             padding: const EdgeInsets.only(bottom: 80),
-             child: Text(state.error!, textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.redAccent)),
-           ),
-           
-        if (state.isSending)
-           Padding(
-             padding: const EdgeInsets.only(bottom: 100),
-             child: Row(
-               mainAxisAlignment: MainAxisAlignment.center,
-               children: [
-                 SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _pineGreen)),
-                 const SizedBox(width: 12),
-                 Text("Transcribing...", style: GoogleFonts.inter(color: Colors.white70)),
-               ],
-             )
-           )
-        else if (!state.isEvaluating)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 100, top: 16),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onLongPressStart: (_) => _startRecording(),
-                  onLongPressEnd: (_) => _stopRecording(),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: state.isRecording ? 100 : 80,
-                    width: state.isRecording ? 100 : 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: state.isRecording ? Colors.redAccent : _pineGreen,
-                      boxShadow: [
-                        if (state.isRecording)
-                          BoxShadow(
-                            color: Colors.redAccent.withOpacity(0.4),
-                            blurRadius: 30,
-                            spreadRadius: 10,
-                          )
-                        else
-                          BoxShadow(
-                            color: _pineGreen.withOpacity(0.2),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          )  
-                      ],
-                    ),
-                    child: Icon(
-                      state.isRecording ? Icons.mic : Icons.mic_none,
-                      color: Colors.white,
-                      size: state.isRecording ? 48 : 36,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  state.isRecording ? "Release to Send" : "Hold to Speak",
-                  style: GoogleFonts.inter(color: Colors.white70, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
+        const Spacer(),
+        _buildLiveMetrics(state.metrics),
+        const SizedBox(height: 40),
+        _buildControlBar(state.isMuted),
+        const SizedBox(height: 20),
       ],
+    );
+  }
+
+  Widget _buildSetupView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30),
+        child: GlassContainer(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("INTERVIEW SETUP", style: DesignSystem.headingStyle(fontSize: 20, color: DesignSystem.emerald)),
+              const SizedBox(height: 25),
+              _buildInputField("Target Country", _countryController),
+              const SizedBox(height: 15),
+              _buildInputField("University Name", _universityController),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(interviewProvider.notifier).startInterview(
+                  country: _countryController.text,
+                  university: _universityController.text,
+                ),
+                icon: const Icon(LucideIcons.play),
+                label: Text("Start Speaking Lab", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignSystem.emerald,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: GoogleFonts.inter(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.black26,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(int remainingSeconds) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Column(
+            children: [
+              Text("SPEAKING LAB", style: GoogleFonts.plusJakartaSans(color: DesignSystem.emerald, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              Text(_formatTime(remainingSeconds), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const Icon(LucideIcons.settings, color: Colors.white38),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(String question) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          "\"$question\"",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, height: 1.4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIOrb(bool isPulse, bool isMuted) {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        double pulseVal = isPulse ? _pulseController.value : 0.0;
+        Color orbColor = isMuted ? Colors.redAccent : DesignSystem.emerald;
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Outer pulsing rings
+            _buildPulseRing(180 + (40 * pulseVal), 0.1 * (1 - pulseVal), color: orbColor),
+            _buildPulseRing(140 + (30 * pulseVal), 0.2 * (1 - pulseVal), color: orbColor),
+            // The main Orb
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [orbColor, isMuted ? Colors.red.shade900 : const Color(0xFF059669)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: orbColor.withOpacity(0.5 + (0.2 * pulseVal)),
+                    blurRadius: 40 + (20 * pulseVal),
+                    spreadRadius: 5 + (5 * pulseVal)
+                  ),
+                ],
+              ),
+              child: Icon(isMuted ? LucideIcons.micOff : LucideIcons.mic, color: isMuted ? Colors.white : Colors.black, size: 40),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPulseRing(double size, double opacity, {Color? color}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: (color ?? DesignSystem.emerald).withOpacity(opacity), width: 2),
+      ),
+    );
+  }
+
+  Widget _buildLiveMetrics(InterviewMetrics metrics) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildMetric("FLUENCY", metrics.fluency),
+          _buildMetric("PACE", metrics.pace),
+          _buildMetric("GRAMMAR", metrics.grammar),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetric(String label, double val) {
+    return Column(
+      children: [
+        SizedBox(
+          width: 50, height: 50,
+          child: CircularProgressIndicator(value: val, strokeWidth: 3, backgroundColor: Colors.white10, valueColor: const AlwaysStoppedAnimation(DesignSystem.emerald)),
+        ),
+        const SizedBox(height: 10),
+        Text(label, style: GoogleFonts.inter(color: Colors.white38, fontSize: 8, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildControlBar(bool isMuted) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(12),
+        borderRadius: 30,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: Icon(isMuted ? LucideIcons.micOff : LucideIcons.mic, color: isMuted ? Colors.redAccent : Colors.white38),
+              onPressed: () => ref.read(interviewProvider.notifier).toggleMute(),
+            ),
+            GestureDetector(
+              onTap: () => ref.read(interviewProvider.notifier).endInterview(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.redAccent.withOpacity(0.2))),
+                child: Text("END SESSION", style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 12)),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(LucideIcons.sparkles, color: DesignSystem.emerald),
+              onPressed: () {
+                final state = ref.read(interviewProvider);
+                String hint = "Try to expand on your reasons.";
+                if (state.messages.isNotEmpty) {
+                  hint = "Pathfinder: Mention specific details about the university's curriculum.";
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(hint),
+                    backgroundColor: DesignSystem.background,
+                    behavior: SnackBarBehavior.floating,
+                  )
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildEvaluationResults(EvaluationModel eval) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 100),
+      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(LucideIcons.award, size: 64, color: _pineGreen),
+          Icon(LucideIcons.award, size: 64, color: DesignSystem.emerald),
           const SizedBox(height: 16),
           Text(
             "Interview Complete",
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            style: DesignSystem.headingStyle(fontSize: 24),
           ),
           const SizedBox(height: 32),
           
-          // Glass Card matching dashboard style
-          ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildStatRow(LucideIcons.barChart, "Band Score", eval.bandScore),
-                    const Divider(height: 32, color: Colors.white12),
-                    _buildStatRow(LucideIcons.checkSquare, "Grammar", eval.grammar),
-                    const Divider(height: 32, color: Colors.white12),
-                    _buildStatRow(LucideIcons.smile, "Confidence", eval.confidence),
-                  ],
-                ),
-              ),
+          GlassContainer(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatRow(LucideIcons.barChart, "Band Score", eval.bandScore),
+                const Divider(height: 32, color: Colors.white12),
+                _buildStatRow(LucideIcons.checkSquare, "Grammar", eval.grammar),
+                const Divider(height: 32, color: Colors.white12),
+                _buildStatRow(LucideIcons.smile, "Confidence", eval.confidence),
+              ],
             ),
           ),
           
           const SizedBox(height: 32),
           Text(
             "Detailed Feedback",
-            style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: DesignSystem.headingStyle(fontSize: 18),
           ),
           const SizedBox(height: 16),
           Container(
@@ -335,12 +413,11 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
           const SizedBox(height: 40),
           ElevatedButton(
             onPressed: () {
-              // Re-initialize state to reset interview
               ref.read(interviewProvider.notifier).startInterview();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _pineGreen,
-              foregroundColor: Colors.white,
+              backgroundColor: DesignSystem.emerald,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -357,10 +434,10 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _pineGreen.withOpacity(0.1),
+            color: DesignSystem.emerald.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: _pineGreen, size: 24),
+          child: Icon(icon, color: DesignSystem.emerald, size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(

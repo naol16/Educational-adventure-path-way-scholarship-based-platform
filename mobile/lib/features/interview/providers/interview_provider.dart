@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/interview/models/evaluation_model.dart';
@@ -6,6 +7,22 @@ import 'package:mobile/features/interview/services/speech_service.dart';
 import 'package:mobile/features/interview/services/ai_service.dart';
 import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/core/services/api_client.dart';
+
+class InterviewMetrics {
+  final double fluency;
+  final double pace;
+  final double grammar;
+
+  InterviewMetrics({this.fluency = 0.5, this.pace = 0.5, this.grammar = 0.5});
+
+  InterviewMetrics copyWith({double? fluency, double? pace, double? grammar}) {
+    return InterviewMetrics(
+      fluency: fluency ?? this.fluency,
+      pace: pace ?? this.pace,
+      grammar: grammar ?? this.grammar,
+    );
+  }
+}
 
 class InterviewState {
   final bool isLoading;
@@ -17,6 +34,9 @@ class InterviewState {
   final String? interviewId;
   final EvaluationModel? evaluationData;
   final List<Map<String, dynamic>> messages;
+  final int remainingSeconds;
+  final bool isMuted;
+  final InterviewMetrics metrics;
 
   InterviewState({
     this.isLoading = false,
@@ -28,7 +48,10 @@ class InterviewState {
     this.interviewId,
     this.evaluationData,
     this.messages = const [],
-  });
+    this.remainingSeconds = 600, // 10 minutes
+    this.isMuted = false,
+    InterviewMetrics? metrics,
+  }) : metrics = metrics ?? InterviewMetrics();
 
   InterviewState copyWith({
     bool? isLoading,
@@ -40,6 +63,9 @@ class InterviewState {
     String? interviewId,
     EvaluationModel? evaluationData,
     List<Map<String, dynamic>>? messages,
+    int? remainingSeconds,
+    bool? isMuted,
+    InterviewMetrics? metrics,
   }) {
     return InterviewState(
       isLoading: isLoading ?? this.isLoading,
@@ -51,6 +77,9 @@ class InterviewState {
       interviewId: interviewId ?? this.interviewId,
       evaluationData: evaluationData ?? this.evaluationData,
       messages: messages ?? this.messages,
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      isMuted: isMuted ?? this.isMuted,
+      metrics: metrics ?? this.metrics,
     );
   }
 }
@@ -60,6 +89,7 @@ class InterviewProvider extends StateNotifier<InterviewState> {
   final SpeechService _speechService;
   final AiService _aiService;
   final ApiClient _apiClient;
+  Timer? _timer;
 
   InterviewProvider(this._ttsService, this._speechService, this._aiService, this._apiClient)
       : super(InterviewState()) {
@@ -67,7 +97,15 @@ class InterviewProvider extends StateNotifier<InterviewState> {
   }
 
   Future<void> startInterview({String country = "USA", String university = "Full-ride University"}) async {
-    state = state.copyWith(isLoading: true, error: null, evaluationData: null, interviewId: null, messages: []);
+    state = state.copyWith(
+      isLoading: true, 
+      error: null, 
+      evaluationData: null, 
+      interviewId: null, 
+      messages: [],
+      remainingSeconds: 600,
+      metrics: InterviewMetrics(),
+    );
     
     try {
       final response = await _apiClient.post(
@@ -99,13 +137,31 @@ class InterviewProvider extends StateNotifier<InterviewState> {
         messages: initialMessages
       );
       
+      _startTimer();
       await _ttsService.speak(firstMessage);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state.remainingSeconds > 0) {
+        state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+      } else {
+        timer.cancel();
+        endInterview();
+      }
+    });
+  }
+
+  void toggleMute() {
+    state = state.copyWith(isMuted: !state.isMuted);
+  }
+
   void toggleRecording(bool isRecording) {
+    if (state.isMuted && isRecording) return;
     state = state.copyWith(isRecording: isRecording);
     if (isRecording) {
       _ttsService.stop();
@@ -113,7 +169,7 @@ class InterviewProvider extends StateNotifier<InterviewState> {
   }
 
   Future<void> submitAudio(String filePath) async {
-    if (state.isEvaluating || state.evaluationData != null) return;
+    if (state.isEvaluating || state.evaluationData != null || state.isMuted) return;
     state = state.copyWith(isSending: true, error: null);
     try {
       final userText = await _speechService.transcribeAudio(filePath);
@@ -121,9 +177,13 @@ class InterviewProvider extends StateNotifier<InterviewState> {
       final updatedMessages = List<Map<String, dynamic>>.from(state.messages);
       updatedMessages.add({"role": "user", "content": userText});
 
+      // Update metrics based on user response (simulated logic)
+      final newMetrics = _calculateMetrics(userText, state.metrics);
+
       state = state.copyWith(
-        currentPrompt: "You: $userText\n\n(Officer is thinking...)",
+        currentPrompt: "(Officer is thinking...)",
         messages: updatedMessages,
+        metrics: newMetrics,
       );
 
       final aiResponse = await _aiService.getResponse(updatedMessages);
@@ -142,13 +202,22 @@ class InterviewProvider extends StateNotifier<InterviewState> {
     }
   }
 
+  InterviewMetrics _calculateMetrics(String text, InterviewMetrics current) {
+    // Simple simulated logic for demo purposes
+    double fluency = (current.fluency + (text.length > 50 ? 0.05 : -0.02)).clamp(0.1, 1.0);
+    double pace = (current.pace + (text.split(' ').length / 10 * 0.1)).clamp(0.1, 1.0);
+    double grammar = (current.grammar + (text.contains(' because ') ? 0.05 : 0.01)).clamp(0.1, 1.0);
+    
+    return current.copyWith(fluency: fluency, pace: pace, grammar: grammar);
+  }
+
   Future<void> endInterview() async {
     if (state.interviewId == null) return;
+    _timer?.cancel();
     state = state.copyWith(isEvaluating: true, error: null);
     _ttsService.stop();
     
     try {
-      // Send the transcript to the backend for evaluation
       final response = await _apiClient.post(
         '/api/visa/finalize/${state.interviewId}',
         body: {
@@ -174,6 +243,7 @@ class InterviewProvider extends StateNotifier<InterviewState> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _ttsService.stop();
     super.dispose();
   }
@@ -191,4 +261,3 @@ final interviewProvider = StateNotifierProvider<InterviewProvider, InterviewStat
     ref.read(apiClientProvider),
   );
 });
-
