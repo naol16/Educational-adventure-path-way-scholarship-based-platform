@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final TextInputType keyboardType;
   final int maxLines;
+  final Iterable<String>? autofillHints;
 
   const CustomTextField({
     super.key,
@@ -21,6 +22,7 @@ class CustomTextField extends StatelessWidget {
     this.onChanged,
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
+    this.autofillHints,
   });
 
   @override
@@ -41,6 +43,7 @@ class CustomTextField extends StatelessWidget {
           onChanged: onChanged,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          autofillHints: autofillHints,
           style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
           decoration: InputDecoration(
             hintText: hintText,

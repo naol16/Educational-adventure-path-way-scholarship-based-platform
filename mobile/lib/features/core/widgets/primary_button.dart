@@ -21,6 +21,9 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = DesignSystem.primary(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -31,30 +34,30 @@ class PrimaryButton extends StatelessWidget {
               label: Text(
                 text,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: DesignSystem.mainText(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: DesignSystem.glassBorder),
+                side: BorderSide(color: DesignSystem.glassBorder(context)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
-                backgroundColor: DesignSystem.glassWhite,
+                backgroundColor: DesignSystem.glassBackground(context),
               ),
             )
           : Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                gradient: LinearGradient(
+                  colors: [primaryColor, primaryColor.withOpacity(0.8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: primaryColor.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -64,7 +67,7 @@ class PrimaryButton extends StatelessWidget {
                 onPressed: isLoading ? null : onPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: isDark ? Colors.black : Colors.white,
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
@@ -72,12 +75,12 @@ class PrimaryButton extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: isDark ? Colors.black : Colors.white,
                         ),
                       )
                     : Row(

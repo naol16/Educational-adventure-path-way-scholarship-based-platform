@@ -11,12 +11,12 @@ class MissionDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DesignSystem.background,
+      backgroundColor: DesignSystem.themeBackground(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+          icon: Icon(LucideIcons.arrowLeft, color: DesignSystem.mainText(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -49,11 +49,7 @@ class MissionDetailScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   "Skimming Techniques",
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: DesignSystem.headingStyle(buildContext: context),
                 ),
                 const SizedBox(height: 30),
                 
@@ -65,16 +61,16 @@ class MissionDetailScreen extends StatelessWidget {
                     crossAxisSpacing: 16,
                     childAspectRatio: 0.85,
                     children: [
-                      _buildActionCard(LucideIcons.playCircle, "Watch Video", "Strategy", () {
+                      _buildActionCard(context, LucideIcons.playCircle, "Watch Video", "Strategy", () {
                         // Navigate to YouTube Player Screen
                       }),
-                      _buildActionCard(LucideIcons.fileText, "Read Briefing", "PDF Guide", () {
+                      _buildActionCard(context, LucideIcons.fileText, "Read Briefing", "PDF Guide", () {
                         // Open PDF Viewer
                       }),
-                      _buildActionCard(LucideIcons.edit3, "Practice Drill", "Active Training", () {
+                      _buildActionCard(context, LucideIcons.edit3, "Practice Drill", "Active Training", () {
                         // Start Quiz Engine
                       }),
-                      _buildActionCard(LucideIcons.trophy, "Unit Test", "Evaluation", () {
+                      _buildActionCard(context, LucideIcons.trophy, "Unit Test", "Evaluation", () {
                         // Start Final Exam
                       }, isLocked: true),
                     ],
@@ -95,6 +91,7 @@ class MissionDetailScreen extends StatelessWidget {
   }
 
   Widget _buildActionCard(
+    BuildContext context,
     IconData icon,
     String title,
     String sub,
@@ -111,24 +108,24 @@ class MissionDetailScreen extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isLocked ? Colors.white10 : DesignSystem.emerald,
+              color: isLocked ? DesignSystem.labelText(context).withOpacity(0.1) : DesignSystem.emerald,
               size: 32,
             ),
             const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: isLocked ? Colors.white24 : Colors.white,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
+                color: isLocked ? DesignSystem.mainText(context).withOpacity(0.24) : null,
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               sub,
-              style: GoogleFonts.inter(
-                color: Colors.white38,
+              style: DesignSystem.labelStyle(
+                buildContext: context,
                 fontSize: 10,
               ),
             ),

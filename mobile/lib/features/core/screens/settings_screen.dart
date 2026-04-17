@@ -7,6 +7,7 @@ import 'package:mobile/features/core/providers/notification_provider.dart';
 import 'package:mobile/features/core/services/notification_api_service.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/core/providers/theme_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -84,21 +85,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: DesignSystem.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: DesignSystem.surface(context).withOpacity(0.2)),
               ),
-              child: const Icon(LucideIcons.chevronLeft, color: Colors.white, size: 20),
+              child: Icon(LucideIcons.chevronLeft, color: DesignSystem.mainText(context), size: 20),
             ),
           ),
           const SizedBox(width: 20),
           Text(
             "Settings",
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
+            style: DesignSystem.headingStyle(buildContext: context, fontSize: 24),
           ),
         ],
       ),
@@ -106,6 +103,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildTabSwitcher() {
+    final primaryColor = DesignSystem.primary(context);
     return Container(
       height: 60,
       margin: const EdgeInsets.only(bottom: 10),
@@ -124,10 +122,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: isSelected ? DesignSystem.emerald.withOpacity(0.15) : Colors.transparent,
+                color: isSelected ? primaryColor.withOpacity(0.15) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? DesignSystem.emerald.withOpacity(0.5) : Colors.white.withOpacity(0.05),
+                  color: isSelected ? primaryColor.withOpacity(0.5) : DesignSystem.glassBorder(context),
                 ),
               ),
               child: Row(
@@ -135,13 +133,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icon(
                     tab['icon'],
                     size: 16,
-                    color: isSelected ? DesignSystem.emerald : Colors.white60,
+                    color: isSelected ? primaryColor : DesignSystem.labelText(context),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     tab['title'],
                     style: GoogleFonts.inter(
-                      color: isSelected ? DesignSystem.emerald : Colors.white60,
+                      color: isSelected ? primaryColor : DesignSystem.labelText(context),
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 13,
                     ),
@@ -217,30 +215,110 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAppearanceSection() {
+    final themeState = ref.watch(themeProvider);
+    final themeNotifier = ref.read(themeProvider.notifier);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle("Appearance", "Customize your visual experience"),
-        const SizedBox(height: 20),
-        _buildSettingsItem(
-          icon: LucideIcons.moon,
-          title: "Theme Mode",
-          value: "Dark (Default)",
-          onTap: () {},
+        const SizedBox(height: 30),
+        
+        Text("THEME MODE", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            _buildThemeOption(
+              icon: LucideIcons.moon,
+              label: "Dark",
+              isSelected: themeState.themeMode == ThemeMode.dark,
+              onTap: () => themeNotifier.setThemeMode(ThemeMode.dark),
+            ),
+            const SizedBox(width: 15),
+            _buildThemeOption(
+              icon: LucideIcons.sun,
+              label: "Light",
+              isSelected: themeState.themeMode == ThemeMode.light,
+              onTap: () => themeNotifier.setThemeMode(ThemeMode.light),
+            ),
+          ],
         ),
-        _buildSettingsItem(
-          icon: LucideIcons.palette,
-          title: "Accent Color",
-          value: "Emerald Green",
-          onTap: () {},
-        ),
-        _buildSettingsItem(
-          icon: LucideIcons.type,
-          title: "Typography",
-          value: "Inter & Plus Jakarta",
-          onTap: () {},
+        
+        const SizedBox(height: 40),
+        Text("ACCENT COLOR", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 15),
+        Wrap(
+          spacing: 15, runSpacing: 15,
+          children: DesignSystem.accentColors.map((color) {
+            final isSelected = themeState.accentColor.value == color.value;
+            return GestureDetector(
+              onTap: () => themeNotifier.setAccentColor(color),
+              child: Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected 
+                      ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black) 
+                      : Colors.transparent,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    if (isSelected)
+                      BoxShadow(
+                        color: color.withOpacity(0.4),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      )
+                  ],
+                ),
+                child: isSelected 
+                  ? Icon(LucideIcons.check, color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white, size: 20)
+                  : null,
+              ),
+            );
+          }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildThemeOption({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final primaryColor = DesignSystem.primary(context);
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor.withOpacity(0.1) : DesignSystem.surface(context),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? primaryColor : DesignSystem.surface(context).withOpacity(0.2),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? primaryColor : DesignSystem.labelText(context), size: 24),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  color: isSelected ? DesignSystem.mainText(context) : DesignSystem.labelText(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -276,7 +354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: LucideIcons.star,
           title: "Current Plan",
           value: "Free Tier",
-          valueColor: DesignSystem.emerald,
+          valueColor: DesignSystem.primary(context),
         ),
         _buildSettingsItem(
           icon: LucideIcons.history,
@@ -294,19 +372,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Text(
           title,
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: DesignSystem.headingStyle(buildContext: context, fontSize: 20),
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: GoogleFonts.inter(
-            color: Colors.white54,
-            fontSize: 13,
-          ),
+          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13),
         ),
       ],
     );
@@ -322,9 +393,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: DesignSystem.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: DesignSystem.surface(context).withOpacity(0.2)),
       ),
       child: ListTile(
         onTap: onTap,
@@ -332,18 +403,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: DesignSystem.emerald.withOpacity(0.1),
+            color: DesignSystem.primary(context).withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: DesignSystem.emerald, size: 18),
+          child: Icon(icon, color: DesignSystem.primary(context), size: 18),
         ),
         title: Text(
           title,
-          style: GoogleFonts.inter(
-            color: Colors.white70,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -351,14 +418,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text(
               value,
               style: GoogleFonts.inter(
-                color: valueColor ?? Colors.white,
+                color: valueColor ?? DesignSystem.mainText(context),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
             if (onTap != null) ...[
               const SizedBox(width: 8),
-              const Icon(LucideIcons.chevronRight, color: Colors.white24, size: 16),
+              Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context), size: 16),
             ]
           ],
         ),
@@ -372,17 +439,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
-            title: Text("Logout", style: GoogleFonts.plusJakartaSans(color: Colors.white)),
-            content: Text("Are you sure you want to log out?", style: GoogleFonts.inter(color: Colors.white70)),
+            backgroundColor: DesignSystem.surface(context),
+            title: Text("Logout", style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
+            content: Text("Are you sure you want to log out?", style: DesignSystem.bodyStyle(buildContext: context)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
+                child: Text("Cancel", style: DesignSystem.labelStyle(buildContext: context)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+                child: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
               ),
             ],
           ),

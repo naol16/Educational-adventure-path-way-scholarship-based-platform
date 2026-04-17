@@ -1,4 +1,3 @@
-import 'package:go_router/go_router.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'dart:async';
 import 'dart:ui';
@@ -57,7 +56,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             top: -50,
             right: -50,
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.emerald.withOpacity(0.08),
+              DesignSystem.primary(context).withOpacity(0.08),
               200,
             ),
           ),
@@ -69,8 +68,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 await ref.read(scholarshipMatchesProvider.notifier).reload();
                 await ref.read(scholarshipWatchlistProvider.notifier).reload();
               },
-              backgroundColor: DesignSystem.cardColor,
-              color: DesignSystem.emerald,
+              backgroundColor: DesignSystem.surfaceMediumColor(context),
+              color: DesignSystem.primary(context),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -115,26 +114,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(
-                'https://api.dicebear.com/7.x/avataaars/png?seed=Alex',
-              ),
-            ),
-            const SizedBox(width: 12),
             Text(
               "Discover",
               style: GoogleFonts.plusJakartaSans(
-                color: DesignSystem.emerald,
+                color: DesignSystem.primary(context),
                 fontWeight: FontWeight.w800,
                 fontSize: 24,
               ),
             ),
           ],
-        ),
-        GestureDetector(
-          onTap: () => context.push('/settings'),
-          child: const Icon(LucideIcons.sliders, color: Colors.white70, size: 20),
         ),
       ],
     );
@@ -148,23 +136,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             height: 55,
             padding: const EdgeInsets.symmetric(horizontal: 15),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: DesignSystem.surface(context),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: DesignSystem.surface(context).withOpacity(0.2)),
             ),
             child: Row(
               children: [
-                // Search icon removed as requested
-                const SizedBox(width: 8),
-                const SizedBox(width: 10),
+                Icon(LucideIcons.search, color: DesignSystem.labelText(context), size: 18),
+                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: GoogleFonts.inter(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: DesignSystem.bodyStyle(buildContext: context),
+                    decoration: InputDecoration(
                       hintText: "Search scholarships...",
-                      hintStyle: TextStyle(color: Colors.white24),
+                      hintStyle: DesignSystem.labelStyle(buildContext: context),
                       border: InputBorder.none,
                     ),
                   ),
@@ -173,38 +160,29 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 15),
-        Container(
-          height: 55,
-          width: 55,
-          decoration: BoxDecoration(
-            color: DesignSystem.emerald.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(LucideIcons.filter, color: DesignSystem.emerald, size: 22),
-        )
       ],
     );
   }
 
   Widget _buildTabSwitcher() {
+    final primaryColor = DesignSystem.primary(context);
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: DesignSystem.surface(context),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          _buildTab("Matched", 0),
-          _buildTab("Saved", 1),
-          _buildTab("Applied", 2),
+          _buildTab("Matched", 0, primaryColor),
+          _buildTab("Saved", 1, primaryColor),
+          _buildTab("Applied", 2, primaryColor),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String label, int index) {
+  Widget _buildTab(String label, int index, Color primaryColor) {
     bool active = _activeTabIndex == index;
     return Expanded(
       child: GestureDetector(
@@ -212,14 +190,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: active ? DesignSystem.emerald : Colors.transparent,
+            color: active ? primaryColor : Colors.transparent,
             borderRadius: BorderRadius.circular(15),
           ),
           child: Center(
             child: Text(
               label,
               style: GoogleFonts.inter(
-                color: active ? Colors.black : Colors.white54,
+                color: active 
+                  ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white)
+                  : DesignSystem.labelText(context),
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -248,10 +228,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             const SizedBox(height: 35),
             Text(
               "Curated For Your Pathway",
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 20),
@@ -276,10 +255,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ],
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: Padding(
           padding: EdgeInsets.only(top: 50),
-          child: CircularProgressIndicator(color: DesignSystem.emerald),
+          child: CircularProgressIndicator(color: DesignSystem.primary(context)),
         ),
       ),
       error: (e, st) => _buildEmptyState("Error loading scholarships: $e"),
@@ -319,10 +298,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
             Text(
               tabIndex == 1 ? "Your Watchlist" : "Your Applications",
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 20),
@@ -367,10 +345,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ],
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: Padding(
           padding: EdgeInsets.only(top: 50),
-          child: CircularProgressIndicator(color: DesignSystem.emerald),
+          child: CircularProgressIndicator(color: DesignSystem.primary(context)),
         ),
       ),
       error: (e, st) => _buildEmptyState("Error loading tracked scholarships: $e"),
@@ -383,11 +361,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(LucideIcons.searchX, size: 48, color: Colors.white.withOpacity(0.1)),
+            Icon(LucideIcons.searchX, size: 48, color: DesignSystem.labelText(context).withOpacity(0.3)),
             const SizedBox(height: 16),
             Text(
               msg,
-              style: DesignSystem.bodyStyle(color: Colors.white38),
+              style: DesignSystem.bodyStyle(buildContext: context, color: DesignSystem.labelText(context)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -419,14 +397,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       children: [
                         Icon(
                           isHero ? LucideIcons.sparkles : LucideIcons.bookmark,
-                          color: DesignSystem.emerald,
+                          color: DesignSystem.primary(context),
                           size: 14,
                         ),
                         const SizedBox(width: 5),
                         Text(
                           label,
                           style: GoogleFonts.plusJakartaSans(
-                            color: DesignSystem.emerald,
+                            color: DesignSystem.primary(context),
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
@@ -437,11 +415,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     const SizedBox(height: 8),
                     Text(
                       s.title,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                      style: DesignSystem.headingStyle(
+                        buildContext: context,
                         fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -459,13 +435,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               padding: const EdgeInsets.all(15),
               width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: DesignSystem.emerald.withOpacity(0.3)),
+                border: Border.all(color: DesignSystem.primary(context).withOpacity(0.3)),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 "\"AI Insight: ${s.matchReason}\"",
                 style: GoogleFonts.inter(
-                  color: DesignSystem.emerald,
+                  color: DesignSystem.primary(context),
                   fontStyle: FontStyle.italic,
                   fontSize: 12,
                   height: 1.4,
@@ -489,7 +465,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [DesignSystem.emerald, DesignSystem.emerald.withOpacity(0.7)],
+                        colors: [DesignSystem.primary(context), DesignSystem.primary(context).withOpacity(0.7)],
                       ),
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -513,7 +489,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     SnackBar(
                       content: Text(isSaved ? 'Removed from watchlist' : 'Added to watchlist'),
                       duration: const Duration(seconds: 2),
-                      backgroundColor: DesignSystem.cardColor,
+                      backgroundColor: DesignSystem.overlayBackground(context),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -524,7 +500,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   borderRadius: 15,
                   child: Icon(
                     isSaved ? LucideIcons.check : LucideIcons.bookmark,
-                    color: isSaved ? DesignSystem.emerald : Colors.white,
+                    color: isSaved ? DesignSystem.primary(context) : DesignSystem.mainText(context),
                     size: 20,
                   ),
                 ),
@@ -547,8 +523,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           child: CircularProgressIndicator(
             value: score / 100,
             strokeWidth: 4,
-            backgroundColor: Colors.white10,
-            valueColor: const AlwaysStoppedAnimation(DesignSystem.emerald),
+            backgroundColor: DesignSystem.surfaceMediumColor(context),
+            valueColor: AlwaysStoppedAnimation(DesignSystem.primary(context)),
           ),
         ),
         Column(
@@ -556,18 +532,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           children: [
             Text(
               val,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               "MATCH",
-              style: GoogleFonts.inter(
-                color: Colors.white38,
+              style: DesignSystem.labelStyle(
+                buildContext: context,
                 fontSize: 7,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -588,9 +562,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [DesignSystem.emerald, Color(0xFF34D399)]),
+          gradient: LinearGradient(colors: [DesignSystem.primary(context), Color(0xFF34D399)]),
           boxShadow: [
             BoxShadow(
               color: Color(0x6610B981),

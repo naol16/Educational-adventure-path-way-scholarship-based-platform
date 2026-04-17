@@ -54,7 +54,7 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
           Positioned(
             top: -50,
             right: -50,
-            child: DesignSystem.buildBlurCircle(DesignSystem.emerald.withOpacity(0.05), 250),
+            child: DesignSystem.buildBlurCircle(DesignSystem.primary(context).withOpacity(0.05), 250),
           ),
           watchlistAsync.when(
             data: (watchlist) {
@@ -101,7 +101,7 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: DesignSystem.emerald)),
+            loading: () => Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))),
             error: (err, _) => Center(
               child: Text(
                 "Error loading watchlist:\n$err",
@@ -121,7 +121,7 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
     String statusText;
     switch (item.status) {
       case 'APPLIED':
-        statusColor = DesignSystem.emerald;
+        statusColor = DesignSystem.primary(context);
         statusText = 'Applied';
         break;
       case 'SUBMITTED':
@@ -293,15 +293,15 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         decoration: BoxDecoration(
-          color: isSelected ? DesignSystem.emerald.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+          color: isSelected ? DesignSystem.primary(context).withOpacity(0.1) : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isSelected ? DesignSystem.emerald : Colors.transparent),
+          border: Border.all(color: isSelected ? DesignSystem.primary(context) : Colors.transparent),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: GoogleFonts.inter(color: isSelected ? DesignSystem.emerald : Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-            if (isSelected) const Icon(LucideIcons.check, color: DesignSystem.emerald, size: 16),
+            Text(label, style: GoogleFonts.inter(color: isSelected ? DesignSystem.primary(context) : Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            if (isSelected) Icon(LucideIcons.check, color: DesignSystem.primary(context), size: 16),
           ],
         ),
       ),

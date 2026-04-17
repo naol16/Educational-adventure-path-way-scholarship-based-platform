@@ -32,7 +32,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
     final isTracked = watchlistState.valueOrNull?.any((s) => s.scholarshipId == widget.scholarshipId) ?? false;
 
     return Scaffold(
-      backgroundColor: DesignSystem.background,
+      backgroundColor: DesignSystem.themeBackground(context),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -45,7 +45,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
       ),
       body: detailAsync.when(
         data: (scholarship) => _buildContent(scholarship, isTracked),
-        loading: () => const Center(child: CircularProgressIndicator(color: DesignSystem.emerald)),
+        loading: () => Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))),
         error: (err, stack) => Center(
           child: Text(
             "Error loading details: $err",
@@ -64,7 +64,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           top: -100,
           left: 50,
           child: DesignSystem.buildBlurCircle(
-            DesignSystem.emerald.withOpacity(0.05),
+            DesignSystem.primary(context).withOpacity(0.05),
             300,
           ),
         ),
@@ -111,16 +111,15 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               child: CircularProgressIndicator(
                 value: score / 100,
                 strokeWidth: 8,
-                backgroundColor: Colors.white.withOpacity(0.05),
-                valueColor: const AlwaysStoppedAnimation(DesignSystem.emerald),
+                backgroundColor: DesignSystem.surfaceMediumColor(context),
+                valueColor: AlwaysStoppedAnimation(DesignSystem.primary(context)),
               ),
             ),
             Text(
               "$score%",
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
                 fontSize: 42,
-                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -129,13 +128,13 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: DesignSystem.emerald.withOpacity(0.5)),
+            border: Border.all(color: DesignSystem.primary(context).withOpacity(0.5)),
             borderRadius: BorderRadius.circular(15),
           ),
           child: Text(
             score >= 80 ? "High Compatibility" : score >= 50 ? "Good Match" : "Moderate Match",
             style: GoogleFonts.inter(
-              color: DesignSystem.emerald,
+              color: DesignSystem.primary(context),
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
@@ -154,14 +153,19 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+            style: DesignSystem.headingStyle(
+              buildContext: context,
               fontSize: 28,
-              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 10),
-          Text(subtitle, style: GoogleFonts.inter(color: Colors.white54, fontSize: 18)),
+          Text(
+            subtitle, 
+            style: DesignSystem.labelStyle(
+              buildContext: context,
+              fontSize: 18,
+            ),
+          ),
         ],
       ),
     );
@@ -174,13 +178,13 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildStatCard("AWARD", s.amount ?? "Varies", DesignSystem.emerald),
+          _buildStatCard("AWARD", s.amount ?? "Varies", DesignSystem.primary(context)),
           _buildStatCard(
             "LEVEL",
             s.degreeLevels.isNotEmpty ? s.degreeLevels.first : "Various",
-            DesignSystem.emerald,
+            DesignSystem.primary(context),
           ),
-          _buildStatCard("INTAKE", s.intakeSeason ?? "Rolling", DesignSystem.emerald),
+          _buildStatCard("INTAKE", s.intakeSeason ?? "Rolling", DesignSystem.primary(context)),
         ],
       ),
     );
@@ -194,10 +198,10 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
-              color: Colors.white24,
+            style: DesignSystem.labelStyle(
+              buildContext: context,
               fontSize: 10,
-              fontWeight: FontWeight.bold,
+              color: DesignSystem.labelText(context).withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 5),
@@ -224,9 +228,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               backgroundColor: Color(0xFF065F46),
-              child: Icon(LucideIcons.zap, color: DesignSystem.emerald, size: 18),
+              child: Icon(LucideIcons.zap, color: DesignSystem.primary(context), size: 18),
             ),
             const SizedBox(width: 15),
             Expanded(
@@ -236,13 +240,16 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                     TextSpan(
                       text: "Pathfinder Insight: ",
                       style: GoogleFonts.plusJakartaSans(
-                        color: DesignSystem.emerald,
+                        color: DesignSystem.primary(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     TextSpan(
                       text: reason ?? "This scholarship is a great fit for your academic goals.",
-                      style: GoogleFonts.inter(color: Colors.white70),
+                      style: DesignSystem.bodyStyle(
+                        buildContext: context,
+                        color: DesignSystem.subText(context),
+                      ),
                     ),
                   ],
                 ),
@@ -263,10 +270,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         children: [
           Text(
             "Eligibility Comparison",
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+            style: DesignSystem.headingStyle(
+              buildContext: context,
               fontSize: 20,
-              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 20),
@@ -277,27 +283,15 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               children: [
                 Text(
                   "SCHOLARSHIP NEEDS",
-                  style: GoogleFonts.inter(
-                    color: Colors.white24,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
                 ),
                 Text(
                   "STATUS",
-                  style: GoogleFonts.inter(
-                    color: Colors.white24,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
                 ),
                 Text(
                   "YOUR PROFILE",
-                  style: GoogleFonts.inter(
-                    color: Colors.white24,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
                 ),
               ],
             ),
@@ -330,21 +324,20 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               width: 100,
               child: Text(
                 need,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                style: DesignSystem.headingStyle(
+                  buildContext: context,
                   fontSize: 13,
                 ),
               ),
             ),
-            const Icon(LucideIcons.checkCircle2, color: DesignSystem.emerald, size: 20),
+            Icon(LucideIcons.checkCircle2, color: DesignSystem.primary(context), size: 20),
             SizedBox(
               width: 100,
               child: Text(
                 you,
                 textAlign: TextAlign.right,
                 style: GoogleFonts.plusJakartaSans(
-                  color: DesignSystem.emerald,
+                  color: DesignSystem.primary(context),
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -365,28 +358,32 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         children: [
           Text(
             "About Fellowship",
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+            style: DesignSystem.headingStyle(
+              buildContext: context,
               fontSize: 20,
-              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 15),
           Text(
             description ?? "Details about this scholarship have not been fully provided yet.",
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 15, height: 1.6),
+            style: DesignSystem.bodyStyle(
+              buildContext: context,
+              fontSize: 15,
+            ).copyWith(height: 1.6),
           ),
           if (requirements != null) ...[
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                border: Border(left: BorderSide(color: DesignSystem.emerald, width: 4)),
-                color: Colors.white10,
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: DesignSystem.primary(context), width: 4)),
+                color: DesignSystem.surface(context),
               ),
               child: Text(
                 "\"$requirements\"",
-                style: GoogleFonts.inter(color: Colors.white, fontStyle: FontStyle.italic),
+                style: DesignSystem.bodyStyle(
+                  buildContext: context,
+                ).copyWith(fontStyle: FontStyle.italic),
               ),
             )
           ]
@@ -440,13 +437,13 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [DesignSystem.emerald, Color(0xFF059669)],
+                    gradient: LinearGradient(
+                      colors: [DesignSystem.primary(context), Color(0xFF059669)],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: DesignSystem.emerald.withOpacity(0.3),
+                        color: DesignSystem.primary(context).withOpacity(0.3),
                         blurRadius: 20,
                       )
                     ],
@@ -454,11 +451,10 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   child: Center(
                     child: Text(
                       "BEGIN APPLICATION",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w900,
+                      style: DesignSystem.headingStyle(
+                        buildContext: context,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
                         fontSize: 15,
-                        letterSpacing: 1,
                       ),
                     ),
                   ),
@@ -488,7 +484,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 borderRadius: 20,
                 child: Icon(
                   isTracked ? LucideIcons.bookmarkMinus : LucideIcons.bookmarkPlus,
-                  color: isTracked ? Colors.white : DesignSystem.emerald,
+                  color: isTracked ? DesignSystem.primary(context) : DesignSystem.mainText(context),
                 ),
               ),
             )
@@ -507,7 +503,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         child: GlassContainer(
           padding: const EdgeInsets.all(10),
           borderRadius: 50,
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: DesignSystem.mainText(context), size: 20),
         ),
       ),
     );

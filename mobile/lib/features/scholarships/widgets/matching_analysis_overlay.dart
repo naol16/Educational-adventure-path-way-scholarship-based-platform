@@ -75,7 +75,7 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
           // Background Glows
           Center(
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.emerald.withOpacity(0.05),
+              DesignSystem.primary(context).withOpacity(0.05),
               400,
             ),
           ),
@@ -99,13 +99,13 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: DesignSystem.emerald.withOpacity(0.1),
+                              color: DesignSystem.primary(context).withOpacity(0.1),
                               width: 1,
                             ),
                           ),
                           child: CustomPaint(
                             painter: _DottedCirclePainter(
-                              color: DesignSystem.emerald.withOpacity(0.3),
+                              color: DesignSystem.primary(context).withOpacity(0.3),
                             ),
                           ),
                         ),
@@ -119,7 +119,7 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                           height: 140,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: DesignSystem.emerald.withOpacity(0.05),
+                            color: DesignSystem.primary(context).withOpacity(0.05),
                           ),
                         ),
                       ),
@@ -130,19 +130,19 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                         decoration: BoxDecoration(
                           color: DesignSystem.background,
                           shape: BoxShape.circle,
-                          border: Border.all(color: DesignSystem.glassBorder),
+                          border: Border.all(color: DesignSystem.glassBorder(context)),
                           boxShadow: [
                             BoxShadow(
-                              color: DesignSystem.emerald.withOpacity(0.1),
+                              color: DesignSystem.primary(context).withOpacity(0.1),
                               blurRadius: 30,
                               spreadRadius: 2,
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           LucideIcons.brainCircuit,
                           size: 64,
-                          color: DesignSystem.emerald,
+                          color: DesignSystem.primary(context),
                         ),
                       ),
                     ],
@@ -152,14 +152,14 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                   // Title
                   Text(
                     "Analyzing Profile",
-                    style: DesignSystem.headingStyle(fontSize: 26),
+                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 26),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     "Our AI is finding the best matches for you",
                     style: DesignSystem.bodyStyle(
-                      color: Colors.white54,
+                      buildContext: context,
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
@@ -170,9 +170,9 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: DesignSystem.glassWhite,
+                      color: DesignSystem.glassBackground(context),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: DesignSystem.glassBorder),
+                      border: Border.all(color: DesignSystem.glassBorder(context)),
                     ),
                     child: Column(
                       children: List.generate(_steps.length, (index) {
@@ -192,8 +192,8 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                                       : LucideIcons.circle,
                                   size: 18,
                                   color: isCompleted
-                                      ? DesignSystem.emerald
-                                      : Colors.white24,
+                                      ? DesignSystem.primary(context)
+                                      : DesignSystem.labelText(context),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -201,12 +201,13 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                                     _steps[index],
                                     style:
                                         DesignSystem.bodyStyle(
+                                          buildContext: context,
                                           fontSize: 14,
                                           color: isCurrent
-                                              ? Colors.white
+                                              ? DesignSystem.mainText(context)
                                               : (isCompleted
-                                                    ? Colors.white70
-                                                    : Colors.white38),
+                                                    ? DesignSystem.subText(context)
+                                                    : DesignSystem.labelText(context)),
                                         ).copyWith(
                                           fontWeight: isCurrent
                                               ? FontWeight.w700
@@ -215,12 +216,12 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                                   ),
                                 ),
                                 if (isCurrent)
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 12,
                                     height: 12,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: DesignSystem.emerald,
+                                      color: DesignSystem.primary(context),
                                     ),
                                   ),
                               ],

@@ -33,7 +33,7 @@ class StepProgress extends StatelessWidget {
             ),
             Text(
               "$currentStep of $totalSteps",
-              style: DesignSystem.labelStyle(color: DesignSystem.emerald),
+              style: DesignSystem.labelStyle(color: DesignSystem.primary(context)),
             ),
           ],
         ),
@@ -47,12 +47,12 @@ class StepProgress extends StatelessWidget {
                 height: 6,
                 decoration: BoxDecoration(
                   color: isActive
-                      ? DesignSystem.emerald
-                      : DesignSystem.glassWhite,
+                      ? DesignSystem.primary(context)
+                      : DesignSystem.glassBackground(context),
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isActive ? [
                     BoxShadow(
-                      color: DesignSystem.emerald.withOpacity(0.3),
+                      color: DesignSystem.primary(context).withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     )
@@ -107,9 +107,9 @@ class SelectableCard extends StatelessWidget {
               if (trailing != null) 
                 trailing!
               else if (isSelected)
-                const Icon(
+                Icon(
                   LucideIcons.checkCircle2,
-                  color: DesignSystem.emerald,
+                  color: DesignSystem.primary(context),
                   size: 20,
                 ),
             ],
@@ -150,7 +150,7 @@ class UploadBox extends StatelessWidget {
                 children: [
                    ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: _buildPreview(),
+                    child: _buildPreview(context),
                   ),
                   Positioned(
                     top: 8,
@@ -161,7 +161,7 @@ class UploadBox extends StatelessWidget {
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(LucideIcons.check, color: DesignSystem.emerald, size: 14),
+                      child: Icon(LucideIcons.check, color: DesignSystem.primary(context), size: 14),
                     ),
                   )
                 ],
@@ -172,19 +172,19 @@ class UploadBox extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: DesignSystem.emerald.withOpacity(0.1),
+                      color: DesignSystem.primary(context).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.uploadCloud,
-                      color: DesignSystem.emerald,
+                      color: DesignSystem.primary(context),
                       size: 28,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     title,
-                    style: DesignSystem.bodyStyle(fontSize: 14).copyWith(fontWeight: FontWeight.w700),
+                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14).copyWith(fontWeight: FontWeight.w700),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -192,7 +192,7 @@ class UploadBox extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: DesignSystem.labelStyle(color: Colors.white38),
+                    style: DesignSystem.labelStyle(buildContext: context),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -203,7 +203,7 @@ class UploadBox extends StatelessWidget {
     );
   }
 
-  Widget _buildPreview() {
+  Widget _buildPreview(BuildContext context) {
     final path = filePath ?? "";
     final isRemote = path.startsWith('http');
     final isImage =
@@ -220,7 +220,7 @@ class UploadBox extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (context, error, stackTrace) => _buildFileFallback(),
+          errorBuilder: (context, error, stackTrace) => _buildFileFallback(context),
         );
       }
       return Image.file(
@@ -228,7 +228,7 @@ class UploadBox extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => _buildFileFallback(),
+        errorBuilder: (context, error, stackTrace) => _buildFileFallback(context),
       );
     }
 
@@ -237,7 +237,7 @@ class UploadBox extends StatelessWidget {
         future: _renderPdfFirstPage(path),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: DesignSystem.emerald));
+            return Center(child: CircularProgressIndicator(strokeWidth: 2, color: DesignSystem.primary(context)));
           }
           if (snapshot.hasData && snapshot.data != null) {
             return Image(
@@ -247,12 +247,12 @@ class UploadBox extends StatelessWidget {
               height: double.infinity,
             );
           }
-          return _buildFileFallback();
+          return _buildFileFallback(context);
         },
       );
     }
 
-    return _buildFileFallback();
+    return _buildFileFallback(context);
   }
 
   Future<PdfPageImage?> _renderPdfFirstPage(String path) async {
@@ -273,19 +273,20 @@ class UploadBox extends StatelessWidget {
     }
   }
 
-  Widget _buildFileFallback() {
+  Widget _buildFileFallback(BuildContext context) {
+    final primaryColor = DesignSystem.primary(context);
     return Container(
-      color: DesignSystem.glassWhite,
+      color: DesignSystem.glassBackground(context),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(LucideIcons.fileText, color: DesignSystem.emerald, size: 32),
+          Icon(LucideIcons.fileText, color: primaryColor, size: 32),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
               fileName ?? "File",
-              style: DesignSystem.labelStyle(color: DesignSystem.emerald, fontSize: 10),
+              style: DesignSystem.labelStyle(buildContext: context, color: primaryColor, fontSize: 10),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -312,20 +313,21 @@ class CustomPillChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = DesignSystem.primary(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? DesignSystem.emerald : DesignSystem.glassWhite,
+          color: isSelected ? primaryColor : DesignSystem.glassBackground(context),
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: isSelected ? DesignSystem.emerald : DesignSystem.glassBorder,
+            color: isSelected ? primaryColor : DesignSystem.glassBorder(context),
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: DesignSystem.emerald.withOpacity(0.3),
+              color: primaryColor.withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             )
@@ -334,7 +336,10 @@ class CustomPillChip extends StatelessWidget {
         child: Text(
           label,
           style: DesignSystem.bodyStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            buildContext: context,
+            color: isSelected 
+              ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white)
+              : DesignSystem.subText(context),
             fontSize: 13,
           ).copyWith(fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500),
         ),
@@ -363,7 +368,7 @@ class CustomDropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: DesignSystem.labelStyle(),
+          style: DesignSystem.labelStyle(buildContext: context),
         ),
         const SizedBox(height: 12),
         GestureDetector(
@@ -382,17 +387,18 @@ class CustomDropdownField extends StatelessWidget {
                   child: Text(
                     hint,
                     style: DesignSystem.bodyStyle(
+                      buildContext: context,
                       color: hint.contains('Select') || hint.contains('/')
-                          ? Colors.white38
-                          : Colors.white,
+                          ? DesignSystem.labelText(context)
+                          : DesignSystem.mainText(context),
                       fontSize: 14,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(
+                Icon(
                   LucideIcons.chevronDown,
-                  color: Colors.white38,
+                  color: DesignSystem.labelText(context),
                   size: 20,
                 ),
               ],
@@ -430,19 +436,21 @@ class CustomCheckbox extends StatelessWidget {
               height: 24,
               width: 24,
               decoration: BoxDecoration(
-                color: value ? DesignSystem.emerald : DesignSystem.glassWhite,
+                color: value ? DesignSystem.primary(context) : DesignSystem.glassBackground(context),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: value ? DesignSystem.emerald : DesignSystem.glassBorder,
+                  color: value ? DesignSystem.primary(context) : DesignSystem.glassBorder(context),
                 ),
               ),
-              child: value ? const Icon(LucideIcons.check, color: Colors.white, size: 16) : null,
+              child: value ? Icon(LucideIcons.check, 
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white, 
+                size: 16) : null,
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label, 
-                style: DesignSystem.bodyStyle(fontSize: 14)
+                style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14)
               )
             ),
           ],

@@ -142,7 +142,7 @@ class _StudentOnboardingScreenState
             top: -50,
             left: -100,
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.emerald.withOpacity(0.08),
+              DesignSystem.primary(context).withOpacity(0.08),
               300,
             ),
           ),
@@ -210,7 +210,7 @@ class _StudentOnboardingScreenState
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: DesignSystem.background,
-        border: Border(top: BorderSide(color: DesignSystem.glassBorder)),
+        border: Border(top: BorderSide(color: DesignSystem.glassBorder(context))),
       ),
       child: Row(
         children: [
@@ -255,123 +255,131 @@ class _StudentOnboardingScreenState
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       physics: const BouncingScrollPhysics(),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Basic Information",
-              style: DesignSystem.headingStyle(fontSize: 22),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Help us set up your profile",
-              style: DesignSystem.bodyStyle(color: Colors.white54),
-            ),
-            const SizedBox(height: 32),
-
-            _buildFieldLabel("Full Name *"),
-            CustomTextField(
-              hintText: "As per your passport",
-              prefixIcon: LucideIcons.user,
-              controller: TextEditingController(text: state.fullName)
-                ..selection = TextSelection.collapsed(
-                  offset: (state.fullName ?? '').length,
-                ),
-              onChanged: (val) =>
-                  notifier.updateField((s) => s.copyWith(fullName: val)),
-            ),
-
-            _buildFieldLabel("Email Address *"),
-            CustomTextField(
-              hintText: "Email Address",
-              prefixIcon: LucideIcons.mail,
-              controller: TextEditingController(text: state.email)
-                ..selection = TextSelection.collapsed(
-                  offset: (state.email ?? '').length,
-                ),
-              onChanged: (val) =>
-                  notifier.updateField((s) => s.copyWith(email: val)),
-            ),
-
-            _buildFieldLabel("Phone Number"),
-            CustomTextField(
-              hintText: "+1 234...",
-              prefixIcon: LucideIcons.phone,
-              controller: TextEditingController(text: state.phoneNumber)
-                ..selection = TextSelection.collapsed(
-                  offset: (state.phoneNumber ?? '').length,
-                ),
-              onChanged: (val) =>
-                  notifier.updateField((s) => s.copyWith(phoneNumber: val)),
-            ),
-
-            CustomDropdownField(
-              label: "Date of Birth *",
-              hint: state.dateOfBirth ?? "Select date",
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now().subtract(
-                    const Duration(days: 365 * 18),
+      child: AutofillGroup(
+        child: GlassContainer(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Basic Information",
+                style: DesignSystem.headingStyle(fontSize: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Help us set up your profile",
+                style: DesignSystem.bodyStyle(color: Colors.white54),
+              ),
+              const SizedBox(height: 32),
+    
+              _buildFieldLabel("Full Name *"),
+              CustomTextField(
+                hintText: "As per your passport",
+                prefixIcon: LucideIcons.user,
+                autofillHints: const [AutofillHints.name],
+                controller: TextEditingController(text: state.fullName)
+                  ..selection = TextSelection.collapsed(
+                    offset: (state.fullName ?? '').length,
                   ),
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime.now(),
-                  builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.dark(
-                        primary: DesignSystem.emerald,
-                        onPrimary: Colors.white,
-                        surface: DesignSystem.background,
-                        onSurface: Colors.white,
-                      ),
+                onChanged: (val) =>
+                    notifier.updateField((s) => s.copyWith(fullName: val)),
+              ),
+    
+              _buildFieldLabel("Email Address *"),
+              CustomTextField(
+                hintText: "Email Address",
+                prefixIcon: LucideIcons.mail,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                controller: TextEditingController(text: state.email)
+                  ..selection = TextSelection.collapsed(
+                    offset: (state.email ?? '').length,
+                  ),
+                onChanged: (val) =>
+                    notifier.updateField((s) => s.copyWith(email: val)),
+              ),
+    
+              _buildFieldLabel("Phone Number"),
+              CustomTextField(
+                hintText: "+1 234...",
+                prefixIcon: LucideIcons.phone,
+                keyboardType: TextInputType.phone,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                controller: TextEditingController(text: state.phoneNumber)
+                  ..selection = TextSelection.collapsed(
+                    offset: (state.phoneNumber ?? '').length,
+                  ),
+                onChanged: (val) =>
+                    notifier.updateField((s) => s.copyWith(phoneNumber: val)),
+              ),
+    
+              CustomDropdownField(
+                label: "Date of Birth *",
+                hint: state.dateOfBirth ?? "Select date",
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().subtract(
+                      const Duration(days: 365 * 18),
                     ),
-                    child: child!,
-                  ),
-                );
-                if (picked != null) {
-                  notifier.updateField(
-                    (s) => s.copyWith(
-                      dateOfBirth: DateFormat('yyyy-MM-dd').format(picked),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.dark(
+                          primary: DesignSystem.primary(context),
+                          onPrimary: Colors.white,
+                          surface: DesignSystem.background,
+                          onSurface: Colors.white,
+                        ),
+                      ),
+                      child: child!,
                     ),
                   );
-                }
-              },
-            ),
-
-            CustomDropdownField(
-              label: "Gender *",
-              hint: state.gender ?? "Select gender",
-              onTap: () => _showOptionsSelector(
-                "Select Gender",
-                ['Male', 'Female'],
-                (val) => notifier.updateField((s) => s.copyWith(gender: val)),
+                  if (picked != null) {
+                    notifier.updateField(
+                      (s) => s.copyWith(
+                        dateOfBirth: DateFormat('yyyy-MM-dd').format(picked),
+                      ),
+                    );
+                  }
+                },
               ),
-            ),
-
-            CustomDropdownField(
-              label: "Nationality *",
-              hint: state.nationality ?? "Select country",
-              onTap: () => showCountryPicker(
-                context: context,
-                onSelect: (country) => notifier.updateField(
-                  (s) => s.copyWith(nationality: country.name),
+    
+              CustomDropdownField(
+                label: "Gender *",
+                hint: state.gender ?? "Select gender",
+                onTap: () => _showOptionsSelector(
+                  "Select Gender",
+                  ['Male', 'Female'],
+                  (val) => notifier.updateField((s) => s.copyWith(gender: val)),
                 ),
               ),
-            ),
-
-            _buildFieldLabel("City *"),
-            CustomTextField(
-              hintText: "Enter your city",
-              prefixIcon: LucideIcons.mapPin,
-              controller: _cityController,
-              onChanged: (val) =>
-                  notifier.updateField((s) => s.copyWith(city: val)),
-            ),
-
-            const SizedBox(height: 20),
-          ],
+    
+              CustomDropdownField(
+                label: "Nationality *",
+                hint: state.nationality ?? "Select country",
+                onTap: () => showCountryPicker(
+                  context: context,
+                  onSelect: (country) => notifier.updateField(
+                    (s) => s.copyWith(nationality: country.name),
+                  ),
+                ),
+              ),
+    
+              _buildFieldLabel("City *"),
+              CustomTextField(
+                hintText: "Enter your city",
+                prefixIcon: LucideIcons.mapPin,
+                autofillHints: const [AutofillHints.addressCity],
+                controller: _cityController,
+                onChanged: (val) =>
+                    notifier.updateField((s) => s.copyWith(city: val)),
+              ),
+    
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -491,8 +499,8 @@ class _StudentOnboardingScreenState
                             (s) => s.copyWith(fieldOfStudyInput: updated),
                           );
                         },
-                        backgroundColor: DesignSystem.emerald.withOpacity(0.2),
-                        deleteIconColor: DesignSystem.emerald,
+                        backgroundColor: DesignSystem.primary(context).withOpacity(0.2),
+                        deleteIconColor: DesignSystem.primary(context),
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -708,8 +716,8 @@ class _StudentOnboardingScreenState
                           ),
                         ),
                         onDeleted: () => notifier.togglePreferredCountry(c),
-                        backgroundColor: DesignSystem.emerald.withOpacity(0.2),
-                        deleteIconColor: DesignSystem.emerald,
+                        backgroundColor: DesignSystem.primary(context).withOpacity(0.2),
+                        deleteIconColor: DesignSystem.primary(context),
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -807,15 +815,15 @@ class _StudentOnboardingScreenState
                   Text("Work Experience", style: DesignSystem.labelStyle()),
                   TextButton.icon(
                     onPressed: _showAddWorkExperience,
-                    icon: const Icon(
+                    icon: Icon(
                       LucideIcons.plus,
                       size: 16,
-                      color: DesignSystem.emerald,
+                      color: DesignSystem.primary(context),
                     ),
                     label: Text(
                       "Add Position",
                       style: DesignSystem.labelStyle(
-                        color: DesignSystem.emerald,
+                        color: DesignSystem.primary(context),
                       ),
                     ),
                   ),
@@ -827,7 +835,8 @@ class _StudentOnboardingScreenState
                   child: Text(
                     "No experience added yet.",
                     style: DesignSystem.bodyStyle(
-                      color: Colors.white24,
+                      buildContext: context,
+                      color: DesignSystem.labelText(context),
                       fontSize: 13,
                     ),
                   ),
@@ -845,12 +854,12 @@ class _StudentOnboardingScreenState
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: DesignSystem.emerald.withOpacity(0.1),
+                              color: DesignSystem.primary(context).withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               LucideIcons.briefcase,
-                              color: DesignSystem.emerald,
+                              color: DesignSystem.primary(context),
                               size: 18,
                             ),
                           ),
@@ -977,7 +986,7 @@ class _StudentOnboardingScreenState
               children: [
                 Switch(
                   value: state.emailNotif,
-                  activeColor: DesignSystem.emerald,
+                  activeColor: DesignSystem.primary(context),
                   onChanged: (val) =>
                       notifier.updateField((s) => s.copyWith(emailNotif: val)),
                 ),
@@ -991,7 +1000,7 @@ class _StudentOnboardingScreenState
               children: [
                 Switch(
                   value: state.inSystemNotif,
-                  activeColor: DesignSystem.emerald,
+                  activeColor: DesignSystem.primary(context),
                   onChanged: (val) => notifier.updateField(
                     (s) => s.copyWith(inSystemNotif: val),
                   ),
@@ -1363,14 +1372,14 @@ class _StudentOnboardingScreenState
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white10,
+                      color: DesignSystem.labelText(context).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     "Select Universities",
-                    style: DesignSystem.headingStyle(fontSize: 22),
+                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 22),
                   ),
                   const SizedBox(height: 20),
                   CustomTextField(
@@ -1386,10 +1395,10 @@ class _StudentOnboardingScreenState
                   ),
                   const SizedBox(height: 10),
                   if (searching)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(20.0),
                       child: CircularProgressIndicator(
-                        color: DesignSystem.emerald,
+                        color: DesignSystem.primary(context),
                         strokeWidth: 2,
                       ),
                     )
