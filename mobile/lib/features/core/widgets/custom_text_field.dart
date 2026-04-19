@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final String hintText;
   final IconData? prefixIcon;
   final bool isPassword;
@@ -24,11 +25,24 @@ class CustomTextField extends StatelessWidget {
   });
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  late bool _obscureText;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.isPassword;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Container(
-        height: maxLines > 1 ? null : 56,
+        height: widget.maxLines > 1 ? null : 56,
         decoration: BoxDecoration(
           color: DesignSystem.inputFill(context),
           borderRadius: BorderRadius.circular(18),
@@ -36,29 +50,43 @@ class CustomTextField extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18),
         alignment: Alignment.center,
         child: TextField(
-          controller: controller,
-          obscureText: isPassword,
-          onChanged: onChanged,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          autofillHints: autofillHints,
+          controller: widget.controller,
+          obscureText: _obscureText,
+          onChanged: widget.onChanged,
+          keyboardType: widget.keyboardType,
+          maxLines: widget.maxLines,
+          autofillHints: widget.autofillHints,
           style: DesignSystem.bodyStyle(
             buildContext: context,
             fontSize: 15,
             color: DesignSystem.mainText(context),
           ),
           decoration: InputDecoration(
-            hintText: hintText,
+            hintText: widget.hintText,
             hintStyle: DesignSystem.bodyStyle(
               buildContext: context,
               color: DesignSystem.labelText(context),
               fontSize: 14,
             ),
-            prefixIcon: prefixIcon != null
+            prefixIcon: widget.prefixIcon != null
                 ? Icon(
-                    prefixIcon,
+                    widget.prefixIcon,
                     color: DesignSystem.labelText(context),
                     size: 20,
+                  )
+                : null,
+            suffixIcon: widget.isPassword
+                ? GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _obscureText = !_obscureText;
+                      });
+                    },
+                    child: Icon(
+                      _obscureText ? LucideIcons.eyeOff : LucideIcons.eye,
+                      color: DesignSystem.labelText(context),
+                      size: 20,
+                    ),
                   )
                 : null,
             border: InputBorder.none,

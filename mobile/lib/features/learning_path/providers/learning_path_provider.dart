@@ -44,6 +44,10 @@ class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
       return _api.fetchMyPath();
     });
   }
+
+  Future<void> completeResource(int resourceId, String section) async {
+    await markProgress(videoId: resourceId, section: section, isCompleted: true);
+  }
 }
 
 final learningPathProvider =

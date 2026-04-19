@@ -7,83 +7,192 @@ import 'package:mobile/features/core/widgets/glass_container.dart'; // Using you
 import 'package:mobile/features/learning_path/screens/mission_detail_screen.dart';
 import 'package:mobile/models/learning_mission.dart';
 
-class MasteryHubScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
+import 'package:mobile/features/learning_path/screens/diagnostic_assessment_screen.dart';
+import 'package:mobile/features/learning_path/models/learning_path.dart';
+
+class MasteryHubScreen extends ConsumerStatefulWidget {
   const MasteryHubScreen({super.key});
 
   @override
+  ConsumerState<MasteryHubScreen> createState() => _MasteryHubScreenState();
+}
+
+class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> {
+  String _selectedTab = 'Reading';
+
+  void _startAssessment() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DiagnosticAssessmentScreen(force: true),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pathState = ref.watch(learningPathProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = DesignSystem.primary(context);
+
     return Scaffold(
-      backgroundColor: isDark ? DesignSystem.background : DesignSystem.backgroundLight,
+      backgroundColor: isDark
+          ? DesignSystem.background
+          : DesignSystem.backgroundLight,
       body: Stack(
         children: [
           // Background Depth
           Positioned(
             top: -50,
             left: -50,
-            child: _buildBlurCircle(
-              DesignSystem.primary(context).withOpacity(0.05),
-              250,
-            ),
+            child: _buildBlurCircle(primaryColor.withOpacity(0.05), 250),
           ),
 
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  _buildHeader(context),
-                  const SizedBox(height: 30),
-                  _buildSkillOverview(context),
-                  const SizedBox(height: 35),
-                  _buildModuleSelector(context),
-                  const SizedBox(height: 30),
-                  _buildMissionCard(
-                    context,
-                    missionNumber: "01",
-                    title: "Skimming Techniques",
-                    phase: "MASTERY PHASE 1",
-                    status: MissionStatus.active,
-                    onTap: () {
+            child: (pathState.value != null)
+                ? _buildHubContent(context, pathState)
+                : _buildAssessmentPrompt(context),
+          ),
+
+          // Pathfinder Floating Insight (only show when assessment is done)
+          if (pathState.value != null)
+            Positioned(
+              bottom: 90,
+              left: 20,
+              right: 20,
+              child: _buildPathfinderBubble(context),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssessmentPrompt(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.compass,
+              size: 64,
+              color: DesignSystem.primary(context),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Begin Your Journey",
+              style: DesignSystem.headingStyle(
+                buildContext: context,
+                fontSize: 24,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Take the diagnostic assessment to unlock your personalized learning path.",
+              textAlign: TextAlign.center,
+              style: DesignSystem.labelStyle(
+                buildContext: context,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: _startAssessment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DesignSystem.primary(context),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                "START ASSESSMENT",
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black
+                      : Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHubContent(BuildContext context, AsyncValue pathState) {
+    bool isPathReady = pathState.hasValue && pathState.value != null;
+
+    final videos = isPathReady
+        ? pathState.value!.skills[_selectedTab.toLowerCase()]?.videos ?? []
+        : [];
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          _buildHeader(context),
+          const SizedBox(height: 30),
+          _buildSkillOverview(context),
+          const SizedBox(height: 35),
+          _buildModuleSelector(context),
+          const SizedBox(height: 30),
+          if (videos.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Text(
+                  "No missions available for this skill.",
+                  style: DesignSystem.labelStyle(buildContext: context),
+                ),
+              ),
+            ),
+          ...videos.asMap().entries.map((entry) {
+            int index = entry.key;
+            var video = entry.value;
+            // Unlocks if it's the first video or the previous video is completed
+            bool isLocked = index > 0 && !(videos[index - 1].isCompleted);
+            MissionStatus status = isLocked
+                ? MissionStatus.locked
+                : (video.isCompleted
+                      ? MissionStatus.completed
+                      : MissionStatus.active);
+
+            return _buildMissionCard(
+              context,
+              video: video,
+              missionNumber: "0${index + 1}",
+              title: "Instructional Module 0${index + 1}",
+              phase: "MASTERY PHASE ${index + 1}",
+              status: status,
+              unlockCondition: isLocked ? "Complete Module 0${index}" : null,
+              onTap: status != MissionStatus.locked
+                  ? () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MissionDetailScreen(),
+                          builder: (context) => MissionDetailScreen(
+                            video: video,
+                            index: index,
+                            phase: "MASTERY PHASE ${index + 1}",
+                          ),
                         ),
                       );
-                    },
-                  ),
-                  _buildMissionCard(
-                    context,
-                    missionNumber: "02",
-                    title: "Scanning for Detail",
-                    phase: "MASTERY PHASE 1",
-                    status: MissionStatus.locked,
-                    unlockCondition: "70% Score Required in Mission 01",
-                  ),
-                  _buildMissionCard(
-                    context,
-                    missionNumber: "03",
-                    title: "Inference & Logic",
-                    phase: "MASTERY PHASE 2",
-                    status: MissionStatus.locked,
-                  ),
-                  const SizedBox(height: 120),
-                ],
-              ),
-            ),
-          ),
-
-          // Pathfinder Floating Insight
-          Positioned(
-            bottom: 90,
-            left: 20,
-            right: 20,
-            child: _buildPathfinderBubble(context),
-          ),
+                    }
+                  : null,
+            );
+          }).toList(),
+          const SizedBox(height: 120),
         ],
       ),
     );
@@ -97,7 +206,47 @@ class MasteryHubScreen extends StatelessWidget {
           "Mastery Hub",
           style: DesignSystem.headingStyle(buildContext: context, fontSize: 24),
         ),
+        IconButton(
+          onPressed: () => _retakeAssessment(context),
+          icon: Icon(LucideIcons.refreshCcw, size: 20, color: DesignSystem.labelText(context).withOpacity(0.5)),
+          tooltip: "Retake Assessment",
+        ),
       ],
+    );
+  }
+
+  void _retakeAssessment(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignSystem.surface(context),
+        title: Text(
+          "Retake Assessment?",
+          style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
+        ),
+        content: Text(
+          "This will reset your current learning path and all progress. Are you sure you want to start over?",
+          style: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("CANCEL", style: TextStyle(color: DesignSystem.labelText(context))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DiagnosticAssessmentScreen(force: true),
+                ),
+              );
+            },
+            child: const Text("RETAKE", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -107,7 +256,12 @@ class MasteryHubScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildMiniGauge(context, "READING", 0.40, DesignSystem.primary(context)),
+          _buildMiniGauge(
+            context,
+            "READING",
+            0.40,
+            DesignSystem.primary(context),
+          ),
           _buildMiniGauge(context, "LISTENING", 0.20, Colors.blue),
           _buildMiniGauge(context, "WRITING", 0.15, const Color(0xFFF43F5E)),
           _buildMiniGauge(context, "SPEAKING", 0.10, Colors.orange),
@@ -116,7 +270,12 @@ class MasteryHubScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMiniGauge(BuildContext context, String label, double value, Color color) {
+  Widget _buildMiniGauge(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+  ) {
     return Column(
       children: [
         Stack(
@@ -134,7 +293,10 @@ class MasteryHubScreen extends StatelessWidget {
             ),
             Text(
               "${(value * 100).toInt()}%",
-              style: DesignSystem.headingStyle(buildContext: context, fontSize: 13),
+              style: DesignSystem.headingStyle(
+                buildContext: context,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -152,10 +314,10 @@ class MasteryHubScreen extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildTab(context, "Reading", true),
-          _buildTab(context, "Listening", false),
-          _buildTab(context, "Writing", false),
-          _buildTab(context, "Speaking", false),
+          _buildTab(context, "Reading", _selectedTab == 'Reading'),
+          _buildTab(context, "Listening", _selectedTab == 'Listening'),
+          _buildTab(context, "Writing", _selectedTab == 'Writing'),
+          _buildTab(context, "Speaking", _selectedTab == 'Speaking'),
         ],
       ),
     );
@@ -163,23 +325,30 @@ class MasteryHubScreen extends StatelessWidget {
 
   Widget _buildTab(BuildContext context, String label, bool active) {
     final primaryColor = DesignSystem.primary(context);
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: active
-            ? primaryColor
-            : DesignSystem.surface(context),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: active 
-            ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white)
-            : DesignSystem.labelText(context),
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTab = label;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: active ? primaryColor : DesignSystem.surface(context),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: active
+                ? (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black
+                      : Colors.white)
+                : DesignSystem.labelText(context),
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -187,6 +356,7 @@ class MasteryHubScreen extends StatelessWidget {
 
   Widget _buildMissionCard(
     BuildContext context, {
+    required PathVideo video,
     required String missionNumber,
     required String title,
     required String phase,
@@ -229,7 +399,9 @@ class MasteryHubScreen extends StatelessWidget {
                           buildContext: context,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
-                          color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black
+                              : Colors.white,
                         ),
                       ),
                     ),
@@ -248,9 +420,12 @@ class MasteryHubScreen extends StatelessWidget {
                           bottomLeft: Radius.circular(15),
                         ),
                       ),
-                      child: Icon(LucideIcons.check, 
-                        color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white, 
-                        size: 12
+                      child: Icon(
+                        LucideIcons.check,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white,
+                        size: 12,
                       ),
                     ),
                   ),
@@ -259,12 +434,26 @@ class MasteryHubScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        phase,
-                        style: DesignSystem.labelStyle(buildContext: context, fontSize: 10).copyWith(
-                          color: isLocked ? DesignSystem.labelText(context).withOpacity(0.5) : primaryColor,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
+                      Hero(
+                        tag: 'mission-phase-${video.id}',
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Text(
+                            phase,
+                            style:
+                                DesignSystem.labelStyle(
+                                  buildContext: context,
+                                  fontSize: 10,
+                                ).copyWith(
+                                  color: isLocked
+                                      ? DesignSystem.labelText(
+                                          context,
+                                        ).withOpacity(0.5)
+                                      : primaryColor,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1,
+                                ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -272,17 +461,33 @@ class MasteryHubScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Text(
-                              "Mission $missionNumber: $title",
-                              style: DesignSystem.headingStyle(buildContext: context, fontSize: 20).copyWith(
-                                color: isLocked ? DesignSystem.mainText(context).withOpacity(0.2) : null,
+                            child: Hero(
+                              tag: 'mission-title-${video.id}',
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: Text(
+                                  "Mission $missionNumber: $title",
+                                  style:
+                                      DesignSystem.headingStyle(
+                                        buildContext: context,
+                                        fontSize: 20,
+                                      ).copyWith(
+                                        color: isLocked
+                                            ? DesignSystem.mainText(
+                                                context,
+                                              ).withOpacity(0.2)
+                                            : null,
+                                      ),
+                                ),
                               ),
                             ),
                           ),
                           if (isLocked)
                             Icon(
                               LucideIcons.lock,
-                              color: DesignSystem.labelText(context).withOpacity(0.5),
+                              color: DesignSystem.labelText(
+                                context,
+                              ).withOpacity(0.5),
                               size: 24,
                             ),
                           if (isCompleted)
@@ -297,7 +502,10 @@ class MasteryHubScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           unlockCondition,
-                          style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
+                          style: DesignSystem.labelStyle(
+                            buildContext: context,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                       if (!isLocked) ...[
@@ -305,10 +513,26 @@ class MasteryHubScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildResourceAction(context, LucideIcons.playCircle, "VIDEO"),
-                            _buildResourceAction(context, LucideIcons.fileText, "PDF"),
-                            _buildResourceAction(context, LucideIcons.edit3, "PRACTICE"),
-                            _buildResourceAction(context, LucideIcons.trophy, "TEST"),
+                            _buildResourceAction(
+                              context,
+                              LucideIcons.playCircle,
+                              "VIDEO",
+                            ),
+                            _buildResourceAction(
+                              context,
+                              LucideIcons.fileText,
+                              "PDF",
+                            ),
+                            _buildResourceAction(
+                              context,
+                              LucideIcons.edit3,
+                              "PRACTICE",
+                            ),
+                            _buildResourceAction(
+                              context,
+                              LucideIcons.trophy,
+                              "TEST",
+                            ),
                           ],
                         ),
                       ],
@@ -323,7 +547,11 @@ class MasteryHubScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildResourceAction(BuildContext context, IconData icon, String label) {
+  Widget _buildResourceAction(
+    BuildContext context,
+    IconData icon,
+    String label,
+  ) {
     return Column(
       children: [
         Container(
@@ -359,16 +587,15 @@ class MasteryHubScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                LucideIcons.sparkles,
-                color: primaryColor,
-                size: 18,
-              ),
+              Icon(LucideIcons.sparkles, color: primaryColor, size: 18),
               const SizedBox(width: 12),
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 12),
+                    style: DesignSystem.bodyStyle(
+                      buildContext: context,
+                      fontSize: 12,
+                    ),
                     children: [
                       TextSpan(
                         text: "Pathfinder: ",

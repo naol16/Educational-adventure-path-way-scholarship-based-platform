@@ -4,12 +4,26 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/learning_path/screens/resource_viewer_screen.dart';
+import 'package:mobile/features/learning_path/screens/practice_engine_screen.dart';
+import 'package:mobile/features/learning_path/models/learning_path.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
 
-class MissionDetailScreen extends StatelessWidget {
-  const MissionDetailScreen({super.key});
+class MissionDetailScreen extends ConsumerWidget {
+  final PathVideo video;
+  final int index;
+  final String phase;
+
+  const MissionDetailScreen({
+    super.key,
+    required this.video,
+    required this.index,
+    required this.phase,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: DesignSystem.themeBackground(context),
       appBar: AppBar(
@@ -37,19 +51,31 @@ class MissionDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "MISSION 01",
-                  style: GoogleFonts.plusJakartaSans(
-                    color: DesignSystem.emerald,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    fontSize: 12,
+                Hero(
+                  tag: 'mission-phase-${video.id}',
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: Text(
+                      "MISSION 0${index + 1}",
+                      style: GoogleFonts.plusJakartaSans(
+                        color: DesignSystem.emerald,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  "Skimming Techniques",
-                  style: DesignSystem.headingStyle(buildContext: context),
+                Hero(
+                  tag: 'mission-title-${video.id}',
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: Text(
+                      "Instructional Module 0${index + 1}",
+                      style: DesignSystem.headingStyle(buildContext: context),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 30),
                 
@@ -61,14 +87,42 @@ class MissionDetailScreen extends StatelessWidget {
                     crossAxisSpacing: 16,
                     childAspectRatio: 0.85,
                     children: [
-                      _buildActionCard(context, LucideIcons.playCircle, "Watch Video", "Strategy", () {
-                        // Navigate to YouTube Player Screen
+                      _buildActionCard(context, LucideIcons.playCircle, "Watch Video", "Strategy", () async {
+                        // Mark progress
+                        await ref.read(learningPathProvider.notifier).completeResource(video.id, video.type.toLowerCase());
+                        
+                        if (context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ResourceViewerScreen(
+                                type: ResourceType.video,
+                                title: "Instructional Module 0${index + 1}",
+                                url: video.videoLink, // Assuming ResourceViewerScreen takes url
+                              ),
+                            ),
+                          );
+                        }
                       }),
                       _buildActionCard(context, LucideIcons.fileText, "Read Briefing", "PDF Guide", () {
-                        // Open PDF Viewer
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ResourceViewerScreen(
+                              type: ResourceType.pdf,
+                              title: "Mission Briefing",
+                              url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", // Dummy or from notes
+                            ),
+                          ),
+                        );
                       }),
                       _buildActionCard(context, LucideIcons.edit3, "Practice Drill", "Active Training", () {
-                        // Start Quiz Engine
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PracticeEngineScreen(),
+                          ),
+                        );
                       }),
                       _buildActionCard(context, LucideIcons.trophy, "Unit Test", "Evaluation", () {
                         // Start Final Exam

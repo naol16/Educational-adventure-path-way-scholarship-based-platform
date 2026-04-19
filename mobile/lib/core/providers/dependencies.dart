@@ -7,6 +7,8 @@ import 'package:mobile/features/learning_path/services/learning_path_api_service
 
 
 
+import 'package:mobile/features/learning_path/services/assessment_api_service.dart';
+
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
 
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -26,6 +28,10 @@ final scholarshipApiServiceProvider = Provider<ScholarshipApiService>((ref) {
 
 final learningPathApiServiceProvider = Provider<LearningPathApiService>((ref) {
   return LearningPathApiService(apiClient: ref.watch(apiClientProvider));
+});
+
+final assessmentApiServiceProvider = Provider<AssessmentApiService>((ref) {
+  return AssessmentApiService(apiClient: ref.watch(apiClientProvider));
 });
 
 

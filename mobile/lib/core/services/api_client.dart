@@ -196,6 +196,44 @@ class ApiClient {
     return response;
   }
 
+  Future<http.Response> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    List<http.MultipartFile>? files,
+    bool auth = true,
+  }) async {
+    Future<http.Response> once(String? access) async {
+      final uri = Uri.parse(ApiConfig.apiPath(path));
+      final request = http.MultipartRequest('POST', uri);
+      
+      final headers = await _headers(withAuth: auth, accessToken: access);
+      // Content-Type is set automatically by MultipartRequest
+      headers.remove('Content-Type');
+      request.headers.addAll(headers);
+      
+      request.fields.addAll(fields);
+      if (files != null) {
+        request.files.addAll(files);
+      }
+      
+      logRequest('POST-MULTIPART', uri, headers: request.headers, body: 'Fields: ${request.fields}, Files: ${request.files.length}');
+      final streamedResponse = await _http.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+      logResponse(response);
+      return response;
+    }
+
+    if (!auth) return once(null);
+
+    var access = await _tokens.readAccessToken();
+    var response = await once(access);
+    if (response.statusCode == 401 && await _tryRefresh()) {
+      access = await _tokens.readAccessToken();
+      response = await once(access);
+    }
+    return response;
+  }
+
   void close() => _http.close();
 
   /// Clears tokens when refresh or repeated 401 indicates session is dead.
