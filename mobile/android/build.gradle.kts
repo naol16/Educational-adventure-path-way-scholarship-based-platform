@@ -23,9 +23,9 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-// Suppress "obsolete Java 8" warnings in all projects (plugins)
+// Suppress Java compiler warnings (deprecation, unchecked, etc.) in all projects (plugins)
 allprojects {
     tasks.withType<JavaCompile> {
-        options.compilerArgs.add("-Xlint:-options")
+        options.compilerArgs.addAll(listOf("-Xlint:-options", "-Xlint:-deprecation", "-Xlint:-unchecked"))
     }
 }
