@@ -154,15 +154,25 @@ export class ScholarshipTrackingService {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(now.getDate() + 30);
 
+        const savedCount = tracked.filter(t => ['NOT_STARTED', 'WATCHING'].includes(t.status)).length;
+        const appliedCount = tracked.filter(t => ['APPLIED', 'SUBMITTED', 'ACCEPTED'].includes(t.status)).length;
+        const deadlineCount = tracked.filter(t => {
+            const deadline = t.manualDeadline || t.scholarship?.deadline;
+            if (!deadline) return false;
+            const dDate = new Date(deadline);
+            return dDate >= now && dDate <= thirtyDaysFromNow;
+        }).length;
+
         return {
-            savedCount: tracked.filter(t => t.status === 'NOT_STARTED').length,
-            appliedCount: tracked.filter(t => t.status === 'APPLIED').length,
-            deadlineCount: tracked.filter(t => {
-                const deadline = t.manualDeadline || t.scholarship?.deadline;
-                if (!deadline) return false;
-                const dDate = new Date(deadline);
-                return dDate >= now && dDate <= thirtyDaysFromNow;
-            }).length
+            savedCount,
+            appliedCount,
+            deadlineCount,
+            // Add 'metrics' for mobile parity
+            metrics: {
+                saved: savedCount,
+                applied: appliedCount,
+                dueSoon: deadlineCount
+            }
         };
     }
 }

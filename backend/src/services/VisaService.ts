@@ -53,7 +53,7 @@ Rules:
     return {
       interviewId: interview.id,
       systemPrompt,
-      firstMessage: `Good morning. I am the Consular Officer for ${country}. What is the purpose of your trip to ${university}?`
+      firstMessage: `Good morning. I am the Consular Officer for ${country}. I see you are applying to study at ${university}. What is the main purpose of your travel today?`
     };
   }
 
@@ -115,15 +115,31 @@ Rules:
     }
 
     const evaluationPrompt = `
-      You are an expert Visa Interview evaluator. Analyze the following interview transcript.
+      You are a senior US Embassy Consular Chief. Evaluate the following visa interview transcript with extreme skepticism and high standards.
+      
+      Evaluation Criteria:
+      1. Intent to Return: Does the applicant have strong ties to their home country?
+      2. Financial Stability: Did they explain their funding source clearly?
+      3. Academic Purpose: Do they know their program, university, and how it fits their career?
+      4. Credibility: Are there inconsistencies? (e.g. saying 'visit California' for a student visa is a RED FLAG).
+      
+      SCORING RULE (ZERO TOLERANCE): 
+      - Give a score of 0/10 if:
+        * The applicant remains silent or provides "unlistened sound" (noise/gibberish).
+        * The applicant provides unrelated or nonsensical answers.
+        * The applicant uses offensive or violating speech.
+        * The applicant fails to provide ANY meaningful academic or travel justification.
+      - If the applicant's answers are vague, one-liners, or fail to address academic goals for a student visa, the score MUST be below 3.0.
+      - "Visiting California" for a student visa is an automatic REJECTION (score < 2.0).
+
       You MUST provide your response in valid JSON format ONLY with the following schema:
       {
-        "score": (string, e.g., "7.5/10" or "Band 7"),
+        "score": (string, e.g., "0/10" or "2.5/10"),
         "grammar": (string, brief analysis of grammar and vocabulary),
         "confidence": (string, e.g., "High", "Moderate", "Low"),
         "feedback": (string, detailed suggestions for improvement),
-        "confidence_score": (number 1-10 for internal use),
-        "country_specific_flags": (array of strings),
+        "confidence_score": (number 1-10),
+        "country_specific_flags": (array of strings, e.g. ["Zero Meaning", "Unrelated Response"]),
         "focus_areas": (array of strings),
         "improvements": (array of strings)
       }

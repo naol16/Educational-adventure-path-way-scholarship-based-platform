@@ -37,7 +37,7 @@ const groq8b = new ChatGroq({
 });
 
 // Groq 70B (Pathfinder Brain for Reasoning/Matching)
-const groq70b = new ChatGroq({
+export const groq70b = new ChatGroq({
   apiKey: configs.GROQ_API_KEY as string,
   model: "llama-3.3-70b-versatile",
   temperature: 0.1,
@@ -435,6 +435,7 @@ export class AssessmentService {
     finalEvaluation.adaptive_curriculum_map = synthesis.adaptive_curriculum_map;
     finalEvaluation.feedback_report = synthesis.feedback_report;
     finalEvaluation.adaptive_learning_tags = synthesis.adaptive_learning_tags;
+    finalEvaluation.learning_mode = synthesis.learning_mode || finalEvaluation.learning_mode;
 
     // Post-processing (TTS etc.)
     const learningModeListening = finalEvaluation.learning_mode.listening;
@@ -613,13 +614,20 @@ export class AssessmentService {
         "competency_gap_analysis": {{ "skill_name": "detailed analysis of gaps" }},
         "adaptive_curriculum_map": {{ "week_1": ["topic_to_study"] }},
         "feedback_report": "overall improvement strategy",
+        "learning_mode": {{
+           "reading": [{{ "question": "", "options": ["", "", "", ""], "correct_answer": 0, "explanation": "" }}],
+           "listening": [...],
+           "writing": [...],
+           "speaking": [...]
+        }},
         "adaptive_learning_tags": ["list", "of", "tags"]
       }}
       
       Rules:
-      1. NO MARKDOWN (no \`\`\`json blocks).
-      2. NO PREAMBLE or post-text.
-      3. Be professional and encouraging.
+      1. Provide 3-5 high-quality practice questions per skill in "learning_mode".
+      2. NO MARKDOWN (no \`\`\`json blocks).
+      3. NO PREAMBLE or post-text.
+      4. Be professional and encouraging.
     `);
 
     const chain = groq70b.pipe(new StringOutputParser());
