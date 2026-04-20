@@ -25,10 +25,10 @@ import {
   ScholarshipMilestone,
   VisaGuideline,
   VisaMockInterview,
+  Payment,
+  CounselorPayout,
 } from "../models/index.js";
 import configs from "./configs.js";
-
-console.log('DB_PASSWORD from env:', process.env.DB_PASSWORD ? '****' : 'NOT SET');
 
 const dbOptions: SequelizeOptions = {
   host: configs.DB_HOST,
@@ -36,7 +36,8 @@ const dbOptions: SequelizeOptions = {
   username: configs.DB_USER,
   password: configs.DB_PASSWORD,
   database: configs.DB_NAME,
-  logging: console.log, // Set to false to silence SQL queries
+  // Keep SQL logs off by default; enable only when DB_LOGGING=true.
+  logging: configs.DB_LOGGING ? console.log : false,
 
   // Handle SSL for production
   dialectOptions:
@@ -80,6 +81,8 @@ export const sequelize = new Sequelize({
     ScholarshipMilestone,
     VisaGuideline,
     VisaMockInterview,
+    Payment,
+    CounselorPayout,
   ], // Add all models here
 } as SequelizeOptions);
 
