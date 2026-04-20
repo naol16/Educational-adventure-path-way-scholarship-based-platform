@@ -6,6 +6,7 @@ import {
   Student,
   Counselor,
   AvailabilitySlot,
+  Payment,
   Booking,
   CounselorReview,
   Document,
@@ -26,7 +27,6 @@ import {
   VisaGuideline,
   VisaMockInterview,
   Pdf,
-  Payment,
   CounselorPayout,
 } from "../models/index.js";
 import configs from "./configs.js";
@@ -63,6 +63,7 @@ export const sequelize = new Sequelize({
     Student,
     Counselor,
     AvailabilitySlot,
+    Payment,
     Booking,
     CounselorReview,
     Document,
@@ -83,7 +84,6 @@ export const sequelize = new Sequelize({
     VisaGuideline,
     VisaMockInterview,
     Pdf,
-    Payment,
     CounselorPayout,
   ], // Add all models here
 } as SequelizeOptions);
