@@ -25,6 +25,7 @@ import {
   ScholarshipMilestone,
   VisaGuideline,
   VisaMockInterview,
+  Pdf,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -80,6 +81,7 @@ export const sequelize = new Sequelize({
     ScholarshipMilestone,
     VisaGuideline,
     VisaMockInterview,
+    Pdf,
   ], // Add all models here
 } as SequelizeOptions);
 

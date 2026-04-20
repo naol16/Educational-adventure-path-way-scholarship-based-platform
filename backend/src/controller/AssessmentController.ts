@@ -96,6 +96,12 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
+      const { isRedisAvailable } = await import("../config/redis.js");
+      if (!isRedisAvailable()) {
+        console.error("[AssessmentController] ❌ Redis is unavailable. Cannot submit job.");
+        res.status(503).json({ error: "Assessment service is temporarily unavailable (Redis down)." });
+        return;
+      }
 
       const result = await AssessmentService.submitAssessment(
         test_id,
@@ -103,6 +109,7 @@ export class AssessmentController {
         student.id,
         audioData,
       );
+      console.log(`[AssessmentController] ✅ Job added to queue for test_id: ${test_id}`);
       res.json(result);
     } catch (error) {
       next(error);
