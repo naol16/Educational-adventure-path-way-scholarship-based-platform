@@ -22,6 +22,7 @@ import { CounselorMessageRepository } from "../repositories/CounselorMessageRepo
 import { NotificationService } from "./NotificationService.js";
 import { PaymentService } from "./PaymentService.js";
 import { GoogleMeetService } from "./GoogleMeetService.js";
+import { EmailService } from "./EmailService.js";
 import crypto from "crypto";
 import configs from "../config/configs.js";
 import { FileService } from "./FileService.js";
@@ -648,18 +649,42 @@ export class CounselorService {
           if (booking.status === 'pending') {
             const slot = await AvailabilitySlot.findByPk(booking.slotId);
             
-            // Fetch emails for attendees
-            const attendees: string[] = [];
+            // Fetch user emails for student and counselor so calendar invites/emails are sent to both.
+            const attendees: Array<{ email: string; name?: string }> = [];
+            let studentEmail: string | null = null;
+            let studentName: string | null = null;
+            let counselorEmail: string | null = null;
+            let counselorName: string | null = null;
             try {
               const [student, counselor] = await Promise.all([
                 Student.findByPk(booking.studentId, { include: [{ model: User, as: 'user' }] }),
                 Counselor.findByPk(booking.counselorId, { include: [{ model: User, as: 'user' }] })
               ]);
-              
-              if ((student as any)?.user?.email) attendees.push((student as any).user.email);
-              if ((counselor as any)?.user?.email) attendees.push((counselor as any).user.email);
-              
-              console.log(`[ConfirmBooking] Attendees for meeting: ${attendees.join(', ')}`);
+
+              const studentUser =
+                (typeof (student as any)?.get === "function" ? (student as any).get("user") : null) ||
+                (student as any)?.user ||
+                (student as any)?.dataValues?.user ||
+                (student as any)?.User;
+              const counselorUser =
+                (typeof (counselor as any)?.get === "function" ? (counselor as any).get("user") : null) ||
+                (counselor as any)?.user ||
+                (counselor as any)?.dataValues?.user ||
+                (counselor as any)?.User;
+
+              if (studentUser?.email) {
+                studentEmail = studentUser.email;
+                studentName = studentUser.name || null;
+                attendees.push({ email: studentUser.email, name: studentUser.name });
+              }
+
+              if (counselorUser?.email) {
+                counselorEmail = counselorUser.email;
+                counselorName = counselorUser.name || null;
+                attendees.push({ email: counselorUser.email, name: counselorUser.name });
+              }
+
+              console.log(`[ConfirmBooking] Attendees for meeting: ${attendees.map((a) => a.email).join(', ')}`);
             } catch (e) {
               console.error("[ConfirmBooking] Error fetching attendee emails:", e);
             }
@@ -684,6 +709,43 @@ export class CounselorService {
             await booking.update({ status: 'confirmed', meetingLink });
             if (slot) {
               await slot.update({ status: 'booked' }); // slot has no meetingLink column
+
+              // Send direct email invites to both participants as a reliable fallback.
+              try {
+                const endTime = new Date(slot.startTime.getTime() + 60 * 60 * 1000);
+                const sendEmailTasks: Promise<void>[] = [];
+
+                if (studentEmail) {
+                  sendEmailTasks.push(
+                    EmailService.sendSessionInviteEmail({
+                      to: studentEmail,
+                      recipientName: studentName || "Student",
+                      counterpartName: counselorName || "Counselor",
+                      meetingLink,
+                      startTime: slot.startTime,
+                      endTime,
+                    })
+                  );
+                }
+
+                if (counselorEmail) {
+                  sendEmailTasks.push(
+                    EmailService.sendSessionInviteEmail({
+                      to: counselorEmail,
+                      recipientName: counselorName || "Counselor",
+                      counterpartName: studentName || "Student",
+                      meetingLink,
+                      startTime: slot.startTime,
+                      endTime,
+                    })
+                  );
+                }
+
+                await Promise.all(sendEmailTasks);
+                console.log(`[ConfirmBooking] Direct invite emails sent to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+              } catch (emailError) {
+                console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
+              }
               
               // Update counselor balance
               const counselor = await CounselorRepository.findById(booking.counselorId);
@@ -790,12 +852,26 @@ export class CounselorService {
     const bookings = await BookingRepository.findUniqueStudentsByCounselor(counselorId);
     const uniqueStudents = new Map<number, any>();
     bookings.forEach((booking) => {
-      if (!uniqueStudents.has(booking.studentId)) {
-        uniqueStudents.set(booking.studentId, {
-          studentId: booking.student.id,
-          userId: booking.student.userId,
-          name: (booking as any).student?.user?.name || "Unknown",
-          email: (booking as any).student?.user?.email || "Unknown",
+      const student =
+        (typeof (booking as any)?.get === "function" ? (booking as any).get("student") : null) ||
+        (booking as any)?.student ||
+        (booking as any)?.dataValues?.student ||
+        null;
+
+      if (!student) return;
+
+      const studentUser =
+        (typeof student?.get === "function" ? student.get("user") : null) ||
+        student?.user ||
+        student?.dataValues?.user ||
+        null;
+
+      if (!uniqueStudents.has(student.id)) {
+        uniqueStudents.set(student.id, {
+          studentId: student.id,
+          userId: student.userId,
+          name: studentUser?.name || "Unknown",
+          email: studentUser?.email || "Unknown",
           lastBookingDate: booking.createdAt,
           lastBookingStatus: booking.status,
         });
@@ -946,15 +1022,22 @@ export class CounselorService {
     if (!["confirmed", "started"].includes(booking.status)) throw httpError(409, "Cannot join a session that is not confirmed or started");
 
     const now = new Date();
-    const slot = (booking as any).slot;
+    const slot =
+      (typeof (booking as any)?.get === "function" ? (booking as any).get("slot") : null) ||
+      (booking as any)?.slot ||
+      (booking as any)?.dataValues?.slot ||
+      null;
     if (!slot) throw httpError(404, "Slot not found");
     const start = new Date(slot.startTime);
     const end = new Date(slot.endTime);
-    if ((start.getTime() - now.getTime()) / 60000 > 10) throw httpError(403, "Meeting link is only available 10 minutes before the start time");
     if (now > end) throw httpError(409, "This session has already ended");
 
     const meetingLink = booking.meetingLink || slot.meetingLink || `https://meet.edu-pathway.com/session-${booking.id}`;
-    if (booking.status === "confirmed") await booking.update({ status: "started", startedAt: now, meetingLink });
+    // Allow immediate access once the meeting exists; only mark started near/after scheduled start.
+    const shouldAutoStart = now.getTime() >= start.getTime() - 10 * 60 * 1000;
+    if (booking.status === "confirmed" && shouldAutoStart) {
+      await booking.update({ status: "started", startedAt: now, meetingLink });
+    }
     return { meetingLink };
   }
 

@@ -1,6 +1,11 @@
 import { google, calendar_v3 } from 'googleapis';
 import configs from '../config/configs.js';
 
+type MeetingAttendee = {
+    email: string;
+    name?: string;
+};
+
 export class GoogleMeetService {
     private static oauth2Client = new google.auth.OAuth2(
         configs.GOOGLE_MEET_CLIENT_ID,
@@ -21,7 +26,7 @@ export class GoogleMeetService {
         description: string, 
         startTime: Date, 
         durationMinutes: number,
-        attendees: string[] = []
+        attendees: MeetingAttendee[] = []
     ): Promise<string> {
         if (!configs.GOOGLE_MEET_REFRESH_TOKEN) {
             console.error('Google Meet Refresh Token is not configured. Returning fallback link.');
@@ -31,6 +36,14 @@ export class GoogleMeetService {
         const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
 
         const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+
+        const uniqueAttendees = Array.from(
+            new Map(
+                attendees
+                    .filter(attendee => !!attendee?.email)
+                    .map(attendee => [attendee.email.trim().toLowerCase(), attendee])
+            ).values()
+        );
 
         const event: calendar_v3.Schema$Event = {
             summary,
@@ -43,7 +56,10 @@ export class GoogleMeetService {
                 dateTime: endTime.toISOString(),
                 timeZone: 'UTC',
             },
-            attendees: attendees.map(email => ({ email })),
+            attendees: uniqueAttendees.map(attendee => ({
+                email: attendee.email,
+                displayName: attendee.name ?? null,
+            })),
             conferenceData: {
                 createRequest: {
                     requestId: `meeting-${Date.now()}-${Math.random().toString(36).substring(7)}`,
