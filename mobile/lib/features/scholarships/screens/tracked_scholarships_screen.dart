@@ -54,7 +54,7 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
           Positioned(
             top: -50,
             right: -50,
-            child: DesignSystem.buildBlurCircle(DesignSystem.primary(context).withOpacity(0.05), 250),
+            child: DesignSystem.buildBlurCircle(DesignSystem.primary(context).withValues(alpha: 0.05), 250),
           ),
           watchlistAsync.when(
             data: (watchlist) {
@@ -168,9 +168,9 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: statusColor.withOpacity(0.5)),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       statusText,
@@ -186,9 +186,9 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                       ),
                       child: const Icon(LucideIcons.edit2, color: Color(0xFF10B981), size: 14),
                     ),
@@ -293,7 +293,7 @@ class TrackedScholarshipsScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         decoration: BoxDecoration(
-          color: isSelected ? DesignSystem.primary(context).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+          color: isSelected ? DesignSystem.primary(context).withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? DesignSystem.primary(context) : Colors.transparent),
         ),

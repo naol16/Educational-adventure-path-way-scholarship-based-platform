@@ -64,7 +64,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           top: -100,
           left: 50,
           child: DesignSystem.buildBlurCircle(
-            DesignSystem.primary(context).withOpacity(0.05),
+            DesignSystem.primary(context).withValues(alpha: 0.05),
             300,
           ),
         ),
@@ -128,7 +128,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: DesignSystem.primary(context).withOpacity(0.5)),
+            border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(15),
           ),
           child: Text(
@@ -201,7 +201,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
             style: DesignSystem.labelStyle(
               buildContext: context,
               fontSize: 10,
-              color: DesignSystem.labelText(context).withOpacity(0.6),
+              color: DesignSystem.labelText(context).withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 5),
@@ -443,7 +443,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: DesignSystem.primary(context).withOpacity(0.3),
+                        color: DesignSystem.primary(context).withValues(alpha: 0.3),
                         blurRadius: 20,
                       )
                     ],

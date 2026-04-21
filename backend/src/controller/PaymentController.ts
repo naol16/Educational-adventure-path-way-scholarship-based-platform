@@ -75,10 +75,9 @@ export class PaymentController {
     try {
       const signature = req.headers['x-chapa-signature'] as string || req.headers['chapa-signature'] as string;
       const secretHash = configs.CHAPA_SECRET_HASH;
-      const isPlaceholder = secretHash;
 
       // Verify signature
-      if (secretHash && !isPlaceholder && signature) {
+      if (secretHash && signature) {
         
         // FIX: Replaced (req as any).rawBody with JSON.stringify(req.body)
         const hash = crypto

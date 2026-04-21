@@ -67,7 +67,7 @@ class ScholarshipMatchCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.15),
+                    color: primaryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -88,7 +88,7 @@ class ScholarshipMatchCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: DesignSystem.surface(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: primaryColor.withOpacity(0.1)),
+                border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
               ),
               child: Row(
                 children: [

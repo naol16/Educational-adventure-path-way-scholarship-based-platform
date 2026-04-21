@@ -56,7 +56,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             top: -50,
             right: -50,
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.primary(context).withOpacity(0.08),
+              DesignSystem.primary(context).withValues(alpha: 0.08),
               200,
             ),
           ),
@@ -138,7 +138,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             decoration: BoxDecoration(
               color: DesignSystem.surface(context),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: DesignSystem.surface(context).withOpacity(0.2)),
+              border: Border.all(color: DesignSystem.surface(context).withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -361,7 +361,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(LucideIcons.searchX, size: 48, color: DesignSystem.labelText(context).withOpacity(0.3)),
+            Icon(LucideIcons.searchX, size: 48, color: DesignSystem.labelText(context).withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             Text(
               msg,
@@ -435,7 +435,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               padding: const EdgeInsets.all(15),
               width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: DesignSystem.primary(context).withOpacity(0.3)),
+                border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -465,7 +465,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [DesignSystem.primary(context), DesignSystem.primary(context).withOpacity(0.7)],
+                        colors: [DesignSystem.primary(context), DesignSystem.primary(context).withValues(alpha: 0.7)],
                       ),
                       borderRadius: BorderRadius.circular(15),
                     ),

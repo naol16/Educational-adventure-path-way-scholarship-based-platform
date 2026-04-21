@@ -75,7 +75,7 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
           // Background Glows
           Center(
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.primary(context).withOpacity(0.05),
+              DesignSystem.primary(context).withValues(alpha: 0.05),
               400,
             ),
           ),
@@ -99,13 +99,13 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: DesignSystem.primary(context).withOpacity(0.1),
+                              color: DesignSystem.primary(context).withValues(alpha: 0.1),
                               width: 1,
                             ),
                           ),
                           child: CustomPaint(
                             painter: _DottedCirclePainter(
-                              color: DesignSystem.primary(context).withOpacity(0.3),
+                              color: DesignSystem.primary(context).withValues(alpha: 0.3),
                             ),
                           ),
                         ),
@@ -119,7 +119,7 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                           height: 140,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: DesignSystem.primary(context).withOpacity(0.05),
+                            color: DesignSystem.primary(context).withValues(alpha: 0.05),
                           ),
                         ),
                       ),
@@ -133,7 +133,7 @@ class _MatchingAnalysisOverlayState extends State<MatchingAnalysisOverlay>
                           border: Border.all(color: DesignSystem.glassBorder(context)),
                           boxShadow: [
                             BoxShadow(
-                              color: DesignSystem.primary(context).withOpacity(0.1),
+                              color: DesignSystem.primary(context).withValues(alpha: 0.1),
                               blurRadius: 30,
                               spreadRadius: 2,
                             ),
