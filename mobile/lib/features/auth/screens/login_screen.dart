@@ -78,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             top: -50,
             left: -100,
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.primary(context).withOpacity(0.08),
+              DesignSystem.primary(context).withValues(alpha: 0.08),
               300,
             ),
           ),
@@ -86,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             bottom: 100,
             right: -150,
             child: DesignSystem.buildBlurCircle(
-              const Color(0xFF2563EB).withOpacity(0.06),
+              const Color(0xFF2563EB).withValues(alpha: 0.06),
               400,
             ),
           ),
@@ -169,6 +169,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             text: "Login",
                             isLoading: _submitting,
                             onPressed: _signIn,
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text("OR", style: DesignSystem.labelStyle(buildContext: context)),
+                              ),
+                              Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: OutlinedButton.icon(
+                              onPressed: _submitting ? null : () async {
+                                setState(() => _submitting = true);
+                                try {
+                                  await ref.read(authProvider.notifier).loginWithGoogle();
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(_messageForError(e))),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) setState(() => _submitting = false);
+                                }
+                              },
+                              icon: Image.network(
+                                'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                                height: 24,
+                              ),
+                              label: Text(
+                                "Continue with Google",
+                                style: DesignSystem.bodyStyle(buildContext: context).copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: DesignSystem.mainText(context),
+                                side: BorderSide(color: DesignSystem.glassBorder(context)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                backgroundColor: DesignSystem.glassBackground(context),
+                              ),
+                            ),
                           ),
                         ],
                       ),

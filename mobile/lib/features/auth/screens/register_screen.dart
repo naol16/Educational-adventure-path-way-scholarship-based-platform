@@ -94,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             top: -100,
             right: -100,
             child: DesignSystem.buildBlurCircle(
-              DesignSystem.primary(context).withOpacity(0.08),
+              DesignSystem.primary(context).withValues(alpha: 0.08),
               350,
             ),
           ),
@@ -102,7 +102,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             bottom: -50,
             left: -150,
             child: DesignSystem.buildBlurCircle(
-              const Color(0xFF2563EB).withOpacity(0.06),
+              const Color(0xFF2563EB).withValues(alpha: 0.06),
               300,
             ),
           ),
@@ -182,6 +182,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             isLoading: _submitting,
                             onPressed: _createAccount,
                           ),
+
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text("OR", style: DesignSystem.labelStyle(buildContext: context)),
+                              ),
+                              Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: OutlinedButton.icon(
+                              onPressed: _submitting ? null : () async {
+                                setState(() => _submitting = true);
+                                try {
+                                  await ref.read(authProvider.notifier).loginWithGoogle();
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(_messageForError(e))),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) setState(() => _submitting = false);
+                                }
+                              },
+                              icon: Image.network(
+                                'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                                height: 24,
+                              ),
+                              label: Text(
+                                "Sign up with Google",
+                                style: DesignSystem.bodyStyle(buildContext: context).copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: DesignSystem.mainText(context),
+                                side: BorderSide(color: DesignSystem.glassBorder(context)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                backgroundColor: DesignSystem.glassBackground(context),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -226,9 +273,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.1),
+        color: primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: primaryColor.withOpacity(0.2)),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
