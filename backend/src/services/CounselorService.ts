@@ -1281,6 +1281,12 @@ export class CounselorService {
       booking?.dataValues?.slot ||
       null;
 
+    const counselorUser =
+      (typeof counselor?.get === "function" ? counselor.get("user") : null) ||
+      counselor?.user ||
+      counselor?.dataValues?.user ||
+      null;
+
     const studentUser =
       (typeof student?.get === "function" ? student.get("user") : null) ||
       student?.user ||
@@ -1305,11 +1311,12 @@ export class CounselorService {
       } : null,
       counselor: counselor ? {
         id: counselor.id,
+        name: counselorUser?.name || "Academic Counselor",
         areasOfExpertise: counselor.areasOfExpertise,
-        user: counselor.user ? {
-          id: counselor.user.id,
-          name: counselor.user.name,
-          email: counselor.user.email,
+        user: counselorUser ? {
+          id: counselorUser.id,
+          name: counselorUser.name,
+          email: counselorUser.email,
           profileImageUrl: counselor.profileImageUrl
         } : null
       } : null,
@@ -1418,16 +1425,27 @@ export class CounselorService {
     const student = await Student.findOne({ where: { userId } });
     if (!student) throw httpError(404, "Student profile not found");
 
+    const now = new Date();
+
     const bookings = await Booking.findAll({
-      where: { studentId: student.id },
+      where: {
+        studentId: student.id,
+        status: { [Op.in]: ['pending', 'confirmed', 'started'] }
+      },
       include: [
         { 
           association: 'counselor', 
           include: [{ association: 'user', attributes: ['id', 'name', 'email'] }] 
         },
-        { association: 'slot' }
+        {
+          association: 'slot',
+          where: {
+            endTime: { [Op.gt]: now }
+          },
+          required: true
+        }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']]
     });
 
     return bookings.map(b => this.formatBookingResponse(b));

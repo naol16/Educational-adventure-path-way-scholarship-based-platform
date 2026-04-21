@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Video, Clock, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { Card, CardBody, Button, Badge, Avatar, AvatarImage, AvatarFallback } from '@/components/ui';
+import { Calendar, Video, Clock, Loader2 } from 'lucide-react';
+import { Card, CardBody, Button, Badge } from '@/components/ui';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
 
 export const StudentBookingManager = () => {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -38,9 +37,11 @@ export const StudentBookingManager = () => {
         );
     }
 
-    const upcoming = bookings.filter(b => b.status === 'confirmed');
-    const pending = bookings.filter(b => b.status === 'pending');
-    const past = bookings.filter(b => ['completed', 'cancelled'].includes(b.status));
+    const upcoming = [...bookings].sort((a, b) => {
+            const aStart = new Date(a?.slot?.startTime || 0).getTime();
+            const bStart = new Date(b?.slot?.startTime || 0).getTime();
+            return aStart - bStart;
+        });
 
     return (
         <div className="space-y-10 pb-20">
@@ -62,14 +63,9 @@ export const StudentBookingManager = () => {
                                 <CardBody className="p-6">
                                     <div className="flex items-start justify-between mb-6">
                                         <div className="flex items-center gap-4">
-                                            <Avatar className="h-12 w-12 rounded-xl border-2 border-primary/20">
-                                                <AvatarImage src={booking.counselor?.user?.profileImageUrl} />
-                                                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                                    {booking.counselor?.user?.name?.[0] || 'C'}
-                                                </AvatarFallback>
-                                            </Avatar>
                                             <div>
-                                                <h3 className="font-bold text-foreground">Session with {booking.counselor?.user?.name || 'Academic Counselor'}</h3>
+                                                <h3 className="font-bold text-foreground">Session with {booking.counselor?.name || booking.counselor?.user?.name || 'Academic Counselor'}</h3>
+                                                <p className="text-xs text-muted-foreground">Counselor: {booking.counselor?.name || booking.counselor?.user?.name || 'Academic Counselor'}</p>
                                                 <p className="text-xs text-muted-foreground">{booking.counselor?.areasOfExpertise || 'Academic Expert'}</p>
                                             </div>
                                         </div>
@@ -119,48 +115,12 @@ export const StudentBookingManager = () => {
                 </div>
             )}
 
-            {/* Pending Section Optional - User requested only confirmed ones, but keeping for reference if needed */}
-            {/* You can uncomment this if you want to see sessions awaiting payment */}
-            {/* 
-            {pending.length > 0 && (
-                ...
-            )} 
-            */}
-
-            {past.length > 0 && (
-                <div className="space-y-6">
-                    <h2 className="text-xl font-bold opacity-60">History</h2>
-                    <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
-                         {past.map((booking) => (
-                             <div key={booking.id} className="p-5 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                                 <div className="flex items-center gap-4">
-                                     <div className={`h-8 w-8 rounded-full flex items-center justify-center ${booking.status === 'completed' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
-                                         {booking.status === 'completed' ? <CheckCircle2 size={16} /> : <Clock size={16} />}
-                                     </div>
-                                     <div>
-                                         <p className="text-sm font-bold">Session with {booking.counselor?.user?.name || 'Counselor'}</p>
-                                         <p className="text-[11px] text-muted-foreground">
-                                             {booking.slot?.startTime 
-                                                ? new Date(booking.slot.startTime).toLocaleDateString() 
-                                                : 'Date unknown'}
-                                         </p>
-                                     </div>
-                                 </div>
-                                 <Badge variant="outline" className="text-[9px] uppercase font-black tracking-widest px-2 py-0 border-muted-foreground/30 text-muted-foreground/60">
-                                     {booking.status}
-                                 </Badge>
-                             </div>
-                         ))}
-                    </div>
-                </div>
-            )}
-
-            {bookings.length === 0 && (
+            {upcoming.length === 0 && (
                 <div className="py-20 text-center bg-card/30 border border-dashed border-border rounded-3xl">
                     <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold">No sessions yet</h3>
+                    <h3 className="text-xl font-bold">No upcoming sessions</h3>
                     <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-                        Once you book a consultation with one of our academic experts, it will appear here.
+                        Upcoming counseling sessions will appear here. Expired sessions are automatically hidden.
                     </p>
                     <Link href="/dashboard/counselors">
                         <Button className="mt-8 rounded-full px-8 primary-gradient font-bold h-11">
