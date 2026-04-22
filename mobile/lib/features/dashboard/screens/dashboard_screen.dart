@@ -165,7 +165,7 @@ class DashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Adventure Pathway",
+                "Path Finder",
                 style: DesignSystem.headingStyle(buildContext: context, fontSize: 18, color: DesignSystem.primary(context)),
                 overflow: TextOverflow.ellipsis,
               ),

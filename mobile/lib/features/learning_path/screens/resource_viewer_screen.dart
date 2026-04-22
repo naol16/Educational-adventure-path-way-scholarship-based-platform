@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 enum ResourceType { video, pdf }
 
@@ -25,6 +26,7 @@ class ResourceViewerScreen extends StatefulWidget {
 
 class _ResourceViewerScreenState extends State<ResourceViewerScreen> {
   YoutubePlayerController? _youtubeController;
+  bool _hasYoutubeError = false;
 
   @override
   void initState() {
@@ -39,7 +41,15 @@ class _ResourceViewerScreenState extends State<ResourceViewerScreen> {
             mute: false,
             enableCaption: true,
           ),
-        );
+        )..addListener(() {
+          if (_youtubeController != null && 
+              !_hasYoutubeError && 
+              mounted) {
+            setState(() {
+              _hasYoutubeError = true;
+            });
+          }
+        });
       }
     }
   }
@@ -115,14 +125,20 @@ class _ResourceViewerScreenState extends State<ResourceViewerScreen> {
     switch (widget.type) {
       case ResourceType.video:
         if (_youtubeController != null) {
-          return YoutubePlayer(
-            controller: _youtubeController!,
-            showVideoProgressIndicator: true,
-            progressIndicatorColor: DesignSystem.emerald,
-            progressColors: const ProgressBarColors(
-              playedColor: DesignSystem.emerald,
-              handleColor: Colors.white,
-            ),
+          return Stack(
+            children: [
+              YoutubePlayer(
+                controller: _youtubeController!,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: DesignSystem.emerald,
+                progressColors: const ProgressBarColors(
+                  playedColor: DesignSystem.emerald,
+                  handleColor: Colors.white,
+                ),
+              ),
+              if (_hasYoutubeError)
+                _buildYoutubeErrorOverlay(),
+            ],
           );
         } else {
           return Column(
@@ -183,5 +199,84 @@ class _ResourceViewerScreenState extends State<ResourceViewerScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildYoutubeErrorOverlay() {
+    return Positioned.fill(
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.7),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    LucideIcons.playCircle,
+                    color: DesignSystem.emerald,
+                    size: 40,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Playback Restricted",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "This video's owner has restricted embedding. Tap below to watch directly on YouTube.",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _launchYoutube,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignSystem.emerald,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.externalLink, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Watch on YouTube",
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchYoutube() async {
+    final uri = Uri.parse(widget.url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

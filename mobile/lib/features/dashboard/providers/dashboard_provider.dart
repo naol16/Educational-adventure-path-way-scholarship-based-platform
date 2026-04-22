@@ -71,32 +71,39 @@ final dashboardDataProvider = Provider<DashboardState>((ref) {
   final matches = matchesState.valueOrNull ?? [];
   final backendStats = statsState.value ?? {};
 
-  // 1. Calculate Stats (Prefer backend stats, fallback to local tracking)
+  // 1. Calculate Stats (Prioritize local watchlist for immediate UI feedback, merge with backend)
   int saved = 0;
   int applied = 0;
   int dueSoon = 0;
 
-  if (backendStats.isNotEmpty && backendStats['metrics'] != null) {
-    saved = backendStats['metrics']['saved'] ?? 0;
-    applied = backendStats['metrics']['applied'] ?? 0;
-    dueSoon = backendStats['metrics']['dueSoon'] ?? 0;
-  } else {
-    final now = DateTime.now();
-    for (final tracked in watchlist) {
-      if (tracked.status == 'NOT_STARTED' || tracked.status == 'WATCHING') {
-        saved++;
-      } else if (tracked.status == 'APPLIED' || tracked.status == 'SUBMITTED' || tracked.status == 'ACCEPTED') {
-        applied++;
-      }
+  // Start with local watchlist calculation (immediate/optimistic)
+  final now = DateTime.now();
+  for (final tracked in watchlist) {
+    if (tracked.status == 'NOT_STARTED' || tracked.status == 'WATCHING') {
+      saved++;
+    } else if (tracked.status == 'APPLIED' || tracked.status == 'SUBMITTED' || tracked.status == 'ACCEPTED') {
+      applied++;
+    }
 
-      final effectiveDeadline = tracked.manualDeadline ?? tracked.scholarship?.deadline;
-      if (effectiveDeadline != null) {
-        final diff = effectiveDeadline.difference(now).inDays;
-        if (diff >= 0 && diff <= 14) { 
-          dueSoon++;
-        }
+    final effectiveDeadline = tracked.manualDeadline ?? tracked.scholarship?.deadline;
+    if (effectiveDeadline != null) {
+      final diff = effectiveDeadline.difference(now).inDays;
+      if (diff >= 0 && diff <= 14) { 
+        dueSoon++;
       }
     }
+  }
+
+  // If backend stats are fresher or have more data (e.g. historical totals not in local list), use those as fallback
+  // but only if they are larger than our current local count (to avoid flickering backwards during optimistic updates)
+  if (backendStats.isNotEmpty && backendStats['metrics'] != null) {
+    final bSaved = backendStats['metrics']['saved'] ?? 0;
+    final bApplied = backendStats['metrics']['applied'] ?? 0;
+    final bDueSoon = backendStats['metrics']['dueSoon'] ?? 0;
+    
+    if (bSaved > saved) saved = bSaved;
+    if (bApplied > applied) applied = bApplied;
+    if (bDueSoon > dueSoon) dueSoon = bDueSoon;
   }
 
   // 2. Calculate Profile Strength (Heuristic based on 11 key fields)
