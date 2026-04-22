@@ -202,8 +202,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 }
                               },
                               icon: Image.network(
-                                'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                                'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
                                 height: 24,
+                                errorBuilder: (context, error, stackTrace) => Icon(
+                                  LucideIcons.logIn,
+                                  size: 20,
+                                  color: DesignSystem.primary(context),
+                                ),
                               ),
                               label: Text(
                                 "Continue with Google",

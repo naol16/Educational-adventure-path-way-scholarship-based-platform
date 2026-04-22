@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -132,6 +133,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         _buildReadOnlyField(context, "Account Role", user?.role.toUpperCase() ?? "STUDENT"),
                         const SizedBox(height: 40),
                         _buildSaveButton(context),
+                        const SizedBox(height: 24),
+                        _buildLogoutButton(),
                       ],
                     ),
                   ),
@@ -296,6 +299,88 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 "Save Changes",
                 style: GoogleFonts.plusJakartaSans(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
               ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return GestureDetector(
+      onTap: () async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: AlertDialog(
+              backgroundColor: DesignSystem.overlayBackground(context),
+              surfaceTintColor: Colors.transparent,
+              elevation: 24,
+              shadowColor: Colors.black.withValues(alpha: 0.4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: DesignSystem.primary(context).withValues(alpha: 0.3), 
+                  width: 1.5
+                ),
+              ),
+              title: Row(
+                children: [
+                  Icon(LucideIcons.logOut, color: Colors.redAccent, size: 24),
+                  const SizedBox(width: 10),
+                  Text("Logout", style: DesignSystem.headingStyle(buildContext: context, fontSize: 20)),
+                ],
+              ),
+              content: Text("Are you sure you want to log out of your account?", style: DesignSystem.bodyStyle(buildContext: context, fontSize: 15)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  child: Text("Cancel", style: DesignSystem.labelStyle(buildContext: context, fontSize: 14)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        if (confirmed == true) {
+          await ref.read(authProvider.notifier).logout();
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.redAccent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(LucideIcons.logOut, color: Colors.redAccent, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              "Log Out",
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

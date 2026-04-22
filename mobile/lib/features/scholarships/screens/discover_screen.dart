@@ -13,6 +13,7 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import '../widgets/scholarship_match_card.dart';
 import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
 import 'package:mobile/features/chat/screens/pathfinder_chat_screen.dart';
+import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -485,6 +486,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               GestureDetector(
                 onTap: () {
                   ref.read(scholarshipWatchlistProvider.notifier).toggleWatchlist(s.id);
+                  ref.invalidate(dashboardStatsProvider);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(isSaved ? 'Removed from watchlist' : 'Added to watchlist'),

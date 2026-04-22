@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/features/core/providers/notification_provider.dart';
-import 'package:mobile/features/core/services/notification_api_service.dart';
+
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/core/providers/theme_provider.dart';
@@ -18,10 +17,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _activeTab = 'Account';
+  String _activeTab = 'Security';
 
   final List<Map<String, dynamic>> _tabs = [
-    {'title': 'Account', 'icon': LucideIcons.user},
     {'title': 'Security', 'icon': LucideIcons.shield},
     {'title': 'Appearance', 'icon': LucideIcons.palette},
     {'title': 'Billing', 'icon': LucideIcons.creditCard},
@@ -66,11 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                 ),
-                if (_activeTab == 'Account')
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: _buildLogoutButton(),
-                  ),
+
               ],
             ),
           ),
@@ -157,10 +151,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildActiveContent(user) {
+  Widget _buildActiveContent(dynamic user) {
     switch (_activeTab) {
-      case 'Account':
-        return _buildAccountSection(user);
       case 'Appearance':
         return _buildAppearanceSection();
       case 'Security':
@@ -170,52 +162,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       default:
         return Container();
     }
-  }
-
-  Widget _buildAccountSection(user) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle("Personal Profile", "Manage your account identity"),
-        const SizedBox(height: 20),
-        _buildSettingsItem(
-          icon: LucideIcons.user,
-          title: "Full Name",
-          value: user?.name ?? "Loading...",
-        ),
-        _buildSettingsItem(
-          icon: LucideIcons.mail,
-          title: "Email Address",
-          value: user?.email ?? "Loading...",
-        ),
-        _buildSettingsItem(
-          icon: LucideIcons.briefcase,
-          title: "Role",
-          value: user?.role?.toUpperCase() ?? "STUDENT",
-        ),
-        _buildSettingsItem(
-          icon: LucideIcons.bell,
-          title: "Test Notification",
-          value: "Trigger",
-          onTap: () async {
-            try {
-              await ref.read(notificationApiServiceProvider).triggerTestNotification();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Test notification triggered!")),
-              );
-              // Small delay to allow backend to process
-              Future.delayed(const Duration(seconds: 1), () {
-                ref.read(notificationProvider.notifier).refresh();
-              });
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Error: $e")),
-              );
-            }
-          },
-        ),
-      ],
-    );
   }
 
   Widget _buildAppearanceSection() {
@@ -401,121 +347,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: DesignSystem.surface(context).withValues(alpha: 0.2)),
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: DesignSystem.primary(context).withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: DesignSystem.primary(context), size: 18),
-        ),
-        title: Text(
-          title,
-          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                color: valueColor ?? DesignSystem.mainText(context),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: DesignSystem.primary(context).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: DesignSystem.primary(context), size: 18),
               ),
-            ),
-            if (onTap != null) ...[
-              const SizedBox(width: 8),
-              Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context), size: 16),
-            ]
-          ],
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: valueColor ?? DesignSystem.mainText(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: 8),
+                Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context), size: 16),
+              ]
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLogoutButton() {
-    return GestureDetector(
-      onTap: () async {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: AlertDialog(
-              backgroundColor: DesignSystem.overlayBackground(context),
-              surfaceTintColor: Colors.transparent, // Prevents Material 3 tinting over the custom color
-              elevation: 24,
-              shadowColor: Colors.black.withValues(alpha: 0.4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                  color: DesignSystem.primary(context).withValues(alpha: 0.3), 
-                  width: 1.5
-                ),
-              ),
-              title: Row(
-                children: [
-                  Icon(LucideIcons.logOut, color: Colors.redAccent, size: 24),
-                  const SizedBox(width: 10),
-                  Text("Logout", style: DesignSystem.headingStyle(buildContext: context, fontSize: 20)),
-                ],
-              ),
-              content: Text("Are you sure you want to log out of your account?", style: DesignSystem.bodyStyle(buildContext: context, fontSize: 15)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  child: Text("Cancel", style: DesignSystem.labelStyle(buildContext: context, fontSize: 14)),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
-                  ),
-                  child: const Text("Logout", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
-              ],
-            ),
-          ),
-        );
 
-        if (confirmed == true) {
-          await ref.read(authProvider.notifier).logout();
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(LucideIcons.logOut, color: Colors.redAccent, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              "Log Out",
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

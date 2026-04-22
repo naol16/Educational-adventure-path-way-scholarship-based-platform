@@ -466,6 +466,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               onTap: () async {
                 try {
                   await ref.read(scholarshipWatchlistProvider.notifier).toggleWatchlist(widget.scholarshipId);
+                  ref.invalidate(dashboardStatsProvider);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(isTracked ? 'Removed from Watchlist' : 'Added to Watchlist')),
