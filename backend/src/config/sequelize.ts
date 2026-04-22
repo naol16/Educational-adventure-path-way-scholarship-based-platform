@@ -28,6 +28,7 @@ import {
   VisaMockInterview,
   Pdf,
   CounselorPayout,
+  CounselorWalletTransaction,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -85,6 +86,7 @@ export const sequelize = new Sequelize({
     VisaMockInterview,
     Pdf,
     CounselorPayout,
+    CounselorWalletTransaction,
   ], // Add all models here
 } as SequelizeOptions);
 

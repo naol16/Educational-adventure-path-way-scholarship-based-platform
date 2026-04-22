@@ -1,4 +1,5 @@
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
+import { sequelize } from "../config/sequelize.js";
 import { Counselor } from "../models/Counselor.js";
 import { User } from "../models/User.js";
 import { Student } from "../models/Student.js";
@@ -13,6 +14,7 @@ import { Scholarship } from "../models/Scholarship.js";
 import { ScholarshipMilestone } from "../models/ScholarshipMilestone.js";
 import { UserRole } from "../types/userTypes.js";
 import { CounselorPayout } from "../models/CounselorPayout.js";
+import { CounselorWalletTransaction } from "../models/CounselorWalletTransaction.js";
 import { AvailabilitySlotRepository } from "../repositories/AvailabilitySlotRepository.js";
 import { BookingRepository } from "../repositories/BookingRepository.js";
 import { CounselorRepository } from "../repositories/CounselorRepository.js";
@@ -44,9 +46,12 @@ import {
   SendMessageDto,
   ShareDocumentDto,
   SlotResponse,
+  StudentReviewAndConfirmDto,
   StudentProgressResponse,
   UpdateCounselorDto,
   UpdateSlotDto,
+  CounselorPayoutRequestDto,
+  AdminPayoutActionDto,
 } from "../types/counselorTypes.js";
 
 type CounselorMetadata = {
@@ -155,7 +160,7 @@ export class CounselorService {
     }
 
     const user = await User.findByPk(userId);
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
   static async getMyProfile(userId: number): Promise<CounselorResponse> {
@@ -177,6 +182,9 @@ export class CounselorService {
         verificationStatus: "pending",
         isActive: true,
         rating: 0,
+        ratingPercentage: 0,
+        totalReviews: 0,
+        ratingDistribution: null,
         totalSessions: 0,
         qualifications: [],
         specializations: [],
@@ -209,7 +217,7 @@ export class CounselorService {
         updatedAt: new Date(),
       };
     }
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
   static async getPublicDirectory(query: CounselorDirectoryQuery): Promise<{
@@ -251,8 +259,13 @@ export class CounselorService {
         ? filteredRows.filter((item) => (slotsByCounselor.get(item.id) || []).length > 0)
         : filteredRows;
 
-    const payload = availabilityFilteredRows.map((c) => {
-      const base = this.formatCounselorResponse(c, (c as any).user || null);
+    const payload = await Promise.all(availabilityFilteredRows.map(async (c) => {
+      let userObj = (c as any).user;
+      if (!userObj && c.userId) {
+        userObj = await User.findByPk(c.userId);
+      }
+      
+      const base = await this.formatCounselorResponse(c, userObj || null);
       const availableSlots = slotsByCounselor.get(c.id) || [];
       return {
         ...base,
@@ -260,7 +273,7 @@ export class CounselorService {
           base.availabilitySummary ||
           (availableSlots.length > 0 ? `${availableSlots.length} open slots` : null),
       };
-    });
+    }));
 
     return {
       rows: payload,
@@ -293,8 +306,7 @@ export class CounselorService {
       order: [["rating", "DESC"]],
     });
 
-    return candidates
-      .map((counselor) => {
+    const results = await Promise.all(candidates.map(async (counselor) => {
         const metadata = this.parseMetadata(counselor.extractedData);
         const matchReasons: string[] = [];
         let recommendationScore = Number(counselor.rating || 0);
@@ -333,9 +345,11 @@ export class CounselorService {
           matchReasons.push("Education level alignment");
         }
 
-        const base = this.formatCounselorResponse(counselor, (counselor as any).user || null);
+        const base = await this.formatCounselorResponse(counselor, (counselor as any).user || null);
         return { ...base, recommendationScore, matchReasons };
-      })
+      }));
+
+    return results
       .sort((a, b) => b.recommendationScore - a.recommendationScore)
       .slice(0, 10);
   }
@@ -343,19 +357,45 @@ export class CounselorService {
   static async getReviews(counselorId: number): Promise<ReviewsSummaryResponse> {
     const reviews = await CounselorReviewRepository.findAllByCounselor(counselorId);
     const stats = await CounselorReviewRepository.getStatistics(counselorId);
+    
+    console.log(`[CounselorService.getReviews] Found ${reviews.length} reviews for counselor ${counselorId}`);
+    if (reviews.length > 0) {
+      const sampleReview = reviews[0];
+      console.log(`[CounselorService.getReviews] Sample review data:\n`, JSON.stringify(sampleReview, null, 2));
+    }
+
     return {
       totalReviews: stats.totalReviews,
       averageRating: stats.averageRating,
       ratingDistribution: stats.ratingDistribution,
-      reviews: reviews.map((review) => ({
-        id: review.id,
-        bookingId: review.bookingId,
-        studentId: review.studentId,
-        counselorId: review.counselorId,
-        rating: review.rating,
-        comment: review.comment,
-        createdAt: review.createdAt,
-        studentName: (review as any).student?.user?.name || "Anonymous",
+      reviews: await Promise.all(reviews.map(async (review) => {
+        // ALWAYS fetch manually to bypass any Sequelize include bugs completely
+        let studentName = "Verified Student";
+        
+        try {
+          if (review.studentId) {
+            const student = await Student.findByPk(review.studentId);
+            if (student && student.userId) {
+              const user = await User.findByPk(student.userId);
+              if (user && user.name) {
+                studentName = user.name;
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching student name for review ${review.id}:`, err);
+        }
+
+        return {
+          id: review.id,
+          bookingId: review.bookingId,
+          studentId: review.studentId,
+          counselorId: review.counselorId,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          studentName: studentName,
+        };
       })),
     };
   }
@@ -409,7 +449,7 @@ export class CounselorService {
     });
 
     const user = await User.findByPk(userId);
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
   static async deleteProfile(userId: number): Promise<void> {
@@ -642,7 +682,7 @@ export class CounselorService {
       console.log(`[ConfirmBooking] Chapa response for ${tx_ref}: API Status: ${chapaVerify.status}, Transaction Status: ${transactionStatus}`);
       
       if (apiSuccess && transactionStatus === 'success') {
-        await payment.update({ status: 'success' });
+        await payment.update({ status: 'success', escrowStatus: 'held' });
         
         const booking = await Booking.findByPk(payment.bookingId || 0);
         if (booking) {
@@ -747,28 +787,21 @@ export class CounselorService {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
               }
               
-              // Update counselor balance
+              // Funds remain held in escrow until student milestone confirmation.
               const counselor = await CounselorRepository.findById(booking.counselorId);
               if (counselor) {
-                const amount = Number(payment.amount);
-                await counselor.increment({
-                  totalEarned: amount,
-                  pendingBalance: amount
-                });
-
                 // Notify counselor about confirmed booking
                 try {
                   await NotificationService.createNotification(
                     counselor.userId,
                     "Booking Confirmed",
-                    `Payment received! Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
+                    `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
                     booking.id
                   );
                 } catch (notifyError) {
                   console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
                 }
-                console.log(`[ConfirmBooking] Updated counselor ${counselor.id} balance by ${amount}`);
               }
 
               this.queueSessionReminder(booking.id, slot.startTime);
@@ -983,22 +1016,12 @@ export class CounselorService {
     const booking = await BookingRepository.findByIdWithAssociations(bookingId);
     if (!booking || booking.counselorId !== counselorId) throw httpError(404, "Booking not found");
     if (dto.status === "started" && booking.status !== "confirmed") throw httpError(409, "Can only start a confirmed booking");
-    if (dto.status === "completed" && booking.status !== "started") throw httpError(409, "Can only complete a started booking");
+    if ((dto.status === "completed" || dto.status === "awaiting_confirmation") && booking.status !== "started") throw httpError(409, "Can only complete a started booking");
     if (dto.status === "cancelled" && booking.status === "completed") throw httpError(409, "Cannot cancel a completed booking");
 
     if (dto.status === "started") await booking.update({ status: "started", startedAt: new Date() });
-    if (dto.status === "completed") {
-      await booking.update({ status: "completed", completedAt: new Date() });
-      const counselor = await Counselor.findByPk(counselorId);
-      if (counselor) {
-        const sessionPrice = Number(counselor.hourlyRate || 500);
-        // Deduct 10% platform fee
-        const counselorCut = sessionPrice * 0.9;
-        await counselor.update({ 
-          totalSessions: (counselor.totalSessions || 0) + 1,
-          pendingBalance: (Number(counselor.pendingBalance) || 0) + counselorCut
-        });
-      }
+    if (dto.status === "completed" || dto.status === "awaiting_confirmation") {
+      await booking.update({ status: "awaiting_confirmation", completedAt: new Date() });
       await AvailabilitySlotRepository.update(booking.slotId, { status: "available", reservedStudentId: null, meetingLink: null });
     }
     if (dto.status === "cancelled") {
@@ -1009,6 +1032,90 @@ export class CounselorService {
       await booking.update({ status: "disputed" });
     }
     return this.formatBookingResponse(booking);
+  }
+
+  static async reviewAndConfirmBooking(studentUserId: number, bookingId: number, dto: StudentReviewAndConfirmDto): Promise<BookingResponse> {
+    const student = await Student.findOne({ where: { userId: studentUserId } });
+    if (!student) throw httpError(404, "Student profile not found");
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking || booking.studentId !== student.id) {
+      throw httpError(404, "Booking not found");
+    }
+
+    if (booking.status !== "awaiting_confirmation") {
+      throw httpError(409, "This booking is not ready for student confirmation. It must be marked as completed by the counselor first.");
+    }
+
+    const payment = booking.paymentId ? await Payment.findByPk(booking.paymentId) : null;
+    if (!payment || payment.status !== "success") {
+      throw httpError(409, "Payment must be successful before confirming completion");
+    }
+
+    if (payment.escrowStatus !== "held") {
+      throw httpError(409, "Escrow is not in held state for this booking");
+    }
+
+    // Atomic transaction for fund release
+    return await sequelize.transaction(async (t) => {
+      const existingReview = await CounselorReviewRepository.findByBookingId(booking.id);
+      if (existingReview) {
+        throw httpError(409, "Review has already been submitted for this booking");
+      }
+
+      await CounselorReviewRepository.create({
+        bookingId: booking.id,
+        studentId: student.id,
+        counselorId: booking.counselorId,
+        rating: dto.rating,
+        ...(dto.comment !== undefined ? { comment: dto.comment } : {}),
+      }, { transaction: t });
+
+      const counselor = await Counselor.findByPk(booking.counselorId);
+      if (counselor) {
+        const grossAmount = Number(payment.amount || 0);
+        const counselorCut = Number((grossAmount * 0.9).toFixed(2));
+        const newPendingBalance = Number((Number(counselor.pendingBalance || 0) + counselorCut).toFixed(2));
+        const newTotalEarned = Number((Number(counselor.totalEarned || 0) + counselorCut).toFixed(2));
+
+        const reviewStats = await CounselorReviewRepository.getStatistics(counselor.id);
+        await counselor.update({
+          totalSessions: (counselor.totalSessions || 0) + 1,
+          pendingBalance: newPendingBalance,
+          totalEarned: newTotalEarned,
+          rating: reviewStats.averageRating,
+        }, { transaction: t });
+
+        await CounselorWalletTransaction.create({
+          counselorId: counselor.id,
+          bookingId: booking.id,
+          paymentId: payment.id,
+          entryType: "deposit",
+          amount: counselorCut,
+          balanceAfter: newPendingBalance,
+          reference: `escrow-release-${booking.id}-${Date.now()}`,
+          note: "Escrow release after student review confirmation",
+        }, { transaction: t });
+
+        await NotificationService.createNotification(
+          counselor.userId,
+          "Escrow Released",
+          `A student confirmed your completed session. ${counselorCut.toFixed(2)} ETB was added to your wallet.`,
+          "booking",
+          booking.id,
+        );
+      }
+
+      await booking.update({ 
+        status: "completed", 
+        completedAt: booking.completedAt || new Date() 
+      }, { transaction: t });
+      
+      await payment.update({ escrowStatus: "released" }, { transaction: t });
+
+      const refreshed = await BookingRepository.findByIdWithAssociations(booking.id, true, t);
+      return this.formatBookingResponse(refreshed || booking);
+    });
   }
 
   static async joinSession(userId: number, role: UserRole, bookingId: number): Promise<{ meetingLink: string }> {
@@ -1046,7 +1153,7 @@ export class CounselorService {
     if (!counselor) throw httpError(404, "Counselor not found");
     await counselor.update({ verificationStatus: dto.verificationStatus });
     const user = await User.findByPk(counselor.userId);
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
   static async adminList(): Promise<CounselorResponse[]> {
@@ -1068,7 +1175,7 @@ export class CounselorService {
         u = await User.findByPk(c.userId, { attributes: ["id", "name", "email"] });
       }
       
-      return this.formatCounselorResponse(c, u);
+      return await this.formatCounselorResponse(c, u);
     }));
   }
 
@@ -1077,7 +1184,7 @@ export class CounselorService {
     if (!counselor) throw httpError(404, "Counselor not found");
     await counselor.update({ isActive: dto.isActive });
     const user = await User.findByPk(counselor.userId);
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
   static async sendMessage(senderUserId: number, senderRole: UserRole, dto: SendMessageDto): Promise<CounselorMessageResponse> {
@@ -1203,8 +1310,16 @@ export class CounselorService {
     };
   }
 
-  private static formatCounselorResponse(counselor: Counselor, user: User | null): CounselorResponse {
+  private static async formatCounselorResponse(counselor: Counselor, user: User | null): Promise<CounselorResponse> {
     const metadata = this.parseMetadata(counselor.extractedData);
+    
+    let stats = null;
+    try {
+      stats = await CounselorReviewRepository.getStatistics(counselor.id);
+    } catch (error) {
+      console.error(`[formatCounselorResponse] Error fetching stats for counselor ${counselor.id}:`, error);
+    }
+
     return {
       id: counselor.id,
       userId: counselor.userId,
@@ -1216,7 +1331,12 @@ export class CounselorService {
       yearsOfExperience: counselor.yearsOfExperience,
       verificationStatus: counselor.verificationStatus,
       isActive: counselor.isActive,
-      rating: Number(counselor.rating || 0),
+      rating: (stats && stats.totalReviews > 0) ? stats.averageRating : Number(counselor.rating || 0),
+      ratingPercentage: (stats && stats.totalReviews > 0) 
+        ? Number(((stats.averageRating / 5) * 100).toFixed(2))
+        : Number(((Number(counselor.rating || 0) / 5) * 100).toFixed(2)),
+      totalReviews: stats ? stats.totalReviews : 0,
+      ratingDistribution: stats ? stats.ratingDistribution : null,
       totalSessions: counselor.totalSessions || 0,
       qualifications: metadata.qualifications || [],
       specializations: metadata.specializations || [],
@@ -1405,8 +1525,20 @@ export class CounselorService {
         status: 'paid'
     });
 
+    const updatedBalance = Number(counselor.pendingBalance) - amount;
     await counselor.update({
-        pendingBalance: Number(counselor.pendingBalance) - amount
+      pendingBalance: updatedBalance
+    });
+
+    await CounselorWalletTransaction.create({
+      counselorId: counselor.id,
+      bookingId: null,
+      paymentId: null,
+      entryType: 'withdrawal',
+      amount,
+      balanceAfter: updatedBalance,
+      reference: transactionReference,
+      note: 'Counselor withdrawal approved by admin',
     });
 
     return payout;
@@ -1418,43 +1550,184 @@ export class CounselorService {
       throw httpError(404, "Counselor profile not found or inactive");
     }
     const user = await User.findByPk(userId);
-    return this.formatCounselorResponse(counselor, user);
+    return await this.formatCounselorResponse(counselor, user);
   }
 
-  static async getStudentBookings(userId: number): Promise<any[]> {
+  static async getStudentBookings(userId: number, role: UserRole = UserRole.STUDENT): Promise<any[]> {
+    const baseWhere = {
+      status: { [Op.in]: ['pending', 'confirmed', 'started', 'awaiting_confirmation', 'completed'] },
+    };
+
+    if (role === UserRole.COUNSELOR) {
+      const counselor = await CounselorRepository.findByUserId(userId);
+      if (!counselor) throw httpError(404, "Counselor profile not found");
+
+      const bookings = await Booking.findAll({
+        where: {
+          ...baseWhere,
+          counselorId: counselor.id,
+        },
+        include: [
+          {
+            association: 'student',
+            include: [{ association: 'user', attributes: ['id', 'name', 'email'] }],
+          },
+          {
+            association: 'counselor',
+            include: [{ association: 'user', attributes: ['id', 'name', 'email'] }],
+          },
+          {
+            association: 'slot',
+            required: false,
+          },
+        ],
+        order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']],
+      });
+
+      return bookings.map((b) => this.formatBookingResponse(b));
+    }
+
     const student = await Student.findOne({ where: { userId } });
     if (!student) throw httpError(404, "Student profile not found");
 
-    const now = new Date();
-
     const bookings = await Booking.findAll({
       where: {
+        ...baseWhere,
         studentId: student.id,
-        status: { [Op.in]: ['pending', 'confirmed', 'started'] }
       },
       include: [
-        { 
-          association: 'counselor', 
-          include: [{ association: 'user', attributes: ['id', 'name', 'email'] }] 
+        {
+          association: 'counselor',
+          include: [{ association: 'user', attributes: ['id', 'name', 'email'] }],
         },
         {
           association: 'slot',
-          where: {
-            endTime: { [Op.gt]: now }
-          },
-          required: true
-        }
+          required: false,
+        },
       ],
-      order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']]
+      order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']],
     });
 
-    return bookings.map(b => this.formatBookingResponse(b));
+    return bookings.map((b) => this.formatBookingResponse(b));
   }
 
   static async getMyPayouts(counselorId: number): Promise<any[]> {
     return CounselorPayout.findAll({
       where: { counselorId },
       order: [['createdAt', 'DESC']]
+    });
+  }
+
+  static async getMyWalletLedger(counselorId: number): Promise<any[]> {
+    return CounselorWalletTransaction.findAll({
+      where: { counselorId },
+      order: [['createdAt', 'DESC']],
+    });
+  }
+
+  static async requestPayout(userId: number, dto: CounselorPayoutRequestDto): Promise<CounselorPayout> {
+    const counselor = await CounselorRepository.findByUserId(userId);
+    if (!counselor) throw httpError(404, "Counselor profile not found");
+
+    if (Number(counselor.pendingBalance || 0) < dto.amount) {
+      throw httpError(400, "Insufficient pending balance for payout");
+    }
+
+    if (dto.amount < 100) {
+      throw httpError(400, "Minimum payout amount is 100 ETB");
+    }
+
+    return await sequelize.transaction(async (t) => {
+      // Create payout entry
+      const payout = await CounselorPayout.create({
+        counselorId: counselor.id,
+        amount: dto.amount,
+        status: 'pending',
+        payoutMethod: dto.payoutMethod,
+        payoutDetails: dto.payoutDetails,
+        transactionReference: `REQ-${counselor.id}-${Date.now()}`,
+      }, { transaction: t });
+
+      // Create ledger entry (debit - on-hold)
+      await CounselorWalletTransaction.create({
+        counselorId: counselor.id,
+        entryType: "withdrawal",
+        amount: -dto.amount,
+        balanceAfter: Number(counselor.pendingBalance || 0), // balance doesn't change yet, it's just a request
+        reference: payout.transactionReference,
+        note: `Payout request of ${dto.amount} ETB via ${dto.payoutMethod}`,
+      }, { transaction: t });
+
+      return payout;
+    });
+  }
+
+  static async adminUpdatePayoutStatus(payoutId: number, dto: AdminPayoutActionDto): Promise<CounselorPayout> {
+    const payout = await CounselorPayout.findByPk(payoutId);
+    if (!payout) throw httpError(404, "Payout request not found");
+
+    if (["completed", "rejected"].includes(payout.status)) {
+      throw httpError(400, "Cannot update status of a finalized payout");
+    }
+
+    const counselor = await Counselor.findByPk(payout.counselorId);
+    if (!counselor) throw httpError(404, "Counselor for this payout no longer exists");
+
+    return await sequelize.transaction(async (t) => {
+      if (dto.status === 'completed') {
+        // DEDUCT from balance only when completed/approved
+        const currentBalance = Number(counselor.pendingBalance || 0);
+        if (currentBalance < payout.amount) {
+          throw httpError(400, "Counselor balance is now insufficient (concurrent changes suspected)");
+        }
+
+        const newBalance = Number((currentBalance - payout.amount).toFixed(2));
+        await counselor.update({ pendingBalance: newBalance }, { transaction: t });
+
+        // Update ledger to show final deduction
+        await CounselorWalletTransaction.create({
+          counselorId: counselor.id,
+          entryType: "withdrawal",
+          amount: -payout.amount,
+          balanceAfter: newBalance,
+          reference: dto.transactionReference || payout.transactionReference,
+          note: `Payout completed by admin. Reference: ${dto.transactionReference || 'N/A'}`,
+        }, { transaction: t });
+
+        await NotificationService.createNotification(
+          counselor.userId,
+          "Payout Completed",
+          `Your payout of ${payout.amount} ETB via ${payout.payoutMethod} has been processed successfully.`,
+          "payout",
+          payout.id
+        );
+      } else if (dto.status === 'rejected') {
+        // Just notify, no balance change needed as we didn't deduct yet
+        await NotificationService.createNotification(
+          counselor.userId,
+          "Payout Rejected",
+          `Your payout request was rejected. Reason: ${dto.adminNote || 'No reason provided'}`,
+          "payout",
+          payout.id
+        );
+      }
+
+      await payout.update({
+        status: dto.status,
+        adminNote: dto.adminNote,
+        transactionReference: dto.transactionReference || payout.transactionReference,
+      }, { transaction: t });
+
+      return payout;
+    });
+  }
+
+  static async getPayouts(counselorId?: number): Promise<CounselorPayout[]> {
+    const where = counselorId ? { counselorId } : {};
+    return CounselorPayout.findAll({
+      where,
+      include: [{ model: Counselor, as: 'counselor', include: [{ association: 'user', attributes: ['name'] }] }],
+      order: [['createdAt', 'DESC']],
     });
   }
 }

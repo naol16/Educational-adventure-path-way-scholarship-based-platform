@@ -8,8 +8,10 @@ import {
     Default,
     CreatedAt,
     UpdatedAt,
+    HasMany,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import { CounselorReview } from "./CounselorReview.js";
 
 @Table({
     tableName: "students",
@@ -386,4 +388,7 @@ export class Student extends Model {
     // Association with explicit alias to match service queries
     @BelongsTo(() => User, { as: 'user' })
     user!: User;
+
+    @HasMany(() => CounselorReview, { foreignKey: 'studentId' })
+    reviews!: CounselorReview[];
 }

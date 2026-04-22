@@ -63,4 +63,14 @@ export class PaymentService {
             throw new Error(`Failed to verify payment with Chapa (HTTP ${status})`);
         }
     }
+
+    /**
+     * Chapa Split Payment / Subaccount support for Escrow.
+     * Use this during initialization to automatically hold funds.
+     */
+    static async getSubaccount(counselorId: number) {
+         // Placeholder for production implementation
+         // In a real Chapa setup, you would have subaccounts for counselors
+         return null;
+    }
 }
