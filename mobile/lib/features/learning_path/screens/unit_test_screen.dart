@@ -7,6 +7,7 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
+import 'package:lottie/lottie.dart';
  
 class UnitTestScreen extends ConsumerStatefulWidget {
   final String skill;
@@ -222,19 +223,40 @@ class _UnitTestScreenState extends ConsumerState<UnitTestScreen> {
       backgroundColor: DesignSystem.themeBackground(context),
       body: Stack(
         children: [
+          // Celebratory Lottie Background
+          if (passed)
+            Positioned.fill(
+              child: Lottie.network(
+                'https://lottie.host/80242295-d86b-4e6c-947f-856114a796e6/oR0p0U1Y8H.json',
+                fit: BoxFit.cover,
+                repeat: false,
+              ),
+            ),
+          
           Positioned.fill(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  passed ? LucideIcons.trophy : LucideIcons.alertCircle,
-                  size: 80,
-                  color: color,
-                ),
+                if (passed)
+                  Lottie.network(
+                    'https://lottie.host/8b4618e4-7f15-46f4-b25b-5517b6a18837/9v6v9vX9vG.json',
+                    width: 200,
+                    height: 200,
+                    repeat: false,
+                  )
+                else
+                  Icon(
+                    LucideIcons.alertCircle,
+                    size: 80,
+                    color: color,
+                  ),
                 const SizedBox(height: 24),
                 Text(
-                  passed ? "CONGRATULATIONS!" : "KEEP PRACTICING",
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 24).copyWith(color: color),
+                  passed ? "MASTERY ACHIEVED!" : "KEEP PRACTICING",
+                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 28).copyWith(
+                    color: color,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -247,7 +269,7 @@ class _UnitTestScreenState extends ConsumerState<UnitTestScreen> {
                   child: Text(
                     _results!['feedback'] ?? "",
                     textAlign: TextAlign.center,
-                    style: DesignSystem.bodyStyle(buildContext: context),
+                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 16),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -261,11 +283,14 @@ class _UnitTestScreenState extends ConsumerState<UnitTestScreen> {
               ],
             ),
           ),
+          
+          // Confetti overlay for pass
           if (passed)
-            const Positioned.fill(
+            Positioned.fill(
               child: IgnorePointer(
-                child: Center(
-                  child: Text("🎉 Mastery Unlocked!"), // Could use a Lottie animation here
+                child: Lottie.network(
+                  'https://lottie.host/7970d440-272e-4b47-b845-671e6261548e/8zS6D090V2.json',
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
