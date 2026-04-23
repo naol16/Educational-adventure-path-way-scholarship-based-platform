@@ -26,7 +26,7 @@ export class PdfRepository {
         });
     }
 
-    static async findFivePerType(level: string, examType: string = 'IELTS'): Promise<{ [key: string]: Pdf[] }> {
+    static async findAllPerType(level: string, examType: string = 'IELTS'): Promise<{ [key: string]: Pdf[] }> {
         const types = ['Reading', 'Listening', 'Writing', 'Speaking'];
         const result: { [key: string]: Pdf[] } = {};
 
@@ -37,7 +37,8 @@ export class PdfRepository {
                     type,
                     examType
                 },
-                limit: 5
+                order: [['id', 'ASC']],
+                limit: 25
             });
             result[type.toLowerCase()] = pdfs;
         }

@@ -21,6 +21,18 @@ export class Video extends Model {
 
     @Column({
         type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare title: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.STRING(255),
         allowNull: false,
         field: 'video_link'
     })
@@ -52,6 +64,14 @@ export class Video extends Model {
         defaultValue: 'IELTS'
     })
     declare examType: 'IELTS' | 'TOEFL';
+
+    @Column({
+        type: DataType.STRING(10),
+        allowNull: false,
+        field: 'resource_type',
+        defaultValue: 'video'
+    })
+    declare resourceType: 'video' | 'pdf';
 
     @CreatedAt
     @Column({

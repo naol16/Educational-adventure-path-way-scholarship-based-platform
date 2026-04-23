@@ -14,7 +14,7 @@ export class PdfService {
         return PdfRepository.findById(id);
     }
 
-    static async getFivePerType(level: string, examType: string = 'IELTS'): Promise<{ [key: string]: Pdf[] }> {
-        return PdfRepository.findFivePerType(level, examType);
+    static async findAllPerType(level: string, examType: string = 'IELTS'): Promise<{ [key: string]: Pdf[] }> {
+        return PdfRepository.findAllPerType(level, examType);
     }
 }

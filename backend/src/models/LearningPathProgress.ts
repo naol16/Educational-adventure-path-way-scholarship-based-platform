@@ -10,6 +10,7 @@ import {
 } from "sequelize-typescript";
 import { Student } from "./Student.js";
 import { Video } from "./Video.js";
+import { Pdf } from "./Pdf.js";
 
 @Table({
     tableName: "learning_path_progress",
@@ -39,6 +40,14 @@ export class LearningPathProgress extends Model {
         field: 'video_id'
     })
     declare videoId: number;
+
+    @ForeignKey(() => Pdf)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'pdf_id'
+    })
+    declare pdfId: number;
 
     @Column({
         type: DataType.INTEGER,
@@ -95,4 +104,7 @@ export class LearningPathProgress extends Model {
 
     @BelongsTo(() => Video)
     video!: Video;
+
+    @BelongsTo(() => Pdf)
+    pdf!: Pdf;
 }

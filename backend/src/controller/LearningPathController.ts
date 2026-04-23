@@ -40,7 +40,7 @@ export class LearningPathController {
     static async markComplete(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            const { videoId, questionIndex, isNote, section, isCompleted, answer } = req.body;
+            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer } = req.body;
 
             if (!userId) {
                 return res.status(401).json({ success: false, error: "Unauthorized" });
@@ -55,6 +55,7 @@ export class LearningPathController {
                 where: {
                     studentId: student.id,
                     videoId: videoId ?? null,
+                    pdfId: pdfId ?? null,
                     questionIndex: questionIndex ?? null,
                     isNote: isNote ?? false,
                     section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section

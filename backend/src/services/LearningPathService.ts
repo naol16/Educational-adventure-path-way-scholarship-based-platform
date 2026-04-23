@@ -63,7 +63,7 @@ export class LearningPathService {
     // 1. Fetch 5 videos and 5 pdfs per skill matching the student's level and exam type
     const [videoMap, pdfMap] = await Promise.all([
       VideoService.getAllPerType(level, normalizedExamType),
-      PdfService.getFivePerType(level, normalizedExamType)
+      PdfService.findAllPerType(level, normalizedExamType)
     ]);
 
     const videoSections = {
@@ -186,12 +186,9 @@ export class LearningPathService {
           const pdf = await PdfService.getById(id);
           if (!pdf) return null;
 
-          // Note: Using videoId column for PDF IDs for now to avoid migration if possible, 
-          // but better to have a generic resourceId. For now, let's just track by ID.
-          // Wait, if I use videoId, it might conflict. 
-          // I'll check if I should use isNote or a new column.
-          // For now, let's just not track PDF completion or assume it's like a Note.
-          const isCompleted = false; 
+          const isCompleted = allProgress.some(p => p.pdfId === id);
+          totalItems++;
+          if (isCompleted) completedItems++;
 
           return {
             ...pdf.get({ plain: true }),
@@ -246,21 +243,35 @@ export class LearningPathService {
       const missions: any[] = [];
       const skillMissions = this.missionData[skill] || [];
       const validVideos = videosProgress.filter((v) => v !== null);
+      const validPdfs = pdfsProgress.filter((p) => p !== null);
 
       for (let i = 0; i < skillMissions.length; i++) {
         const missionInfo = skillMissions[i];
-        const start = i * 5;
-        const end = Math.min(start + 5, validVideos.length);
         
-        if (start < validVideos.length) {
-          const missionVideos = validVideos.slice(start, end);
-          const isMissionCompleted = missionVideos.every(v => v.isCompleted);
+        // Videos: 5 per mission
+        const videoStart = i * 5;
+        const videoEnd = Math.min(videoStart + 5, validVideos.length);
+        const missionVideos = videoStart < validVideos.length ? validVideos.slice(videoStart, videoEnd) : [];
+
+        // PDFs: 3 per mission
+        const pdfStart = i * 3;
+        const pdfEnd = Math.min(pdfStart + 3, validPdfs.length);
+        const missionPdfs = pdfStart < validPdfs.length ? validPdfs.slice(pdfStart, pdfEnd) : [];
+        
+        if (missionVideos.length > 0 || missionPdfs.length > 0) {
+          const isPracticeCompleted = updatedLearningMode[skill]?.questions?.some((q: any) => q.isCompleted) || 
+                                      (Array.isArray(updatedLearningMode[skill]) && updatedLearningMode[skill].some((q: any) => q.isCompleted));
+                                      
+          const isMissionCompleted = (missionVideos.length > 0 ? missionVideos.every(v => v.isCompleted) : true) && 
+                                     (missionPdfs.length > 0 ? missionPdfs.every(p => p.isCompleted) : true) &&
+                                     isPracticeCompleted;
           
           missions.push({
             title: missionInfo.title,
             objective: missionInfo.objective,
             videos: missionVideos,
-            isCompleted: isMissionCompleted
+            pdfs: missionPdfs,
+            isCompleted: !!isMissionCompleted
           });
         }
       }

@@ -27,6 +27,13 @@ export class Pdf extends Model {
     declare title: string;
 
     @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'description'
+    })
+    declare description: string;
+
+    @Column({
         type: DataType.STRING(255),
         allowNull: false,
         field: 'pdf_link'
