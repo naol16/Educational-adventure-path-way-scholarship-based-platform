@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/learning_path/models/learning_path.dart';
+import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
 import 'package:mobile/features/learning_path/screens/resource_viewer_screen.dart';
 
-class PDFLibraryScreen extends StatelessWidget {
+class PDFLibraryScreen extends ConsumerWidget {
   final List<PathPdf> pdfs;
   final String skillName;
 
@@ -17,7 +19,7 @@ class PDFLibraryScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Group PDFs by level
     final groupedPdfs = <String, List<PathPdf>>{
       'easy': pdfs.where((p) => p.level == 'easy').toList(),
@@ -43,13 +45,13 @@ class PDFLibraryScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           if (groupedPdfs['easy']!.isNotEmpty)
-            _buildLevelSection(context, "Beginner (Easy)", groupedPdfs['easy']!, DesignSystem.emerald),
+            _buildLevelSection(context, ref, "Beginner (Easy)", groupedPdfs['easy']!, DesignSystem.emerald),
           
           if (groupedPdfs['medium']!.isNotEmpty)
-            _buildLevelSection(context, "Intermediate (Medium)", groupedPdfs['medium']!, Colors.amber),
+            _buildLevelSection(context, ref, "Intermediate (Medium)", groupedPdfs['medium']!, Colors.amber),
           
           if (groupedPdfs['hard']!.isNotEmpty)
-            _buildLevelSection(context, "Advanced (Hard)", groupedPdfs['hard']!, Colors.red),
+            _buildLevelSection(context, ref, "Advanced (Hard)", groupedPdfs['hard']!, Colors.red),
           
           if (pdfs.isEmpty)
             Center(
@@ -66,7 +68,7 @@ class PDFLibraryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLevelSection(BuildContext context, String title, List<PathPdf> levelPdfs, Color accentColor) {
+  Widget _buildLevelSection(BuildContext context, WidgetRef ref, String title, List<PathPdf> levelPdfs, Color accentColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -93,27 +95,32 @@ class PDFLibraryScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ...levelPdfs.map((pdf) => _buildPdfCard(context, pdf, accentColor)).toList(),
+        ...levelPdfs.map((pdf) => _buildPdfCard(context, ref, pdf, accentColor)).toList(),
         const SizedBox(height: 32),
       ],
     );
   }
 
-  Widget _buildPdfCard(BuildContext context, PathPdf pdf, Color accentColor) {
+  Widget _buildPdfCard(BuildContext context, WidgetRef ref, PathPdf pdf, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ResourceViewerScreen(
-                type: ResourceType.pdf,
-                title: pdf.title,
-                url: pdf.pdfLink,
+        onTap: () async {
+          // Mark as completed
+          await ref.read(learningPathProvider.notifier).completePdf(pdf.id, pdf.type);
+
+          if (context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ResourceViewerScreen(
+                  type: ResourceType.pdf,
+                  title: pdf.title,
+                  url: pdf.pdfLink,
+                ),
               ),
-            ),
-          );
+            );
+          }
         },
         child: GlassContainer(
           padding: const EdgeInsets.all(16),
@@ -126,7 +133,11 @@ class PDFLibraryScreen extends StatelessWidget {
                   color: accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(LucideIcons.fileText, color: accentColor, size: 24),
+                child: Icon(
+                  pdf.isCompleted ? LucideIcons.checkCircle2 : LucideIcons.fileText, 
+                  color: pdf.isCompleted ? DesignSystem.emerald : accentColor, 
+                  size: 24
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -139,13 +150,18 @@ class PDFLibraryScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Comprehensive Study Guide",
+                      pdf.description ?? "Comprehensive Study Guide",
                       style: DesignSystem.labelStyle(buildContext: context, fontSize: 10),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context).withValues(alpha: 0.3), size: 18),
+              if (pdf.isCompleted)
+                Icon(LucideIcons.check, color: DesignSystem.emerald, size: 18)
+              else
+                Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context).withValues(alpha: 0.3), size: 18),
             ],
           ),
         ),

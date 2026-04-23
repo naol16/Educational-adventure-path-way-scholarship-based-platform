@@ -125,8 +125,8 @@ class MissionDetailScreen extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => PDFLibraryScreen(
-                                pdfs: sectionData.pdfs,
-                                skillName: section,
+                                pdfs: mission?.pdfs ?? sectionData.pdfs,
+                                skillName: mission?.title ?? section,
                               ),
                             ),
                           );
