@@ -14,6 +14,7 @@ import 'package:mobile/features/learning_path/widgets/audio_player_widget.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:mobile/features/learning_path/screens/toefl_diagnostic_screen.dart';
 
 class DiagnosticAssessmentScreen extends ConsumerStatefulWidget {
   final bool force;
@@ -54,6 +55,14 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
   }
 
   void _startAssessmentNow() {
+    if (_selectedExam == 'TOEFL') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ToeflDiagnosticScreen()),
+      );
+      return;
+    }
+    
     setState(() {
       _isSetupPhase = false;
     });
@@ -506,12 +515,22 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                     style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: _buildSelectionCard("IELTS", _selectedExam == "IELTS", () => setState(() => _selectedExam = "IELTS"))),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildSelectionCard("TOEFL", _selectedExam == "TOEFL", () => setState(() => _selectedExam = "TOEFL"))),
-                    ],
+                  _buildPathwayCard(
+                    context,
+                    title: "IELTS PATHWAY",
+                    subtitle: "International English Language Testing System",
+                    icon: LucideIcons.globe,
+                    isSelected: _selectedExam == "IELTS",
+                    onTap: () => setState(() => _selectedExam = "IELTS"),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPathwayCard(
+                    context,
+                    title: "TOEFL PATHWAY",
+                    subtitle: "Test of English as a Foreign Language",
+                    icon: LucideIcons.graduationCap,
+                    isSelected: _selectedExam == "TOEFL",
+                    onTap: () => setState(() => _selectedExam = "TOEFL"),
                   ),
                   const SizedBox(height: 32),
                   // Difficulty selection removed as it's determined by AI results
@@ -530,35 +549,55 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
     );
   }
 
-  Widget _buildSelectionCard(String title, bool isSelected, VoidCallback onTap) {
-    final primaryColor = DesignSystem.primary(context);
+  Widget _buildPathwayCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: isSelected ? primaryColor.withValues(alpha: 0.1) : DesignSystem.surface(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? primaryColor : Colors.transparent,
-            width: 2,
-          ),
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(20),
+        borderColor: isSelected ? const Color(0xFF10B981) : null,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isSelected) ...[
-              Icon(LucideIcons.checkCircle2, color: primaryColor, size: 18),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                color: DesignSystem.mainText(context),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 16,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white10,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: isSelected ? const Color(0xFF10B981) : Colors.white38, size: 24),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white38,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (isSelected)
+              const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 24),
           ],
         ),
       ),

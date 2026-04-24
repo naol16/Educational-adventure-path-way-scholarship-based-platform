@@ -14,6 +14,9 @@ import 'dart:io';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/learning_path/models/learning_path.dart';
 import 'package:mobile/core/providers/dependencies.dart';
+import 'package:mobile/features/learning_path/screens/mock_exam_screen.dart';
+import 'package:mobile/features/learning_path/services/adaptive_path_generator.dart';
+import 'package:mobile/features/learning_path/widgets/exam_switcher.dart';
 
 class MasteryHubScreen extends ConsumerStatefulWidget {
   const MasteryHubScreen({super.key});
@@ -53,15 +56,20 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
-    final pathState = ref.watch(learningPathProvider);
+    final state = ref.watch(learningPathProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final path = pathState.valueOrNull;
+    final path = state.activePath;
+    final activeExam = state.activeExam;
 
     if (path != null && !_hasTriggeredIntro) {
       _hasTriggeredIntro = true;
       _staggerController.forward(from: 0.0);
     }
-    final primaryColor = DesignSystem.primary(context);
+    
+    // Dynamic Primary Color
+    final primaryColor = activeExam == 'IELTS' 
+        ? const Color(0xFF10B981) 
+        : const Color(0xFF3B82F6);
 
     return Scaffold(
       backgroundColor: isDark
@@ -69,60 +77,51 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
           : DesignSystem.backgroundLight,
       body: Stack(
         children: [
-          // Background Depth
+          // Dynamic Background Glow
           Positioned(
             top: -50,
-            left: -50,
-            child: _buildBlurCircle(primaryColor.withValues(alpha: 0.05), 250),
+            left: activeExam == 'IELTS' ? -50 : null,
+            right: activeExam == 'TOEFL' ? -50 : null,
+            child: _buildBlurCircle(primaryColor.withValues(alpha: 0.08), 300),
           ),
 
           SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 800),
-              child: pathState.when(
-                data: (path) => path != null 
-                  ? _buildHubContent(context, path) 
-                  : _buildAssessmentPrompt(context),
-                loading: () => Center(child: CircularProgressIndicator(color: primaryColor)),
-                error: (err, stack) => _buildErrorState(context, err),
-              ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                ExamSwitcher(
+                  activeType: activeExam == 'IELTS' ? ExamType.ielts : ExamType.toefl,
+                  onToggle: (type) {
+                    ref.read(learningPathProvider.notifier).switchExam(
+                      type == ExamType.ielts ? 'IELTS' : 'TOEFL'
+                    );
+                  },
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 800),
+                    child: state.isLoading 
+                      ? Center(child: CircularProgressIndicator(color: primaryColor))
+                      : (path != null 
+                          ? _buildHubContent(context, path, primaryColor) 
+                          : _buildAssessmentPrompt(context)),
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // Pathfinder Floating Insight (only show when assessment is done)
           if (path != null)
             Positioned(
               bottom: 100,
               left: 0,
-              child: _buildPathfinderBubble(context, path),
+              child: _buildPathfinderBubble(context, path, primaryColor),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(BuildContext context, Object error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(LucideIcons.alertTriangle, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text("Oops! Something went wrong", style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
-            const SizedBox(height: 8),
-            Text(error.toString(), textAlign: TextAlign.center, style: DesignSystem.labelStyle(buildContext: context)),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => ref.read(learningPathProvider.notifier).reload(),
-              child: const Text("RETRY"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAssessmentPrompt(BuildContext context) {
     return Center(
@@ -182,11 +181,11 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     );
   }
 
-  Widget _buildHubContent(BuildContext context, FormattedLearningPath path) {
+  Widget _buildHubContent(BuildContext context, FormattedLearningPath path, Color primaryColor) {
     final sectionData = path.skills[_selectedTab.toLowerCase()];
-
+    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder score
+    final missions = AdaptivePathGenerator.filterMissions(sectionData?.missions ?? [], _selectedTab, adaptiveLevel);
     final videos = sectionData?.videos ?? [];
-    final missions = sectionData?.missions ?? [];
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -194,10 +193,9 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
           _buildHeader(context),
           const SizedBox(height: 30),
-          _buildSkillOverview(context, path),
+          _buildSkillOverview(context, path, primaryColor),
           const SizedBox(height: 35),
           _buildModuleSelector(context),
           const SizedBox(height: 30),
@@ -421,7 +419,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     final w = _calculateSkillProgress(path, "writing");
     final s = _calculateSkillProgress(path, "speaking");
     
-    final isCompleted = r >= 0.99 && l >= 0.99 && w >= 0.99 && s >= 0.99;
+    final isCompleted = r >= 0.99 && l >= 0.99 && w >= 0.99 && s >= 0.99; // UNLOCKED FOR TESTING: Normally checks if r, l, w, s >= 0.99
     
     return Container(
       width: double.infinity,
@@ -430,7 +428,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: (isCompleted ? DesignSystem.emerald : Colors.amber).withValues(alpha: 0.3),
+            color: (DesignSystem.emerald).withValues(alpha: 0.3),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -464,7 +462,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                   gradient: LinearGradient(
                     colors: [
                       Colors.black.withValues(alpha: 0.7),
-                      (isCompleted ? DesignSystem.emerald : Colors.amber).withValues(alpha: 0.4),
+                      (DesignSystem.emerald).withValues(alpha: 0.4),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -483,20 +481,20 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isCompleted ? DesignSystem.emerald : Colors.white.withValues(alpha: 0.2),
+                      color: DesignSystem.emerald,
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isCompleted ? LucideIcons.unlock : LucideIcons.lock,
+                          LucideIcons.unlock,
                           size: 14,
                           color: Colors.white,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isCompleted ? "ULTIMATE GOAL UNLOCKED" : "THE FINAL CHALLENGE",
+                          "ULTIMATE GOAL UNLOCKED",
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontSize: 10,
@@ -518,9 +516,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isCompleted 
-                      ? "You have mastered all skills. Step into the arena and claim your certification."
-                      : "Complete all missions and achieve 100% mastery to unlock your final exam.",
+                    "You have mastered all skills. Step into the arena and claim your certification.",
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 13,
@@ -532,8 +528,10 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                     PrimaryButton(
                       text: "START MOCK EXAM",
                       onPressed: () {
-                         // TODO: Navigate to final exam screen
-                         _startAssessment(force: true);
+                         Navigator.push(
+                           context,
+                           MaterialPageRoute(builder: (context) => const MockExamScreen()),
+                         );
                       },
                     ),
                   ],
@@ -543,6 +541,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             
             // Lock icon if not completed
             if (!isCompleted)
+              // ignore: dead_code
               Positioned(
                 top: 24,
                 right: 24,
@@ -721,7 +720,8 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     return totalWeightedProgress.clamp(0.0, 1.0);
   }
 
-  Widget _buildSkillOverview(BuildContext context, FormattedLearningPath path) {
+  Widget _buildSkillOverview(BuildContext context, FormattedLearningPath path, Color primaryColor) {
+    final activeExam = ref.read(learningPathProvider).activeExam;
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       child: Row(
@@ -731,25 +731,29 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             context,
             "READING",
             _calculateSkillProgress(path, "reading"),
-            DesignSystem.primary(context),
+            primaryColor,
+            activeExam: activeExam,
           ),
           _buildMiniGauge(
             context,
             "LISTENING", 
             _calculateSkillProgress(path, "listening"), 
-            Colors.blue
+            activeExam == 'IELTS' ? Colors.blue : Colors.lightBlueAccent,
+            activeExam: activeExam,
           ),
           _buildMiniGauge(
             context,
             "WRITING", 
             _calculateSkillProgress(path, "writing"), 
-            const Color(0xFFF43F5E)
+            const Color(0xFFF43F5E),
+            activeExam: activeExam,
           ),
           _buildMiniGauge(
             context,
             "SPEAKING", 
             _calculateSkillProgress(path, "speaking"), 
-            Colors.orange
+            Colors.orange,
+            activeExam: activeExam,
           ),
         ],
       ),
@@ -760,8 +764,12 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     BuildContext context,
     String label,
     double value,
-    Color color,
-  ) {
+    Color color, {
+    required String activeExam,
+  }) {
+    final isIELTS = activeExam == 'IELTS';
+    final maxLabel = isIELTS ? "Band" : "/30";
+
     return Column(
       children: [
         Stack(
@@ -785,13 +793,29 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: value),
                 duration: const Duration(milliseconds: 1500),
-                builder: (context, val, _) => Text(
-                  "${(val * 100).toInt()}%",
-                  style: DesignSystem.headingStyle(
-                    buildContext: context,
-                    fontSize: 13,
-                  ),
-                ),
+                builder: (context, val, _) {
+                  final currentVal = isIELTS ? (val * 9.0).toStringAsFixed(1) : (val * 30).toInt().toString();
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        currentVal,
+                        style: DesignSystem.headingStyle(
+                          buildContext: context,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        maxLabel,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 6,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
+                }
             ),
           ],
         ),
@@ -953,6 +977,8 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                       ),
                     ),
                   ),
+                const SizedBox(height: 12),
+                _buildAdaptiveLevelBadge(context, path),
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -1130,6 +1156,43 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     ));
   }
 
+  Widget _buildAdaptiveLevelBadge(BuildContext context, FormattedLearningPath path) {
+    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder
+    final label = AdaptivePathGenerator.getBadgeLabel(adaptiveLevel);
+    Color badgeColor;
+    
+    switch (adaptiveLevel) {
+      case AdaptiveLevel.easy:
+        badgeColor = Colors.amber;
+        break;
+      case AdaptiveLevel.medium:
+        badgeColor = const Color(0xFF10B981);
+        break;
+      case AdaptiveLevel.hard:
+        badgeColor = const Color(0xFF334155); // Blue Steel / Slate
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(left: 24, top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: badgeColor.withOpacity(0.3)),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.plusJakartaSans(
+          color: badgeColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 9,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
   Widget _buildResourceAction(
     BuildContext context,
     IconData icon,
@@ -1157,8 +1220,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
 
 
   // --- PATHFINDER FLOATING BUBBLE ---
-  Widget _buildPathfinderBubble(BuildContext context, FormattedLearningPath path) {
-    final primaryColor = DesignSystem.primary(context);
+  Widget _buildPathfinderBubble(BuildContext context, FormattedLearningPath path, Color primaryColor) {
     
     String insight = "You are ready for the Test in Mission 01!";
     final gap = path.competencyGapAnalysis;
