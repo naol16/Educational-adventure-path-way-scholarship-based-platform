@@ -34,8 +34,7 @@ class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
     bool isNote = false,
     int? questionIndex,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await _api.markComplete(
         videoId: videoId,
         pdfId: pdfId,
@@ -44,11 +43,15 @@ class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
         isNote: isNote,
         questionIndex: questionIndex,
       );
-      await ref.read(authProvider.future);
-      final auth = ref.read(authProvider).valueOrNull;
-      if (auth == null) return null;
-      return _api.fetchMyPath();
-    });
+      
+      // Refresh data silently
+      final newData = await _api.fetchMyPath();
+      state = AsyncValue.data(newData);
+    } catch (e) {
+      // If refresh fails, we can either keep old state or show error
+      // For progress, let's just log it and keep current state
+      print("Error marking progress: $e");
+    }
   }
 
   Future<void> completeResource(int resourceId, String section) async {

@@ -97,6 +97,7 @@ class LearningPathApiService {
   Future<Map<String, dynamic>> submitUnitTest({
     required String skill,
     required List<Map<String, dynamic>> responses,
+    required int missionIndex,
   }) async {
     final response = await _api.post(
       '/api/learning-path/unit-test/submit',
@@ -104,6 +105,7 @@ class LearningPathApiService {
       body: {
         'skill': skill,
         'responses': responses,
+        'missionIndex': missionIndex,
       },
     );
     if (response.statusCode != 200) {

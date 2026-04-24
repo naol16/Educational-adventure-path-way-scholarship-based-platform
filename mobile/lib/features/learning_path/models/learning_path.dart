@@ -10,6 +10,7 @@ class PathVideo {
     required this.level,
     required this.type,
     required this.examType,
+    this.duration,
     required this.isCompleted,
   });
 
@@ -21,6 +22,7 @@ class PathVideo {
   final String level;
   final String type;
   final String examType;
+  final String? duration;
   final bool isCompleted;
 
   factory PathVideo.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,7 @@ class PathVideo {
       level: readValue<String>(json, const ['level']) ?? 'easy',
       type: readValue<String>(json, const ['type']) ?? 'Reading',
       examType: readValue<String>(json, const ['examType', 'exam_type']) ?? 'IELTS',
+      duration: readValue<String>(json, const ['duration']),
       isCompleted: readBool(json, const ['isCompleted', 'is_completed']),
     );
   }

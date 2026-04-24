@@ -12,7 +12,7 @@ class AssessmentApiService {
 
   Future<AssessmentBlueprint> generate({
     required String examType,
-    required String difficulty,
+    String difficulty = 'Medium',
     bool force = false,
   }) async {
     final response = await _api.post(
@@ -116,5 +116,17 @@ class AssessmentApiService {
     }
 
     return decodeJsonObject(response);
+  }
+
+  Future<void> reset() async {
+    final response = await _api.post(
+      '/api/assessment/reset',
+      auth: true,
+      body: {},
+    );
+
+    if (response.statusCode != 200) {
+      throwForResponse(response, fallback: 'Failed to reset assessment');
+    }
   }
 }

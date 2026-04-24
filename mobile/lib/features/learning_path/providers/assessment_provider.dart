@@ -64,14 +64,13 @@ class AssessmentNotifier extends StateNotifier<AssessmentState> {
 
   Future<void> generateAssessment({
     required String examType,
-    required String difficulty,
     bool force = false,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final blueprint = await _api.generate(
         examType: examType,
-        difficulty: difficulty,
+        difficulty: 'Medium', // Always use Medium for diagnostic, AI will decide path later
         force: force,
       );
       state = state.copyWith(
