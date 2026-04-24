@@ -145,6 +145,7 @@ class MissionDetailScreen extends ConsumerWidget {
                                     builder: (context) => UnitTestScreen(
                                       skill: section,
                                       level: video.level,
+                                      missionIndex: index,
                                     ),
                                   ),
                                 );
@@ -185,12 +186,25 @@ class MissionDetailScreen extends ConsumerWidget {
                           );
                         } else {
                           // Standard Practice Engine
+                          String? passage;
+                          String? script;
+                          if (learningMode is Map) {
+                            final skillKey = section.toLowerCase();
+                            final skillLm = (learningMode as Map)[skillKey] ?? (learningMode as Map)[section];
+                            if (skillLm is Map) {
+                              passage = skillLm['passage'];
+                              script = skillLm['script'];
+                            }
+                          }
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => PracticeEngineScreen(
                                 section: section,
                                 questions: questions,
+                                passage: passage,
+                                script: script,
                               ),
                             ),
                           );
@@ -203,6 +217,7 @@ class MissionDetailScreen extends ConsumerWidget {
                 PrimaryButton(
                   text: video.isCompleted ? "REWATCH LESSON" : "START MISSION",
                   onPressed: () {
+                    // 1. Open video immediately
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -213,6 +228,9 @@ class MissionDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     );
+
+                    // 2. Mark as completed in background
+                    ref.read(learningPathProvider.notifier).completeResource(video.id, section);
                   },
                 ),
                 const SizedBox(height: 40),
@@ -263,13 +281,15 @@ class MissionDetailScreen extends ConsumerWidget {
   }
 
   bool _isUnitTestUnlocked() {
-    // 1. Check if the current video is completed
-    if (!video.isCompleted) return false;
+    if (mission == null) return false;
+
+    // 1. All videos in this mission must be completed
+    if (!mission!.videos.every((v) => v.isCompleted)) return false;
     
-    // 2. Check if the briefing (note) is completed
-    if (!sectionData.isNoteCompleted) return false;
+    // 2. All PDFs in this mission must be completed
+    if (!mission!.pdfs.every((p) => p.isCompleted)) return false;
     
-    // 3. Check if at least one practice question is completed 
+    // 3. Practice Drill must have at least one question completed (or the whole thing)
     final lm = learningMode;
     if (lm is Map) {
       final skillKey = section.toLowerCase();
@@ -290,6 +310,9 @@ class MissionDetailScreen extends ConsumerWidget {
            }
         }
         if (!anyCompleted) return false;
+      } else if (skillLm is Map && (skillLm['prompt'] != null || skillLm['question'] != null)) {
+        // For Writing/Speaking single prompts
+        if (!(skillLm['isCompleted'] == true || skillLm['is_completed'] == true)) return false;
       }
     }
     

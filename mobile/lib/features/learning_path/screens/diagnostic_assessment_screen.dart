@@ -26,7 +26,6 @@ class DiagnosticAssessmentScreen extends ConsumerStatefulWidget {
 class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmentScreen> {
   bool _isSetupPhase = true;
   String _selectedExam = 'IELTS';
-  String _selectedDifficulty = 'Medium';
 
   int _currentSectionIndex = 0;
   final List<String> _sections = ['Reading', 'Listening', 'Writing', 'Speaking'];
@@ -60,7 +59,6 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
     });
     ref.read(assessmentProvider.notifier).generateAssessment(
       examType: _selectedExam,
-      difficulty: _selectedDifficulty,
       force: widget.force,
     );
     _startTimer();
@@ -284,10 +282,27 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
   void _startPolling(String testId) async {
     while (mounted) {
       final state = ref.read(assessmentProvider);
-      if (state.status == 'success' || state.status == 'failed') {
+      
+      if (state.status == 'success') {
+        if (mounted) {
+          // Close the grading dialog
+          Navigator.of(context, rootNavigator: true).pop();
+          
+          // Go to result screen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
+          );
+        }
         break;
       }
-      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (state.status == 'failed') {
+        // Overlay will show error with close button
+        break;
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 1000));
       if (!mounted) break;
       await ref.read(assessmentProvider.notifier).pollResult(testId);
     }
@@ -304,15 +319,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
           // The polling is now handled asynchronously outside the builder
           
           if (state.status == 'success') {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
-                );
-              }
-            });
+            // Navigation handled by the polling loop or caller
           }
 
           String title = "AI is Grading Your Exam";
@@ -408,7 +415,6 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                   } else {
                     ref.read(assessmentProvider.notifier).generateAssessment(
                           examType: 'IELTS',
-                          difficulty: 'Medium',
                           force: true,
                         );
                   }
@@ -490,7 +496,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Select the exam type and difficulty level for your diagnostic assessment. This will tailor your entire learning journey.",
+                    "Select your target exam type to begin the diagnostic assessment. Our AI will analyze your performance and craft the perfect learning roadmap for you.",
                     style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
                   ),
                   const SizedBox(height: 40),
@@ -507,19 +513,8 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                       Expanded(child: _buildSelectionCard("TOEFL", _selectedExam == "TOEFL", () => setState(() => _selectedExam = "TOEFL"))),
                     ],
                   ),
-
                   const SizedBox(height: 32),
-
-                  Text(
-                    "DIFFICULTY LEVEL",
-                    style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSelectionCard("Easy", _selectedDifficulty == "Easy", () => setState(() => _selectedDifficulty = "Easy")),
-                  const SizedBox(height: 12),
-                  _buildSelectionCard("Medium", _selectedDifficulty == "Medium", () => setState(() => _selectedDifficulty = "Medium")),
-                  const SizedBox(height: 12),
-                  _buildSelectionCard("Hard", _selectedDifficulty == "Hard", () => setState(() => _selectedDifficulty = "Hard")),
+                  // Difficulty selection removed as it's determined by AI results
 
                   const Spacer(),
                   PrimaryButton(

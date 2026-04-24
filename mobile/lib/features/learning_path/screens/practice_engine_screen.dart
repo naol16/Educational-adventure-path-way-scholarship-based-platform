@@ -6,15 +6,21 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class PracticeEngineScreen extends ConsumerStatefulWidget {
   final String section;
   final List<dynamic> questions;
 
+  final String? passage;
+  final String? script;
+
   const PracticeEngineScreen({
     super.key,
     required this.section,
     required this.questions,
+    this.passage,
+    this.script,
   });
 
   @override
@@ -25,6 +31,46 @@ class _PracticeEngineScreenState extends ConsumerState<PracticeEngineScreen> {
   int _currentIndex = 0;
   int? _selectedOption;
   bool _showFeedback = false;
+  bool _isPassageExpanded = false;
+  bool _hasListened = false;
+  final FlutterTts _tts = FlutterTts();
+  bool _isTtsInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    try {
+      await _tts.setLanguage("en-US");
+      await _tts.setSpeechRate(0.5);
+      await _tts.setVolume(1.0);
+      setState(() {
+        _isTtsInitialized = true;
+      });
+    } catch (e) {
+      debugPrint("TTS Init Error: $e");
+    }
+  }
+
+  void _listenOnce() async {
+    if (widget.script != null && !_hasListened && _isTtsInitialized) {
+      setState(() {
+        _hasListened = true;
+      });
+      await _tts.speak(widget.script!);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_isTtsInitialized) {
+      _tts.stop();
+    }
+    super.dispose();
+  }
 
   void _submitAnswer() async {
     if (_selectedOption != null && !_showFeedback) {
@@ -96,39 +142,51 @@ class _PracticeEngineScreenState extends ConsumerState<PracticeEngineScreen> {
           ),
           
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Question ${_currentIndex + 1} of ${widget.questions.length}",
-                    style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+            child: Column(
+              children: [
+                if (widget.passage != null || widget.script != null)
+                  _buildCollapsibleHeader(context),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Question ${_currentIndex + 1} of ${widget.questions.length}",
+                          style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          question['question'] ?? question['prompt'] ?? "No question text",
+                          style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        ...options.asMap().entries.map((entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildOption(context, entry.key, entry.value.toString(), correctIdx),
+                        )),
+                        
+                        const SizedBox(height: 40),
+                        
+                        PrimaryButton(
+                          text: _showFeedback 
+                              ? (_currentIndex < widget.questions.length - 1 ? "NEXT QUESTION" : "FINISH DRILL") 
+                              : "SUBMIT ANSWER",
+                          onPressed: _selectedOption == null && !_showFeedback ? null : _submitAnswer,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    question['question'] ?? question['prompt'] ?? "No question text",
-                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  ...options.asMap().entries.map((entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildOption(context, entry.key, entry.value.toString(), correctIdx),
-                  )),
-                  
-                  const Spacer(),
-                  
-                  PrimaryButton(
-                    text: _showFeedback 
-                        ? (_currentIndex < widget.questions.length - 1 ? "NEXT QUESTION" : "FINISH DRILL") 
-                        : "SUBMIT ANSWER",
-                    onPressed: _selectedOption == null && !_showFeedback ? null : _submitAnswer,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+          
+          if (_isPassageExpanded && widget.passage != null)
+            _buildPassageOverlay(context),
           
           if (_showFeedback)
             Positioned.fill(
@@ -247,6 +305,118 @@ class _PracticeEngineScreenState extends ConsumerState<PracticeEngineScreen> {
                         color: DesignSystem.mainText(context).withValues(alpha: 0.8),
                         height: 1.5,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsibleHeader(BuildContext context) {
+    final isReading = widget.section.toLowerCase().contains('reading');
+    final title = isReading ? "READING PASSAGE" : "LISTENING AUDIO";
+    final icon = isReading ? LucideIcons.bookOpen : LucideIcons.headphones;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: GestureDetector(
+        onTap: () {
+          if (isReading) {
+            setState(() {
+              _isPassageExpanded = !_isPassageExpanded;
+            });
+          } else {
+            _listenOnce();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: DesignSystem.primary(context).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: DesignSystem.primary(context)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(
+                    color: DesignSystem.primary(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (isReading)
+                Icon(
+                  _isPassageExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  size: 18,
+                  color: DesignSystem.primary(context),
+                )
+              else
+                Text(
+                  _hasListened ? "LISTENED" : "PLAY ONCE",
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 10).copyWith(
+                    color: _hasListened ? DesignSystem.labelText(context) : DesignSystem.primary(context),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPassageOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () => setState(() => _isPassageExpanded = false),
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.7),
+          child: SafeArea(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: DesignSystem.themeBackground(context),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "READING PASSAGE",
+                          style: DesignSystem.labelStyle(buildContext: context).copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: Icon(LucideIcons.x, size: 20, color: DesignSystem.mainText(context)),
+                          onPressed: () => setState(() => _isPassageExpanded = false),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Text(
+                          widget.passage!,
+                          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 16).copyWith(height: 1.6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    PrimaryButton(
+                      text: "BACK TO QUESTIONS",
+                      onPressed: () => setState(() => _isPassageExpanded = false),
                     ),
                   ],
                 ),

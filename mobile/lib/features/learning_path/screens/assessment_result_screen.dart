@@ -17,15 +17,41 @@ class AssessmentResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(assessmentProvider);
-    final evaluation = state.result?['data'] ?? state.result?['evaluation'];
+    
+    // Debug logging to help identify why the screen might be stuck
+    debugPrint("AssessmentResultScreen: status=${state.status}, hasResult=${state.result != null}");
+    
+    final result = state.result;
+    final evaluation = result?['data'] ?? result?['evaluation'] ?? (result?['status'] == 'success' ? result : null);
 
     if (evaluation == null) {
+      // If we are here but status is success, it means data is missing from the result
+      if (state.status == 'success') {
+         return Scaffold(
+           body: Center(
+             child: Column(
+               mainAxisAlignment: MainAxisAlignment.center,
+               children: [
+                 const Icon(LucideIcons.alertCircle, size: 48, color: Colors.orange),
+                 const SizedBox(height: 16),
+                 Text("Assessment data is missing", style: DesignSystem.headingStyle(buildContext: context)),
+                 const SizedBox(height: 24),
+                 ElevatedButton(
+                   onPressed: () => Navigator.pop(context),
+                   child: const Text("GO BACK"),
+                 ),
+               ],
+             ),
+           ),
+         );
+      }
       return const PathfinderLoadingScreen();
     }
 
     final scoreBreakdown = evaluation['score_breakdown'] ?? {};
     final gapAnalysis = evaluation['competency_gap_analysis']?['proficiency_profile'] ?? 
                         evaluation['feedback_report'] ?? 
+                        evaluation['section_notes']?['reading'] ?? // Fallback to section notes if available
                         "Your path has been generated based on your performance.";
 
     return Scaffold(

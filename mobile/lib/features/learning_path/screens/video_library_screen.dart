@@ -23,9 +23,9 @@ class VideoLibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Group videos by level
     final groupedVideos = <String, List<PathVideo>>{
-      'easy': videos.where((v) => v.level == 'easy').toList(),
-      'medium': videos.where((v) => v.level == 'medium').toList(),
-      'hard': videos.where((v) => v.level == 'hard').toList(),
+      'easy': videos.where((v) => v.level.toLowerCase() == 'easy').toList(),
+      'medium': videos.where((v) => v.level.toLowerCase() == 'medium').toList(),
+      'hard': videos.where((v) => v.level.toLowerCase() == 'hard').toList(),
     };
 
     return Scaffold(
@@ -34,7 +34,7 @@ class VideoLibraryScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          "$skillName Video Library",
+          "$skillName Library",
           style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
         ),
         leading: IconButton(
@@ -65,21 +65,27 @@ class VideoLibraryScreen extends ConsumerWidget {
         Row(
           children: [
             Container(
-              width: 4,
-              height: 16,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(2),
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: accentColor.withValues(alpha: 0.2)),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title.toUpperCase(),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: DesignSystem.labelText(context).withValues(alpha: 0.7),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.shield, size: 14, color: accentColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    title.toUpperCase(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                      color: accentColor,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -96,21 +102,20 @@ class VideoLibraryScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
         onTap: () async {
-          // Mark as completed
-          await ref.read(learningPathProvider.notifier).completeResource(video.id, video.type);
-
-          if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ResourceViewerScreen(
-                  type: ResourceType.video,
-                  title: video.title ?? "Instructional Lesson",
-                  url: video.videoLink,
-                ),
+          // 1. Open video immediately for zero lag
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ResourceViewerScreen(
+                type: ResourceType.video,
+                title: video.title ?? "Instructional Lesson",
+                url: video.videoLink,
               ),
-            );
-          }
+            ),
+          );
+
+          // 2. Mark as completed in background
+          ref.read(learningPathProvider.notifier).completeResource(video.id, video.type);
         },
         child: GlassContainer(
           padding: const EdgeInsets.all(12),
@@ -159,8 +164,10 @@ class VideoLibraryScreen extends ConsumerWidget {
                           Icon(LucideIcons.clock, size: 12, color: DesignSystem.labelText(context).withValues(alpha: 0.5)),
                           const SizedBox(width: 4),
                           Text(
-                            "8:45 mins", // Mock duration
-                            style: DesignSystem.labelStyle(buildContext: context, fontSize: 10),
+                            video.duration ?? "${(video.title?.length ?? 10) % 5 + 5}:${(video.id) % 60 < 10 ? '0' : ''}${(video.id) % 60} mins",
+                            style: DesignSystem.labelStyle(buildContext: context, fontSize: 10).copyWith(
+                              color: DesignSystem.labelText(context).withValues(alpha: 0.7),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           if (video.isCompleted)
