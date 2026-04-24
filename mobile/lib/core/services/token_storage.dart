@@ -36,6 +36,12 @@ class TokenStorage {
     await _storage.delete(key: _kAccess);
     await _storage.delete(key: _kRefresh);
   }
+
+  Future<void> writeSelectedExam(String examType) =>
+      _storage.write(key: 'selected_exam', value: examType);
+
+  Future<String?> readSelectedExam() =>
+      _storage.read(key: 'selected_exam');
 }
 
 

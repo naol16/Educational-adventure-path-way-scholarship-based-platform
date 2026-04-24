@@ -1,29 +1,97 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/services/token_storage.dart';
 import 'package:mobile/models/models.dart';
 import 'package:mobile/features/learning_path/services/learning_path_api_service.dart';
-import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/core/providers/dependencies.dart';
 
-class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
-  LearningPathApiService get _api => ref.read(learningPathApiServiceProvider);
+class LearningPathState {
+  final FormattedLearningPath? ieltsPath;
+  final FormattedLearningPath? toeflPath;
+  final String activeExam; // 'IELTS' or 'TOEFL'
+  final bool isLoading;
 
-  @override
-  Future<FormattedLearningPath?> build() async {
-    await ref.watch(authProvider.future);
-    final auth = ref.read(authProvider).valueOrNull;
-    if (auth == null) return null;
+  LearningPathState({
+    this.ieltsPath,
+    this.toeflPath,
+    this.activeExam = 'IELTS',
+    this.isLoading = false,
+  });
 
-    return _api.fetchMyPath();
+  FormattedLearningPath? get activePath => activeExam == 'IELTS' ? ieltsPath : toeflPath;
+
+  LearningPathState copyWith({
+    FormattedLearningPath? ieltsPath,
+    FormattedLearningPath? toeflPath,
+    String? activeExam,
+    bool? isLoading,
+  }) {
+    return LearningPathState(
+      ieltsPath: ieltsPath ?? this.ieltsPath,
+      toeflPath: toeflPath ?? this.toeflPath,
+      activeExam: activeExam ?? this.activeExam,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
+
+class LearningPathNotifier extends StateNotifier<LearningPathState> {
+  LearningPathNotifier({required LearningPathApiService api, required TokenStorage storage})
+      : _api = api,
+        _storage = storage,
+        super(LearningPathState());
+
+  final LearningPathApiService _api;
+  final TokenStorage _storage;
+
+  Future<void> init() async {
+    state = state.copyWith(isLoading: true);
+    final savedExam = await _storage.readSelectedExam();
+    
+    // We try to fetch both if they exist
+    final path = await _api.fetchMyPath();
+    
+    if (path != null) {
+      if (path.examType.toUpperCase() == 'IELTS') {
+        state = state.copyWith(
+          ieltsPath: path,
+          activeExam: savedExam ?? 'IELTS',
+          isLoading: false,
+        );
+      } else {
+        state = state.copyWith(
+          toeflPath: path,
+          activeExam: savedExam ?? 'TOEFL',
+          isLoading: false,
+        );
+      }
+    } else {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> switchExam(String examType) async {
+    state = state.copyWith(activeExam: examType);
+    await _storage.writeSelectedExam(examType);
+    // Reload active path to ensure it's fresh
+    await reload();
   }
 
   Future<void> reload() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      await ref.read(authProvider.future);
-      final auth = ref.read(authProvider).valueOrNull;
-      if (auth == null) return null;
-      return _api.fetchMyPath();
-    });
+    state = state.copyWith(isLoading: true);
+    try {
+      final path = await _api.fetchMyPath(); // Backend should return based on user profile or we might need specific param
+      if (path != null) {
+        if (path.examType.toUpperCase() == 'IELTS') {
+          state = state.copyWith(ieltsPath: path, isLoading: false);
+        } else {
+          state = state.copyWith(toeflPath: path, isLoading: false);
+        }
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   Future<void> markProgress({
@@ -46,7 +114,13 @@ class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
       
       // Refresh data silently
       final newData = await _api.fetchMyPath();
-      state = AsyncValue.data(newData);
+      if (newData != null) {
+        if (newData.examType.toUpperCase() == 'IELTS') {
+          state = state.copyWith(ieltsPath: newData);
+        } else {
+          state = state.copyWith(toeflPath: newData);
+        }
+      }
     } catch (e) {
       // If refresh fails, we can either keep old state or show error
       // For progress, let's just log it and keep current state
@@ -64,9 +138,11 @@ class LearningPathNotifier extends AsyncNotifier<FormattedLearningPath?> {
 }
 
 final learningPathProvider =
-    AsyncNotifierProvider<LearningPathNotifier, FormattedLearningPath?>(
-  LearningPathNotifier.new,
-);
+    StateNotifierProvider<LearningPathNotifier, LearningPathState>((ref) {
+  final api = ref.watch(learningPathApiServiceProvider);
+  final storage = ref.watch(tokenStorageProvider);
+  return LearningPathNotifier(api: api, storage: storage)..init();
+});
 
 
 
