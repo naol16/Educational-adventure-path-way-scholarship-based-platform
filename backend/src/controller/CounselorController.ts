@@ -8,10 +8,13 @@ import {
   CreateCounselorDto,
   CreateSlotDto,
   RescheduleBookingDto,
+  StudentReviewAndConfirmDto,
   SendMessageDto,
   ShareDocumentDto,
   UpdateCounselorDto,
   UpdateSlotDto,
+  CounselorPayoutRequestDto,
+  AdminPayoutActionDto,
 } from '../types/counselorTypes.js';
 
 export class CounselorController {
@@ -58,7 +61,10 @@ export class CounselorController {
 
   static async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getReviews((req as any).counselor.id);
+      const counselorId = req.params.id ? Number(req.params.id) : (req as any).counselor?.id;
+      if (!counselorId) throw new Error("Counselor ID is required");
+      
+      const data = await CounselorService.getReviews(counselorId);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -173,6 +179,15 @@ export class CounselorController {
   static async cancelBooking(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.cancelBooking(req.user!.id, req.user!.role, Number(req.params.id));
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async reviewAndConfirmBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.reviewAndConfirmBooking(req.user!.id, Number(req.params.id), req.body as StudentReviewAndConfirmDto);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -310,9 +325,31 @@ export class CounselorController {
 
   static async adminPayout(req: Request, res: Response, next: NextFunction) {
     try {
-      const amount = Number(req.body.amount);
-      const data = await CounselorService.processPayout(Number(req.params.id), amount);
-      res.status(200).json({ success: true, message: "Payout processed successfully", data });
+      // If the admin uses this legacy button, we treat it as an immediate approval of a manual payout.
+      // But it's better to tell them to use the approval workflow.
+      res.status(400).json({ 
+        success: false, 
+        message: "Please use the 'Approve & Pay' workflow in the Pending Payouts section." 
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBanks(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.getChapaBanks();
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getChapaMerchantTransactions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.getChapaMerchantTransactions();
+      
+      res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
     }
@@ -329,7 +366,7 @@ export class CounselorController {
 
   static async getStudentBookings(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getStudentBookings(req.user!.id);
+      const data = await CounselorService.getStudentBookings(req.user!.id, req.user!.role);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -339,6 +376,44 @@ export class CounselorController {
   static async getMyPayouts(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.getMyPayouts((req as any).counselor.id);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyWalletLedger(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.getMyWalletLedger((req as any).counselor.id);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async requestPayout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.requestPayout(req.user!.id, req.body as CounselorPayoutRequestDto);
+      res.status(201).json({ success: true, message: 'Payout request submitted successfully', data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async adminUpdatePayoutStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.adminUpdatePayoutStatus(Number(req.params.id), req.body as AdminPayoutActionDto);
+      res.status(200).json({ success: true, message: `Payout status updated to ${req.body.status}`, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async listPayouts(req: Request, res: Response, next: NextFunction) {
+    try {
+      // If counselor, only show their own. If admin, show all unless filter provided.
+      const counselorId = req.user!.role === 'counselor' ? (req as any).counselor.id : (req.query.counselorId ? Number(req.query.counselorId) : undefined);
+      const data = await CounselorService.getPayouts(counselorId);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
