@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ScholarshipDiscoveryService } from "../services/ScholarshipDiscoveryService.js";
 import { ScholarshipSourceRepository } from "../repositories/ScholarshipSourceRepository.js";
+import { ScholarshipRepository } from "../repositories/ScholarshipRepository.js";
 import { MatchingService } from "../services/MatchingService.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../errors/AppError.js";
@@ -33,25 +34,27 @@ export class ScholarshipController {
     /**
      * Gets matched scholarships for the logged-in student.
      */
-    static getMatches = catchAsync(async (req: Request, res: Response) => {
-        if (!req.user || !req.user.id) {
-            throw new AppError("Unauthorized. User ID missing.", 401);
+    static async getMatches(req: Request, res: Response) {
+        try {
+            if (!req.user || !req.user.id) {
+                return res.status(401).json({ message: "Unauthorized. User ID missing." });
+            }
+
+            const matches = await MatchingService.getTopMatches(req.user.id);
+            res.status(200).json(matches);
+        } catch (error: any) {
+            console.error("Error fetching scholarship matches:", error.message);
+
+            if (error.message.includes("onboarded")) {
+                return res.status(403).json({ message: error.message });
+            }
+            if (error.message.includes("not found")) {
+                return res.status(404).json({ message: error.message });
+            }
+
+            res.status(500).json({ message: "Internal server error while matching scholarships." });
         }
-
-        // Support filters from query params
-        const filters = {
-            query: req.query.query as string,
-            country: req.query.country as string,
-            degreeLevel: req.query.degreeLevel as string || req.query.degree_level as string,
-            fundType: req.query.fundType as string || req.query.fund_type as string
-        };
-
-        const matches = await MatchingService.getTopMatches(req.user.id, filters);
-        res.status(200).json({
-            status: "success",
-            data: matches
-        });
-    });
+    }
 
     /**
      * Gets a single scholarship with matching details.
@@ -63,7 +66,7 @@ export class ScholarshipController {
         if (!userId) throw new AppError("Unauthorized", 401);
 
         const scholarship = await MatchingService.getMatchById(userId, parseInt(id as string));
-        
+
         if (!scholarship) {
             throw new AppError("Scholarship not found", 404);
         }
@@ -71,6 +74,19 @@ export class ScholarshipController {
         res.status(200).json({
             status: "success",
             data: scholarship
+        });
+    });
+
+    /**
+     * Lists scholarships with general filters (Explorer).
+     */
+    static list = catchAsync(async (req: Request, res: Response) => {
+        const filters = req.query;
+        const scholarships = await ScholarshipRepository.findAll(filters);
+        
+        res.status(200).json({
+            status: "success",
+            data: scholarships
         });
     });
 }
