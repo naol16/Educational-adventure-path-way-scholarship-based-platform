@@ -47,12 +47,12 @@ const dbOptions: SequelizeOptions = {
     idle: 10000    // Maximum time (ms) a connection can be idle before being released
   },
 
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+  // dialectOptions: {
+  //   ssl: {
+  //     require: true,
+  //     rejectUnauthorized: false,
+  //   },
+  // },
     
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
