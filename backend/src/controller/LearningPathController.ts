@@ -3,6 +3,7 @@ import { LearningPathService } from "../services/LearningPathService.js";
 import { LearningPathProgress } from "../models/LearningPathProgress.js";
 import { StudentRepository } from "../repositories/StudentRepository.js";
 import { LearningPathRepository } from "../repositories/LearningPathRepository.js";
+import { ResponseHelper } from "../utils/responseHelper.js";
 
 export class LearningPathController {
     /**
@@ -12,25 +13,19 @@ export class LearningPathController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return res.status(401).json({ status: "error", message: "Unauthorized" });
+                return ResponseHelper.error(res, "Unauthorized", 401);
             }
 
             const student = await StudentRepository.findByUserId(userId);
             if (!student) {
-                return res.status(404).json({ status: "error", message: "Student profile not found" });
+                return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
             const path = await LearningPathService.getFormattedPath(student.id);
 
-            return res.status(200).json({
-                status: "success",
-                data: path
-            });
+            return ResponseHelper.success(res, path);
         } catch (error: any) {
-            return res.status(500).json({
-                status: "error",
-                message: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -43,12 +38,12 @@ export class LearningPathController {
             const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer } = req.body;
 
             if (!userId) {
-                return res.status(401).json({ success: false, error: "Unauthorized" });
+                return ResponseHelper.error(res, "Unauthorized", 401);
             }
 
             const student = await StudentRepository.findByUserId(userId);
             if (!student) {
-                return res.status(404).json({ success: false, error: "Student profile not found" });
+                return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
             const [progress, created] = await LearningPathProgress.findOrCreate({
@@ -73,15 +68,9 @@ export class LearningPathController {
                 });
             }
 
-            return res.status(200).json({
-                success: true,
-                data: progress
-            });
+            return ResponseHelper.success(res, progress);
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -94,17 +83,17 @@ export class LearningPathController {
             const { section } = req.body; // e.g. "Reading"
 
             if (!userId || !section) {
-                return res.status(400).json({ success: false, error: "Missing userId or section" });
+                return ResponseHelper.error(res, "Missing userId or section", 400);
             }
 
             const student = await StudentRepository.findByUserId(userId);
             if (!student) {
-                return res.status(404).json({ success: false, error: "Student profile not found" });
+                return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
             const path = await LearningPathRepository.findByStudentId(student.id);
             if (!path) {
-                return res.status(404).json({ success: false, error: "Learning path not found" });
+                return ResponseHelper.error(res, "Learning path not found", 404);
             }
 
             // Normalizing the section string to match keys in the JSON sections
@@ -150,16 +139,10 @@ export class LearningPathController {
             });
 
             // Return success
-            return res.status(200).json({
-                success: true,
-                message: `${normalizedSection} section marked as complete.`
-            });
+            return ResponseHelper.success(res, null, `${normalizedSection} section marked as complete.`);
 
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -176,16 +159,16 @@ export class LearningPathController {
             const audioFile = files?.audio;
 
             if (!userId) {
-                return res.status(401).json({ success: false, error: "Unauthorized" });
+                return ResponseHelper.error(res, "Unauthorized", 401);
             }
 
             if (!audioFile) {
-                return res.status(400).json({ success: false, error: "No audio file provided. Please upload as 'audio' field." });
+                return ResponseHelper.error(res, "No audio file provided. Please upload as 'audio' field.", 400);
             }
 
             const student = await StudentRepository.findByUserId(userId);
             if (!student) {
-                return res.status(404).json({ success: false, error: "Student profile not found" });
+                return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
             // Normalizing file if it's an array
@@ -198,15 +181,9 @@ export class LearningPathController {
                 actualFile.mimetype
             );
 
-            return res.status(200).json({
-                success: true,
-                data: result
-            });
+            return ResponseHelper.success(res, result);
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -217,15 +194,9 @@ export class LearningPathController {
         try {
             const { skill, level, examType } = req.body;
             const test = await LearningPathService.generateUnitTest(skill, level, examType);
-            return res.status(200).json({
-                success: true,
-                data: test
-            });
+            return ResponseHelper.success(res, test);
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -237,21 +208,15 @@ export class LearningPathController {
             const { skill, level, topic, missionIndex } = req.body;
             
             if (!skill || !level || !topic) {
-                return res.status(400).json({ success: false, error: "Missing skill, level, or topic" });
+                return ResponseHelper.error(res, "Missing skill, level, or topic", 400);
             }
 
             const parsedIndex = missionIndex !== undefined ? parseInt(missionIndex, 10) : 0;
             const missionData = await LearningPathService.generateMissionContent(skill, level, topic, parsedIndex);
             
-            return res.status(200).json({
-                success: true,
-                data: missionData
-            });
+            return ResponseHelper.success(res, missionData);
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 
@@ -264,25 +229,19 @@ export class LearningPathController {
             const { skill, responses, missionIndex } = req.body;
 
             if (!userId) {
-                return res.status(401).json({ success: false, error: "Unauthorized" });
+                return ResponseHelper.error(res, "Unauthorized", 401);
             }
 
             const student = await StudentRepository.findByUserId(userId);
             if (!student) {
-                return res.status(404).json({ success: false, error: "Student profile not found" });
+                return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
             const result = await LearningPathService.evaluateUnitTest(student.id, skill, responses, missionIndex);
             
-            return res.status(200).json({
-                success: true,
-                data: result
-            });
+            return ResponseHelper.success(res, result);
         } catch (error: any) {
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
+            return ResponseHelper.error(res, error.message);
         }
     }
 }

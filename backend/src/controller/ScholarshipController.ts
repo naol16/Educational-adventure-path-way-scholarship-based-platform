@@ -4,6 +4,7 @@ import { ScholarshipSourceRepository } from "../repositories/ScholarshipSourceRe
 import { MatchingService } from "../services/MatchingService.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../errors/AppError.js";
+import { ResponseHelper } from "../utils/responseHelper.js";
 
 export class ScholarshipController {
     /**
@@ -13,10 +14,7 @@ export class ScholarshipController {
         // Run in background to avoid timeout
         ScholarshipDiscoveryService.discoverAll();
 
-        res.status(200).json({
-            status: "success",
-            message: "Scholarship discovery process started in the background."
-        });
+        return ResponseHelper.success(res, null, "Scholarship discovery process started in the background.");
     });
 
     /**
@@ -24,10 +22,7 @@ export class ScholarshipController {
      */
     static getSources = catchAsync(async (req: Request, res: Response) => {
         const sources = await ScholarshipSourceRepository.findAllActive();
-        res.status(200).json({
-            status: "success",
-            data: sources
-        });
+        return ResponseHelper.success(res, sources);
     });
 
     /**
@@ -47,10 +42,7 @@ export class ScholarshipController {
         };
 
         const matches = await MatchingService.getTopMatches(req.user.id, filters);
-        res.status(200).json({
-            status: "success",
-            data: matches
-        });
+        return ResponseHelper.success(res, matches);
     });
 
     /**
@@ -68,9 +60,18 @@ export class ScholarshipController {
             throw new AppError("Scholarship not found", 404);
         }
 
-        res.status(200).json({
-            status: "success",
-            data: scholarship
-        });
+        return ResponseHelper.success(res, scholarship);
+    });
+
+    /**
+     * Gets recommended scholarships for the quick dashboard view.
+     */
+    static getRecommendations = catchAsync(async (req: Request, res: Response) => {
+        if (!req.user || !req.user.id) {
+            throw new AppError("Unauthorized", 401);
+        }
+
+        const recommendations = await MatchingService.getRecommendations(req.user.id);
+        return ResponseHelper.success(res, recommendations);
     });
 }

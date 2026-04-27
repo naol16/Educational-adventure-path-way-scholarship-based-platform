@@ -68,3 +68,18 @@ export const evaluateSpeakingPractice = async (questionIndex: number, audio: Blo
     });
     return response.data;
 };
+
+export const generateDynamicMission = async (params: { skill: string; level: string; topic: string; missionIndex?: number }) => {
+    const response = await api.post('/learning-path/mission/generate-dynamic', params);
+    return response.data;
+};
+
+export const generateUnitTest = async (params: { skill: string; level: string; examType?: string }) => {
+    const response = await api.post('/learning-path/unit-test/generate', params);
+    return response.data;
+};
+
+export const submitUnitTest = async (params: { skill: string; responses: any[]; missionIndex: number }) => {
+    const response = await api.post('/learning-path/unit-test/submit', params);
+    return response.data;
+};

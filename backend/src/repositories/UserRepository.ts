@@ -64,12 +64,12 @@ export class UserRepository {
 
         if (Object.keys(cleanUpdates).length === 0) return null;
 
-        const [updatedRows, [updatedUser]] = await User.update(cleanUpdates, {
+        const [updatedRows, updatedUsers] = await User.update(cleanUpdates, {
             where: { id },
             returning: true,
         });
 
-        return updatedRows > 0 && updatedUser ? updatedUser : null;
+        return (updatedRows > 0 && updatedUsers && updatedUsers.length > 0 ? updatedUsers[0] : null) ?? null;
     }
 
     static async updatePassword(id: number, password: string): Promise<boolean> {

@@ -108,8 +108,8 @@ export const connectSequelize = async () => {
     }
 
     // Sync models with database (creates tables if missing)
-    // Note: In production, migrations are preferred.
-    await sequelize.sync({ alter: true });
+    // Note: alter: true was disabled as it was hanging in the current environment.
+    await sequelize.sync();
     console.log("Database models synchronized");
   } catch (error) {
     console.error("Sequelize connection error:", error);

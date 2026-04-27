@@ -4,7 +4,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { v4 as uuidv4 } from "uuid";
 import configs from "../config/configs.js";
-import { redisConnection, assessmentQueue } from "../config/redis.js";
+import { redisConnection, assessmentQueue, isRedisAvailable } from "../config/redis.js";
 import { AssessmentResult } from "../models/AssessmentResult.js"; 
 import { AssessmentRepository } from "../repositories/AssessmentRepository.js";
 import { LearningPathService } from "./LearningPathService.js";
@@ -156,7 +156,7 @@ export class AssessmentService {
           sections.reading.questions = sections.reading.questions.map(
             (q: any) => ({
               id: q.id,
-              text: q.text,
+              question: q.question || q.text,
               correct_answer: q.correct_answer,
             }),
           );
@@ -171,7 +171,7 @@ export class AssessmentService {
           sections.listening.questions = sections.listening.questions.map(
             (q: any) => ({
               id: q.id,
-              text: q.text,
+              question: q.question || q.text,
               correct_answer: q.correct_answer,
             }),
           );
@@ -187,15 +187,18 @@ export class AssessmentService {
   ) {
     const testId = uuidv4();
 
+    const examTypeUpper = examType.toUpperCase();
+    const isToefl = examTypeUpper === "TOEFL";
+    const examInstructions = isToefl 
+      ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) that CHALLENGES or expands on the reading passage + 5 Multiple Choice Questions. 3. WRITING: 1 Integrated Task Prompt (e.g., 'Summarize the points made in the lecture and explain how they cast doubt on specific points made in the reading passage'). 4. SPEAKING: 1 Integrated Speaking Prompt based on the same topic."
+      : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 1 Task Prompt (Task 2 style). 4. SPEAKING: 1 Long-form Prompt (Cue Card).";
+
     const prompt = PromptTemplate.fromTemplate(`
             Role: Senior Assessment Architect
             Task: Generate a complete {examType} blueprint.
             Difficulty: {difficulty}
             
-            1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key).
-            2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key).
-            3. WRITING: 1 Task Prompt (Task 2 style for IELTS / Independent for TOEFL).
-            4. SPEAKING: 1 Long-form Prompt (Cue Card or Integrated Task).
+            {examInstructions}
             
             Difficulty Constraints:
             - Easy: Simple syntax, daily vocabulary.
@@ -229,13 +232,13 @@ export class AssessmentService {
     let response: string;
     try {
       response = await chain.invoke(
-        await prompt.format({ examType, difficulty, testId }),
+        await prompt.format({ examType, difficulty, testId, examInstructions }),
         { response_format: { type: "json_object" } } as any
       );
     } catch (err) {
       console.warn("Groq 70B failed for generation, falling back to Gemini...");
       const fallbackChain = geminiModel.pipe(new StringOutputParser());
-      response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId }));
+      response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
     }
 
     // Ensure response is valid JSON
@@ -276,13 +279,17 @@ export class AssessmentService {
       }
     }
 
-    // Store full blueprint in Redis for 30 minutes (was 2 hours)
-    await redisConnection.set(
-      `test_id:${testId}`,
-      JSON.stringify(blueprint),
-      "EX",
-      1800,
-    );
+    // Store full blueprint in Redis for 30 minutes if available
+    if (isRedisAvailable()) {
+        await redisConnection.set(
+          `test_id:${testId}`,
+          JSON.stringify(blueprint),
+          "EX",
+          1800,
+        );
+    } else {
+        console.warn("[AssessmentService] Redis unavailable, skipping blueprint caching. Assessment might fail later if not handled.");
+    }
     // Sanitize for frontend
     const sanitized = JSON.parse(JSON.stringify(blueprint));
     sanitized.data.sections.reading.questions.forEach(
@@ -301,6 +308,10 @@ export class AssessmentService {
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string },
   ) {
+    if (!isRedisAvailable()) {
+        throw new Error("Assessment submission is temporarily unavailable (service dependency down).");
+    }
+
     const blueprintData = await redisConnection.get(`test_id:${testId}`);
     if (!blueprintData) throw new Error("Assessment not found or expired.");
 
@@ -329,6 +340,9 @@ export class AssessmentService {
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string }
   ) {
+    if (!isRedisAvailable()) {
+        throw new Error("Skill evaluation is temporarily unavailable.");
+    }
     const blueprintData = await redisConnection.get(`test_id:${testId}`);
     if (!blueprintData) throw new Error("Assessment not found or expired.");
     const blueprint = JSON.parse(blueprintData);
@@ -570,10 +584,12 @@ export class AssessmentService {
   ) {
     const miniBlueprint = this.stripBlueprintForEvaluation(blueprint);
     const skillBlueprint = miniBlueprint.data?.sections[skill];
-    const skillResponse = responses[skill];
+    
+    // Check if responses is the full object or just the skill section
+    const skillResponse = (responses && responses[skill] !== undefined) ? responses[skill] : (responses || {});
 
     const promptTemplate = PromptTemplate.fromTemplate(`
-      Role: Senior {skill} Examiner
+      Role: STRICT Senior {skill} Examiner
       Task: Evaluate the student's {skill} section for an English Proficiency Exam.
       
       Blueprint (Grading Key): {blueprint}
@@ -582,8 +598,8 @@ export class AssessmentService {
       
       Instructions:
       1. Assign a score (0-9 for IELTS, 0-30 for TOEFL). 
-         {skill === 'reading' || skill === 'listening' ? 'CRITICAL: Use the DETERMINISTIC SCORE provided above as the primary score for this section.' : 'Evaluate the response qualitatively to assign a score.'}
-      2. Provide detailed feedback (min 200 chars).
+         {special_instruction}
+      2. Provide honest, critical academic feedback. If the student performed poorly, explain why in detail.
       3. Generate "Learning Mode" content:
          - For Reading: 3 practice questions with answers/explanations.
          - For Listening: A script and 3 questions with answers/explanations.
@@ -609,32 +625,46 @@ export class AssessmentService {
       const questions = skillBlueprint?.questions;
       if (Array.isArray(questions) && questions.length > 0) {
         totalQuestions = questions.length;
+        console.log(`[AssessmentService] --- ${skill.toUpperCase()} SCORING START ---`);
+        console.log(`[AssessmentService] Total Questions: ${totalQuestions}`);
+        
         questions.forEach((q: any) => {
-          const studentAns = skillResponse[q.id];
+          const studentAns = skillResponse[q.id] || skillResponse[q.id.toString()];
           const correctAns = q.correct_answer;
-          if (studentAns && correctAns && 
-              studentAns.toString().toLowerCase().trim() === correctAns.toString().toLowerCase().trim()) {
-            correctCount++;
-          }
+          
+          const isCorrect = studentAns !== undefined && studentAns !== null && 
+                            studentAns.toString().toLowerCase().trim() === correctAns.toString().toLowerCase().trim();
+          
+          if (isCorrect) correctCount++;
+          console.log(`[AssessmentService] Q:${q.id} | Student: ${studentAns} | Correct: ${correctAns} | MATCH: ${isCorrect}`);
         });
         
         const maxScore = (blueprint.data?.exam_summary?.type === "TOEFL") ? 30 : 9;
-        deterministicScore = (correctCount / totalQuestions) * maxScore;
-        // Round to nearest 0.5 for IELTS
+        // IELTS logic: percentage of correct answers mapped to maxScore
+        deterministicScore = totalQuestions > 0 ? (correctCount / totalQuestions) * maxScore : 0;
+        
         if (maxScore === 9) {
           deterministicScore = Math.round(deterministicScore * 2) / 2;
         } else {
           deterministicScore = Math.round(deterministicScore);
         }
+        console.log(`[AssessmentService] Final Score: ${deterministicScore}/${maxScore} (Correct: ${correctCount}/${totalQuestions})`);
+        console.log(`[AssessmentService] --- ${skill.toUpperCase()} SCORING END ---`);
+      } else {
+        deterministicScore = 0;
       }
     }
+
+    const special_instruction = (skill === 'reading' || skill === 'listening')
+      ? 'CRITICAL: Use the DETERMINISTIC SCORE provided above. If student gave no answers, the score MUST be 0. DO NOT deviate from this number.'
+      : 'Evaluate the response qualitatively. Be extremely strict. If the response is empty, irrelevant, or too short, assign a score of 0.';
 
     const textPrompt = await promptTemplate.format({
       skill,
       blueprint: JSON.stringify(skillBlueprint),
       response: JSON.stringify(skillResponse),
       deterministicScore: deterministicScore !== null ? deterministicScore.toString() : "N/A",
-      "skill === 'reading' || skill === 'listening' ? 'CRITICAL: Use the DETERMINISTIC SCORE provided above as the primary score for this section.' : 'Evaluate the response qualitatively to assign a score.'": undefined
+      special_instruction
     });
 
     const messagesContent: any[] = [{ type: "text", text: textPrompt }];
@@ -662,7 +692,7 @@ export class AssessmentService {
         console.log("Transcription successful:", transcriptionText.substring(0, 50) + "...");
       } catch (err) {
         console.error("Transcription failed:", err);
-        transcriptionText = "[Audio transcription failed, grading based on prompt intent]";
+        transcriptionText = "[AUDIO ERROR: COULD NOT TRANSCRIBE]";
       }
     }
 
@@ -674,7 +704,7 @@ export class AssessmentService {
     );
 
     const evaluationContent = skill === "speaking" 
-      ? `${textPrompt}\n\nSTUDENT SPOKEN TRANSCRIPTION: ${transcriptionText}`
+      ? `${textPrompt}\n\nSTUDENT SPOKEN TRANSCRIPTION: ${transcriptionText || "[EMPTY RESPONSE: STUDENT DID NOT SPEAK]"}`
       : textPrompt;
 
     try {
@@ -692,12 +722,12 @@ export class AssessmentService {
     }
 
     let sanitized = this.sanitizeJSONString(responseText);
+    let result: any;
     try {
-      return JSON.parse(sanitized);
+      result = JSON.parse(sanitized);
     } catch (e) {
       console.warn(`JSON Parse failed for ${skill} on ${selectedModel.model || selectedModel.modelName}. Attempting repair with Groq 70B...`);
       
-      // If Groq 8B gave us bad JSON, let's try Groq 70B (The Brain) as a "Repair" model
       if (selectedModel !== groq70b) {
         const repairChain = groq70b.pipe(new StringOutputParser());
         responseText = await repairChain.invoke(
@@ -705,12 +735,37 @@ export class AssessmentService {
           { response_format: { type: "json_object" } } as any
         );
         sanitized = this.sanitizeJSONString(responseText);
-        return JSON.parse(sanitized);
+        result = JSON.parse(sanitized);
+      } else {
+        throw e;
       }
-      
-      const rescued = this.rescueTruncatedJSON(sanitized);
-      return JSON.parse(rescued);
     }
+
+    // --- Post-Evaluation Safety: Enforce Deterministic Score for Reading/Listening ---
+    if ((skill === "reading" || skill === "listening") && deterministicScore !== null) {
+      console.log(`[AssessmentService] Overriding LLM score (${result.score}) with deterministicScore (${deterministicScore})`);
+      result.score = deterministicScore;
+      if (!result.feedback || result.feedback.length < 10) {
+        result.feedback = deterministicScore > 20 
+          ? "Excellent performance in this section!" 
+          : "You need more practice in objective analysis.";
+      }
+    }
+
+    // --- Strict Safety: Force 0 if response is empty for Writing/Speaking ---
+    const studentText = typeof skillResponse === 'string' ? skillResponse : (skillResponse?.text || "");
+    const isWritingEmpty = skill === "writing" && studentText.trim().length < 5;
+    const isSpeakingEmpty = skill === "speaking" && (!audioData?.base64 || transcriptionText === "[AUDIO ERROR: COULD NOT TRANSCRIBE]" || transcriptionText.trim().length < 5);
+
+    if (isWritingEmpty || isSpeakingEmpty) {
+      console.log(`[AssessmentService] Force-failing ${skill} due to empty/invalid response.`);
+      result.score = 0;
+      result.feedback = skill === "writing" 
+        ? "No written response detected. You must write a summary based on the prompt to receive a score." 
+        : "No spoken response detected. Please ensure your microphone is working and you record your answer.";
+    }
+
+    return result;
   }
 
   private static async synthesizeEvaluation(

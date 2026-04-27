@@ -12,6 +12,12 @@ import configs from "./config/configs.js";
 import debugRoutes from "./routes/debugRoutes.js";
 
 const app: Application = express();
+// Simple request logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 
 app.use(helmet());
 app.use(compression());

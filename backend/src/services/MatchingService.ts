@@ -5,7 +5,7 @@ import { StudentRepository } from "../repositories/StudentRepository.js";
 import { MatchingRepository } from "../repositories/MatchingRepository.js";
 import { AIService } from "./AIService.js";
 import { Scholarship } from "../models/Scholarship.js";
-import { redisConnection } from "../config/redis.js";
+import { redisConnection, isRedisAvailable } from "../config/redis.js";
 
 export class MatchingService {
   /**
@@ -17,16 +17,26 @@ export class MatchingService {
     userId: number,
     filters?: any,
   ): Promise<MatchedScholarship[]> {
+    // 1. Fetch Student Profile
     const student = await StudentRepository.findByUserId(userId);
-
     if (!student) {
-      throw new Error("Student profile not found.");
+        console.warn(`[MatchingService] No student profile found for userId ${userId}. Returning heuristic matches.`);
+        const candidates = await MatchingRepository.findTopMatches({} as any, "", filters);
+        return candidates.map(c => ({
+            ...c,
+            matchScore: c.matchScore || 0,
+            matchReason: "Complete your profile for personalized AI matching."
+        }));
     }
 
     if (!student.isOnboarded) {
-      throw new Error(
-        "Student is not onboarded. Please complete your profile first.",
-      );
+      console.warn(`[MatchingService] Student ${userId} not onboarded. Returning heuristic matches.`);
+      const candidates = await MatchingRepository.findTopMatches(student, "", filters);
+        return candidates.map(c => ({
+            ...c,
+            matchScore: c.matchScore || 0,
+            matchReason: "Complete your onboarding for personalized AI matching."
+        }));
     }
 
     // Removed the full list cache block because it caused stale discrepancies with the individual detail views.
@@ -67,22 +77,25 @@ export class MatchingService {
     // Phase 2: AI Re-ranking check using individual cache synchronization
     try {
       // 1. Fetch individual cached AI scores first to sync with details page
-      const aiCachePipeline = redisConnection.pipeline();
-      candidates.forEach(c => aiCachePipeline.get(`ai_match:${userId}:${c.id}`));
-      let cachedIndividualRaw: any[] = [];
-      try {
-        cachedIndividualRaw = await aiCachePipeline.exec() || [];
-      } catch (err) {
-        console.warn("[MatchingService] Failed to pipeline fetch ai_match:", err);
-      }
-
       const cachedAiMap = new Map<number | string, any>();
-      candidates.forEach((c, i) => {
-        const val = cachedIndividualRaw[i]?.[1];
-        if (val) {
-          try { cachedAiMap.set(c.id, JSON.parse(val)); } catch {}
-        }
-      });
+      
+      if (isRedisAvailable()) {
+          const aiCachePipeline = redisConnection.pipeline();
+          candidates.forEach(c => aiCachePipeline.get(`ai_match:${userId}:${c.id}`));
+          let cachedIndividualRaw: any[] = [];
+          try {
+            cachedIndividualRaw = await aiCachePipeline.exec() || [];
+          } catch (err) {
+            console.warn("[MatchingService] Failed to pipeline fetch ai_match:", err);
+          }
+
+          candidates.forEach((c, i) => {
+            const val = cachedIndividualRaw[i]?.[1];
+            if (val) {
+              try { cachedAiMap.set(c.id, JSON.parse(val)); } catch {}
+            }
+          });
+      }
 
       // 2. Identify candidates that DO NOT have an AI cache and send top 20 uncached ones to AI
       const topCandidates = candidates.filter(c => !cachedAiMap.has(c.id)).slice(0, 20);
@@ -92,12 +105,18 @@ export class MatchingService {
           const aiResults = await AIService.rankScholarships(student.toJSON(), topCandidates);
           
           // Save valid AI results to the individual caches
-          const savePipeline = redisConnection.pipeline();
-          aiResults.forEach((r: any) => {
-            savePipeline.set(`ai_match:${userId}:${r.id}`, JSON.stringify(r), "EX", 3600 * 24);
-            cachedAiMap.set(Number(r.id), r);
-          });
-          await savePipeline.exec();
+          if (isRedisAvailable()) {
+              const savePipeline = redisConnection.pipeline();
+              aiResults.forEach((r: any) => {
+                savePipeline.set(`ai_match:${userId}:${r.id}`, JSON.stringify(r), "EX", 3600 * 24);
+                cachedAiMap.set(Number(r.id), r);
+              });
+              await savePipeline.exec();
+          } else {
+              aiResults.forEach((r: any) => {
+                cachedAiMap.set(Number(r.id), r);
+              });
+          }
         } catch (err: any) {
              if (err.status === 429 || err.message?.includes("429")) {
                 console.warn("[MatchingService] AI Rate limit hit (429). Falling back to hybrid vector-heuristic scoring.");
@@ -231,8 +250,16 @@ export class MatchingService {
     userId: number,
     scholarshipId: number,
   ): Promise<MatchedScholarship | null> {
+    // 1. Fetch Student Profile
     const student = await StudentRepository.findByUserId(userId);
-    if (!student) throw new Error("Student not found");
+    if (!student) {
+        console.warn(`[MatchingService] No student profile found for userId ${userId}. Returning heuristic matches only.`);
+        // Fallback to basic keyword/vector search if no profile exists
+        const candidate = await MatchingRepository.findMatchWithScore({} as any, scholarshipId, "");
+        if (!candidate) return null;
+        candidate.matchReason = "Complete your profile for personalized AI matching.";
+        return candidate as MatchedScholarship;
+    }
 
     // Refresh embedding for consistency
     try {
@@ -262,13 +289,18 @@ export class MatchingService {
 
     try {
       const cacheKey = `ai_match:${userId}:${scholarshipId}`;
-      const cachedAiMatch = await redisConnection.get(cacheKey);
-
       let aiMatch = null;
-      if (cachedAiMatch) {
-        aiMatch = JSON.parse(cachedAiMatch);
-        console.log(`[MatchingService] Using CACHED AI matching score for scholarship ${candidate.id}`);
-      } else {
+
+      if (isRedisAvailable()) {
+          const cachedAiMatch = await redisConnection.get(cacheKey);
+
+          if (cachedAiMatch) {
+            aiMatch = JSON.parse(cachedAiMatch);
+            console.log(`[MatchingService] Using CACHED AI matching score for scholarship ${candidate.id}`);
+          }
+      }
+
+      if (!aiMatch) {
         // Re-rank this single candidate via AI for precise details
         const aiResults = await AIService.rankScholarships(student.toJSON(), [
           candidate,
@@ -279,7 +311,7 @@ export class MatchingService {
           (r: any) => String(r.id) === String(candidate.id),
         );
 
-        if (aiMatch) {
+        if (aiMatch && isRedisAvailable()) {
           // Cache it for next time
           await redisConnection.set(cacheKey, JSON.stringify(aiMatch), "EX", 3600 * 24);
         }
@@ -310,5 +342,21 @@ export class MatchingService {
     candidate.matchReason = reason;
 
     return candidate as MatchedScholarship;
+  }
+
+  /**
+   * Gets a quick list of recommended scholarships without full AI re-ranking.
+   */
+  static async getRecommendations(userId: number): Promise<MatchedScholarship[]> {
+    const student = await StudentRepository.findByUserId(userId);
+    if (!student) throw new Error("Student not found");
+
+    // Fetch matches from DB (limited to 5 for recommendations)
+    const candidates = await MatchingRepository.findTopMatches(student, "", { limit: 5 });
+    
+    return candidates.map(c => ({
+        ...c,
+        matchScore: MatchingService.calculateHeuristicScore(student, c)
+    })).sort((a,b) => (b.matchScore || 0) - (a.matchScore || 0));
   }
 }

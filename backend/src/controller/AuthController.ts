@@ -1,16 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/AuthService.js";
 import configs from "../config/configs.js";
+import { ResponseHelper } from "../utils/responseHelper.js";
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await AuthService.register(req.body);
       res.cookie("refreshToken", result.refreshToken, AuthController.getCookieOptions());
-      res.status(201).json({
+      return ResponseHelper.success(res, {
         user: result.user,
         accessToken: result.accessToken
-      });
+      }, "Registration successful", 201);
     } catch (error) {
       next(error);
     }
@@ -20,10 +21,10 @@ export class AuthController {
     try {
       const result = await AuthService.login(req.body);
       res.cookie("refreshToken", result.refreshToken, AuthController.getCookieOptions());
-      res.json({
+      return ResponseHelper.success(res, {
         user: result.user,
         accessToken: result.accessToken
-      });
+      }, "Login successful");
     } catch (error) {
       next(error);
     }
@@ -35,17 +36,23 @@ export class AuthController {
       const token = credential || idToken || id_token;
 
       if (!token) {
-        res.status(400).json({ error: "Google ID Token is required (credential, idToken, or id_token)" });
-        return;
+        return res.status(400).json({ error: "Google ID Token is required (credential, idToken, or id_token)" });
       }
 
+      console.log(`[AuthController] Attempting Google Login for role: ${role || 'default'}`);
       const result = await AuthService.googleLogin(token, role);
+      
       res.cookie("refreshToken", result.refreshToken, AuthController.getCookieOptions());
-      res.json({
+      return ResponseHelper.success(res, {
         user: result.user,
         accessToken: result.accessToken,
+      }, "Google login successful");
+    } catch (error: any) {
+      console.error("[AuthController] Google Login Error:", {
+        message: error.message,
+        stack: error.stack,
+        body: req.body
       });
-    } catch (error) {
       next(error);
     }
   }

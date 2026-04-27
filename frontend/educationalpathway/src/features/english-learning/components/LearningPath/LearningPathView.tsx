@@ -38,9 +38,13 @@ import {
   getLearningPath, 
   completeSection, 
   evaluateSpeakingPractice,
-  trackProgress
+  trackProgress,
+  generateDynamicMission,
+  generateUnitTest,
+  submitUnitTest
 } from "@/features/assessments/api/assessment-api";
 import Link from "next/link";
+import { UnitTestOverlay, DynamicMissionOverlay } from "./LearningPathOverlays";
 
 interface Video {
   id: number;
@@ -50,10 +54,20 @@ interface Video {
   isCompleted?: boolean;
 }
 
+interface Mission {
+  title: string;
+  objective: string;
+  videos: Video[];
+  pdfs: any[]; // Adjust if needed
+  isCompleted: boolean;
+  isUnitTestCompleted: boolean;
+}
+
 interface SkillData {
   videos: Video[];
   notes: string;
   isNoteCompleted?: boolean;
+  missions: Mission[];
 }
 
 interface LearningPathData {
@@ -259,6 +273,14 @@ export function LearningPathView() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervals = useRef<Record<number, NodeJS.Timeout>>({});
+  
+  // Mission & Unit Test State
+  const [activeMission, setActiveMission] = useState<number | null>(null);
+  const [showUnitTest, setShowUnitTest] = useState(false);
+  const [generatingMission, setGeneratingMission] = useState(false);
+  const [unitTestContent, setUnitTestContent] = useState<any>(null);
+  const [unitTestResults, setUnitTestResults] = useState<any>(null);
+  const [isSubmittingTest, setIsSubmittingTest] = useState(false);
 
   const load = async () => {
     try {
@@ -509,6 +531,51 @@ export function LearningPathView() {
       }
    };
 
+   const handleStartMission = async (mIndex: number) => {
+      setActiveMission(mIndex);
+      // If it's a dynamic mission, we could call generateDynamicMission here
+      // For now, we'll just focus the UI on that mission's videos/practice
+   };
+
+   const handleTakeUnitTest = async (mIndex: number) => {
+      try {
+         setIsSubmittingTest(true);
+         const res = await generateUnitTest({ 
+            skill: activeTab, 
+            level: data?.proficiencyLevel || 'easy',
+            examType: currentExamType 
+         });
+         setUnitTestContent(res?.data || res);
+         setActiveMission(mIndex);
+         setShowUnitTest(true);
+         setUnitTestResults(null);
+      } catch (err) {
+         console.error("Failed to generate unit test", err);
+      } finally {
+         setIsSubmittingTest(false);
+      }
+   };
+
+   const handleSubmitUnitTest = async (responses: any[]) => {
+      if (activeMission === null) return;
+      try {
+         setIsSubmittingTest(true);
+         const res = await submitUnitTest({
+            skill: activeTab,
+            responses,
+            missionIndex: activeMission
+         });
+         setUnitTestResults(res?.data || res);
+         if (res?.data?.passed || res?.passed) {
+            await load(); // Refresh progress
+         }
+      } catch (err) {
+         console.error("Failed to submit unit test", err);
+      } finally {
+         setIsSubmittingTest(false);
+      }
+   };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4">
@@ -741,6 +808,58 @@ export function LearningPathView() {
                              {data.competencyGapAnalysis?.section_analysis?.[activeTab] || currentSkill?.notes}
                           </div>
                        </div>
+                    </div>
+                 </section>
+
+                 {/* MISSIONS ROADMAP */}
+                 <section className="space-y-10">
+                    <div className="flex items-center gap-2 px-2">
+                       <span className="h-1 w-4 bg-primary/40 rounded-full" />
+                       <h2 className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary/70">Missions Roadmap</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                       {currentSkill.missions?.map((m: any, i: number) => (
+                          <div key={i} className={`p-6 rounded-3xl border transition-all ${activeMission === i ? 'bg-primary/5 border-primary shadow-lg shadow-primary/5' : 'bg-card border-border/60 hover:border-primary/40'}`}>
+                             <div className="flex items-center justify-between mb-4">
+                                <div className={`px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest ${m.isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'}`}>
+                                   {m.isCompleted ? 'Mastered' : `Mission 0${i + 1}`}
+                                </div>
+                                {m.isCompleted && <CheckCircle2 size={16} className="text-emerald-600" />}
+                             </div>
+                             <h4 className="text-lg font-semibold mb-2">{m.title}</h4>
+                             <p className="text-xs text-muted-foreground mb-6 line-clamp-2">{m.objective}</p>
+                             
+                             <div className="flex items-center gap-2 mt-auto">
+                                <Button onClick={() => handleStartMission(i)} variant={activeMission === i ? "primary" : "outline"} size="sm" className="flex-1 rounded-xl text-[10px] uppercase tracking-widest h-10">
+                                   {activeMission === i ? 'Active' : 'Start'}
+                                </Button>
+                                <Button 
+                                  onClick={() => handleTakeUnitTest(i)} 
+                                  disabled={m.isUnitTestCompleted}
+                                  variant="outline" 
+                                  size="sm" 
+                                  className={`flex-1 rounded-xl text-[10px] uppercase tracking-widest h-10 ${m.isUnitTestCompleted ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : ''}`}
+                                >
+                                   {m.isUnitTestCompleted ? 'Test Passed' : 'Unit Test'}
+                                </Button>
+                             </div>
+                          </div>
+                       ))}
+                       
+                       {/* DYNAMIC MISSION TRIGGER */}
+                       <button 
+                         onClick={() => setGeneratingMission(true)}
+                         className="p-6 rounded-3xl border border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center text-center gap-3 hover:bg-primary/10 transition-all group"
+                       >
+                          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                             <Sparkles size={20} />
+                          </div>
+                          <div className="space-y-1">
+                             <p className="text-sm font-bold uppercase tracking-wider">Generate Mission</p>
+                             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Content Protocol</p>
+                          </div>
+                       </button>
                     </div>
                  </section>
 

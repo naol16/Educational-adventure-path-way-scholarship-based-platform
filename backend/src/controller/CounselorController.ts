@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { CounselorService } from '../services/CounselorService.js';
+import { ResponseHelper } from '../utils/responseHelper.js';
 import {
   AdminVerificationDto,
   AdminVisibilityDto,
@@ -19,11 +20,7 @@ export class CounselorController {
     try {
       const files = req.files || {};
       const counselor = await CounselorService.applyAsCounselor(req.user!.id, req.body as CreateCounselorDto, files);
-      res.status(201).json({
-        success: true,
-        message: 'Counselor application submitted successfully. Pending verification.',
-        data: counselor,
-      });
+      return ResponseHelper.success(res, counselor, 'Counselor application submitted successfully. Pending verification.', 201);
     } catch (error) {
       next(error);
     }
@@ -32,7 +29,7 @@ export class CounselorController {
   static async publicDirectory(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.getPublicDirectory(req.query as any);
-      res.status(200).json({ success: true, data });
+      return ResponseHelper.success(res, data);
     } catch (error) {
       next(error);
     }
@@ -41,7 +38,7 @@ export class CounselorController {
   static async recommendForMe(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.recommendForStudent(req.user!.id);
-      res.status(200).json({ success: true, data });
+      return ResponseHelper.success(res, data);
     } catch (error) {
       next(error);
     }
@@ -50,7 +47,7 @@ export class CounselorController {
   static async getMyProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.getMyProfile(req.user!.id);
-      res.status(200).json({ success: true, data });
+      return ResponseHelper.success(res, data);
     } catch (error) {
       next(error);
     }
