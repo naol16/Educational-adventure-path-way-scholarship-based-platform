@@ -26,7 +26,12 @@ class AuthApiService {
     if (response.statusCode != 200 && response.statusCode != 201) {
       throwForResponse(response, fallback: 'Authentication failed');
     }
-    final map = decodeJsonObject(response);
+    final rootMap = decodeJsonObject(response);
+    
+    // The backend uses a standardized response: { status, message, data: { user, accessToken } }
+    // Fallback to rootMap if 'data' is not present
+    final map = asJsonMap(rootMap['data']) ?? rootMap;
+    
     final userRaw = map['user'];
     final userMap = asJsonMap(userRaw);
     if (userMap == null) {

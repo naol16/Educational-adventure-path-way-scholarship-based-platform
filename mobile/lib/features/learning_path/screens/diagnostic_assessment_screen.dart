@@ -56,7 +56,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
 
   void _startAssessmentNow() {
     if (_selectedExam == 'TOEFL') {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ToeflDiagnosticScreen()),
       );
@@ -360,9 +360,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
             );
           }
 
-          return WillPopScope(
-            onWillPop: () async => false,
-            child: Dialog(
+          return Dialog(
               backgroundColor: Colors.transparent,
               elevation: 0,
               child: GlassContainer(
@@ -386,7 +384,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                   ],
                 ),
               ),
-            ),
+            
           );
         },
       ),
@@ -538,7 +536,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                   const Spacer(),
                   PrimaryButton(
                     text: "GENERATE ASSESSMENT",
-                    onPressed: _startAssessmentNow,
+                    onPressed: () => _startAssessmentNow(),
                   ),
                 ],
               ),

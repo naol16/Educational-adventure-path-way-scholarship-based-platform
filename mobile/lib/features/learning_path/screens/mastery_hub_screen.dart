@@ -414,12 +414,12 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
 
   Widget _buildUltimateGoalButton(BuildContext context, FormattedLearningPath path) {
     // Check if ALL skills are at 100%
-    final r = _calculateSkillProgress(path, "reading");
-    final l = _calculateSkillProgress(path, "listening");
-    final w = _calculateSkillProgress(path, "writing");
-    final s = _calculateSkillProgress(path, "speaking");
+    _calculateSkillProgress(path, "reading");
+    _calculateSkillProgress(path, "listening");
+    _calculateSkillProgress(path, "writing");
+    _calculateSkillProgress(path, "speaking");
     
-    final isCompleted = r >= 0.99 && l >= 0.99 && w >= 0.99 && s >= 0.99; // UNLOCKED FOR TESTING: Normally checks if r, l, w, s >= 0.99
+    const isCompleted = true; // UNLOCKED FOR DEVELOPMENT: Normally checks if r, l, w, s >= 0.99
     
     return Container(
       width: double.infinity,

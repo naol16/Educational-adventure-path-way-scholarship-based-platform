@@ -82,7 +82,7 @@ class AssessmentResultScreen extends ConsumerWidget {
                     style: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
                   ),
                   const SizedBox(height: 40),
-                  _buildSkillScores(context, scoreBreakdown),
+                  _buildSkillScores(context, scoreBreakdown, examType: evaluation['exam_summary']?['type'] ?? 'IELTS'),
                   const SizedBox(height: 30),
                   _buildGapAnalysis(context, gapAnalysis),
                   const SizedBox(height: 40),
@@ -103,14 +103,17 @@ class AssessmentResultScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkillScores(BuildContext context, Map<String, dynamic> scores) {
+  Widget _buildSkillScores(BuildContext context, Map<String, dynamic> scores, {required String examType}) {
+    final maxScore = examType.toUpperCase() == 'TOEFL' ? 30.0 : 9.0;
+    final label = examType.toUpperCase() == 'TOEFL' ? "TOEFL SCORES" : "BAND SCORES";
+
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "BAND SCORES",
+            label,
             style: DesignSystem.labelStyle(buildContext: context, fontSize: 10).copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -121,10 +124,10 @@ class AssessmentResultScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildScoreGauge(context, "READING", _toDouble(scores['reading']), DesignSystem.primary(context)),
-              _buildScoreGauge(context, "LISTENING", _toDouble(scores['listening']), Colors.blue),
-              _buildScoreGauge(context, "WRITING", _toDouble(scores['writing']), const Color(0xFFF43F5E)),
-              _buildScoreGauge(context, "SPEAKING", _toDouble(scores['speaking']), Colors.orange),
+              _buildScoreGauge(context, "READING", _toDouble(scores['reading']), DesignSystem.primary(context), maxScore: maxScore),
+              _buildScoreGauge(context, "LISTENING", _toDouble(scores['listening']), Colors.blue, maxScore: maxScore),
+              _buildScoreGauge(context, "WRITING", _toDouble(scores['writing']), const Color(0xFFF43F5E), maxScore: maxScore),
+              _buildScoreGauge(context, "SPEAKING", _toDouble(scores['speaking']), Colors.orange, maxScore: maxScore),
             ],
           ),
         ],
@@ -139,8 +142,8 @@ class AssessmentResultScreen extends ConsumerWidget {
     return 0.0;
   }
 
-  Widget _buildScoreGauge(BuildContext context, String label, double score, Color color) {
-    final value = score / 9.0;
+  Widget _buildScoreGauge(BuildContext context, String label, double score, Color color, {required double maxScore}) {
+    final value = score / maxScore;
     return Column(
       children: [
         Stack(
