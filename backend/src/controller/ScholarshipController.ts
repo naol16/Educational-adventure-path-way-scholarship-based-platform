@@ -34,27 +34,37 @@ export class ScholarshipController {
     /**
      * Gets matched scholarships for the logged-in student.
      */
-    static async getMatches(req: Request, res: Response) {
-        try {
-            if (!req.user || !req.user.id) {
-                return res.status(401).json({ message: "Unauthorized. User ID missing." });
-            }
+    static getMatches = catchAsync(async (req: Request, res: Response) => {
+        if (!req.user || !req.user.id) {
+            throw new AppError("Unauthorized. User ID missing.", 401);
+        }
 
+        try {
             const matches = await MatchingService.getTopMatches(req.user.id);
             res.status(200).json(matches);
         } catch (error: any) {
-            console.error("Error fetching scholarship matches:", error.message);
-
             if (error.message.includes("onboarded")) {
-                return res.status(403).json({ message: error.message });
+                throw new AppError(error.message, 403);
             }
             if (error.message.includes("not found")) {
-                return res.status(404).json({ message: error.message });
+                throw new AppError(error.message, 404);
             }
-
-            res.status(500).json({ message: "Internal server error while matching scholarships." });
+            throw error;
         }
-    }
+    });
+
+    /**
+     * Gets recommended scholarships for the logged-in student.
+     */
+    static getRecommendations = catchAsync(async (req: Request, res: Response) => {
+        if (!req.user || !req.user.id) {
+            throw new AppError("Unauthorized. User ID missing.", 401);
+        }
+
+        // For now, recommendations use the same matching logic
+        const recommendations = await MatchingService.getTopMatches(req.user.id);
+        res.status(200).json(recommendations);
+    });
 
     /**
      * Gets a single scholarship with matching details.
