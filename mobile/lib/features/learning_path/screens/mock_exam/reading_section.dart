@@ -59,6 +59,7 @@ class ReadingSection extends ConsumerWidget {
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore "
                 "magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo "
                 "consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+                // ignore: deprecated_member_use
                 style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 15, height: 1.6),
               ),
             ],
@@ -126,6 +127,7 @@ class ReadingSection extends ConsumerWidget {
         return ChoiceChip(
           label: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 12)),
           selected: isSelected,
+          // ignore: deprecated_member_use
           selectedColor: const Color(0xFF10B981).withOpacity(0.4),
           backgroundColor: Colors.white10,
           onSelected: (selected) {

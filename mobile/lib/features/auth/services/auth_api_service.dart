@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'package:mobile/models/models.dart';
-import 'package:mobile/models/json_utils.dart';
 import 'package:mobile/core/services/api_client.dart';
 import 'package:mobile/core/constants/api_config.dart';
 import 'package:mobile/core/services/http_helpers.dart';

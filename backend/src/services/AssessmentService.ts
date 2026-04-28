@@ -184,18 +184,25 @@ export class AssessmentService {
   static async generateExam(
     examType: "IELTS" | "TOEFL",
     difficulty: "Easy" | "Medium" | "Hard",
+    skill?: string,
+    studentId?: number,
   ) {
     const testId = uuidv4();
 
     const examTypeUpper = examType.toUpperCase();
     const isToefl = examTypeUpper === "TOEFL";
-    const examInstructions = isToefl 
-      ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) that CHALLENGES or expands on the reading passage + 5 Multiple Choice Questions. 3. WRITING: 1 Integrated Task Prompt (e.g., 'Summarize the points made in the lecture and explain how they cast doubt on specific points made in the reading passage'). 4. SPEAKING: 1 Integrated Speaking Prompt based on the same topic."
+    
+    let examInstructions = isToefl 
+      ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) that CHALLENGES or expands on the reading passage + 5 Multiple Choice Questions. 3. WRITING: 1 Integrated Task Prompt. 4. SPEAKING: 1 Integrated Speaking Prompt based on the same topic."
       : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 1 Task Prompt (Task 2 style). 4. SPEAKING: 1 Long-form Prompt (Cue Card).";
+
+    if (skill) {
+      examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Leave other sections empty or null.`;
+    }
 
     const prompt = PromptTemplate.fromTemplate(`
             Role: Senior Assessment Architect
-            Task: Generate a complete {examType} blueprint.
+            Task: Generate a {examType} blueprint. ${skill ? `Focus only on the ${skill} section.` : "Generate a complete 4-section exam."}
             Difficulty: {difficulty}
             
             {examInstructions}
@@ -210,12 +217,12 @@ export class AssessmentService {
               "status": "success",
               "data": {{
                 "test_id": "{testId}",
-                "exam_summary": {{ "type": "{examType}", "difficulty": "{difficulty}" }},
+                "exam_summary": {{ "type": "{examType}", "difficulty": "{difficulty}", "focus_skill": "${skill || "all"}" }},
                 "sections": {{
-                  "reading": {{ "passage": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }},
-                  "listening": {{ "script": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }},
-                  "writing": {{ "prompt": "string" }},
-                  "speaking": {{ "prompt": "string" }}
+                  "reading": ${skill === "reading" || !skill ? '{{ "passage": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }}' : "null"},
+                  "listening": ${skill === "listening" || !skill ? '{{ "script": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }}' : "null"},
+                  "writing": ${skill === "writing" || !skill ? '{{ "prompt": "string" }}' : "null"},
+                  "speaking": ${skill === "speaking" || !skill ? '{{ "prompt": "string" }}' : "null"}
                 }}
               }}
             }}
@@ -288,16 +295,35 @@ export class AssessmentService {
           1800,
         );
     } else {
-        console.warn("[AssessmentService] Redis unavailable, skipping blueprint caching. Assessment might fail later if not handled.");
+        console.warn("[AssessmentService] Redis unavailable, skipping blueprint caching. Storing in DB instead.");
+    }
+
+    // Always store in DB as a robust fallback
+    if (studentId) {
+       const { AssessmentResult } = await import("../models/AssessmentResult.js");
+       await AssessmentResult.create({
+          studentId,
+          testId,
+          examType: blueprint.data?.exam_summary?.type || "IELTS",
+          difficulty: blueprint.data?.exam_summary?.difficulty || "Medium",
+          blueprint: blueprint,
+          evaluation: { score_breakdown: {}, section_notes: {}, learning_mode: {} },
+          scoreBreakdown: {},
+          overallBand: 0,
+       });
     }
     // Sanitize for frontend
     const sanitized = JSON.parse(JSON.stringify(blueprint));
-    sanitized.data.sections.reading.questions.forEach(
-      (q: any) => delete q.correct_answer,
-    );
-    sanitized.data.sections.listening.questions.forEach(
-      (q: any) => delete q.correct_answer,
-    );
+    if (sanitized.data?.sections?.reading?.questions) {
+      sanitized.data.sections.reading.questions.forEach(
+        (q: any) => delete q.correct_answer,
+      );
+    }
+    if (sanitized.data?.sections?.listening?.questions) {
+      sanitized.data.sections.listening.questions.forEach(
+        (q: any) => delete q.correct_answer,
+      );
+    }
 
     return sanitized;
   }
@@ -308,26 +334,55 @@ export class AssessmentService {
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string },
   ) {
-    if (!isRedisAvailable()) {
-        throw new Error("Assessment submission is temporarily unavailable (service dependency down).");
+    let blueprint: any;
+
+    if (isRedisAvailable()) {
+      const blueprintData = await redisConnection.get(`test_id:${testId}`);
+      if (blueprintData) {
+        blueprint = JSON.parse(blueprintData);
+      }
     }
 
-    const blueprintData = await redisConnection.get(`test_id:${testId}`);
-    if (!blueprintData) throw new Error("Assessment not found or expired.");
+    if (!blueprint) {
+      // Fallback: Try DB
+      const { AssessmentResult } = await import("../models/AssessmentResult.js");
+      const result = await AssessmentResult.findOne({ where: { testId } });
+      if (result && result.blueprint) {
+        blueprint = result.blueprint;
+      }
+    }
 
-    const job = await assessmentQueue.add(
-      "assessment-queue",
-      {
+    if (!blueprint) throw new Error("Assessment not found or expired.");
+
+    if (isRedisAvailable()) {
+      const job = await assessmentQueue.add(
+        "assessment-queue",
+        {
+          testId,
+          blueprint,
+          responses,
+          studentId,
+          audioData: audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : null,
+        },
+        { jobId: testId, removeOnComplete: { age: 3600 }, removeOnFail: { age: 24 * 3600 } },
+      );
+      return { status: "submitted", jobId: job.id, testId };
+    } else {
+      // Redis is down: Process immediately in background
+      console.warn(`[AssessmentService] Redis unavailable. Processing assessment ${testId} synchronously in background.`);
+      
+      // Fire and forget (it will update the DB when done)
+      this.evaluateAssessment(
         testId,
-        blueprint: JSON.parse(blueprintData),
+        blueprint,
         responses,
         studentId,
-        audioData: audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : null,
-      },
-      { jobId: testId, removeOnComplete: { age: 3600 }, removeOnFail: { age: 24 * 3600 } },
-    );
+        { updateProgress: async () => {} } as any, // Mock job for progress updates
+        audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : undefined
+      ).catch(err => console.error(`[AssessmentService] Background evaluation failed for ${testId}:`, err));
 
-    return { status: "submitted", jobId: job.id, testId };
+      return { status: "processing", testId, message: "Service is running in degraded mode. Results may take longer." };
+    }
   }
 
   /**
@@ -340,12 +395,25 @@ export class AssessmentService {
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string }
   ) {
-    if (!isRedisAvailable()) {
-        throw new Error("Skill evaluation is temporarily unavailable.");
+    let blueprint: any;
+
+    if (isRedisAvailable()) {
+      const blueprintData = await redisConnection.get(`test_id:${testId}`);
+      if (blueprintData) {
+        blueprint = JSON.parse(blueprintData);
+      }
     }
-    const blueprintData = await redisConnection.get(`test_id:${testId}`);
-    if (!blueprintData) throw new Error("Assessment not found or expired.");
-    const blueprint = JSON.parse(blueprintData);
+
+    if (!blueprint) {
+      // Fallback: Try DB
+      const { AssessmentResult } = await import("../models/AssessmentResult.js");
+      const result = await AssessmentResult.findOne({ where: { testId } });
+      if (result && result.blueprint) {
+        blueprint = result.blueprint;
+      }
+    }
+
+    if (!blueprint) throw new Error("Assessment not found or expired.");
 
     const evaluation = await this.evaluateSingleSkill(
       skill,
@@ -355,6 +423,7 @@ export class AssessmentService {
     );
 
     // Save/Update progress in AssessmentResult table
+    const { AssessmentResult } = await import("../models/AssessmentResult.js");
     let result = await AssessmentResult.findOne({ where: { testId } });
     if (!result) {
       result = await AssessmentResult.create({
@@ -362,6 +431,7 @@ export class AssessmentService {
         testId,
         examType: blueprint.data?.exam_summary?.type || "IELTS",
         difficulty: blueprint.data?.exam_summary?.difficulty || "Medium",
+        blueprint: blueprint,
         evaluation: { score_breakdown: {}, section_notes: {}, learning_mode: {} },
         scoreBreakdown: {},
         overallBand: 0,

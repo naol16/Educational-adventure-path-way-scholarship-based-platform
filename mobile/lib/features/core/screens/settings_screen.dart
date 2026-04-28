@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -200,6 +199,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Wrap(
           spacing: 15, runSpacing: 15,
           children: DesignSystem.accentColors.map((color) {
+            // ignore: deprecated_member_use
             final isSelected = themeState.accentColor.value == color.value;
             return GestureDetector(
               onTap: () => themeNotifier.setAccentColor(color),

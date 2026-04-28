@@ -112,6 +112,7 @@ class _MockExamScreenState extends ConsumerState<MockExamScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: isLowTime ? Colors.redAccent.withOpacity(0.2) : Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
@@ -168,6 +169,7 @@ class _MockExamScreenState extends ConsumerState<MockExamScreen> {
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF10B981)
+                        // ignore: deprecated_member_use
                         : (isCompleted ? const Color(0xFF10B981).withOpacity(0.5) : Colors.white10),
                     borderRadius: BorderRadius.circular(2),
                   ),

@@ -311,8 +311,13 @@ export const StudentDashboard = () => {
                   <Target className="text-primary" size={24} />
                   Top Recommendations
                 </h2>
-                <p className="text-muted-foreground mt-1 text-sm">
+                <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2">
                   Hand-picked opportunities based on your skills and goals.
+                  {matches.length > 0 && (
+                    <span className="inline-flex items-center justify-center bg-primary text-white text-[10px] font-black rounded-full w-5 h-5 leading-none shrink-0">
+                      {Math.min(matches.length, 5)}
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -325,36 +330,50 @@ export const StudentDashboard = () => {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {loadingMatches ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-[200px] w-full rounded-2xl bg-muted/40 animate-pulse border border-border/50" />
-                ))
-              ) : matches.length > 0 ? (
-                matches.slice(0, 4).map((match) => (
-                  <ScholarshipCard key={match.id} scholarship={match} />
-                ))
-              ) : (
-                <Card className="border-dashed border-2 border-border/60 bg-muted/20 col-span-2 rounded-3xl">
-                  <CardBody className="py-20 text-center">
-                    <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Award size={32} className="text-muted-foreground/40" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">Building your path...</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed mb-8">
-                      {user?.isOnboarded 
-                        ? "We're matching you with new opportunities every day. Check back soon for new recommendations!"
-                        : "Complete your profile to unlock highly personalized matches and AI-driven recommendations."}
-                    </p>
-                    <Link href="/dashboard/student/profile">
-                      <Button className="rounded-full px-6 primary-gradient text-white shadow-lg shadow-emerald-500/10">
-                        {user?.isOnboarded ? "Refine Profile" : "Get Started Now"}
-                      </Button>
-                    </Link>
-                  </CardBody>
-                </Card>
-              )}
-            </div>
+            {loadingMatches ? (
+              <div className="space-y-4">
+                <div className="h-[220px] w-full rounded-xl bg-muted/40 animate-pulse border border-border/50" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-[180px] w-full rounded-xl bg-muted/40 animate-pulse border border-border/50" />
+                  ))}
+                </div>
+              </div>
+            ) : matches.length > 0 ? (
+              <div className="space-y-4">
+                {/* Featured top card */}
+                <div className="w-full">
+                  <ScholarshipCard key={matches[0].id} scholarship={matches[0]} />
+                </div>
+                {/* Remaining 4 in 2-col grid */}
+                {matches.length > 1 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {matches.slice(1, 5).map((match) => (
+                      <ScholarshipCard key={match.id} scholarship={match} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Card className="border-dashed border-2 border-border/60 bg-muted/20 rounded-xl">
+                <CardBody className="py-20 text-center">
+                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Award size={32} className="text-muted-foreground/40" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Building your path...</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed mb-8">
+                    {user?.isOnboarded
+                      ? "We're matching you with new opportunities every day. Check back soon for new recommendations!"
+                      : "Complete your profile to unlock highly personalized matches and AI-driven recommendations."}
+                  </p>
+                  <Link href="/dashboard/student/profile">
+                    <Button className="rounded-full px-6 primary-gradient text-white shadow-lg shadow-emerald-500/10">
+                      {user?.isOnboarded ? "Refine Profile" : "Get Started Now"}
+                    </Button>
+                  </Link>
+                </CardBody>
+              </Card>
+            )}
           </motion.div>
 
           {/* Quick Matches */}

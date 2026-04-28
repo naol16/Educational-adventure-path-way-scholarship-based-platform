@@ -199,7 +199,6 @@ class ToeflTaskNotifier extends StateNotifier<ToeflTaskState> {
         audioData: audioData,
       );
       
-      print("[ToeflTaskProvider] Section submitted: $skill. Response: $response");
       
       double score = 0.0;
       if (response['score'] != null) {

@@ -46,7 +46,7 @@ class _PathfinderChatScreenState extends State<PathfinderChatScreen> {
     setState(() {
       _messages.add({
         'role': 'ai',
-        'text': 'I am analyzing your profile to find matches for "${text}". My connection to the live data source is currently being finalized on the backend, but I have noted your requirements!',
+        'text': 'I am analyzing your profile to find matches for "$text". My connection to the live data source is currently being finalized on the backend, but I have noted your requirements!',
       });
       _isLoading = false;
     });

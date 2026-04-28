@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -31,7 +30,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
   int _currentSectionIndex = 0;
   final List<String> _sections = ['Reading', 'Listening', 'Writing', 'Speaking'];
   
-  Map<String, dynamic> _responses = {
+  final Map<String, dynamic> _responses = {
     'reading': {},
     'listening': {},
     'writing': '',
@@ -110,6 +109,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
         setState(() => _isRecording = true);
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error starting recorder: $e')),
       );
@@ -565,6 +565,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: isSelected ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white10,
                 shape: BoxShape.circle,
               ),
@@ -729,7 +730,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                 const SizedBox(height: 24),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -773,7 +774,7 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
                 const SizedBox(height: 24),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );

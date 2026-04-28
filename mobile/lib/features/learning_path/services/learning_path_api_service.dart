@@ -1,4 +1,5 @@
 import 'package:mobile/models/models.dart';
+// ignore: unnecessary_import
 import 'package:mobile/models/json_utils.dart';
 import 'package:mobile/core/services/api_client.dart';
 import 'package:mobile/core/services/http_helpers.dart';
@@ -43,11 +44,12 @@ class LearningPathApiService {
       '/api/learning-path/track',
       auth: true,
       body: {
-        if (videoId != null) 'videoId': videoId,
-        if (pdfId != null) 'pdfId': pdfId,
+        'videoId': ?videoId,
+        'pdfId': ?pdfId,
         'section': section,
         'isCompleted': isCompleted,
         'isNote': isNote,
+        // ignore: use_null_aware_elements
         if (questionIndex != null) 'questionIndex': questionIndex,
       },
     );

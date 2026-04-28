@@ -214,7 +214,7 @@ export function ActiveCallInterface({ assistantConfig, interviewId, country, onC
   return (
     <div className="flex flex-col items-center justify-center min-h-[600px] gap-8 p-4">
       {/* Simulation Header */}
-      <div className="w-full max-w-2xl flex items-center justify-between px-6 py-4 bg-muted/30 rounded-3xl border border-border/50">
+      <div className="w-full max-w-2xl flex items-center justify-between px-6 py-4 bg-muted/30 rounded-lg border border-border/50">
         <div className="flex items-center gap-3">
           <div className="size-3 rounded-full bg-red-500 animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-widest">Live Embassy Channel - {country}</span>
@@ -225,7 +225,7 @@ export function ActiveCallInterface({ assistantConfig, interviewId, country, onC
       </div>
 
       {/* Main Visualizer Card */}
-      <Card className="w-full max-w-2xl border-none bg-background shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative">
+      <Card className="w-full max-w-2xl border-none bg-background shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] rounded-lg overflow-hidden relative">
         <div className="absolute inset-0 bg-linear-to-b from-primary/5 to-transparent pointer-events-none" />
         
         <CardBody className="p-12 sm:p-20 flex flex-col items-center gap-12 relative z-10">
@@ -279,7 +279,7 @@ export function ActiveCallInterface({ assistantConfig, interviewId, country, onC
             </p>
           </div>
 
-          <div className="w-full p-6 bg-primary/5 rounded-4xl border border-primary/10 text-center min-h-[100px] flex items-center justify-center">
+          <div className="w-full p-6 bg-primary/5 rounded-lg border border-primary/10 text-center min-h-[100px] flex items-center justify-center">
             <AnimatePresence mode="wait">
               {isThinking ? (
                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 text-muted-foreground font-medium italic">
@@ -310,7 +310,7 @@ export function ActiveCallInterface({ assistantConfig, interviewId, country, onC
           <Button
             variant="destructive"
             size="lg"
-            className="h-16 px-10 rounded-4xl font-black uppercase tracking-widest shadow-xl shadow-red-500/20 gap-3 hover:scale-105 transition-transform"
+            className="h-16 px-10 rounded-lg font-black uppercase tracking-widest shadow-xl shadow-red-500/20 gap-3 hover:scale-105 transition-transform"
             onClick={() => endCall("user_interrupted")}
           >
             <PhoneOff size={20} /> End Interview
@@ -329,7 +329,7 @@ export function ActiveCallInterface({ assistantConfig, interviewId, country, onC
         </div>
       </Card>
 
-      <div className="max-w-xl p-4 flex gap-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+      <div className="max-w-xl p-4 flex gap-4 bg-red-500/5 border border-red-500/10 rounded-lg">
         <AlertCircle className="text-red-500 shrink-0" size={18} />
         <p className="text-xs font-semibold text-red-700/70 leading-relaxed">
           Tap the circular orb once to start recording your answer. Tap it again to send your response. The officer will evaluate your answers automatically.
