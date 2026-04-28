@@ -19,7 +19,12 @@ export interface Conversation {
   id: number;
   createdAt: string;
   updatedAt: string;
-  users: ChatUser[];
+  isGroup: boolean;
+  name?: string;
+  country?: string;
+  description?: string;
+  users?: ChatUser[]; // Legacy
+  members?: ChatUser[]; // New
   chatMessages?: Message[];
   messages?: Message[];
   ChatMessages?: Message[];

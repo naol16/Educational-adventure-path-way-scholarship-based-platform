@@ -12,14 +12,20 @@ export class ChatService {
      * Validates that they have an active booking/consultation.
      */
     static async getOrCreateConversation(userId1: number, userId2: number) {
-        // Find existing conversation with these two exact participants
+        const expectedDistinctUsers = userId1 === userId2 ? 1 : 2;
+
         const participantInfo: any = await ConversationParticipant.findAll({
             where: {
                 userId: { [Op.in]: [userId1, userId2] }
             },
+            include: [{
+                model: Conversation,
+                where: { isGroup: false },
+                attributes: []
+            }],
             attributes: ['conversationId'],
             group: ['conversationId'],
-            having: sequelize.literal(`COUNT(DISTINCT "user_id") = 2`)
+            having: sequelize.literal(`COUNT(DISTINCT "user_id") = ${expectedDistinctUsers}`)
         });
 
         if (participantInfo.length > 0) {
@@ -43,7 +49,9 @@ export class ChatService {
         // Create new
         const conversation = await Conversation.create();
         await ConversationParticipant.create({ conversationId: conversation.id, userId: userId1 });
-        await ConversationParticipant.create({ conversationId: conversation.id, userId: userId2 });
+        if (userId1 !== userId2) {
+            await ConversationParticipant.create({ conversationId: conversation.id, userId: userId2 });
+        }
 
         return conversation;
     }
@@ -62,9 +70,10 @@ export class ChatService {
     }
 
     static async getConversations(userId: number) {
-        return Conversation.findAll({
+        const conversations = await Conversation.findAll({
             attributes: {
                 include: [
+                    'isGroup', 'name', 'country', 'description',
                     [
                         sequelize.literal(`(
                             SELECT COUNT(*)
@@ -85,6 +94,7 @@ export class ChatService {
                 },
                 {
                     model: User,
+                    as: 'members',
                     through: { attributes: [] }, // Get other participants
                     attributes: ['id', 'name', 'role', 'email']
                 },
@@ -96,6 +106,34 @@ export class ChatService {
                 }
             ],
             order: [['updatedAt', 'DESC']]
+        });
+
+        // Deduplicate personal conversations by participant pair
+        const seenOtherUserIds = new Set<number>();
+        const conversationMap = new Map<number, any>();
+
+        return conversations.filter(conv => {
+            // Always keep group chats
+            if (conv.isGroup) return true;
+
+            // For DMs, ensure we only show one per "other person"
+            const members = (conv as any).members || [];
+            const otherUser = members.find((m: any) => m.id !== userId);
+            
+            // If it's a chat with self (only one member or both are me)
+            if (!otherUser) {
+                // For self-chats, we still only want one
+                if (seenOtherUserIds.has(userId)) return false;
+                seenOtherUserIds.add(userId);
+                return true;
+            }
+
+            if (seenOtherUserIds.has(otherUser.id)) {
+                return false;
+            }
+
+            seenOtherUserIds.add(otherUser.id);
+            return true;
         });
     }
 
@@ -109,12 +147,20 @@ export class ChatService {
     }
 
     static async getMessages(conversationId: number, limit = 50, offset = 0) {
-        return ChatMessage.findAll({
+        const messages = await ChatMessage.findAll({
             where: { conversationId },
             include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }],
             limit,
             offset,
             order: [['created_at', 'DESC']]
+        });
+
+        // Replace content for moderated messages
+        return messages.map(m => {
+            if (m.isModerated) {
+                m.content = `[Message Removed: ${m.moderationReason || 'Violated Community Guidelines'}]`;
+            }
+            return m;
         });
     }
 
@@ -129,5 +175,122 @@ export class ChatService {
                 }
             }
         );
+    }
+
+    /**
+     * Get all members of a conversation
+     */
+    static async getConversationMembers(conversationId: number) {
+        const conversation = await Conversation.findByPk(conversationId, {
+            include: [{
+                model: User,
+                as: 'members',
+                attributes: ['id', 'name', 'role', 'email'],
+                through: { attributes: [] }
+            }]
+        });
+        
+        const members = (conversation as any)?.members || [];
+        
+        // Deduplicate by ID just in case there are multiple participant entries
+        const uniqueMembers = Array.from(new Map(members.map((m: any) => [m.id, m])).values());
+        
+        return uniqueMembers;
+    }
+
+    /**
+     * Add a member to a group conversation
+     */
+    static async addMemberToGroup(conversationId: number, userId: number) {
+        const conversation = await Conversation.findByPk(conversationId);
+        if (!conversation || !conversation.isGroup) {
+            throw new Error("Group conversation not found");
+        }
+
+        // Check if already a participant
+        const existing = await ConversationParticipant.findOne({
+            where: { userId, conversationId }
+        });
+
+        if (existing) return existing;
+
+        return ConversationParticipant.create({ userId, conversationId });
+    }
+
+    /**
+     * Create a group conversation (Admin only)
+     */
+    static async createGroupConversation(adminId: number, data: { name: string, country: string, description?: string }) {
+        const conversation = await Conversation.create({
+            isGroup: true,
+            name: data.name,
+            country: data.country,
+            description: data.description,
+            createdBy: adminId
+        });
+
+        // Automatically add the creator as a participant so they can see the chat
+        await ConversationParticipant.create({
+            conversationId: conversation.id,
+            userId: adminId
+        });
+
+        return conversation;
+    }
+
+    /**
+     * Join a group conversation
+     */
+    static async joinGroup(userId: number, conversationId: number) {
+        const conversation = await Conversation.findByPk(conversationId);
+        if (!conversation || !conversation.isGroup) {
+            throw new Error("Group conversation not found");
+        }
+
+        // Check if already a participant
+        const existing = await ConversationParticipant.findOne({
+            where: { userId, conversationId }
+        });
+
+        if (existing) return existing;
+
+        return ConversationParticipant.create({ userId, conversationId });
+    }
+
+    /**
+     * Leave a group conversation
+     */
+    static async leaveGroup(userId: number, conversationId: number) {
+        return ConversationParticipant.destroy({
+            where: { userId, conversationId }
+        });
+    }
+
+    /**
+     * Get all available group conversations with membership status
+     */
+    static async getGroupConversations(userId?: number) {
+        return Conversation.findAll({
+            where: { isGroup: true },
+            attributes: {
+                include: userId ? [
+                    [
+                        sequelize.literal(`EXISTS(
+                            SELECT 1 FROM "conversation_participants" 
+                            WHERE "conversation_id" = "Conversation"."id" 
+                            AND "user_id" = ${userId}
+                        )`),
+                        'isJoined'
+                    ]
+                ] : []
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'creator',
+                    attributes: ['id', 'name']
+                }
+            ]
+        });
     }
 }
