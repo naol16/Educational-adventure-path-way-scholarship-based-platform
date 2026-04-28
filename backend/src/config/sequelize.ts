@@ -41,19 +41,19 @@ const dbOptions: SequelizeOptions = {
   // Keep SQL logs off by default; enable only when DB_LOGGING=true.
   logging: configs.DB_LOGGING ? console.log : false,
   pool: {
-    max: 10,    
-    min: 0,       
+    max: 10,
+    min: 0,
     acquire: 30000,// Maximum time (ms) to try getting a connection before throwing error
     idle: 10000    // Maximum time (ms) a connection can be idle before being released
   },
 
-  // dialectOptions: {
-  //   ssl: {
-  //     require: true,
-  //     rejectUnauthorized: false,
-  //   },
-  // },
-    
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
+
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 export const sequelize = new Sequelize({
