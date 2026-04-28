@@ -258,29 +258,27 @@ export class LearningPathService {
         const pdfEnd = Math.min(pdfStart + 3, validPdfs.length);
         const missionPdfs = pdfStart < validPdfs.length ? validPdfs.slice(pdfStart, pdfEnd) : [];
         
-        if (missionVideos.length > 0 || missionPdfs.length > 0) {
-          const isPracticeCompleted = updatedLearningMode[skill]?.questions?.some((q: any) => q.isCompleted) || 
-                                      (Array.isArray(updatedLearningMode[skill]) && updatedLearningMode[skill].some((q: any) => q.isCompleted)) ||
-                                      (updatedLearningMode[skill] && (updatedLearningMode[skill].prompt || updatedLearningMode[skill].question) && updatedLearningMode[skill].isCompleted);
-                                      
-          const normalizedSkill = skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase();
-          const unitTestEntry = allProgress.find(p => p.section === normalizedSkill && p.isUnitTest && p.missionIndex === i);
-          const isUnitTestCompleted = unitTestEntry ? unitTestEntry.isCompleted : false;
+        const isPracticeCompleted = updatedLearningMode[skill]?.questions?.some((q: any) => q.isCompleted) || 
+                                    (Array.isArray(updatedLearningMode[skill]) && updatedLearningMode[skill].some((q: any) => q.isCompleted)) ||
+                                    (updatedLearningMode[skill] && (updatedLearningMode[skill].prompt || updatedLearningMode[skill].question) && updatedLearningMode[skill].isCompleted);
+                                    
+        const normalizedSkill = skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase();
+        const unitTestEntry = allProgress.find(p => p.section === normalizedSkill && p.isUnitTest && p.missionIndex === i);
+        const isUnitTestCompleted = unitTestEntry ? unitTestEntry.isCompleted : false;
 
-          const isMissionCompleted = (missionVideos.length > 0 ? missionVideos.every(v => v.isCompleted) : true) && 
-                                     (missionPdfs.length > 0 ? missionPdfs.every(p => p.isCompleted) : true) &&
-                                     isPracticeCompleted &&
-                                     isUnitTestCompleted;
-          
-          missions.push({
-            title: missionInfo.title,
-            objective: missionInfo.objective,
-            videos: missionVideos,
-            pdfs: missionPdfs,
-            isCompleted: !!isMissionCompleted,
-            isUnitTestCompleted: !!isUnitTestCompleted
-          });
-        }
+        const isMissionCompleted = (missionVideos.length > 0 ? missionVideos.every(v => v.isCompleted) : true) && 
+                                   (missionPdfs.length > 0 ? missionPdfs.every(p => p.isCompleted) : true) &&
+                                   isPracticeCompleted &&
+                                   isUnitTestCompleted;
+        
+        missions.push({
+          title: missionInfo.title,
+          objective: missionInfo.objective,
+          videos: missionVideos,
+          pdfs: missionPdfs,
+          isCompleted: !!isMissionCompleted,
+          isUnitTestCompleted: !!isUnitTestCompleted
+        });
       }
 
       result[skill] = {

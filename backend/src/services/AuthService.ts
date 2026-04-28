@@ -9,6 +9,7 @@ import { CounselorRepository } from "../repositories/CounselorRepository.js";
 import { UserRole } from "../types/userTypes.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/emailService.js";
+import { AppError } from "../errors/AppError.js";
 import { User } from "../models/User.js";
 import configs from "../config/configs.js";
 
@@ -44,11 +45,11 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
 
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      throw new Error("Invalid credentials");
+      throw new AppError("Invalid credentials", 401);
     }
 
     if (!user.isActive) {
-      throw new Error("Account is deactivated");
+      throw new AppError("Account is deactivated", 403);
     }
 
     return this.generateAuthResponse(user);
