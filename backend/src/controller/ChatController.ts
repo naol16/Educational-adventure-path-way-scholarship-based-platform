@@ -126,4 +126,48 @@ export class ChatController {
             data: { url: secureUrl }
         });
     });
+
+    /**
+     * GET /download - Proxy download for files to bypass cross-origin restrictions
+     */
+    static downloadFile = catchAsync(async (req: Request, res: Response) => {
+        const { url } = req.query;
+        if (!url || typeof url !== 'string') {
+            throw new AppError("Invalid URL", 400);
+        }
+
+        console.log(`[DownloadProxy] Attempting to fetch URL: ${url}`);
+
+        // Cloudinary throws 401 Unauthorized for PDFs delivered via /image/upload/
+        // unless we force them to download as an attachment for security reasons.
+        let fetchUrl = url;
+        if (fetchUrl.includes('cloudinary.com') && fetchUrl.includes('/upload/')) {
+            fetchUrl = fetchUrl.replace('/upload/', '/upload/fl_attachment/');
+            console.log(`[DownloadProxy] Modified Cloudinary URL to force attachment: ${fetchUrl}`);
+        }
+
+        try {
+            const axios = (await import("axios")).default;
+            const response = await axios({
+                url: fetchUrl,
+                method: 'GET',
+                responseType: 'stream'
+            });
+
+            // Extract filename from URL
+            const filename = url.split('/').pop()?.split('?')[0] || 'downloaded-file';
+            
+            // Forward content type from original response if possible
+            const contentType = response.headers['content-type'];
+            if (contentType) res.setHeader('Content-Type', contentType);
+            
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            response.data.pipe(res);
+        } catch (error: any) {
+            console.error(`[DownloadProxy] Failed to proxy fetch ${url}. Error:`, error.message);
+            // If the proxy fails (e.g. 401 Unauthorized from the source), 
+            // fallback to redirecting the user directly to the URL so their browser can handle it.
+            res.redirect(url);
+        }
+    });
 }

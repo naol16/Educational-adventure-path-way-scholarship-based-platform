@@ -15,7 +15,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
-  Banknote
+  Banknote,
+  MessageSquare
 } from 'lucide-react';
 
 import { useState } from 'react';
@@ -32,6 +33,7 @@ export function AdminSidebar() {
     { name: 'Home', href: '/dashboard/admin', icon: Home },
     { name: 'Students', href: '/dashboard/admin/students', icon: GraduationCap },
     { name: 'Counselors', href: '/dashboard/admin/counselors', icon: ShieldCheck },
+    { name: 'Chat Groups', href: '/dashboard/admin/groups', icon: MessageSquare },
     { name: 'Payout Requests', href: '/dashboard/admin/payouts', icon: Banknote },
     { name: 'Platform Stats', href: '/dashboard/analytics', icon: Activity },
     { name: 'System Logs', href: '/dashboard/logs', icon: Zap },

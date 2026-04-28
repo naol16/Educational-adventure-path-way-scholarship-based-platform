@@ -29,6 +29,7 @@ import {
   Pdf,
   CounselorPayout,
   CounselorWalletTransaction,
+  UserWarning,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -90,6 +91,7 @@ export const sequelize = new Sequelize({
     Pdf,
     CounselorPayout,
     CounselorWalletTransaction,
+    UserWarning,
   ], // Add all models here
 } as SequelizeOptions);
 
@@ -113,8 +115,8 @@ export const connectSequelize = async () => {
     }
 
     // Sync models with database (creates tables if missing)
-    // Note: alter: true was disabled as it was hanging in the current environment.
-    await sequelize.sync();
+    // Note: enabled alter: true to apply new column changes
+    await sequelize.sync({ alter: true });
     console.log("Database models synchronized");
   } catch (error) {
     console.error("Sequelize connection error:", error);

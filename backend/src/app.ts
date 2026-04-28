@@ -91,6 +91,8 @@ app.use("/api/chat", routes.chatRouter);
 app.use("/api/writing-lab", routes.writingLabRouter);
 app.use("/api/speaking-lab", routes.speakingLabRouter);
 app.use("/api/payments", routes.paymentRouter);
+app.use("/api/groups", routes.chatGroupRouter);
+app.use("/api/moderation", routes.moderationRouter);
 app.use("/api/debug", debugRoutes);
 // Health Check
 app.get("/health", (req, res) => {

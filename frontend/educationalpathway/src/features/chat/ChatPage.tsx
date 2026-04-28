@@ -10,6 +10,7 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { BookingModal } from "../counselor/components/BookingModal";
 import { StudentBookingModal } from "../counselor/components/StudentBookingModal";
+import { GroupMembers } from "./components/GroupMembers";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -24,6 +25,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [activeCounselorData, setActiveCounselorData] = useState<any>(null);
   const [fetchingCounselor, setFetchingCounselor] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
   const { socket, isConnected } = useSocket(token);
@@ -52,6 +54,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       setConversations(prev => prev.map(c =>
         c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c
       ));
+      setShowMembers(false); // Reset member view when changing conversation
 
       setLoading(true);
       try {
@@ -132,21 +135,28 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       }
     });
 
+    socket.on("message_moderated", (data: { messageId: number; newContent: string }) => {
+      setMessages((prev) => prev.map(msg => 
+        msg.id === data.messageId ? { ...msg, content: data.newContent } : msg
+      ));
+    });
+
     return () => {
       socket.off("receive_message");
       socket.off("user_typing");
       socket.off("new_message_alert");
+      socket.off("message_moderated");
     };
   }, [socket, activeConversation, token]);
 
   const handleSendMessage = useCallback((content: string) => {
     if (!activeConversation || !socket) return;
-    const otherUser = activeConversation.users?.find(u => u.id !== currentUser.id);
-    if (!otherUser) return;
-
+    const participants = activeConversation.members || activeConversation.users || [];
+    const otherUser = participants.find(u => u.id !== currentUser.id);
+    
     socket.emit("send_message", {
       conversationId: activeConversation.id,
-      receiverId: otherUser.id,
+      receiverId: otherUser?.id || 0,
       content
     });
   }, [activeConversation, socket, currentUser.id]);
@@ -159,7 +169,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     });
   }, [activeConversation, socket]);
 
-  const otherUser = activeConversation?.users?.find(u => u.id !== currentUser.id) || null;
+  const participants = activeConversation?.members || activeConversation?.users || [];
+  const otherUser = participants.find(u => u.id !== currentUser.id) || null;
 
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -259,25 +270,40 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {activeConversation ? (
-          <>
-            <ChatWindow
-              messages={messages}
+          showMembers && activeConversation.isGroup ? (
+            <GroupMembers 
+              conversationId={activeConversation.id}
               currentUserId={currentUser.id}
-              otherUser={otherUser}
-              loading={loading}
-              typingUser={typingStatus}
               currentUserRole={currentUser.role}
-              onBookSession={handleOpenBooking}
-              bookingLoading={fetchingCounselor}
+              onClose={() => setShowMembers(false)}
+              onStartPrivateChat={handleStartChat}
             />
+          ) : (
+            <>
+              <ChatWindow
+                messages={messages}
+                currentUserId={currentUser.id}
+                otherUser={otherUser}
+                loading={loading}
+                typingUser={typingStatus}
+                currentUserRole={currentUser.role}
+                isGroup={activeConversation.isGroup}
+                conversationId={activeConversation.id}
+                onBookSession={handleOpenBooking}
+                onShowMembers={() => setShowMembers(!showMembers)}
+                onStartPrivateChat={handleStartChat}
+                groupName={activeConversation.name}
+                bookingLoading={fetchingCounselor}
+              />
 
-            <ChatInput
-              onSend={handleSendMessage}
-              onTyping={handleTyping}
-              onSchedule={handleOpenBooking}
-              disabled={!activeConversation}
-            />
-          </>
+              <ChatInput
+                onSend={handleSendMessage}
+                onTyping={handleTyping}
+                onSchedule={handleOpenBooking}
+                disabled={!activeConversation}
+              />
+            </>
+          )
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             Select a conversation or start a new chat.

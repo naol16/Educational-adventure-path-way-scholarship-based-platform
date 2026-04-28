@@ -50,7 +50,8 @@ const safeString = (val: any) => {
 };
 
 export default function ScholarshipDetailsPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const { user } = useAuth();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
@@ -61,11 +62,14 @@ export default function ScholarshipDetailsPage() {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        const data = await getScholarship(id as string);
-        setScholarship(data);
+        const scholarshipId = Array.isArray(id) ? id[0] : id;
+        if (!scholarshipId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            const data = await getScholarship(scholarshipId);
         setTrackingInfo(data.tracking || null);
         setError(null);
       } catch (err: any) {

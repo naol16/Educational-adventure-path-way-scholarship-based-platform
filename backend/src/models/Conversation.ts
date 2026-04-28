@@ -9,6 +9,9 @@ import {
     UpdatedAt,
     HasMany,
     BelongsToMany,
+    Default,
+    ForeignKey,
+    BelongsTo,
 } from "sequelize-typescript";
 import { User } from "./User.js";
 import { ConversationParticipant } from "./ConversationParticipant.js";
@@ -23,6 +26,40 @@ export class Conversation extends Model {
     @AutoIncrement
     @Column(DataType.INTEGER)
     declare id: number;
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_group'
+    })
+    declare isGroup: boolean;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true
+    })
+    declare name?: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true
+    })
+    declare description?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true
+    })
+    declare country?: string;
+
+    @ForeignKey(() => User)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'created_by'
+    })
+    declare createdBy?: number;
 
     @CreatedAt
     @Column({
@@ -44,7 +81,16 @@ export class Conversation extends Model {
     @HasMany(() => ConversationParticipant)
     declare participants: ConversationParticipant[];
 
-    @BelongsToMany(() => User, () => ConversationParticipant)
-    declare users: User[];
+    @BelongsToMany(() => User, {
+        through: () => ConversationParticipant,
+        as: 'members'
+    })
+    declare members: User[];
+
+    @BelongsTo(() => User, {
+        foreignKey: 'created_by',
+        as: 'creator'
+    })
+    creator?: User;
 }
 

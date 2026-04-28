@@ -15,7 +15,7 @@ export class FileService {
     static async uploadFile(fileBuffer: Buffer, folder: string = "onboarding_docs"): Promise<string> {
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
-                { folder },
+                { folder, resource_type: "auto" },
                 (error, result) => {
                     if (error) return reject(error);
                     if (!result) return reject(new Error("Cloudinary upload failed"));
