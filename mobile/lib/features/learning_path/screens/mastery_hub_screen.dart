@@ -209,94 +209,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                 ),
               ),
             ),
-          if (path.proficiencyLevel.toLowerCase() == 'easy') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "You missed a few vocabulary questions in your assessment. This phase will help you master word-matching secrets!",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Master word-matching secrets...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "You missed a few detail-oriented audio cues. This phase will sharpen your ear for precision and distractors!",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Sharpen your ear for precision...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your grammar and sentence structures need a solid foundation. Let's build your writing engine step-by-step!",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Build your writing engine...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "Let's build your speaking confidence from safe topics to full interactions. Prepare for the final AI mock interview!",
-                icon: LucideIcons.mic,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Build speaking confidence...",
-              ),
-          ] else if (path.proficiencyLevel.toLowerCase() == 'medium') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "You're reading well, but complex logic traps like TFNG are slowing you down. Let's master advanced inference.",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Master advanced inference...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "Multi-speaker flows and fast lectures are tricky. Time to practice spatial navigation and note-taking.",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Practice note-taking...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your coherence is improving, but try using more advanced cohesive devices to link these academic points.",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Use cohesive devices...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "Your fluency is good, but you need to transition from safe topics to abstract reasoning and conditionals for a Band 7+.",
-                icon: LucideIcons.mic,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Transition to abstract reasoning...",
-              ),
-          ] else if (path.proficiencyLevel.toLowerCase() == 'hard') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "Your comprehension is excellent, but abstract meaning and speed are the final hurdles. Let's master rapid inference.",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Master rapid inference...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "Your ear is sharp. Now we introduce high-speed synthesis and complex global accents. Focus on subtle distractors.",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Focus on subtle distractors...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your grammar is perfect, but stylistic choices matter. Try using a more active structure to sound authoritative.",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Refine stylistic choices...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "It's time for the panel pressure. Focus on idiomatic naturalness and deep abstract reasoning.",
-                icon: LucideIcons.mic,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Focus on idiomatic naturalness...",
-              ),
-          ],
+
           ...(missions.isNotEmpty ? missions : videos).asMap().entries.expand((entry) {
             int index = entry.key;
             var item = entry.value;
@@ -423,7 +336,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     
     return Container(
       width: double.infinity,
-      height: 220,
+      height: 300,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
@@ -473,7 +386,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             
             // Content
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
