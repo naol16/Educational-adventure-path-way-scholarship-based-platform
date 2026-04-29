@@ -80,62 +80,64 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
             backgroundColor: Colors.transparent,
             child: GlassContainer(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "${skill.toUpperCase()} COMPLETED",
-                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 18, color: const Color(0xFF3B82F6)),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isZero ? Colors.red : const Color(0xFF3B82F6), width: 2),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "${skill.toUpperCase()} COMPLETED",
+                      style: DesignSystem.headingStyle(buildContext: context, fontSize: 18, color: DesignSystem.primary(context)),
                     ),
-                    child: Column(
-                      children: [
-                        Text("Score", style: DesignSystem.labelStyle(buildContext: context)),
-                        Text(
-                          score?.toStringAsFixed(0) ?? "--",
-                          style: DesignSystem.headingStyle(buildContext: context, fontSize: 32).copyWith(
-                            color: isZero ? Colors.red : Colors.white,
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: isZero ? Colors.red : DesignSystem.primary(context), width: 2),
+                      ),
+                      child: Column(
+                        children: [
+                          Text("Score", style: DesignSystem.labelStyle(buildContext: context)),
+                          Text(
+                            score?.toStringAsFixed(0) ?? "--",
+                            style: DesignSystem.headingStyle(buildContext: context, fontSize: 32).copyWith(
+                              color: isZero ? Colors.red : Colors.white,
+                            ),
                           ),
-                        ),
-                        Text("/30", style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
-                      ],
+                          Text("/30", style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    feedback,
-                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14).copyWith(
-                      color: isZero ? Colors.white60 : Colors.white,
+                    const SizedBox(height: 20),
+                    Text(
+                      feedback,
+                      style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14).copyWith(
+                        color: isZero ? Colors.white60 : Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  PrimaryButton(
-                    text: skill == 'speaking' ? "VIEW FINAL RESULTS" : "CONTINUE",
-                    onPressed: () {
-                      Navigator.pop(context);
-                      if (skill == 'reading') {
-                        ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.listening, const Duration(minutes: 2));
-                        _startStageTimer();
-                      } else if (skill == 'listening') {
-                        ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.writing, const Duration(minutes: 20));
-                        _startStageTimer();
-                      } else if (skill == 'writing') {
-                        ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.speaking, const Duration(minutes: 2));
-                        _startStageTimer();
-                      } else {
-                        // Finished speaking, go to final results
-                        _showGradingOverlay();
-                      }
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    PrimaryButton(
+                      text: skill == 'speaking' ? "VIEW FINAL RESULTS" : "CONTINUE",
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (skill == 'reading') {
+                          ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.listening, const Duration(minutes: 2));
+                          _startStageTimer();
+                        } else if (skill == 'listening') {
+                          ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.writing, const Duration(minutes: 20));
+                          _startStageTimer();
+                        } else if (skill == 'writing') {
+                          ref.read(toeflTaskProvider.notifier).setStage(ToeflStage.speaking, const Duration(minutes: 2));
+                          _startStageTimer();
+                        } else {
+                          // Finished speaking, go to final results
+                          _showGradingOverlay();
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -146,37 +148,47 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
 
 
   void _showGradingOverlay() {
+    // The result is already fetched inside submitSection(speaking),
+    // so check immediately before showing any overlay.
+    final currentState = ref.read(toeflTaskProvider);
+    if (currentState.result != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
+      );
+      return;
+    }
+
+    // Result not yet available — show a brief loading overlay and poll fast.
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: GlassContainer(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Color(0xFF3B82F6)),
-                const SizedBox(height: 24),
-                Text(
-                  "AI is Grading Your TOEFL Response",
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Analyzing coherence, integrated reasoning, and language use...",
-                  style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+        backgroundColor: Colors.transparent,
+        child: GlassContainer(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: DesignSystem.primary(context)),
+              const SizedBox(height: 24),
+              Text(
+                "Finalizing Your Results",
+                style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Almost done...",
+                style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
-      
+      ),
     );
 
-    // Start polling or wait for result
     _checkResult();
   }
 
@@ -196,7 +208,8 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
         break;
       }
-      await Future.delayed(const Duration(seconds: 2));
+      // Poll every 500ms instead of 2s — result is usually already ready.
+      await Future.delayed(const Duration(milliseconds: 500));
     }
   }
 
@@ -257,7 +270,7 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.clock, size: 16, color: Color(0xFF3B82F6)),
+                Icon(LucideIcons.clock, size: 16, color: DesignSystem.primary(context)),
                 const SizedBox(width: 8),
                 Text(
                   _formatTime(state.stageTimeRemaining),
@@ -285,10 +298,10 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
           final isActive = index == currentIndex;
           final isCompleted = index < currentIndex;
           final color = isCompleted 
-              ? const Color(0xFF3B82F6) 
+              ? DesignSystem.primary(context) 
               : isActive 
-                  ? const Color(0xFF3B82F6) 
-                  : const Color(0xFF1E293B);
+                  ? DesignSystem.primary(context) 
+                  : DesignSystem.surfaceMediumColor(context);
                   
           return Expanded(
             child: Container(
@@ -310,15 +323,15 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
     final state = ref.watch(toeflTaskProvider);
 
     if (state.isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0F172A),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))),
+      return Scaffold(
+        backgroundColor: DesignSystem.themeBackground(context),
+        body: Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))),
       );
     }
 
     if (state.error != null && state.testId == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: DesignSystem.themeBackground(context),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -336,7 +349,7 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: DesignSystem.themeBackground(context),
       body: Stack(
         children: [
           Positioned(
@@ -347,10 +360,10 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF3B82F6).withValues(alpha: 0.05),
+                color: DesignSystem.primary(context).withValues(alpha: 0.05),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF3B82F6).withValues(alpha: 0.05),
+                    color: DesignSystem.primary(context).withValues(alpha: 0.05),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -370,7 +383,7 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: state.isSubmitting 
-                    ? const SizedBox(height: 50, child: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))))
+                    ? SizedBox(height: 50, child: Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))))
                     : PrimaryButton(
                         text: state.currentStage == ToeflStage.speaking ? "FINISH ASSESSMENT" : "CONTINUE TO NEXT SECTION",
                         onPressed: _nextStage,

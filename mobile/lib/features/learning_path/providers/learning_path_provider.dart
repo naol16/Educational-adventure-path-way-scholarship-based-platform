@@ -43,51 +43,67 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
   final LearningPathApiService _api;
   final TokenStorage _storage;
 
+  /// Loads both IELTS and TOEFL paths in parallel on startup.
   Future<void> init() async {
     state = state.copyWith(isLoading: true);
-    final savedExam = await _storage.readSelectedExam();
-    
-    // We try to fetch both if they exist
-    final path = await _api.fetchMyPath();
-    
-    if (path != null) {
-      if (path.examType.toUpperCase() == 'IELTS') {
-        state = state.copyWith(
-          ieltsPath: path,
-          activeExam: savedExam ?? 'IELTS',
-          isLoading: false,
-        );
-      } else {
-        state = state.copyWith(
-          toeflPath: path,
-          activeExam: savedExam ?? 'TOEFL',
-          isLoading: false,
-        );
-      }
-    } else {
-      state = state.copyWith(isLoading: false);
+
+    // Fetch both exam paths concurrently — each is a separate DB row.
+    final results = await Future.wait([
+      _api.fetchMyPath(examType: 'IELTS').catchError((_) => null),
+      _api.fetchMyPath(examType: 'TOEFL').catchError((_) => null),
+    ]);
+
+    final ieltsPath = results[0];
+    final toeflPath = results[1];
+
+    // Activate whichever path was most recently created (has content).
+    // Priority: IELTS first if both exist; otherwise whichever is non-null.
+    String activeExam = 'IELTS';
+    if (ieltsPath == null && toeflPath != null) {
+      activeExam = 'TOEFL';
+    } else if (ieltsPath != null) {
+      activeExam = 'IELTS';
     }
+
+    state = state.copyWith(
+      ieltsPath: ieltsPath,
+      toeflPath: toeflPath,
+      activeExam: activeExam,
+      isLoading: false,
+    );
   }
 
+  /// Switches the active exam tab and fetches that path if not already loaded.
   Future<void> switchExam(String examType) async {
-    state = state.copyWith(activeExam: examType);
-    await _storage.writeSelectedExam(examType);
-    // Reload active path to ensure it's fresh
-    await reload();
-  }
+    final upper = examType.toUpperCase();
+    state = state.copyWith(activeExam: upper);
 
-  Future<void> reload() async {
-    state = state.copyWith(isLoading: true);
-    try {
-      final path = await _api.fetchMyPath(); // Backend should return based on user profile or we might need specific param
-      if (path != null) {
-        if (path.examType.toUpperCase() == 'IELTS') {
+    // Fetch the target path if we don't have it yet (lazy load).
+    final alreadyLoaded = upper == 'IELTS' ? state.ieltsPath : state.toeflPath;
+    if (alreadyLoaded == null) {
+      state = state.copyWith(isLoading: true);
+      try {
+        final path = await _api.fetchMyPath(examType: upper);
+        if (upper == 'IELTS') {
           state = state.copyWith(ieltsPath: path, isLoading: false);
         } else {
           state = state.copyWith(toeflPath: path, isLoading: false);
         }
-      } else {
+      } catch (_) {
         state = state.copyWith(isLoading: false);
+      }
+    }
+  }
+
+  /// Reloads only the currently active exam's path from the server.
+  Future<void> reload() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final path = await _api.fetchMyPath(examType: state.activeExam);
+      if (state.activeExam == 'IELTS') {
+        state = state.copyWith(ieltsPath: path, isLoading: false);
+      } else {
+        state = state.copyWith(toeflPath: path, isLoading: false);
       }
     } catch (e) {
       state = state.copyWith(isLoading: false);
@@ -111,9 +127,9 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
         isNote: isNote,
         questionIndex: questionIndex,
       );
-      
-      // Refresh data silently
-      final newData = await _api.fetchMyPath();
+
+      // Silently refresh only the active exam's path.
+      final newData = await _api.fetchMyPath(examType: state.activeExam);
       if (newData != null) {
         if (newData.examType.toUpperCase() == 'IELTS') {
           state = state.copyWith(ieltsPath: newData);
@@ -122,8 +138,6 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
         }
       }
     } catch (e) {
-      // If refresh fails, we can either keep old state or show error
-      // For progress, let's just log it and keep current state
       print("Error marking progress: $e");
     }
   }

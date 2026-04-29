@@ -18,7 +18,8 @@ import 'package:mobile/features/learning_path/screens/toefl_diagnostic_screen.da
 
 class DiagnosticAssessmentScreen extends ConsumerStatefulWidget {
   final bool force;
-  const DiagnosticAssessmentScreen({super.key, this.force = false});
+  final String? initialExam;
+  const DiagnosticAssessmentScreen({super.key, this.force = false, this.initialExam});
 
   @override
   ConsumerState<DiagnosticAssessmentScreen> createState() => _DiagnosticAssessmentScreenState();
@@ -48,6 +49,9 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
   @override
   void initState() {
     super.initState();
+    if (widget.initialExam != null) {
+      _selectedExam = widget.initialExam!;
+    }
     if (!widget.force) {
       // If we are not forcing a retake, we could check if they already have an assessment.
       // But the provider already does this.

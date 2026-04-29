@@ -118,6 +118,17 @@ class AssessmentApiService {
     return decodeJsonObject(response);
   }
 
+  Future<Map<String, dynamic>> getProgress({String? examType}) async {
+    final path = examType != null
+        ? '/api/assessment/progress?examType=$examType'
+        : '/api/assessment/progress';
+    final response = await _api.get(path, auth: true);
+    if (response.statusCode != 200) {
+      throwForResponse(response, fallback: 'Failed to get progress');
+    }
+    return decodeJsonObject(response);
+  }
+
   Future<void> reset() async {
     final response = await _api.post(
       '/api/assessment/reset',

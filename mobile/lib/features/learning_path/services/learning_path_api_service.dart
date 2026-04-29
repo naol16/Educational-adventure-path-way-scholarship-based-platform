@@ -8,10 +8,12 @@ class LearningPathApiService {
 
   final ApiClient _api;
 
-  /// `GET /api/learning-path/my-path` (authenticated).
+  /// `GET /api/learning-path/my-path?examType=IELTS` (authenticated).
+  /// Pass [examType] to fetch a specific exam's path (IELTS or TOEFL).
   /// Returns `null` when the server sends `"data": null` (no path yet).
-  Future<FormattedLearningPath?> fetchMyPath() async {
-    final response = await _api.get('/api/learning-path/my-path', auth: true);
+  Future<FormattedLearningPath?> fetchMyPath({String? examType}) async {
+    final query = examType != null ? '?examType=${examType.toUpperCase()}' : '';
+    final response = await _api.get('/api/learning-path/my-path$query', auth: true);
     if (response.statusCode == 404) {
       throwForResponse(response, fallback: 'Profile not found');
     }

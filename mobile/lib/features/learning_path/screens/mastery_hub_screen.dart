@@ -46,10 +46,14 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   void _startAssessment({bool force = false}) async {
+    final activeExam = ref.read(learningPathProvider).activeExam;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DiagnosticAssessmentScreen(force: force),
+        builder: (context) => DiagnosticAssessmentScreen(
+          force: force,
+          initialExam: activeExam,
+        ),
       ),
     );
   }
@@ -184,7 +188,12 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   Widget _buildHubContent(BuildContext context, FormattedLearningPath path, Color primaryColor) {
     final sectionData = path.skills[_selectedTab.toLowerCase()];
     final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder score
-    final missions = AdaptivePathGenerator.filterMissions(sectionData?.missions ?? [], _selectedTab, adaptiveLevel);
+    final missions = AdaptivePathGenerator.filterMissions(
+      sectionData?.missions ?? [],
+      _selectedTab,
+      adaptiveLevel,
+      examType: path.examType,
+    );
     final videos = sectionData?.videos ?? [];
 
     return SingleChildScrollView(
@@ -357,9 +366,9 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                 File("C:\\Users\\hp\\.gemini\\antigravity\\brain\\3d9cdb31-2c9e-4646-b2a1-ce007a9bfd5a\\ultimate_mastery_adventure_banner_1776986514992.png"),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) => Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                      colors: [DesignSystem.themeBackground(context), DesignSystem.overlayBackground(context)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -443,7 +452,11 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                       onPressed: () {
                          Navigator.push(
                            context,
-                           MaterialPageRoute(builder: (context) => const MockExamScreen()),
+                           MaterialPageRoute(
+                             builder: (context) => MockExamScreen(
+                               initialExamType: ref.read(learningPathProvider).activeExam,
+                             ),
+                           ),
                          );
                       },
                     ),

@@ -45,7 +45,7 @@ class ToeflIntegratedView extends ConsumerWidget {
           Text(
             "READING",
             style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(
-              color: const Color(0xFF3B82F6),
+              color: DesignSystem.primary(context),
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
@@ -100,7 +100,7 @@ class ToeflIntegratedView extends ConsumerWidget {
           Text(
             "LISTENING",
             style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(
-              color: const Color(0xFF3B82F6),
+              color: DesignSystem.primary(context),
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
@@ -120,7 +120,7 @@ class ToeflIntegratedView extends ConsumerWidget {
               hintText: "Take notes while listening...",
               hintStyle: const TextStyle(color: Colors.white10),
               filled: true,
-              fillColor: const Color(0xFF1E293B),
+              fillColor: DesignSystem.surfaceMediumColor(context),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
@@ -163,7 +163,7 @@ class ToeflIntegratedView extends ConsumerWidget {
           Text(
             "WRITING",
             style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(
-              color: const Color(0xFF3B82F6),
+              color: DesignSystem.primary(context),
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
             ),
@@ -176,8 +176,8 @@ class ToeflIntegratedView extends ConsumerWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: () => _showPassageOverlay(state, context),
-            icon: const Icon(LucideIcons.eye, size: 14, color: Color(0xFF3B82F6)),
-            label: const Text("VIEW READING PASSAGE", style: TextStyle(color: Color(0xFF3B82F6), fontSize: 12, fontWeight: FontWeight.bold)),
+            icon: Icon(LucideIcons.eye, size: 14, color: DesignSystem.primary(context)),
+            label: Text("VIEW READING PASSAGE", style: TextStyle(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -187,7 +187,7 @@ class ToeflIntegratedView extends ConsumerWidget {
               hintText: "Type your response here...",
               hintStyle: DesignSystem.bodyStyle(buildContext: context, color: Colors.white24),
               filled: true,
-              fillColor: const Color(0xFF1E293B),
+              fillColor: DesignSystem.surfaceMediumColor(context),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -273,7 +273,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
               Text(
                 "SPEAKING",
                 style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(
-                  color: const Color(0xFF3B82F6),
+                  color: DesignSystem.primary(context),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
@@ -292,7 +292,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
                       const SizedBox(height: 8),
                       Text(
                         "00:${_prepSeconds.toString().padLeft(2, '0')}",
-                        style: GoogleFonts.jetBrainsMono(color: const Color(0xFF3B82F6), fontSize: 32, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.jetBrainsMono(color: DesignSystem.primary(context), fontSize: 32, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       TextButton(
@@ -332,9 +332,9 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: state.isRecording ? Colors.red.withValues(alpha: 0.1) : const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                            color: state.isRecording ? Colors.red.withValues(alpha: 0.1) : DesignSystem.primary(context).withValues(alpha: 0.1),
                             border: Border.all(
-                              color: state.isRecording ? Colors.red : const Color(0xFF3B82F6),
+                              color: state.isRecording ? Colors.red : DesignSystem.primary(context),
                               width: 2,
                             ),
                             boxShadow: state.isRecording ? [
@@ -344,7 +344,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
                           child: Icon(
                             state.isRecording ? LucideIcons.stopCircle : LucideIcons.mic,
                             size: 40,
-                            color: state.isRecording ? Colors.red : const Color(0xFF3B82F6),
+                            color: state.isRecording ? Colors.red : DesignSystem.primary(context),
                           ),
                         ),
                       ),
@@ -388,7 +388,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
 
   Widget _buildOption(BuildContext context, String text, {required String skill, required String questionId, required ToeflTaskState state, required WidgetRef ref}) {
     final isSelected = state.responses[skill]?[questionId] == text;
-    const primaryColor = Color(0xFF3B82F6);
+    final primaryColor = DesignSystem.primary(context);
     
     return GestureDetector(
       onTap: () => ref.read(toeflTaskProvider.notifier).updateQuestionResponse(skill, questionId, text),
@@ -396,7 +396,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor.withValues(alpha: 0.1) : const Color(0xFF1E293B),
+          color: isSelected ? primaryColor.withValues(alpha: 0.1) : DesignSystem.surfaceMediumColor(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? primaryColor : Colors.transparent,
@@ -439,7 +439,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
   void _showPassageOverlay(ToeflTaskState state, BuildContext context) {
      showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: DesignSystem.themeBackground(context),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24.0),
@@ -448,7 +448,7 @@ class _SpeakingSectionState extends State<_SpeakingSection> {
           children: [
              Text(
               "READING PASSAGE",
-              style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(color: const Color(0xFF3B82F6), fontWeight: FontWeight.bold),
+              style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(color: DesignSystem.primary(context), fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Expanded(
