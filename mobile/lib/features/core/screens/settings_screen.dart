@@ -58,7 +58,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        _buildActiveContent(user),
+                        _buildActiveContent(),
+                        const SizedBox(height: 30),
+                        _buildLogoutSection(),
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -151,7 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildActiveContent(dynamic user) {
+  Widget _buildActiveContent() {
     switch (_activeTab) {
       case 'Appearance':
         return _buildAppearanceSection();
@@ -391,5 +393,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-
+  Widget _buildLogoutSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle("Account Action", "Sign out of your session"),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => ref.read(authProvider.notifier).logout(),
+            icon: const Icon(LucideIcons.logOut, size: 18),
+            label: const Text("Log Out", style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.withValues(alpha: 0.1),
+              foregroundColor: Colors.red,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.red.withValues(alpha: 0.2)),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

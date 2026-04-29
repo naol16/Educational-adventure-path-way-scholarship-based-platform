@@ -53,7 +53,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     if (state.hasError) throw state.error!;
   }
 
-  Future<void> loginWithGoogle() async {
+  Future<void> loginWithGoogle({String? role}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final googleSignIn = GoogleSignIn(
@@ -77,7 +77,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
         throw Exception('Failed to obtain Google ID Token');
       }
 
-      final session = await _authService.googleLogin(idToken: idToken);
+      final session = await _authService.googleLogin(idToken: idToken, role: role);
       return session.user;
     });
   }
@@ -85,6 +85,13 @@ class AuthNotifier extends AsyncNotifier<User?> {
   Future<void> logout() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // 1. Sign out from Google if applicable
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+      
+      // 2. Clear backend session and local tokens
       await _authService.logout();
       return null;
     });

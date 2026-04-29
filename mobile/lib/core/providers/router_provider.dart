@@ -13,6 +13,10 @@ import 'package:mobile/features/core/screens/settings_screen.dart';
 import 'package:mobile/features/core/screens/notification_screen.dart';
 import 'package:mobile/features/core/screens/edit_profile_screen.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_layout_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
 
 /// Notifies [GoRouter] when [authProvider] changes so top-level [redirect] runs again.
 final authRouterRefreshProvider = Provider<AuthRouterRefresh>((ref) {
@@ -82,11 +86,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const StudentOnboardingScreen(),
+        builder: (context, state) {
+          final auth = ref.watch(authProvider).valueOrNull;
+          if (auth?.isCounselor ?? false) {
+            return const CounselorOnboardingScreen();
+          }
+          return const StudentOnboardingScreen();
+        },
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const MainLayoutScreen(),
+        builder: (context, state) {
+          final auth = ref.watch(authProvider).valueOrNull;
+          if (auth?.isCounselor ?? false) {
+            return const CounselorLayoutScreen();
+          }
+          return const MainLayoutScreen();
+        },
+      ),
+      GoRoute(
+        path: '/counselor-profile',
+        builder: (context, state) => const CounselorProfileScreen(),
+      ),
+      GoRoute(
+        path: '/counselor-wallet',
+        builder: (context, state) => const CounselorWalletScreen(),
       ),
       GoRoute(
         path: '/settings',

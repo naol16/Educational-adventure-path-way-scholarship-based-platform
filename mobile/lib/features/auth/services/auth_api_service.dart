@@ -116,13 +116,16 @@ class AuthApiService {
     return session;
   }
 
-  Future<AuthSession> googleLogin({required String idToken}) async {
+  Future<AuthSession> googleLogin({required String idToken, String? role}) async {
     final uri = Uri.parse(ApiConfig.apiPath('/api/auth/google-login'));
     final headers = const {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    final body = {'credential': idToken};
+    final body = {
+      'credential': idToken,
+      if (role != null) 'role': role,
+    };
     logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
       uri,

@@ -202,7 +202,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               onPressed: _submitting ? null : () async {
                                 setState(() => _submitting = true);
                                 try {
-                                  await ref.read(authProvider.notifier).loginWithGoogle();
+                                  await ref.read(authProvider.notifier).loginWithGoogle(role: _roleForApi);
                                 } catch (e) {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
