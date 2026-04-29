@@ -560,7 +560,7 @@ export class AssessmentService {
       "You are a strict JSON generator. Return ONLY valid JSON objects. NO markdown, NO preamble, NO explanations."
     );
 
-    const chain = groq70b.pipe(new StringOutputParser());
+    const chain = groq8b.pipe(new StringOutputParser());
     
     const responseText = await chain.invoke(
       [systemInstruction, new HumanMessage({ content: textPrompt })],
@@ -590,7 +590,7 @@ export class AssessmentService {
 
     const promptTemplate = PromptTemplate.fromTemplate(`
       Role: STRICT Senior {skill} Examiner
-      Task: Evaluate the student's {skill} section for an English Proficiency Exam.
+      Task: Evaluate the student's {skill} section for a {examType} Proficiency Exam.
       
       Blueprint (Grading Key): {blueprint}
       Student Response: {response}
@@ -659,8 +659,23 @@ export class AssessmentService {
       ? 'CRITICAL: Use the DETERMINISTIC SCORE provided above. If student gave no answers, the score MUST be 0. DO NOT deviate from this number.'
       : 'Evaluate the response qualitatively. Be extremely strict. If the response is empty, irrelevant, or too short, assign a score of 0.';
 
+    if (skill === "writing" && (!skillResponse || (typeof skillResponse === 'string' && skillResponse.trim().length < 10) || (typeof skillResponse === 'object' && Object.keys(skillResponse).length === 0))) {
+        console.log(`[AssessmentService] Empty response for writing. Auto-scoring 0.`);
+        return {
+          score: 0,
+          feedback: "No written response was detected. You must provide a structured essay to receive a score.",
+          learning_mode: {
+             sample_answer: "An ideal response would be a multi-paragraph essay addressing the prompt with specific examples.",
+             tips: ["Plan your essay before writing.", "Focus on grammar and varied vocabulary."]
+          }
+        };
+    }
+
+    const examType = blueprint.data?.exam_summary?.type || "IELTS";
+
     const textPrompt = await promptTemplate.format({
       skill,
+      examType,
       blueprint: JSON.stringify(skillBlueprint),
       response: JSON.stringify(skillResponse),
       deterministicScore: deterministicScore !== null ? deterministicScore.toString() : "N/A",
@@ -694,6 +709,19 @@ export class AssessmentService {
         console.error("Transcription failed:", err);
         transcriptionText = "[AUDIO ERROR: COULD NOT TRANSCRIBE]";
       }
+    }
+
+    // --- Voice Detection check for 0 score (Now that transcriptionText is declared and populated) ---
+    if (skill === "speaking" && (!transcriptionText || transcriptionText.trim().length < 5)) {
+       console.log(`[AssessmentService] No voice detected for speaking. Auto-scoring 0.`);
+       return {
+         score: 0,
+         feedback: "No clear spoken response was detected. Please ensure your microphone is working and you speak clearly for the full duration.",
+         learning_mode: { 
+            sample_response: "A clear response should restate the main points of the reading and lecture, showing how they conflict or agree.",
+            tips: ["Speak clearly and at a steady pace.", "Use transition words like 'however' or 'furthermore'."]
+         }
+       };
     }
 
     const chain = selectedModel.pipe(new StringOutputParser());
@@ -810,7 +838,7 @@ export class AssessmentService {
       4. NO MARKDOWN (no \`\`\`json blocks).
     `);
 
-    const chain = groq70b.pipe(new StringOutputParser());
+    const chain = geminiModel.pipe(new StringOutputParser());
     let response: string;
     try {
       response = await chain.invoke(await prompt.format({

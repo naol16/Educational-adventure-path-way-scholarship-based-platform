@@ -31,11 +31,14 @@ export class AssessmentController {
         return;
       }
 
+      // Gate: only block if the student already has an active learning path with < 100% progress
+      // AND this is not a forced retake. First-time diagnostics (no path yet) are always allowed.
+      // The check is scoped to the requested examType so IELTS progress never blocks TOEFL.
       if (req.user?.id && !req.body?.force) {
         const student = await StudentRepository.findByUserId(req.user.id);
         if (student) {
-          const path = await LearningPathRepository.findByStudentId(student.id);
-          if (path && path.currentProgressPercentage < 100) {
+          const path = await LearningPathRepository.findByStudentId(student.id, examTypeUpper);
+          if (path && path.currentProgressPercentage !== null && path.currentProgressPercentage < 100) {
             res.status(403).json({
               error: "Learning path completion required.",
               message: "You must complete 100% of your learning path before generating a mock exam.",
