@@ -21,7 +21,13 @@ export class LearningPathController {
                 return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
-            const path = await LearningPathService.getFormattedPath(student.id);
+            // Accept ?examType=IELTS or ?examType=TOEFL to fetch each path independently.
+            // Without it, falls back to returning the most recent path (any exam type).
+            const examType = typeof req.query.examType === 'string'
+                ? req.query.examType.toUpperCase()
+                : undefined;
+
+            const path = await LearningPathService.getFormattedPath(student.id, examType);
 
             return ResponseHelper.success(res, path);
         } catch (error: any) {

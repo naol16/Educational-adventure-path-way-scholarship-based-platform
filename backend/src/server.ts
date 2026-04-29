@@ -49,6 +49,17 @@ async function start() {
     // await seedScholarshipSources();
     // startScholarshipCron();
 
+    console.log(`
+===================================================
+🚀 BACKEND IS FULLY RUNNING AND READY 🚀
+===================================================
+✅ Server listening on port ${finalPort}
+✅ Database Connected Successfully
+✅ WebSockets Initialized
+✅ Workers Active
+===================================================
+    `);
+
   } catch (err) {
     console.error("Failed to connect to database:", err);
   }
