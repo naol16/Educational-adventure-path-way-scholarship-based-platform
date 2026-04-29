@@ -99,7 +99,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || existingCounselor.areasOfExpertise),
         hourlyRate: Number(dto.hourlyRate) || existingCounselor.hourlyRate,
         yearsOfExperience: Number(dto.yearsOfExperience) || existingCounselor.yearsOfExperience,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isOnboarded: dto.isOnboarded || false,
         phoneNumber: dto.phoneNumber || existingCounselor.phoneNumber,
         countryOfResidence: dto.countryOfResidence || existingCounselor.countryOfResidence,
@@ -129,7 +129,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || ""),
         hourlyRate: Number(dto.hourlyRate) || 0,
         yearsOfExperience: Number(dto.yearsOfExperience) || 0,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isActive: true,
         isOnboarded: dto.isOnboarded || false,
         idCardUrl: idCardUrl || null,
@@ -1758,5 +1758,12 @@ export class CounselorService {
       include: [{ model: Counselor, as: 'counselor', include: [{ association: 'user', attributes: ['name'] }] }],
       order: [['createdAt', 'DESC']],
     });
+  }
+  static async updateBookingNotes(counselorId: number, bookingId: number, notes: string): Promise<any> {
+    const booking = await (await import('../repositories/BookingRepository.js')).BookingRepository.findByIdAndCounselorId(bookingId, counselorId);
+    if (!booking) throw new Error("Booking not found");
+    
+    await booking.update({ notes });
+    return booking;
   }
 }

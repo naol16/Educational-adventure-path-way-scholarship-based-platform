@@ -82,5 +82,6 @@ router.post('/dashboard/documents/share', validate(shareDocumentValidation), Cou
 
 router.get('/bookings/upcoming', CounselorController.getUpcomingBookings);
 router.patch('/bookings/:id/status', validate(idParamValidation), validate(updateBookingStatusValidation), CounselorController.updateBookingStatus);
+router.patch('/bookings/:id/notes', validate(idParamValidation), CounselorController.updateBookingNotes);
 
 export default router;

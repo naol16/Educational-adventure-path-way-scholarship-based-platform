@@ -416,4 +416,12 @@ export class CounselorController {
       next(error);
     }
   }
+  static async updateBookingNotes(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.updateBookingNotes((req as any).counselor.id, Number(req.params.id), req.body.notes);
+      res.status(200).json({ success: true, message: 'Notes updated successfully', data });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
