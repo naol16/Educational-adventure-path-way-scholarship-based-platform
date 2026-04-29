@@ -21,6 +21,7 @@ import { Footer } from "@/components/layout/Footer";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { AIChatBot } from "@/components/AIChatBot";
 
 const features = [
   {
@@ -317,6 +318,7 @@ export const LandingPageContent = () => {
       </main>
 
       <Footer />
+      <AIChatBot />
     </div>
   );
 };

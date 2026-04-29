@@ -35,6 +35,7 @@ import {
 import { motion } from "framer-motion";
 import { trackScholarship, untrackScholarship, updateScholarshipStatus } from "../api/tracking";
 import { toast } from "react-hot-toast";
+import { AIChatBot } from "@/components/AIChatBot";
 
 interface CriteriaMatch {
   label: string;
@@ -70,9 +71,10 @@ export default function ScholarshipDetailsPage() {
         try {
             setLoading(true);
             const data = await getScholarship(scholarshipId);
-        setTrackingInfo(data.tracking || null);
-        setError(null);
-      } catch (err: any) {
+            setScholarship(data);
+            setTrackingInfo(data.tracking || null);
+            setError(null);
+        } catch (err: any) {
         console.error("Failed to fetch scholarship details:", err);
         setError("Failed to load scholarship details. Please try again later.");
       } finally {
@@ -492,6 +494,7 @@ export default function ScholarshipDetailsPage() {
            </motion.div>
         </div>
       </div>
+      <AIChatBot scholarshipId={scholarship.id} />
     </div>
   );
 }

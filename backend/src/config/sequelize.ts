@@ -30,6 +30,7 @@ import {
   CounselorPayout,
   CounselorWalletTransaction,
   UserWarning,
+  AIChatMessage,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -92,6 +93,7 @@ export const sequelize = new Sequelize({
     CounselorPayout,
     CounselorWalletTransaction,
     UserWarning,
+    AIChatMessage,
   ], // Add all models here
 } as SequelizeOptions);
 
