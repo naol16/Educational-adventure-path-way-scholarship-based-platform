@@ -37,15 +37,58 @@ class CounselorService {
     return [];
   }
 
-  Future<Booking?> createBooking(int counselorId, int slotId, {String? notes}) async {
+  Future<Map<String, dynamic>?> createBooking(int counselorId, int slotId, {String? notes}) async {
     final response = await _apiClient.post('/api/counselors/bookings', body: {
       'counselorId': counselorId,
       'slotId': slotId,
       'notes': notes,
     });
     if (response.statusCode == 201) {
-      return Booking.fromJson(jsonDecode(response.body)['data']);
+      final body = jsonDecode(response.body);
+      final data = body['data'];
+      return {
+        'booking': Booking.fromJson(data['booking']),
+        'checkoutUrl': data['checkoutUrl'],
+      };
     }
     return null;
+  }
+
+  Future<List<Counselor>> getDirectory({String? specialization, String? country}) async {
+    final response = await _apiClient.get('/api/counselors/directory', query: {
+      if (specialization != null) 'specialization': specialization,
+      if (country != null) 'country': country,
+    });
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body)['data'];
+      return data.map((json) => Counselor.fromJson(json)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>?> verifyPayment(String txRef) async {
+    final response = await _apiClient.get('/api/payments/verify/$txRef');
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return null;
+  }
+
+  Future<List<Booking>> getMyBookings() async {
+    final response = await _apiClient.get('/api/counselors/me/bookings');
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body)['data'];
+      return data.map((json) => Booking.fromJson(json)).toList();
+    }
+    return [];
+  }
+
+  Future<List<Review>> getCounselorReviews(int counselorId) async {
+    final response = await _apiClient.get('/api/counselors/$counselorId/reviews');
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body)['data'];
+      return data.map((json) => Review.fromJson(json)).toList();
+    }
+    return [];
   }
 }

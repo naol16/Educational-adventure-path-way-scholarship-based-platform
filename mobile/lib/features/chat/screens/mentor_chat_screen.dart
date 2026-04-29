@@ -39,7 +39,12 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen> {
   void initState() {
     super.initState();
     // Connect to socket when entering the chat screen
-    Future.microtask(() => ref.read(socketServiceProvider).connect());
+    Future.microtask(() {
+      ref.read(socketServiceProvider).connect();
+      ref.read(chatServiceProvider).markAsRead(widget.conversationId);
+      // Invalidate conversations list so the hub screen updates unread count
+      ref.invalidate(conversationsProvider);
+    });
   }
 
   void _onTextChanged(String text) {
@@ -58,7 +63,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen> {
     _typingTimer?.cancel();
     ref.read(chatStateProvider(widget.conversationId).notifier).sendTyping(false);
     
-    await ref.read(chatServiceProvider).sendMessage(widget.otherUser.id, text);
+    ref.read(socketServiceProvider).sendMessage(widget.conversationId, widget.otherUser.id, text);
     // Real-time update comes via Socket.io -> ChatNotifier
   }
 
@@ -67,7 +72,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen> {
     if (result != null && result.files.single.path != null) {
       final url = await ref.read(chatServiceProvider).uploadFile(result.files.single.path!);
       if (url != null) {
-        await ref.read(chatServiceProvider).sendMessage(widget.otherUser.id, "Shared a file: $url");
+        ref.read(socketServiceProvider).sendMessage(widget.conversationId, widget.otherUser.id, "Shared a file: $url");
       }
     }
   }

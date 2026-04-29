@@ -61,3 +61,32 @@ class Booking {
     );
   }
 }
+
+class Review {
+  final int id;
+  final int studentId;
+  final String studentName;
+  final int rating;
+  final String comment;
+  final DateTime createdAt;
+
+  Review({
+    required this.id,
+    required this.studentId,
+    required this.studentName,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      id: json['id'],
+      studentId: json['studentId'],
+      studentName: json['student']?['name'] ?? 'Anonymous',
+      rating: json['rating'],
+      comment: json['comment'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
+    );
+  }
+}

@@ -19,3 +19,7 @@ final counselorDetailsProvider = FutureProvider.family<Counselor?, int>((ref, id
 final availableSlotsProvider = FutureProvider.family<List<AvailabilitySlot>, int>((ref, counselorId) async {
   return ref.watch(counselorServiceProvider).getAvailableSlots(counselorId);
 });
+
+final counselorReviewsProvider = FutureProvider.family<List<Review>, int>((ref, counselorId) async {
+  return ref.watch(counselorServiceProvider).getCounselorReviews(counselorId);
+});

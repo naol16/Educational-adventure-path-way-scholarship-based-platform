@@ -12,6 +12,7 @@ import 'package:mobile/features/chat/models/chat_models.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/features/mentors/screens/mentor_profile_screen.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
+import 'package:mobile/features/mentors/screens/student_bookings_screen.dart';
 
 class MentorsHubScreen extends ConsumerStatefulWidget {
   const MentorsHubScreen({super.key});
@@ -65,10 +66,23 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
               Text("Learn from the best in the field", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 14)),
             ],
           ),
-          GlassContainer(
-            padding: const EdgeInsets.all(10),
-            borderRadius: 12,
-            child: Icon(LucideIcons.search, color: DesignSystem.mainText(context), size: 20),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentBookingsScreen())),
+                child: GlassContainer(
+                  padding: const EdgeInsets.all(10),
+                  borderRadius: 12,
+                  child: Icon(LucideIcons.calendar, color: DesignSystem.mainText(context), size: 20),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GlassContainer(
+                padding: const EdgeInsets.all(10),
+                borderRadius: 12,
+                child: Icon(LucideIcons.search, color: DesignSystem.mainText(context), size: 20),
+              ),
+            ],
           ),
         ],
       ),

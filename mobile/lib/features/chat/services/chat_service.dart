@@ -58,4 +58,8 @@ class ChatService {
     }
     return null;
   }
+
+  Future<void> markAsRead(int conversationId) async {
+    await _apiClient.patch('/api/chat/read/$conversationId');
+  }
 }

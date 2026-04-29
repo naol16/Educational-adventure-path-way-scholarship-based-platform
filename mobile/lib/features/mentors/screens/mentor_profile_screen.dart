@@ -10,6 +10,9 @@ import 'package:mobile/features/mentors/models/counselor.dart';
 import 'package:mobile/features/chat/providers/chat_providers.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
 import 'package:mobile/features/mentors/widgets/booking_bottom_sheet.dart';
+import 'package:mobile/features/mentors/providers/mentors_providers.dart';
+import 'package:mobile/features/mentors/models/booking_models.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile/models/user.dart';
 
 class MentorProfileScreen extends ConsumerWidget {
@@ -99,6 +102,16 @@ class MentorProfileScreen extends ConsumerWidget {
                         children: mentor.areasOfExpertise.map((e) => _buildExpertiseChip(context, e)).toList(),
                       ),
                       const SizedBox(height: 32),
+                      _buildSectionTitle(context, "Education"),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.graduationCap, color: DesignSystem.primary(context), size: 18),
+                          const SizedBox(width: 12),
+                          Text(mentor.universityName ?? "Top Tier University", style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 15)),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
                       _buildSectionTitle(context, "Specialized Countries"),
                       const SizedBox(height: 12),
                       Wrap(
@@ -106,6 +119,9 @@ class MentorProfileScreen extends ConsumerWidget {
                         runSpacing: 10,
                         children: mentor.specializedCountries.map((c) => _buildCountryChip(context, c)).toList(),
                       ),
+                      _buildSectionTitle(context, "Student Reviews"),
+                      const SizedBox(height: 12),
+                      _buildReviewsList(context, ref, mentor.id),
                       const SizedBox(height: 100), // Bottom padding for actions
                     ],
                   ),
@@ -272,9 +288,58 @@ class MentorProfileScreen extends ConsumerWidget {
               flex: 3,
               child: PrimaryButton(
                 onPressed: () => _openBookingSheet(context),
-                text: "Book Free Discovery Call",
+                text: "Book Counseling Session",
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewsList(BuildContext context, WidgetRef ref, int counselorId) {
+    final reviewsAsync = ref.watch(counselorReviewsProvider(counselorId));
+
+    return reviewsAsync.when(
+      data: (reviews) {
+        if (reviews.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Text("No reviews yet.", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+            ),
+          );
+        }
+        return Column(
+          children: reviews.map((r) => _buildReviewCard(context, r)).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text("Error loading reviews", style: TextStyle(color: Colors.red)),
+    );
+  }
+
+  Widget _buildReviewCard(BuildContext context, Review review) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(review.studentName ?? "Anonymous Student", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: DesignSystem.mainText(context))),
+                Row(
+                  children: List.generate(5, (i) => Icon(Icons.star, size: 12, color: i < review.rating ? Colors.amber : DesignSystem.labelText(context).withValues(alpha: 0.3))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(review.comment ?? "No comment provided.", style: GoogleFonts.inter(color: DesignSystem.mainText(context).withValues(alpha: 0.7), fontSize: 13, height: 1.4)),
+            const SizedBox(height: 4),
+            Text(DateFormat('MMM d, yyyy').format(review.createdAt), style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10)),
           ],
         ),
       ),

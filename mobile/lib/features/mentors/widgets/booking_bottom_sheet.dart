@@ -8,6 +8,7 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/mentors/models/booking_models.dart';
 import 'package:mobile/features/mentors/providers/mentors_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BookingBottomSheet extends ConsumerStatefulWidget {
   final int counselorId;
@@ -41,9 +42,17 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
       setState(() => _isBooking = false);
       if (result != null) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Booking confirmed for ${DateFormat('MMM d, jm').format(_selectedSlot!.startTime)}")),
-        );
+        final checkoutUrl = result['checkoutUrl'] as String?;
+        if (checkoutUrl != null) {
+          final uri = Uri.parse(checkoutUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Booking confirmed for ${DateFormat('MMM d, jm').format(_selectedSlot!.startTime)}")),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Failed to book session")),
@@ -127,7 +136,7 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
           const SizedBox(height: 24),
           PrimaryButton(
             onPressed: _selectedSlot != null && !_isBooking ? _confirmBooking : null,
-            text: _isBooking ? "Confirming..." : "Confirm Booking",
+            text: _isBooking ? "Confirming..." : "Confirm & Pay",
             isLoading: _isBooking,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom),
