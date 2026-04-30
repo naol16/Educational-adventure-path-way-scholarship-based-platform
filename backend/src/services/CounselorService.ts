@@ -598,8 +598,11 @@ export class CounselorService {
 
     await booking.update({ paymentId: payment.id });
 
-    // Assuming we want to redirect user back to a specific route
-    const returnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    // Use caller-supplied returnUrl (mobile deep link) or fall back to web URL
+    const defaultReturnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    const returnUrl = (dto as any).returnUrl
+      ? `${(dto as any).returnUrl}?bookingId=${booking.id}&tx_ref=${tx_ref}`
+      : defaultReturnUrl;
 
     const chapaResponse = await PaymentService.initializePayment(
       tx_ref,

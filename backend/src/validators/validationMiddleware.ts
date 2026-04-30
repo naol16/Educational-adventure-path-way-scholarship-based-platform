@@ -295,7 +295,7 @@ export const counselorDirectoryValidation = [
 
 export const createBookingValidation = [
   body("slotId").isInt({ min: 1 }).withMessage("slotId is required").toInt(),
-  body("notes").optional().isString().isLength({ max: 2000 }),
+  body("notes").optional({ nullable: true }).isString().isLength({ max: 2000 }),
 ];
 
 export const rescheduleBookingValidation = [
