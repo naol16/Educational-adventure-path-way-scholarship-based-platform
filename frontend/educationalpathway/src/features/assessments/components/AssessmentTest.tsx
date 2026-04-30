@@ -322,7 +322,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 pb-0">
       <div className="flex justify-between items-start mb-4 gap-4 flex-wrap">
-        <div><h1 className="h3">Mock Exam in Progress</h1><p className="text-xs text-muted-foreground">{examType} · {blueprint.exam_summary?.difficulty}</p></div>
+        <div><h1 className="h3">Mock Exam in Progress</h1><p className="text-xs text-muted-foreground">{examType} Protocol</p></div>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold ${isTimeLow ? "bg-red-50 text-red-600 animate-pulse" : "bg-muted"}`}>
           <Clock className="size-4" />{formatTime(timeLeft)}
         </div>
@@ -363,13 +363,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                       })}
                     </div>
                   </div>
-                  <div className="flex justify-between pt-8 border-t border-border/40">
-                    <Button variant="ghost" onClick={() => setCurrentQuestionIdx(prev => Math.max(0, prev - 1))} disabled={currentQuestionIdx === 0}><ArrowLeft className="mr-2" /> Previous</Button>
-                    <Button onClick={() => {
-                      if (currentQuestionIdx < (sections.reading?.questions?.length || 0) - 1) setCurrentQuestionIdx(prev => prev + 1);
-                      else handleSectionChange("listening");
-                    }} className={`${theme.primary} text-white`}>Continue <ArrowRight className="ml-2" /></Button>
-                  </div>
+                  {/* Redundant navigation buttons removed, footer handles navigation */}
                 </div>
               )}
             </div>
@@ -403,13 +397,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                       })}
                     </div>
                   </div>
-                  <div className="flex justify-between pt-8 border-t border-border/40">
-                    <Button variant="ghost" onClick={() => setCurrentQuestionIdx(prev => Math.max(0, prev - 1))} disabled={currentQuestionIdx === 0}><ArrowLeft className="mr-2" /> Previous</Button>
-                    <Button onClick={() => {
-                      if (currentQuestionIdx < (sections.listening?.questions?.length || 0) - 1) setCurrentQuestionIdx(prev => prev + 1);
-                      else handleSectionChange("writing");
-                    }} className={`${theme.primary} text-white`}>Continue <ArrowRight className="ml-2" /></Button>
-                  </div>
+                  {/* Redundant navigation buttons removed, footer handles navigation */}
                 </div>
               )}
             </div>
@@ -419,7 +407,6 @@ export function AssessmentTest({ examData, onComplete }: Props) {
             <div className="max-w-3xl mx-auto space-y-8">
               <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 italic text-sm text-muted-foreground">{sections.writing?.prompt}</CardBody></Card>
               <textarea value={responses.writing} onChange={(e) => setResponses({ ...responses, writing: e.target.value })} placeholder="Composition synthesis..." className="w-full h-96 p-8 rounded-[40px] border-2 border-border/40 bg-card text-foreground focus:outline-none resize-none" />
-              <div className="flex justify-end"><Button onClick={() => handleSectionChange("speaking")} className={`${theme.primary} text-white`}>Move to Speaking <ArrowRight className="ml-2" /></Button></div>
             </div>
           )}
 
@@ -440,14 +427,41 @@ export function AssessmentTest({ examData, onComplete }: Props) {
       </AnimatePresence>
 
       <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0">
-        <Button variant="ghost" disabled={currentIdx === 0} onClick={() => handleSectionChange(SECTION_ORDER[currentIdx - 1])} className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100"><ArrowLeft className="mr-3" /> Back</Button>
+        <Button 
+          variant="ghost" 
+          onClick={() => {
+            if (currentQuestionIdx > 0) {
+              setCurrentQuestionIdx(prev => prev - 1);
+            } else if (currentIdx > 0) {
+              handleSectionChange(SECTION_ORDER[currentIdx - 1]);
+            }
+          }}
+          disabled={currentIdx === 0 && currentQuestionIdx === 0}
+          className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100"
+        >
+          <ArrowLeft className="mr-3" /> Back
+        </Button>
+        
         <div className="flex gap-2">
           {SECTION_ORDER.map((sec) => (
             <div key={sec} className={`h-1.5 rounded-full transition-all ${currentSection === sec ? "w-12 " + theme.primary : "w-4 bg-muted"}`} />
           ))}
         </div>
-        {currentIdx < 3 ? (
-          <Button onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] ${theme.primary} text-white`}>Continue <ArrowRight className="ml-3" /></Button>
+
+        {currentIdx < 3 || (currentSection === "reading" || currentSection === "listening" ? currentQuestionIdx < (sections[currentSection]?.questions?.length || 0) - 1 : false) ? (
+          <Button 
+            onClick={() => {
+              const currentQs = sections[currentSection]?.questions || [];
+              if (currentQuestionIdx < currentQs.length - 1) {
+                setCurrentQuestionIdx(prev => prev + 1);
+              } else if (currentIdx < 3) {
+                handleSectionChange(SECTION_ORDER[currentIdx + 1]);
+              }
+            }} 
+            className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] ${theme.primary} text-white`}
+          >
+            Continue <ArrowRight className="ml-3" />
+          </Button>
         ) : (
           <Button onClick={handleSubmit} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] bg-black text-white`}>Finalize Exam <CheckCircle2 className="ml-3" /></Button>
         )}

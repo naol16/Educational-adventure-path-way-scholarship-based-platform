@@ -1,163 +1,219 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/providers/auth-context';
-import {
-  Shield,
-  Users,
-  Activity,
-  Settings,
-  Zap,
-  ShieldCheck,
-  GraduationCap,
-  Home,
-  PanelLeftClose,
-  PanelLeftOpen,
+import { 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  ShieldAlert, 
+  BarChart3, 
   LogOut,
-  Banknote
+  TrendingUp,
+  Banknote,
+  ShieldCheck,
+  Globe,
+  Database,
+  ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
-
-import { useState } from 'react';
+import { cn } from '../../lib/utils';
+import { useAuth } from '../../providers/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 
-export function AdminSidebar() {
+const menuItems = [
+  {
+    group: "OVERVIEW",
+    items: [
+      { name: 'Admin Home', icon: LayoutDashboard, href: '/dashboard/admin' },
+      { name: 'Analytics', icon: BarChart3, href: '/dashboard/admin/analytics' },
+    ]
+  },
+  {
+    group: "MANAGEMENT",
+    items: [
+      { name: 'Students', icon: Users, href: '/dashboard/admin/students' },
+      { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
+      { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
+    ]
+  },
+  {
+    group: "FINANCIAL",
+    items: [
+      { name: 'Payouts', icon: Banknote, href: '/dashboard/admin/payouts' },
+      { name: 'Payments', icon: TrendingUp, href: '/dashboard/admin/transactions' },
+    ]
+  },
+  {
+    group: "PLATFORM",
+    items: [
+      { name: 'Logs', icon: Database, href: '/dashboard/admin/logs' },
+      { name: 'Settings', icon: Settings, href: '/dashboard/admin/settings' },
+    ]
+  }
+];
+
+export const AdminSidebar = () => {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { logout, user } = useAuth();
+  const [showDropdown, setShowDropdown] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const menuItems = [
-    { name: 'Home', href: '/dashboard/admin', icon: Home },
-    { name: 'Students', href: '/dashboard/admin/students', icon: GraduationCap },
-    { name: 'Counselors', href: '/dashboard/admin/counselors', icon: ShieldCheck },
-    { name: 'Payout Requests', href: '/dashboard/admin/payouts', icon: Banknote },
-    { name: 'Platform Stats', href: '/dashboard/analytics', icon: Activity },
-    { name: 'System Logs', href: '/dashboard/logs', icon: Zap },
-    { name: 'Security Center', href: '/dashboard/security', icon: Shield },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-  ];
 
   return (
-    <motion.aside
+    <motion.aside 
       initial={false}
-      animate={{ width: collapsed ? 80 : 260 }}
-      className="sticky top-0 h-screen border-r border-border bg-card flex flex-col overflow-x-hidden"
+      animate={{ width: collapsed ? 88 : 288 }}
+      className="flex flex-col h-screen bg-card border-r border-border/50 pt-12 pb-8 px-4 overflow-x-hidden overflow-y-auto scrollbar-hide z-50 relative"
     >
-
-      {/* HEADER */}
-
-      <div className={`h-20 flex items-center border-b border-border relative ${collapsed ? 'justify-center' : 'px-6'}`}>
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
-              <Image 
-                src="/admas.png" 
-                alt="Logo" 
-                width={40} 
-                height={40} 
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <span className="text-lg font-bold text-foreground tracking-tight whitespace-nowrap">
-              Admin Portal
-            </span>
+      {/* Brand / Logo Section & Collapse Toggle */}
+      <div className={cn(
+        "mb-16 px-2 flex items-center justify-between",
+        collapsed && "flex-col gap-8 justify-center"
+      )}>
+        <div className={cn("flex items-center gap-3 group cursor-pointer", collapsed && "justify-center w-full")}>
+          <div className="h-10 w-10 shrink-0 primary-gradient rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+            <Globe className="text-white" size={20} />
           </div>
-        )}
-
-        <button
+        </div>
+        
+        <button 
           onClick={() => setCollapsed(!collapsed)}
-          className={`p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer shrink-0 ${collapsed ? 'mx-auto' : 'ml-auto'}`}
-          title={collapsed ? "Open sidebar" : "Close sidebar"}
+          className={cn(
+            "p-2 rounded-xl bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all",
+            collapsed && "mx-auto"
+          )}
         >
-          {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
-
       </div>
-      {/* NAVIGATION */}
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      {/* Navigation Groups */}
+      <div className="flex-1 space-y-10">
+        {menuItems.map((group, idx) => (
+          <div key={idx} className="space-y-4">
+             {!collapsed ? (
+                <motion.h3 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.4 }}
+                  className="px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]"
+                >
+                  {group.group}
+                </motion.h3>
+             ) : (
+                <div className="h-px bg-border/40 mx-4" />
+             )}
+             <nav className="space-y-1">
+               {group.items.map((item) => {
+                 const isActive = pathname === item.href;
+                 return (
+                   <Link
+                     key={item.href}
+                     href={item.href}
+                     title={collapsed ? item.name : ""}
+                     className={cn(
+                       "group flex items-center px-4 py-3 rounded-xl transition-all duration-300",
+                       isActive 
+                         ? "bg-primary/5 text-primary border border-primary/10" 
+                         : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent",
+                       collapsed && "justify-center px-0"
+                     )}
+                   >
+                     <div className={cn("flex items-center gap-4", collapsed && "gap-0")}>
+                       <item.icon 
+                         size={18} 
+                         className={cn(
+                           "transition-transform group-hover:scale-110 shrink-0",
+                           isActive ? "text-primary" : "text-muted-foreground"
+                         )} 
+                       />
+                       {!collapsed && (
+                         <motion.span 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className={cn(
+                              "text-[11px] font-black uppercase tracking-widest",
+                              isActive ? "text-primary" : ""
+                            )}
+                          >
+                           {item.name}
+                         </motion.span>
+                       )}
+                     </div>
+                     {!collapsed && isActive && (
+                       <motion.div layoutId="active" className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                     )}
+                   </Link>
+                 );
+               })}
+             </nav>
+          </div>
+        ))}
+      </div>
 
-        {menuItems.map((item) => {
-
-          const active = pathname === item.href;
-
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.name : undefined}
-              className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${active
-                ? 'text-primary font-bold bg-primary/10'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground font-medium rounded-lg'
-                } ${collapsed ? 'justify-center' : ''}`}
-            >
-
-              <Icon
-                size={18}
-                className={active ? 'text-primary' : ''}
-              />
-
-              {!collapsed && (
-                <span className="text-sm font-medium">
-                  {item.name}
-                </span>
-              )}
-
-
-
-            </Link>
-          );
-        })}
-
-      </nav>
-
-      {/* FOOTER */}
-      <div className="p-3 border-t border-border relative">
-
+      {/* Footer / User Profile Section with Dropdown */}
+      <div className="mt-auto pt-8 border-t border-border/40 relative">
         <AnimatePresence>
-          {showUserMenu && (
+          {showDropdown && !collapsed && (
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute bottom-full left-3 right-3 mb-2 p-2 bg-card border border-border rounded-lg shadow-xl z-50"
+              className="absolute bottom-full left-0 w-full mb-4 bg-card border border-border shadow-2xl rounded-2xl overflow-hidden z-50"
             >
-              <button
-                onClick={() => logout()}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
-              >
-                <LogOut size={16} />
-                <span>Sign Out</span>
-              </button>
+              <div className="p-2">
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/5 transition-all group"
+                >
+                  <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Logout</span>
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div
-          onClick={() => setShowUserMenu(!showUserMenu)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors cursor-pointer ${collapsed ? 'justify-center focus:ring-2 focus:ring-primary/20' : ''}`}
-          title={collapsed ? "Admin Menu" : undefined}
-        >
-          <div className="h-8 w-8 rounded-full primary-gradient flex items-center justify-center shrink-0 shadow-sm">
-            <span className="text-white text-sm font-black">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
-            </span>
-          </div>
-
-          {!collapsed && (
-            <div className="flex-1 flex items-center overflow-hidden">
-              <span className="text-sm font-bold text-foreground truncate w-full text-left">
-                {user?.name || 'Administrator'}
-              </span>
-            </div>
+        <button 
+          onClick={() => {
+            if (collapsed) {
+              setCollapsed(false);
+            } else {
+              setShowDropdown(!showDropdown);
+            }
+          }}
+          className={cn(
+            "w-full p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between group",
+            showDropdown && !collapsed ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/50 hover:bg-muted/50",
+            collapsed && "p-2 justify-center"
           )}
-        </div>
+        >
+           <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase group-hover:scale-110 transition-transform shrink-0">
+                 {user?.name?.charAt(0) || 'A'}
+              </div>
+              {!collapsed && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="min-w-0 text-left"
+                >
+                   <p className="text-[10px] font-black text-foreground truncate uppercase">{user?.name || 'Admin User'}</p>
+                   <p className="text-[8px] font-bold text-muted-foreground truncate uppercase opacity-50">Administrator</p>
+                </motion.div>
+              )}
+           </div>
+           {!collapsed && (
+             <motion.div
+                animate={{ rotate: showDropdown ? 180 : 0 }}
+                className="text-muted-foreground"
+             >
+                <ChevronDown size={14} />
+             </motion.div>
+           )}
+        </button>
       </div>
-
     </motion.aside>
   );
-}
+};

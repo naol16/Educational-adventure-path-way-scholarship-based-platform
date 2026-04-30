@@ -172,11 +172,6 @@ export function AssessmentResultView({
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="h3">{examType} Assessment Result</h1>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${difficultyColors[difficulty] || "bg-muted text-muted-foreground"}`}
-            >
-              {difficulty}
-            </span>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Test ID: {testId.slice(0, 8).toUpperCase()}

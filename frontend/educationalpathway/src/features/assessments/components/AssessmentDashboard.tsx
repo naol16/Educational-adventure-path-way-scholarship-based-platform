@@ -53,9 +53,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [examType, setExamType] = useState<"IELTS" | "TOEFL">("IELTS");
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(
-    "Medium",
-  );
+  const [difficulty, setDifficulty] = useState<string>("Medium");
   const [progressData, setProgressData] = useState<ProgressItem[]>([]);
   const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
   const [learningPathError, setLearningPathError] = useState<string | null>(null);
@@ -288,29 +286,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   </div>
                 </div>
 
-                {/* Difficulty */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40 px-2">Complexity Level</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["Easy", "Medium", "Hard"] as const).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDifficulty(d)}
-                        className={`py-3 rounded-xl border text-[9px] font-bold uppercase tracking-widest transition-all ${
-                          difficulty === d
-                            ? d === "Easy"
-                              ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
-                              : d === "Medium"
-                                ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20"
-                                : "bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20"
-                            : "bg-transparent border-border/60 text-muted-foreground hover:border-primary/40"
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Complexity level selection removed for standardized assessments */}
               </div>
 
               {/* Learning Path Error Banner */}
@@ -441,9 +417,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                                {item.examType} PROCTOR
                              </span>
                              <span
-                               className={`text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${difficultyColors[item.difficulty] || "bg-muted text-muted-foreground"}`}
+                               className="text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest bg-primary/10 text-primary"
                              >
-                               {item.difficulty}
+                               Standard
                              </span>
                            </div>
                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-40">

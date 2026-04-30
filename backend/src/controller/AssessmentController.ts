@@ -8,10 +8,7 @@ export class AssessmentController {
     try {
       const examType =
         typeof req.body?.examType === "string" ? req.body.examType.trim() : "";
-      const difficulty =
-        typeof req.body?.difficulty === "string"
-          ? req.body.difficulty.trim()
-          : "medium";
+      const difficulty = "medium"; // Standardized
       const skill =
         typeof req.body?.skill === "string" ? req.body.skill.trim() : undefined;
 
@@ -21,15 +18,8 @@ export class AssessmentController {
       }
 
       const examTypeUpper = examType.toUpperCase();
-      const difficultyLower = difficulty.toLowerCase();
       if (!["IELTS", "TOEFL"].includes(examTypeUpper)) {
         res.status(400).json({ error: "examType must be IELTS or TOEFL" });
-        return;
-      }
-      if (!["easy", "medium", "hard"].includes(difficultyLower)) {
-        res
-          .status(400)
-          .json({ error: "difficulty must be Easy, Medium, or Hard" });
         return;
       }
 

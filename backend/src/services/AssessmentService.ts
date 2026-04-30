@@ -193,24 +193,23 @@ export class AssessmentService {
     const isToefl = examTypeUpper === "TOEFL";
     
     let examInstructions = isToefl 
-      ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) that CHALLENGES or expands on the reading passage + 5 Multiple Choice Questions. 3. WRITING: 1 Integrated Task Prompt. 4. SPEAKING: 1 Integrated Speaking Prompt based on the same topic."
-      : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 1 Task Prompt (Task 2 style). 4. SPEAKING: 1 Long-form Prompt (Cue Card).";
+      ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) + 5 Multiple Choice Questions. 3. WRITING: 5 Integrated Task Prompts/Questions. 4. SPEAKING: 5 Integrated Speaking Prompts/Questions based on the topic."
+      : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 5 Task Prompts/Questions. 4. SPEAKING: 5 Long-form Prompts/Questions (Part 1 style).";
 
     if (skill) {
-      examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Leave other sections empty or null.`;
+      examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Generate exactly 5 questions/prompts for this section. Leave other sections empty or null.`;
     }
 
     const prompt = PromptTemplate.fromTemplate(`
             Role: Senior Assessment Architect
             Task: Generate a {examType} blueprint. ${skill ? `Focus only on the ${skill} section.` : "Generate a complete 4-section exam."}
-            Difficulty: {difficulty}
+            Difficulty: Standardized {examType} Level
             
             {examInstructions}
             
             Difficulty Constraints:
-            - Easy: Simple syntax, daily vocabulary.
-            - Medium: Academic context, compound sentences.
-            - Hard: Complex logic, academic jargon.
+            - Content should strictly follow the official {examType} guidelines for academic and general training proficiency.
+            - Vocabulary and syntax must be representative of the standard {examType} examination.
             
             Return JSON in the following schema:
             {{
@@ -221,8 +220,8 @@ export class AssessmentService {
                 "sections": {{
                   "reading": ${skill === "reading" || !skill ? '{{ "passage": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }}' : "null"},
                   "listening": ${skill === "listening" || !skill ? '{{ "script": "string", "questions": [{{ "id": 1, "question": "string", "options": [], "correct_answer": "string" }}] }}' : "null"},
-                  "writing": ${skill === "writing" || !skill ? '{{ "prompt": "string" }}' : "null"},
-                  "speaking": ${skill === "speaking" || !skill ? '{{ "prompt": "string" }}' : "null"}
+                  "writing": ${skill === "writing" || !skill ? '{{ "questions": [{{ "id": 1, "prompt": "string" }}] }}' : "null"},
+                  "speaking": ${skill === "speaking" || !skill ? '{{ "questions": [{{ "id": 1, "prompt": "string" }}] }}' : "null"}
                 }}
               }}
             }}

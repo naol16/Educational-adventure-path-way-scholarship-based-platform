@@ -29,6 +29,9 @@ import {
   Pdf,
   CounselorPayout,
   CounselorWalletTransaction,
+  MarketingTestimonial,
+  MarketingFaq,
+  MarketingStat,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -90,6 +93,9 @@ export const sequelize = new Sequelize({
     Pdf,
     CounselorPayout,
     CounselorWalletTransaction,
+    MarketingTestimonial,
+    MarketingFaq,
+    MarketingStat,
   ], // Add all models here
 } as SequelizeOptions);
 

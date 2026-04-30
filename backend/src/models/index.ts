@@ -27,3 +27,6 @@ export * from "./VisaMockInterview.js";
 export * from "./Pdf.js";
 export * from "./CounselorPayout.js";
 export * from "./CounselorWalletTransaction.js";
+export * from "./MarketingTestimonial.js";
+export * from "./MarketingFaq.js";
+export * from "./MarketingStat.js";

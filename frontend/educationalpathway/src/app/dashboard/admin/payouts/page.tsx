@@ -12,9 +12,14 @@ import {
     User,
     ArrowUpRight,
     Loader2,
-    Check
+    Check,
+    CreditCard,
+    Zap,
+    History,
+    MoreVertical
 } from 'lucide-react';
-import { Card, CardBody, Button, Badge, Input } from '@/components/ui';
+import { Card, CardBody, Button, Badge } from '@/components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -22,11 +27,11 @@ export default function AdminPayoutsPage() {
     const [payouts, setPayouts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<number | null>(null);
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const fetchPayouts = async () => {
         setLoading(true);
         try {
-            // Updated endpoint to fetch all payout requests
             const res = await api.get('/counselors/admin/payouts');
             setPayouts(res.data?.data || res.data || []);
         } catch (error) {
@@ -47,7 +52,7 @@ export default function AdminPayoutsPage() {
                 status: action === 'approve' ? 'approved' : 'rejected',
                 adminNote: action === 'approve' ? 'Processed via Admin Dashboard' : 'Rejected by Admin'
             });
-            toast.success(`Payout ${action}d successfully`);
+            toast.success(`Payout ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
             fetchPayouts();
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to process payout");
@@ -56,129 +61,141 @@ export default function AdminPayoutsPage() {
         }
     };
 
+    const filteredPayouts = payouts.filter(p => statusFilter === 'all' || p.status === statusFilter);
     const pendingCount = payouts.filter(p => p.status === 'pending').length;
 
+    if (loading) {
+        return (
+          <div className="flex flex-col items-center justify-center p-32 space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">Loading Payouts</p>
+          </div>
+        );
+    }
+
     return (
-        <div className="space-y-8 p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-                        <Banknote className="text-primary" size={32} />
-                        Financial Settlement
-                    </h1>
-                    <p className="text-muted-foreground font-medium mt-1">Review and approve counselor withdrawal requests.</p>
+        <div className="space-y-12 max-w-7xl mx-auto px-4 lg:px-8 pb-20">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 border-b border-border pb-10">
+                <div className="space-y-4">
+                    <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Payouts</h2>
+                    <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
+                        <Banknote size={14} className="text-primary" /> Review and approve money transfers to counselors
+                    </p>
                 </div>
+                
                 <div className="flex items-center gap-4">
-                    <Card className="bg-amber-500/10 border-amber-500/20 px-6 py-3 border">
-                        <div className="flex items-center gap-3">
-                            <Clock className="text-amber-500" size={18} />
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Awaiting Action</p>
-                                <p className="text-xl font-black text-amber-700 leading-none">{pendingCount} Requests</p>
-                            </div>
+                    <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all ${pendingCount > 0 ? 'bg-warning/5 border-warning/20' : 'bg-muted/30 border-border'}`}>
+                        <Clock className={pendingCount > 0 ? 'text-warning' : 'text-muted-foreground'} size={18} />
+                        <div>
+                            <p className="text-[9px] font-black uppercase tracking-widest opacity-60">Pending Requests</p>
+                            <p className={`text-xl font-black leading-none ${pendingCount > 0 ? 'text-warning' : 'text-foreground'}`}>{pendingCount}</p>
                         </div>
-                    </Card>
+                    </div>
                 </div>
             </div>
 
+            {/* Filter Bar */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-2 bg-muted/30 p-1 rounded-xl border border-border">
+                    {['all', 'pending', 'approved', 'completed', 'rejected'].map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setStatusFilter(s)}
+                            className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                statusFilter === s ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {s}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Payout List - Horizontal Style */}
             <div className="grid grid-cols-1 gap-6">
-                <Card className="border-border shadow-sm overflow-hidden bg-card">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-muted/50 border-b border-border">
-                                <tr>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Counselor</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Method</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={6} className="py-20 text-center">
-                                            <Loader2 className="animate-spin mx-auto text-primary h-8 w-8" />
-                                        </td>
-                                    </tr>
-                                ) : payouts.length > 0 ? (
-                                    payouts.map((payout) => (
-                                        <tr key={payout.id} className="hover:bg-muted/10 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                        {payout.counselor?.user?.name?.charAt(0) || 'C'}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-foreground">{payout.counselor?.user?.name || 'Unknown Counselor'}</p>
-                                                        <p className="text-[10px] text-muted-foreground">{payout.counselor?.user?.email}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-sm font-black text-foreground">
-                                                    {payout.amount?.toLocaleString()} <span className="text-[10px] text-muted-foreground">ETB</span>
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge variant="outline" className="capitalize text-[10px] font-bold">
-                                                    {payout.payoutMethod?.replace('_', ' ')}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge className={`uppercase text-[10px] font-black ${
-                                                    payout.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
-                                                    payout.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                    'bg-red-500/10 text-red-500'
-                                                }`}>
-                                                    {payout.status}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-[10px] font-bold text-muted-foreground">
-                                                    {new Date(payout.createdAt).toLocaleDateString()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                {payout.status === 'pending' ? (
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline" 
-                                                            className="h-8 px-3 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50"
-                                                            onClick={() => handleAction(payout.id, 'approve')}
-                                                            disabled={processingId === payout.id}
-                                                        >
-                                                            {processingId === payout.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                                                        </Button>
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline"
-                                                            className="h-8 px-3 border-red-500/50 text-red-600 hover:bg-red-50"
-                                                            onClick={() => handleAction(payout.id, 'reject')}
-                                                            disabled={processingId === payout.id}
-                                                        >
-                                                            <XCircle size={14} />
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold opacity-40">Processed</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={6} className="py-20 text-center">
-                                            <p className="text-muted-foreground italic">No payout requests found.</p>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
+                <AnimatePresence>
+                    {filteredPayouts.length > 0 ? (
+                        filteredPayouts.map((payout, idx) => (
+                            <motion.div
+                                key={payout.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.03 }}
+                                className="group bg-card border border-border p-6 rounded-2xl hover:border-primary/50 transition-all duration-300 flex flex-col lg:flex-row lg:items-center gap-8"
+                            >
+                                <div className="flex items-center gap-6 flex-1">
+                                    <div className="h-16 w-16 rounded-xl bg-muted border border-border flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500">
+                                        <span className="text-foreground font-black text-2xl group-hover:text-primary transition-colors">
+                                            {payout.counselor?.user?.name?.charAt(0) || 'C'}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-black text-foreground text-2xl tracking-tighter group-hover:text-primary transition-colors flex items-center gap-3 uppercase">
+                                            {payout.counselor?.user?.name || 'Unknown Counselor'}
+                                            <Badge className={`text-[8px] font-black uppercase tracking-tighter ${
+                                                payout.status === 'pending' ? 'bg-warning/10 text-warning border-warning/20' :
+                                                payout.status === 'approved' || payout.status === 'completed' ? 'bg-success/10 text-success border-success/20' :
+                                                'bg-destructive/10 text-destructive border-destructive/20'
+                                            }`}>
+                                                {payout.status}
+                                            </Badge>
+                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
+                                            <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                                                <CreditCard size={12} className="opacity-50 text-primary" /> {payout.payoutDetails?.accountNumber || payout.payoutDetails?.phoneNumber || 'No ID'}
+                                            </span>
+                                            <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                                                <User size={12} className="opacity-50 text-primary" /> {payout.payoutDetails?.accountHolderName || 'N/A'}
+                                            </span>
+                                            <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                                                <History size={12} className="opacity-50 text-primary" /> Requested {new Date(payout.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-12 shrink-0 border-t lg:border-t-0 pt-6 lg:pt-0 border-border/50">
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-1">Total Payout</p>
+                                        <p className="text-2xl font-black text-foreground">{payout.amount?.toLocaleString()} <span className="text-[10px]">ETB</span></p>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        {payout.status === 'pending' ? (
+                                            <>
+                                                <Button 
+                                                    variant="outline"
+                                                    className="h-12 w-12 p-0 border-destructive/30 text-destructive hover:bg-destructive/5 rounded-xl"
+                                                    onClick={() => handleAction(payout.id, 'reject')}
+                                                    disabled={processingId === payout.id}
+                                                >
+                                                    <XCircle size={20} />
+                                                </Button>
+                                                <Button 
+                                                    className="primary-gradient text-white h-12 px-6 rounded-xl shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all font-black uppercase text-[10px] tracking-widest"
+                                                    onClick={() => handleAction(payout.id, 'approve')}
+                                                    isLoading={processingId === payout.id}
+                                                >
+                                                    <Check size={16} className="mr-2" /> Approve
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <div className="h-12 w-12 rounded-xl bg-muted border border-border flex items-center justify-center">
+                                                <ExternalLink size={18} className="text-muted-foreground/30" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))
+                    ) : (
+                        <div className="col-span-full py-32 text-center">
+                           <CreditCard size={48} className="mx-auto text-muted-foreground opacity-10 mb-6" />
+                           <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Queue cleared. No active requests detected.</p>
+                        </div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
