@@ -29,6 +29,9 @@ import {
   Pdf,
   CounselorPayout,
   CounselorWalletTransaction,
+  MarketingTestimonial,
+  MarketingFaq,
+  MarketingStat,
   UserWarning,
   AIChatMessage,
 } from "../models/index.js";
@@ -49,12 +52,12 @@ const dbOptions: SequelizeOptions = {
     idle: 10000    // Maximum time (ms) a connection can be idle before being released
   },
 
-  // dialectOptions: {
-  //   ssl: {
-  //     require: true,
-  //     rejectUnauthorized: false,
-  //   },
-  // },
+  dialectOptions: {
+    ssl: configs.DB_HOST !== "localhost" && configs.DB_HOST !== "127.0.0.1" ? {
+      require: true,
+      rejectUnauthorized: false,
+    } : false,
+  },
     
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
@@ -92,6 +95,9 @@ export const sequelize = new Sequelize({
     Pdf,
     CounselorPayout,
     CounselorWalletTransaction,
+    MarketingTestimonial,
+    MarketingFaq,
+    MarketingStat,
     UserWarning,
     AIChatMessage,
   ], // Add all models here
@@ -118,7 +124,7 @@ export const connectSequelize = async () => {
 
     // Sync models with database (creates tables if missing)
     // Note: enabled alter: true to apply new column changes
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log("Database models synchronized");
   } catch (error) {
     console.error("Sequelize connection error:", error);

@@ -131,6 +131,7 @@ class _WritingSectionState extends ConsumerState<WritingSection> {
                     hintStyle: const TextStyle(color: Colors.white10),
                     border: InputBorder.none,
                     filled: true,
+                    // ignore: deprecated_member_use
                     fillColor: Colors.white.withOpacity(0.02),
                   ),
                 ),

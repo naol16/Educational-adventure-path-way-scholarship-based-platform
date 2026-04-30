@@ -124,7 +124,6 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
     } catch (e) {
       // If refresh fails, we can either keep old state or show error
       // For progress, let's just log it and keep current state
-      print("Error marking progress: $e");
     }
   }
 

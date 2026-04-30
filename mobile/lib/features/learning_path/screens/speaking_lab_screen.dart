@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -52,6 +51,7 @@ class _SpeakingLabScreenState extends ConsumerState<SpeakingLabScreen> {
         setState(() => _isRecording = true);
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error starting recorder: $e')),
       );
@@ -97,6 +97,7 @@ class _SpeakingLabScreenState extends ConsumerState<SpeakingLabScreen> {
       _showFeedbackSheet();
     } catch (e) {
       setState(() => _isLoading = false);
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to analyze speaking: $e")),
       );

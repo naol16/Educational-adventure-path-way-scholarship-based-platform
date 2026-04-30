@@ -3,6 +3,9 @@ import { StudentRepository } from "../repositories/StudentRepository.js";
 import { CounselorRepository } from "../repositories/CounselorRepository.js";
 import { CreateUserDto, UpdateUserDto, UserRole } from "../types/userTypes.js";
 import { User } from "../models/User.js";
+import { Payment } from "../models/Payment.js";
+import { Counselor } from "../models/Counselor.js";
+import { CounselorPayout } from "../models/CounselorPayout.js";
 
 export class UserService {
   static async createUser(userData: CreateUserDto): Promise<User> {
@@ -149,11 +152,22 @@ export class UserService {
     const counselors = await UserRepository.countByRole(UserRole.COUNSELOR);
     const admins = await UserRepository.countByRole(UserRole.ADMIN);
 
+    // Calculate Total Revenue
+    const revenueData = await Payment.sum('amount', { where: { status: 'success' } });
+    const totalRevenue = Number(revenueData || 0);
+
+    // Pending Actions
+    const pendingCounselors = await Counselor.count({ where: { verificationStatus: 'pending' } });
+    const pendingPayouts = await CounselorPayout.count({ where: { status: 'pending' } });
+
     return {
       totalUsers,
       students,
       counselors,
       admins,
+      totalRevenue,
+      pendingCounselors,
+      pendingPayouts
     };
   }
 }

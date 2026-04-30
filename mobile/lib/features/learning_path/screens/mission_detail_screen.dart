@@ -84,7 +84,7 @@ class MissionDetailScreen extends ConsumerWidget {
                   child: Material(
                     type: MaterialType.transparency,
                     child: Text(
-                      mission?.title ?? (video.videoLink.contains("sample") ? "Instructional Module 0${index + 1}" : "Dynamic Mastery: ${section}"),
+                      mission?.title ?? (video.videoLink.contains("sample") ? "Instructional Module 0${index + 1}" : "Dynamic Mastery: $section"),
                       style: DesignSystem.headingStyle(buildContext: context),
                     ),
                   ),

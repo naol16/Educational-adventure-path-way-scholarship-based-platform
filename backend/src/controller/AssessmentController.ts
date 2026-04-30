@@ -8,10 +8,9 @@ export class AssessmentController {
     try {
       const examType =
         typeof req.body?.examType === "string" ? req.body.examType.trim() : "";
-      const difficulty =
-        typeof req.body?.difficulty === "string"
-          ? req.body.difficulty.trim()
-          : "medium";
+      const difficulty = "medium"; // Standardized
+      const skill =
+        typeof req.body?.skill === "string" ? req.body.skill.trim() : undefined;
 
       if (!examType) {
         res.status(400).json({ error: "examType is required" });
@@ -19,34 +18,26 @@ export class AssessmentController {
       }
 
       const examTypeUpper = examType.toUpperCase();
-      const difficultyLower = difficulty.toLowerCase();
       if (!["IELTS", "TOEFL"].includes(examTypeUpper)) {
         res.status(400).json({ error: "examType must be IELTS or TOEFL" });
         return;
       }
-      if (!["easy", "medium", "hard"].includes(difficultyLower)) {
-        res
-          .status(400)
-          .json({ error: "difficulty must be Easy, Medium, or Hard" });
-        return;
-      }
 
-      if (req.user?.id && !req.body?.force) {
-        const student = await StudentRepository.findByUserId(req.user.id);
-        if (student) {
-          const path = await LearningPathRepository.findByStudentId(student.id);
-          if (path && path.currentProgressPercentage < 100) {
-            res.status(403).json({
-              error: "Learning path completion required.",
-              message: "You must complete 100% of your learning path before generating a mock exam.",
-              currentProgress: path.currentProgressPercentage
-            });
-            return;
-          }
+      const student = req.user?.id ? await StudentRepository.findByUserId(req.user.id) : null;
+
+      if (student && !req.body?.force && !skill) {
+        const path = await LearningPathRepository.findByStudentId(student.id);
+        if (path && path.currentProgressPercentage < 100) {
+          res.status(403).json({
+            error: "Learning path completion required.",
+            message: "You must complete 100% of your learning path before generating a full mock exam.",
+            currentProgress: path.currentProgressPercentage
+          });
+          return;
         }
       }
 
-      const result = await AssessmentService.generateExam(examType, difficulty);
+      const result = await AssessmentService.generateExam(examType as any, difficulty as any, skill, student?.id);
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -96,20 +87,18 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
-      const { isRedisAvailable } = await import("../config/redis.js");
-      if (!isRedisAvailable()) {
-        console.error("[AssessmentController] ❌ Redis is unavailable. Cannot submit job.");
-        res.status(503).json({ error: "Assessment service is temporarily unavailable (Redis down)." });
-        return;
-      }
-
+      
       const result = await AssessmentService.submitAssessment(
         test_id,
         parsedResponses,
         student.id,
         audioData,
       );
-      console.log(`[AssessmentController] ✅ Job added to queue for test_id: ${test_id}`);
+      if (result.status === "processing") {
+         console.log(`[AssessmentController] ⚠️ Redis unavailable. Processing ${test_id} in background fallback.`);
+      } else {
+         console.log(`[AssessmentController] ✅ Job added to queue for test_id: ${test_id}`);
+      }
       res.json(result);
     } catch (error) {
       next(error);

@@ -84,7 +84,7 @@ class ToeflIntegratedView extends ConsumerWidget {
                 const SizedBox(height: 24),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -147,7 +147,7 @@ class ToeflIntegratedView extends ConsumerWidget {
                 const SizedBox(height: 24),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );

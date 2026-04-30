@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
 
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/assessment",
+        destination: "/dashboard/learning-path",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

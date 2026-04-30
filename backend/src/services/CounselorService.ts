@@ -1504,7 +1504,37 @@ export class CounselorService {
   }
 
   static async getChapaMerchantTransactions() {
-    return PaymentService.getTransactions();
+    try {
+      return await PaymentService.getTransactions();
+    } catch (error) {
+      console.error("[CounselorService] Chapa API transaction fetch failed, falling back to local database:", error);
+      // Fallback: return our local payments table records
+      const localPayments = await Payment.findAll({
+        include: [
+          {
+            association: 'student',
+            include: [{ association: 'user', attributes: ['name', 'email'] }]
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: 50
+      });
+
+      return {
+        status: 'success',
+        message: 'Local records fetched (Chapa API unavailable)',
+        data: localPayments.map(p => ({
+          tx_ref: p.tx_ref,
+          amount: p.amount,
+          currency: p.currency,
+          status: p.status,
+          created_at: p.createdAt,
+          first_name: p.student?.user?.name?.split(' ')[0] || 'Student',
+          last_name: p.student?.user?.name?.split(' ')[1] || 'User',
+          email: p.student?.user?.email
+        }))
+      };
+    }
   }
 
   static async getChapaBanks() {

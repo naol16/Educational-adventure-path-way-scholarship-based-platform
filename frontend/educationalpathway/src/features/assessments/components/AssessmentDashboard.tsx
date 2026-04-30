@@ -25,6 +25,7 @@ import {
 } from "../api/assessment-api";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import { EnvironmentSwitcher } from "../../english-learning/components/LearningPath/EnvironmentSwitcher";
 
 interface ProgressItem {
   id: number;
@@ -52,12 +53,19 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [examType, setExamType] = useState<"IELTS" | "TOEFL">("IELTS");
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(
-    "Medium",
-  );
+  const [difficulty, setDifficulty] = useState<string>("Medium");
   const [progressData, setProgressData] = useState<ProgressItem[]>([]);
-
+  const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
   const [learningPathError, setLearningPathError] = useState<string | null>(null);
+
+  // Theme configuration
+  const theme = {
+    primary: envMode === "IELTS" ? "emerald" : "blue",
+    text: envMode === "IELTS" ? "text-emerald-600" : "text-blue-600",
+    accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
+    bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
+    border: envMode === "IELTS" ? "border-emerald-200" : "border-blue-200",
+  };
 
   useEffect(() => {
     fetchStats();
@@ -127,9 +135,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   };
 
   const isTOEFL = examType === "TOEFL";
+  const averages = getOverallAverages();
   const maxScore = isTOEFL ? 120 : 9;
   const thresholdBand = isTOEFL ? 90 : 6.5;
-  const averages = getOverallAverages();
   const bandPercent = Math.min(100, (parseFloat(averages.band) / maxScore) * 100);
 
   // Last 7 items for chart (filtered by type)
@@ -138,99 +146,103 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 pb-20">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="h2 flex items-center gap-3">
-            <BookOpen className="text-primary size-8" />
-            Learning Pathway
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">
-            Evaluate your English proficiency through AI-generated mock exams
-            tailored to your target scholarship band.
-          </p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/60 pb-12">
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <EnvironmentSwitcher mode={envMode} onChange={setEnvMode} />
+            <span className={`px-4 py-1.5 rounded-full border text-[9px] font-bold uppercase tracking-widest ${theme.bg} ${theme.text} ${theme.border}`}>
+              Diagnostic Protocol
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-5xl font-black tracking-tighter leading-none uppercase bg-linear-to-r from-foreground to-foreground/40 bg-clip-text text-transparent">
+              Assessment Matrix
+            </h1>
+            <p className="text-muted-foreground font-medium text-sm flex items-center gap-2">
+               <Sparkles size={14} className={theme.accent} /> 
+               Validate your {envMode} proficiency through high-stakes AI evaluations.
+            </p>
+          </div>
         </div>
         <Button
           onClick={fetchStats}
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100 transition-opacity"
         >
-          Refresh Stats
+          Refresh Data Stream
         </Button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Card className="border border-border overflow-hidden">
-          <CardBody className="p-6">
+        <Card className="border border-border/60 rounded-[32px] overflow-hidden shadow-xs">
+          <CardBody className="p-8">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-label text-muted-foreground">
-                  Avg {isTOEFL ? "Score" : "Band Score"}
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest opacity-40">
+                  Avg {isTOEFL ? "Score" : "Band"}
                 </p>
-                <h3 className="text-4xl font-black mt-2 text-primary">
+                <h3 className={`text-5xl font-black ${theme.text}`}>
                   {averages.band}
                 </h3>
               </div>
-              <div className="bg-primary/10 p-3 rounded-lg text-primary">
-                <Target size={22} />
+              <div className={`${theme.bg} p-4 rounded-2xl ${theme.accent} shadow-sm`}>
+                <Target size={24} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Best score:{" "}
-              <span className="font-semibold text-foreground">
-                {averages.best}
-              </span>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-6 opacity-60">
+              Personal Best: <span className="text-foreground">{averages.best}</span>
             </p>
           </CardBody>
         </Card>
 
-        <Card className="border border-border">
-          <CardBody className="p-6">
+        <Card className="border border-border/60 rounded-[32px] overflow-hidden shadow-xs">
+          <CardBody className="p-8">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="text-label text-muted-foreground">Tests Taken</p>
-                <h3 className="text-4xl font-black mt-2">{averages.tests}</h3>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest opacity-40">Tests Processed</p>
+                <h3 className="text-5xl font-black">{averages.tests}</h3>
               </div>
-              <div className="bg-info/10 p-3 rounded-lg text-info">
-                <TrendingUp size={22} />
+              <div className="bg-blue-500/10 p-4 rounded-2xl text-blue-600 shadow-sm">
+                <TrendingUp size={24} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Keep practicing to improve your score.
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-6 opacity-60">
+              Diagnostic Frequency: <span className="text-foreground">Optimal</span>
             </p>
           </CardBody>
         </Card>
 
-        <Card className="border border-border bg-linear-to-br from-primary/5 to-accent/5">
-          <CardBody className="p-6 flex flex-col justify-between h-full gap-4">
+        <Card className={`border ${theme.border} rounded-[32px] overflow-hidden shadow-xs bg-linear-to-br ${envMode === "IELTS" ? 'from-emerald-50 to-emerald-500/5' : 'from-blue-50 to-blue-500/5'}`}>
+          <CardBody className="p-8 flex flex-col justify-between h-full gap-6">
             <div>
-              <p className="text-label font-semibold text-foreground flex items-center gap-2">
-                <Award className="text-accent size-4" /> Scholarship Goal
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${theme.text}`}>
+                <Award size={14} /> Goal Optimization
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm font-bold mt-2">
                 Target {isTOEFL ? "Score" : "Band"}:{" "}
-                <span className="font-bold text-foreground">
+                <span className="text-foreground">
                   {thresholdBand}{!isTOEFL && ".0"}+
                 </span>
               </p>
             </div>
             <div>
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-muted-foreground">Your average</span>
-                <span className="font-bold">{averages.band} / {maxScore}{!isTOEFL && ".0"}</span>
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-2">
+                <span className="text-muted-foreground">Performance Level</span>
+                <span className={theme.text}>{averages.band} / {maxScore}{!isTOEFL && ".0"}</span>
               </div>
-              <div className="w-full bg-muted h-2.5 rounded-full overflow-hidden">
+              <div className="w-full bg-muted/30 h-3 rounded-full overflow-hidden p-0.5 border border-border/20">
                 <motion.div
-                  className="h-full bg-accent rounded-full"
+                  className={`h-full rounded-full ${envMode === "IELTS" ? 'bg-emerald-500' : 'bg-blue-600'}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${bandPercent}%` }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 />
               </div>
               {parseFloat(averages.band) >= thresholdBand && (
-                <p className="text-xs text-success font-semibold mt-1.5 flex items-center gap-1">
-                  <Sparkles className="size-3" /> Threshold achieved!
+                <p className={`text-[10px] font-bold uppercase tracking-widest mt-3 flex items-center gap-1.5 ${theme.text}`}>
+                  <Sparkles size={12} /> Target Efficiency Met
                 </p>
               )}
             </div>
@@ -253,19 +265,19 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 </p>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-8">
                 {/* Exam Type Toggle */}
-                <div className="space-y-2">
-                  <label className="text-label">Exam Type</label>
-                  <div className="flex gap-3">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40 px-2">Exam Protocol</label>
+                  <div className="flex gap-2 p-1 bg-muted/20 rounded-2xl border border-border/40">
                     {(["IELTS", "TOEFL"] as const).map((t) => (
                       <button
                         key={t}
                         onClick={() => setExamType(t)}
-                        className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
                           examType === t
-                            ? "bg-primary text-primary-foreground border-primary  shadow-primary/20"
-                            : "bg-transparent border-border text-foreground hover:bg-muted"
+                            ? "bg-white text-foreground shadow-sm border border-border/40"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {t}
@@ -274,29 +286,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   </div>
                 </div>
 
-                {/* Difficulty */}
-                <div className="space-y-2">
-                  <label className="text-label">Difficulty Level</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["Easy", "Medium", "Hard"] as const).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDifficulty(d)}
-                        className={`py-2.5 rounded-lg border text-sm font-semibold transition-all ${
-                          difficulty === d
-                            ? d === "Easy"
-                              ? "bg-success text-white border-success"
-                              : d === "Medium"
-                                ? "bg-warning text-white border-warning"
-                                : "bg-destructive text-white border-destructive"
-                            : "bg-transparent border-border text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Complexity level selection removed for standardized assessments */}
               </div>
 
               {/* Learning Path Error Banner */}
@@ -403,66 +393,67 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {[...progressData].reverse().map((item, index) => (
-                    <motion.div
-                      key={item.id || index}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.04 * index }}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/40 transition-colors group"
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
-                        {/* Band Badge */}
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-primary font-black text-sm">
-                            {parseFloat(String(item.overallBand)).toFixed(1)}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-sm">
-                              {item.examType}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${difficultyColors[item.difficulty] || "bg-muted text-muted-foreground"}`}
-                            >
-                              {item.difficulty}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(item.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        onClick={() => {
-                          const normalizedItem = {
-                            ...item,
-                            testId: item.testId || item.test_id
-                          };
-                          onViewResult(normalizedItem);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity shrink-0"
-                      >
-                        <Eye className="size-4" />
-                        <span className="hidden sm:inline">View</span>
-                        <ChevronRight className="size-3" />
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
+                 <div className="space-y-4">
+                   {[...progressData].reverse().map((item, index) => (
+                     <motion.div
+                       key={item.id || index}
+                       initial={{ opacity: 0, y: 12 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ delay: 0.05 * index }}
+                       className="flex items-center justify-between p-6 rounded-[32px] border border-border/60 hover:bg-muted/40 transition-all duration-300 group"
+                     >
+                       <div className="flex items-center gap-6 flex-1 min-w-0">
+                         {/* Band Badge */}
+                         <div className={`w-16 h-16 rounded-2xl ${parseFloat(String(item.overallBand)) >= 7 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-primary/10 text-primary'} flex flex-col items-center justify-center shrink-0 border border-current/10 shadow-xs`}>
+                           <span className="text-2xl font-black leading-none">
+                             {parseFloat(String(item.overallBand)).toFixed(1)}
+                           </span>
+                           <span className="text-[8px] font-bold uppercase tracking-widest mt-1 opacity-60">SCORE</span>
+                         </div>
+ 
+                         <div className="flex-1 min-w-0 space-y-1">
+                           <div className="flex items-center gap-3">
+                             <span className="font-bold text-sm tracking-tight">
+                               {item.examType} PROCTOR
+                             </span>
+                             <span
+                               className="text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest bg-primary/10 text-primary"
+                             >
+                               Standard
+                             </span>
+                           </div>
+                           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-40">
+                             DATED {new Date(item.createdAt).toLocaleDateString(
+                               "en-US",
+                               {
+                                 year: "numeric",
+                                 month: "short",
+                                 day: "numeric",
+                               },
+                             )}
+                           </p>
+                         </div>
+                       </div>
+ 
+                       <Button
+                         onClick={() => {
+                           const normalizedItem = {
+                             ...item,
+                             testId: item.testId || item.test_id
+                           };
+                           onViewResult(normalizedItem);
+                         }}
+                         variant="ghost"
+                         size="sm"
+                         className="gap-2 px-6 h-12 rounded-2xl font-bold uppercase tracking-widest text-[9px] opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white"
+                       >
+                         <Eye size={14} />
+                         View Matrix
+                         <ChevronRight size={14} />
+                       </Button>
+                     </motion.div>
+                   ))}
+                 </div>
               )}
             </CardBody>
           </Card>

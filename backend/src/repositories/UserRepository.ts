@@ -1,5 +1,7 @@
 import { User } from "../models/User.js";
 import { Consultation } from "../models/Consultation.js";
+import { Student } from "../models/Student.js";
+import { Counselor } from "../models/Counselor.js";
 import { CreateUserDto, UpdateUserDto, UserRole } from "../types/userTypes.js";
 
 export class UserRepository {
@@ -46,7 +48,12 @@ export class UserRepository {
     }
 
     static async findById(id: number): Promise<User | null> {
-        return User.findByPk(id);
+        return User.findByPk(id, {
+            include: [
+                { model: Student, as: 'student' },
+                { model: Counselor, as: 'counselor' }
+            ]
+        });
     }
 
     static async findByName(name: string): Promise<User | null> {
@@ -90,6 +97,10 @@ export class UserRepository {
         return User.findAll({
             limit,
             offset,
+            include: [
+                { model: Student, as: 'student' },
+                { model: Counselor, as: 'counselor' }
+            ],
             order: [['createdAt', 'DESC']]
         });
     }

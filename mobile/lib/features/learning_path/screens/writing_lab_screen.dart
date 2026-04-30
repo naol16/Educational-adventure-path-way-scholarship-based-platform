@@ -70,6 +70,7 @@ class _WritingLabScreenState extends ConsumerState<WritingLabScreen> {
       _showFeedbackSheet();
     } catch (e) {
       setState(() => _isLoading = false);
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to analyze essay: $e")),
       );

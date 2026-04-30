@@ -72,6 +72,12 @@ export class AssessmentResult extends Model {
     })
     declare overallBand: number;
 
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+    })
+    declare blueprint: any;
+
     @CreatedAt
     @Column({
         type: DataType.DATE,
