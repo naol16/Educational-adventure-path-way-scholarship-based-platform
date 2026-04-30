@@ -17,7 +17,8 @@ import {
   Database,
   ChevronDown,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../providers/auth-context';
@@ -36,6 +37,7 @@ const menuItems = [
     items: [
       { name: 'Students', icon: Users, href: '/dashboard/admin/students' },
       { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
+      { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
       { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
     ]
   },

@@ -25,6 +25,7 @@ import Image from "next/image";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import api from "@/lib/api";
+import { AIChatBot } from "@/components/AIChatBot";
 
 interface LandingPageData {
   stats: { label: string; value: string }[];
@@ -482,6 +483,7 @@ export const LandingPageContent = () => {
       </main>
 
       <Footer />
+      <AIChatBot />
     </div>
   );
 };

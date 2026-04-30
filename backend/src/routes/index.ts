@@ -13,6 +13,9 @@ import writingLabRouter from "./writingLabRoutes.js";
 import speakingLabRouter from "./speakingLabRoutes.js";
 import paymentRouter from "./paymentRoutes.js";
 import marketingRouter from "./marketingRoutes.js";
+import chatGroupRouter from "./chatGroupRoutes.js";
+import moderationRouter from "./moderationRoutes.js";
+import aiChatRouter from "./aiChatRoutes.js";
 
 export default {
   userRouter,
@@ -30,4 +33,7 @@ export default {
   speakingLabRouter,
   paymentRouter,
   marketingRouter,
+  chatGroupRouter,
+  moderationRouter,
+  aiChatRouter,
 };

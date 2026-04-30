@@ -35,6 +35,7 @@ import {
 import { motion } from "framer-motion";
 import { trackScholarship, untrackScholarship, updateScholarshipStatus } from "../api/tracking";
 import { toast } from "react-hot-toast";
+import { AIChatBot } from "@/components/AIChatBot";
 
 interface CriteriaMatch {
   label: string;
@@ -50,7 +51,8 @@ const safeString = (val: any) => {
 };
 
 export default function ScholarshipDetailsPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const { user } = useAuth();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
@@ -61,14 +63,18 @@ export default function ScholarshipDetailsPage() {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        const data = await getScholarship(id as string);
-        setScholarship(data);
-        setTrackingInfo(data.tracking || null);
-        setError(null);
-      } catch (err: any) {
+        const scholarshipId = Array.isArray(id) ? id[0] : id;
+        if (!scholarshipId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            const data = await getScholarship(scholarshipId);
+            setScholarship(data);
+            setTrackingInfo(data.tracking || null);
+            setError(null);
+        } catch (err: any) {
         console.error("Failed to fetch scholarship details:", err);
         setError("Failed to load scholarship details. Please try again later.");
       } finally {
@@ -488,6 +494,7 @@ export default function ScholarshipDetailsPage() {
            </motion.div>
         </div>
       </div>
+      <AIChatBot scholarshipId={scholarship.id} />
     </div>
   );
 }

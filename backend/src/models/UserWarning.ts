@@ -11,31 +11,16 @@ import {
     BelongsTo,
 } from "sequelize-typescript";
 import { User } from "./User.js";
-import { Conversation } from "./Conversation.js";
 
 @Table({
-    tableName: "conversation_participants",
+    tableName: "user_warnings",
     timestamps: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ['conversation_id', 'user_id']
-        }
-    ]
 })
-export class ConversationParticipant extends Model {
+export class UserWarning extends Model {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
     declare id: number;
-
-    @ForeignKey(() => Conversation)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        field: 'conversation_id'
-    })
-    declare conversationId: number;
 
     @ForeignKey(() => User)
     @Column({
@@ -45,6 +30,20 @@ export class ConversationParticipant extends Model {
         onDelete: 'CASCADE'
     })
     declare userId: number;
+
+    @ForeignKey(() => User)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'admin_id'
+    })
+    declare adminId: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare reason: string;
 
     @CreatedAt
     @Column({
@@ -60,10 +59,9 @@ export class ConversationParticipant extends Model {
     })
     declare updatedAt: Date;
 
-    @BelongsTo(() => Conversation)
-    conversation!: Conversation;
-
-    @BelongsTo(() => User)
+    @BelongsTo(() => User, 'user_id')
     user!: User;
-}
 
+    @BelongsTo(() => User, 'admin_id')
+    admin!: User;
+}

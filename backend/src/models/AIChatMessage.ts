@@ -11,40 +11,51 @@ import {
     BelongsTo,
 } from "sequelize-typescript";
 import { User } from "./User.js";
-import { Conversation } from "./Conversation.js";
 
 @Table({
-    tableName: "conversation_participants",
+    tableName: "ai_chat_messages",
     timestamps: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ['conversation_id', 'user_id']
-        }
-    ]
 })
-export class ConversationParticipant extends Model {
+export class AIChatMessage extends Model {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
     declare id: number;
 
-    @ForeignKey(() => Conversation)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        field: 'conversation_id'
-    })
-    declare conversationId: number;
-
     @ForeignKey(() => User)
     @Column({
         type: DataType.INTEGER,
-        allowNull: false,
+        allowNull: true,
         field: 'user_id',
         onDelete: 'CASCADE'
     })
-    declare userId: number;
+    declare userId?: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        field: 'session_id'
+    })
+    declare sessionId: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'scholarship_id'
+    })
+    declare scholarshipId?: number;
+
+    @Column({
+        type: DataType.ENUM('user', 'assistant'),
+        allowNull: false,
+    })
+    declare role: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare content: string;
 
     @CreatedAt
     @Column({
@@ -60,10 +71,6 @@ export class ConversationParticipant extends Model {
     })
     declare updatedAt: Date;
 
-    @BelongsTo(() => Conversation)
-    conversation!: Conversation;
-
     @BelongsTo(() => User)
-    user!: User;
+    user?: User;
 }
-

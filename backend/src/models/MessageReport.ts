@@ -9,66 +9,48 @@ import {
     CreatedAt,
     UpdatedAt,
     BelongsTo,
-    Default,
 } from "sequelize-typescript";
 import { User } from "./User.js";
-import { Conversation } from "./Conversation.js";
+import { ChatMessage } from "./ChatMessage.js";
 
 @Table({
-    tableName: "chat_messages",
+    tableName: "message_reports",
     timestamps: true,
 })
-export class ChatMessage extends Model {
+export class MessageReport extends Model {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
     declare id: number;
 
-    @ForeignKey(() => Conversation)
+    @ForeignKey(() => ChatMessage)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'conversation_id'
+        field: 'message_id'
     })
-    declare conversationId: number;
+    declare messageId: number;
 
     @ForeignKey(() => User)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'sender_id',
-        onDelete: 'CASCADE'
+        field: 'reporter_id'
     })
-    declare senderId: number;
+    declare reporterId: number;
 
     @Column({
         type: DataType.TEXT,
         allowNull: false,
     })
-    declare content: string;
-
-    @Default(false)
-    @Column({
-        type: DataType.BOOLEAN,
-        allowNull: false,
-        field: 'is_read'
-    })
-    declare isRead: boolean;
-
-    @Default(false)
-    @Column({
-        type: DataType.BOOLEAN,
-        allowNull: false,
-        field: 'is_moderated'
-    })
-    declare isModerated: boolean;
+    declare reason: string;
 
     @Column({
-        type: DataType.STRING(255),
-        allowNull: true,
-        field: 'moderation_reason'
+        type: DataType.ENUM('PENDING', 'RESOLVED', 'DISMISSED'),
+        defaultValue: 'PENDING',
+        allowNull: false
     })
-    declare moderationReason?: string;
+    declare status: string;
 
     @CreatedAt
     @Column({
@@ -84,9 +66,9 @@ export class ChatMessage extends Model {
     })
     declare updatedAt: Date;
 
-    @BelongsTo(() => Conversation)
-    conversation!: Conversation;
+    @BelongsTo(() => ChatMessage)
+    message!: ChatMessage;
 
     @BelongsTo(() => User)
-    sender!: User;
+    reporter!: User;
 }

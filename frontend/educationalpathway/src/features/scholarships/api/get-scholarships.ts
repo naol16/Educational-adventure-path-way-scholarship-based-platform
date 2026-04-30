@@ -21,7 +21,8 @@ export const exploreScholarships = async (filters?: ScholarshipFilters): Promise
 
 export const getScholarship = async (id: string | number): Promise<Scholarship> => {
   const response = await api.get(`/scholarships/${id}`);
-  return mapScholarship(response.data);
+  const data = response.data.status === 'success' ? response.data.data : response.data;
+  return mapScholarship(data);
 };
 
 export const getRecommendedScholarships = async (): Promise<Scholarship[]> => {

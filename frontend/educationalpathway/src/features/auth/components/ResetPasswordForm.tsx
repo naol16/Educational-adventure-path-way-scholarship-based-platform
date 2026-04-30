@@ -30,7 +30,7 @@ export function ResetPasswordForm() {
     e.preventDefault()
     setError(null)
 
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       setError('Invalid or missing reset token. Please request a new link.')
       return
     }

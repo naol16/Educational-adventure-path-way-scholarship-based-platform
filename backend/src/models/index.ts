@@ -30,3 +30,6 @@ export * from "./CounselorWalletTransaction.js";
 export * from "./MarketingTestimonial.js";
 export * from "./MarketingFaq.js";
 export * from "./MarketingStat.js";
+export * from "./UserWarning.js";
+export * from "./MessageReport.js";
+export * from "./AIChatMessage.js";
