@@ -9,57 +9,113 @@ class ChatService {
   ChatService(this._apiClient);
 
   Future<List<Conversation>> getConversations() async {
-    final response = await _apiClient.get('/api/chat/conversations');
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body)['data'];
-      return data.map((json) => Conversation.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.get('/api/chat/conversations');
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List raw = body['data'] ?? body ?? [];
+        return raw
+            .map((json) {
+              try {
+                return Conversation.fromJson(Map<String, dynamic>.from(json));
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<Conversation>()
+            .toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
-    return [];
   }
 
-  Future<List<ChatMessage>> getMessages(int conversationId) async {
-    final response = await _apiClient.get('/api/chat/$conversationId');
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body)['data'];
-      return data.map((json) => ChatMessage.fromJson(json)).toList();
+  /// Fetches messages oldest-first (backend returns newest-first, we reverse).
+  Future<List<ChatMessage>> getMessages(int conversationId, {int limit = 50, int offset = 0}) async {
+    try {
+      final response = await _apiClient.get(
+        '/api/chat/$conversationId',
+        query: {'limit': '$limit', 'offset': '$offset'},
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List raw = body['data'] ?? [];
+        final msgs = raw
+            .map((json) {
+              try {
+                return ChatMessage.fromJson(Map<String, dynamic>.from(json));
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<ChatMessage>()
+            .toList();
+        // Backend returns newest-first — reverse for chronological display
+        return msgs.reversed.toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
-    return [];
   }
 
   Future<Conversation?> startChat(int userId) async {
-    final response = await _apiClient.post('/api/chat/start', body: {
-      'receiverId': userId,
-    });
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return Conversation.fromJson(jsonDecode(response.body)['data']);
+    try {
+      final response = await _apiClient.post('/api/chat/start', body: {'receiverId': userId});
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final data = body['data'];
+        if (data != null) {
+          return Conversation.fromJson(Map<String, dynamic>.from(data));
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 
+  /// Sends via HTTP (reliable fallback). Returns the saved message.
   Future<ChatMessage?> sendMessage(int receiverId, String content) async {
-    final response = await _apiClient.post('/api/chat/send', body: {
-      'receiverId': receiverId,
-      'content': content,
-    });
-    if (response.statusCode == 201) {
-      return ChatMessage.fromJson(jsonDecode(response.body)['data']['message']);
+    try {
+      final response = await _apiClient.post('/api/chat/send', body: {
+        'receiverId': receiverId,
+        'content': content,
+      });
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final msgJson = body['data']?['message'];
+        if (msgJson != null) {
+          return ChatMessage.fromJson(Map<String, dynamic>.from(msgJson));
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 
   Future<String?> uploadFile(String filePath) async {
-    final multipartFile = await http.MultipartFile.fromPath('file', filePath);
-    final response = await _apiClient.postMultipart('/api/chat/upload', 
-      fields: {},
-      files: [multipartFile],
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['data']['url'];
+    try {
+      final multipartFile = await http.MultipartFile.fromPath('file', filePath);
+      final response = await _apiClient.postMultipart(
+        '/api/chat/upload',
+        fields: {},
+        files: [multipartFile],
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data']['url'];
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 
   Future<void> markAsRead(int conversationId) async {
-    await _apiClient.patch('/api/chat/read/$conversationId');
+    try {
+      await _apiClient.patch('/api/chat/read/$conversationId');
+    } catch (_) {}
   }
 }

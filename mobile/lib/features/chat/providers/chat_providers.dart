@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
 import 'package:mobile/features/chat/services/chat_service.dart';
-
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 
 final chatServiceProvider = Provider<ChatService>((ref) {
