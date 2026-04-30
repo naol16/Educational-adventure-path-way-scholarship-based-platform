@@ -17,6 +17,7 @@ router.put(
   validate(updateProfileValidation),
   UserController.updateProfile,
 );
+router.post("/upload-avatar", authenticate, UserController.uploadAvatar);
 
 router.get(
   "/booked-students",

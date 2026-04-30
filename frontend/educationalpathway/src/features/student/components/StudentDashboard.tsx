@@ -213,10 +213,9 @@ export const StudentDashboard = () => {
       className="min-h-screen bg-background text-foreground space-y-12 pb-20"
     >
       
-      {/* Welcome Section */}
       <motion.section
         variants={item}
-        className="relative overflow-hidden rounded-lg border border-border/50 bg-card p-8 md:p-12"
+        className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-8 md:p-12"
       >
         <div 
           className="absolute inset-0 z-0 opacity-40 dark:opacity-20"
@@ -236,21 +235,21 @@ export const StudentDashboard = () => {
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-6"
           >
             <Zap size={14} className="fill-primary" />
-            Personalized for you
+            Made for you
           </motion.div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 gradient-text">
-            Level up your future
+            Get ready for your future
           </h1>
 
           <p className="text-muted-foreground text-lg mb-10 max-w-xl leading-relaxed">
-            We've analyzed your profile and found <span className="font-bold text-foreground">{matches.length} matches</span> that align perfectly with your academic journey.
+            We've found <span className="font-bold text-foreground">{matches.length} scholarships</span> that are a great fit for you.
           </p>
 
           <div className="flex gap-4 flex-wrap">
             <Link href="/dashboard/scholarships">
               <Button size="lg" className="rounded-full px-8 primary-gradient text-white shadow-lg shadow-emerald-500/20 hover:scale-105 transition-transform">
-                Explore Matches
+                See Scholarships
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -440,14 +439,14 @@ export const StudentDashboard = () => {
         <motion.div variants={item} className="space-y-8">
           
           {/* Profile Strength Card */}
-          <Card className="bg-primary/5 dark:bg-primary/10 border-none rounded-3xl overflow-hidden relative group">
+          <Card className="bg-primary/5 dark:bg-primary/10 border-none rounded-2xl overflow-hidden relative group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[50px] -mr-16 -mt-16 group-hover:bg-primary/30 transition-colors" />
             
             <CardBody className="p-8 relative z-10">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="font-black text-xl mb-1">Profile Strength</h3>
-                  <p className="text-xs font-medium text-muted-foreground leading-tight">Complete your profile to <br/>double your match rate.</p>
+                  <h3 className="font-black text-xl mb-1">Profile Progress</h3>
+                  <p className="text-xs font-medium text-muted-foreground leading-tight">Complete your profile to <br/>find more scholarships.</p>
                 </div>
                 <div className="text-3xl font-black text-primary">
                   {completionRate}%

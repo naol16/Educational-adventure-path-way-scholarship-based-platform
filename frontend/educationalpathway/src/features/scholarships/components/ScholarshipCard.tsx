@@ -117,7 +117,7 @@ export const ScholarshipCard = ({ scholarship }: ScholarshipCardProps) => {
             </div>
 
             <p className="text-[9px] text-center font-medium text-muted-foreground/40 whitespace-nowrap">
-              Secure redirect to official source
+              Safe link to official website
             </p>
           </div>
 

@@ -28,12 +28,14 @@ export class UserService {
     userId: number,
     updates: any,
   ): Promise<User | null> {
-    // 1. Update User core fields (name, email, etc.)
-    const userUpdates: UpdateUserDto = {};
+    // 1. Update User core fields (name, avatarUrl, etc.)
+    const userUpdates: any = {};
     if (updates.name) userUpdates.name = updates.name;
-    // Add other user fields if necessary, but be careful not to allow role changes here if not admin
+    if (updates.avatarUrl) userUpdates.avatarUrl = updates.avatarUrl;
 
-    await UserRepository.update(userId, userUpdates);
+    if (Object.keys(userUpdates).length > 0) {
+      await UserRepository.update(userId, userUpdates);
+    }
 
     // 2. Fetch the user to check role
     const user = await UserRepository.findById(userId);
@@ -62,9 +64,8 @@ export class UserService {
           : undefined,
         idMatchConfidence: updates.idMatchConfidence,
         identityVerified: updates.identityVerified,
-        isOnboarded: true, // Mark as onboarded on update? Or only if explicit? Let's assume updates might complete profile.
+        isOnboarded: true,
 
-        // Additional matching fields
         intakeSeason: updates.intakeSeason,
         fundingRequirement:
           updates.fundingRequirement || updates.preferredFundingType,
@@ -103,12 +104,21 @@ export class UserService {
         notificationPreferences: updates.notificationPreferences,
       });
     } else if (user.role === UserRole.COUNSELOR) {
-      await CounselorRepository.update(userId, {
+      const counselorUpdates: any = {
         bio: updates.bio,
         areasOfExpertise: updates.areasOfExpertise,
         yearsOfExperience: updates.yearsOfExperience,
         isOnboarded: updates.isOnboarded,
-      });
+      };
+
+      // Also sync profile image if updated via global avatar
+      if (updates.avatarUrl) {
+        counselorUpdates.profileImageUrl = updates.avatarUrl;
+      } else if (updates.profileImageUrl) {
+        counselorUpdates.profileImageUrl = updates.profileImageUrl;
+      }
+
+      await CounselorRepository.update(userId, counselorUpdates);
     }
 
     // Return updated user
