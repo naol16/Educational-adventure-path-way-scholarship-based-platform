@@ -42,12 +42,12 @@ interface CriteriaMatch {
   studentValue: string;
   requiredValue: string;
   isMatched: boolean;
-  icon: any;
+  icon: React.ElementType;
 }
 
-const safeString = (val: any) => {
+const safeString = (val: unknown) => {
   if (Array.isArray(val)) return val.join(", ");
-  return val || "";
+  return (val as string) || "";
 };
 
 const cleanDataText = (text: string | null | undefined) => {
@@ -98,10 +98,10 @@ export default function ScholarshipDetailsPage() {
             setScholarship(data);
             setTrackingInfo(data.tracking || null);
             setError(null);
-        } catch (err: any) {
-        console.error("Failed to fetch scholarship details:", err);
-        setError("Failed to load scholarship details. Please try again later.");
-      } finally {
+        } catch (err: unknown) {
+          console.error("Failed to fetch scholarship details:", err);
+          setError("Failed to load scholarship details. Please try again later.");
+        } finally {
         setLoading(false);
       }
     };
@@ -115,7 +115,7 @@ export default function ScholarshipDetailsPage() {
     const criteria: CriteriaMatch[] = [];
 
     // Helper to extract values from stringified JSON or arrays
-    const extractValues = (val: any): string[] => {
+    const extractValues = (val: unknown): string[] => {
       if (!val) return [];
       if (Array.isArray(val)) return val;
       if (typeof val === 'string') {
@@ -350,7 +350,7 @@ export default function ScholarshipDetailsPage() {
                   <p className="text-xl font-black text-foreground truncate">{scholarship.amount || "Varies"}</p>
                 </div>
              </div>
-             <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
+              <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Study Level</p>
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

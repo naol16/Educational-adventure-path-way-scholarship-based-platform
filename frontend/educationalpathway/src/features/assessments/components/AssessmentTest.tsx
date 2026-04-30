@@ -125,7 +125,8 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     border: isTOEFL ? "border-blue-200" : "border-emerald-200",
     accent: isTOEFL ? "text-blue-500" : "text-emerald-500",
     bg: isTOEFL ? "bg-blue-50" : "bg-emerald-50",
-    btn: isTOEFL ? "primary-gradient-blue" : "primary-gradient-emerald"
+    btn: isTOEFL ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-500 hover:bg-emerald-600",
+    optionSelected: isTOEFL ? "border-blue-500 bg-blue-50 text-blue-700" : "border-emerald-500 bg-emerald-50 text-emerald-700"
   };
 
   const [currentSection, setCurrentSection] = useState<SectionKey>("reading");
@@ -353,8 +354,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                         const qId = sections.reading?.questions?.[currentQuestionIdx]?.id || currentQuestionIdx;
                         const isSelected = responses.reading[qId] === opt;
                         return (
-                          <button key={j} onClick={() => handleOptionSelect("reading", qId, opt)} className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group ${isSelected ? theme.border + " " + theme.bg + " " + theme.text : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}>
-                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? theme.border + " bg-white " + theme.text : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
+                          <button 
+                            key={j} 
+                            onClick={() => handleOptionSelect("reading", qId, opt)} 
+                            className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
+                          >
+                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
                                  {String.fromCharCode(65 + j)}
                              </div>
                              <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
@@ -387,8 +392,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                         const qId = sections.listening?.questions?.[currentQuestionIdx]?.id || currentQuestionIdx;
                         const isSelected = responses.listening[qId] === opt;
                         return (
-                          <button key={j} onClick={() => handleOptionSelect("listening", qId, opt)} className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group ${isSelected ? theme.border + " " + theme.bg + " " + theme.text : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}>
-                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? theme.border + " bg-white " + theme.text : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
+                          <button 
+                            key={j} 
+                            onClick={() => handleOptionSelect("listening", qId, opt)} 
+                            className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
+                          >
+                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
                                  {String.fromCharCode(65 + j)}
                              </div>
                              <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
@@ -428,7 +437,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
 
       <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0">
         <Button 
-          variant="ghost" 
+          variant="outline" 
           onClick={() => {
             if (currentQuestionIdx > 0) {
               setCurrentQuestionIdx(prev => prev - 1);
@@ -437,9 +446,9 @@ export function AssessmentTest({ examData, onComplete }: Props) {
             }
           }}
           disabled={currentIdx === 0 && currentQuestionIdx === 0}
-          className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100"
+          className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted transition-all shadow-sm"
         >
-          <ArrowLeft className="mr-3" /> Back
+          <ArrowLeft className="mr-3 size-4" /> Back
         </Button>
         
         <div className="flex gap-2">
@@ -448,19 +457,23 @@ export function AssessmentTest({ examData, onComplete }: Props) {
           ))}
         </div>
 
-        {currentIdx < 3 || (currentSection === "reading" || currentSection === "listening" ? currentQuestionIdx < (sections[currentSection]?.questions?.length || 0) - 1 : false) ? (
+        {currentIdx < 3 || ((currentSection === "reading" || currentSection === "listening") ? currentQuestionIdx < ((sections[currentSection] as any)?.questions?.length || 0) - 1 : false) ? (
           <Button 
             onClick={() => {
-              const currentQs = sections[currentSection]?.questions || [];
+              const currentSecData = sections[currentSection];
+              const currentQs = (currentSection === "reading" || currentSection === "listening") 
+                ? (currentSecData as any)?.questions || [] 
+                : [];
+                
               if (currentQuestionIdx < currentQs.length - 1) {
                 setCurrentQuestionIdx(prev => prev + 1);
               } else if (currentIdx < 3) {
                 handleSectionChange(SECTION_ORDER[currentIdx + 1]);
               }
             }} 
-            className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] ${theme.primary} text-white`}
+            className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg hover:shadow-xl transition-all ${theme.btn} text-white`}
           >
-            Continue <ArrowRight className="ml-3" />
+            Continue <ArrowRight className="ml-3 size-4" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] bg-black text-white`}>Finalize Exam <CheckCircle2 className="ml-3" /></Button>

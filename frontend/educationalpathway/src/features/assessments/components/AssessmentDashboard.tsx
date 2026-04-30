@@ -65,6 +65,8 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
     accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
     bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
     border: envMode === "IELTS" ? "border-emerald-200" : "border-blue-200",
+    gradient: envMode === "IELTS" ? "from-emerald-500 to-emerald-600" : "from-blue-600 to-blue-700",
+    btn: envMode === "IELTS" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700",
   };
 
   useEffect(() => {
@@ -166,10 +168,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
         </div>
         <Button
           onClick={fetchStats}
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100 transition-opacity"
+          className="font-bold uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted/50 transition-all shadow-sm"
         >
+          <Loader2 className={`mr-2 size-3 ${loadingStats ? 'animate-spin' : ''}`} />
           Refresh Data Stream
         </Button>
       </div>
@@ -274,12 +277,19 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                       <button
                         key={t}
                         onClick={() => setExamType(t)}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${
                           examType === t
-                            ? "bg-white text-foreground shadow-sm border border-border/40"
+                            ? "text-white"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
+                        {examType === t && (
+                          <motion.div
+                            layoutId="activeExamType"
+                            className={`absolute inset-0 rounded-xl shadow-md z-[-1] ${t === 'IELTS' ? 'bg-emerald-600' : 'bg-blue-600'}`}
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          />
+                        )}
                         {t}
                       </button>
                     ))}
@@ -309,16 +319,16 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <Button
                 onClick={handleStartExam}
                 disabled={loading}
-                className="w-full primary-gradient py-6 text-base font-bold mt-2"
+                className={`w-full py-6 text-base font-bold mt-2 shadow-lg hover:shadow-xl transition-all duration-300 ${theme.btn} text-white`}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin mr-2 size-4" /> Generating
+                    <Loader2 className="animate-spin mr-2 size-5" /> Generating
                     Exam...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 size-4" /> Generate Assessment
+                    <Sparkles className="mr-2 size-5" /> Generate Assessment
                   </>
                 )}
               </Button>
@@ -435,22 +445,22 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                          </div>
                        </div>
  
-                       <Button
-                         onClick={() => {
-                           const normalizedItem = {
-                             ...item,
-                             testId: item.testId || item.test_id
-                           };
-                           onViewResult(normalizedItem);
-                         }}
-                         variant="ghost"
-                         size="sm"
-                         className="gap-2 px-6 h-12 rounded-2xl font-bold uppercase tracking-widest text-[9px] opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white"
-                       >
-                         <Eye size={14} />
-                         View Matrix
-                         <ChevronRight size={14} />
-                       </Button>
+                        <Button
+                          onClick={() => {
+                            const normalizedItem = {
+                              ...item,
+                              testId: item.testId || item.test_id
+                            };
+                            onViewResult(normalizedItem);
+                          }}
+                          variant="secondary"
+                          size="sm"
+                          className={`gap-2 px-6 h-12 rounded-2xl font-bold uppercase tracking-widest text-[9px] transition-all border border-border/40 shadow-sm ${theme.text} hover:bg-muted`}
+                        >
+                          <Eye size={14} />
+                          View Matrix
+                          <ChevronRight size={14} />
+                        </Button>
                      </motion.div>
                    ))}
                  </div>

@@ -125,7 +125,7 @@ export function AssessmentResultView({
           {error ||
             "This result has expired from the cache. Complete a new assessment to track progress."}
         </p>
-        <Button onClick={onBack} variant="outline" className="px-8">
+        <Button onClick={onBack} variant="outline" className="px-8 font-bold border-border/40 hover:bg-muted shadow-sm">
           <ArrowLeft className="mr-2 size-4" /> Back to Dashboard
         </Button>
       </div>
@@ -166,7 +166,7 @@ export function AssessmentResultView({
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 pb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button onClick={onBack} variant="ghost" size="sm" className="gap-2">
+        <Button onClick={onBack} variant="outline" size="sm" className="gap-2 font-bold border-border/40 hover:bg-muted shadow-sm">
           <ArrowLeft className="size-4" /> Back
         </Button>
         <div className="flex-1">
@@ -186,42 +186,46 @@ export function AssessmentResultView({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
         >
-          <Card className="border border-border h-full">
+          <Card className="border border-border/60 rounded-[32px] overflow-hidden shadow-xs h-full">
             <CardBody className="p-8 flex flex-col items-center justify-center text-center bg-linear-to-br from-primary/5 to-accent/5">
-              <div className="inline-flex items-center justify-center p-3 bg-success/10 rounded-full mb-4">
-                <CheckCircle2 className="size-8 text-success" />
+              <div className={`inline-flex items-center justify-center p-4 rounded-full mb-6 ${band >= threshold ? 'bg-success/10' : 'bg-primary/10'}`}>
+                {band >= threshold ? <Award className="size-10 text-success" /> : <TrendingUp className="size-10 text-primary" />}
               </div>
-              <p className="text-label text-muted-foreground mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2">
                 Overall {isTOEFL ? "Score" : "Band Score"}
               </p>
-              <h2 className={`text-7xl font-black ${getBandColor(band)}`}>
+              <h2 className={`text-8xl font-black tracking-tighter ${getBandColor(band)}`}>
                 {evaluation.overall_band || "0"}
               </h2>
-              <p className="text-sm text-muted-foreground mt-3">out of {maxScore}</p>
+              <div className="flex items-center gap-2 mt-4 text-sm font-bold text-muted-foreground/40">
+                <span>SYSTEM DIAGNOSTIC</span>
+                <div className="size-1 bg-current rounded-full" />
+                <span>MAX {maxScore}</span>
+              </div>
 
               {/* Progress bar */}
-              <div className="w-full mt-5 bg-muted h-2.5 rounded-full overflow-hidden">
+              <div className="w-full mt-8 bg-muted/30 h-3 rounded-full overflow-hidden p-0.5 border border-border/20">
                 <motion.div
                   className="h-full bg-linear-to-r from-primary to-accent rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${bandPercent}%` }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {bandPercent.toFixed(0)}% of target {isTOEFL ? "score" : "band"} {maxScore}
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-3 opacity-60">
+                {bandPercent.toFixed(0)}% Proficiency Level
               </p>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Subscores */}
-        <Card className="border border-border">
-          <CardBody className="p-6">
-            <h3 className="font-bold mb-5 flex items-center gap-2">
-              <TrendingUp className="text-primary size-5" /> Section Breakdown
+        <Card className="border border-border/60 rounded-[32px] overflow-hidden shadow-xs">
+          <CardBody className="p-8">
+            <h3 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2 opacity-60">
+              <BarChart3 className="text-primary size-4" /> Sectional Matrix
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-6">
               {subscoredItems.map((s, idx) => {
                 const val = parseFloat(s.val || 0);
                 const pct = Math.min(100, (val / maxSectionScore) * 100);
@@ -231,19 +235,20 @@ export function AssessmentResultView({
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 * idx }}
+                    className="space-y-2"
                   >
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        {sectionIcons[s.name]}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-3 font-bold uppercase tracking-widest text-[10px]">
+                        <div className="p-2 bg-muted rounded-lg">{sectionIcons[s.name]}</div>
                         {s.name}
                       </span>
                       <span
-                        className={`font-bold text-base ${getBandColor(val)}`}
+                        className={`font-black text-lg ${getBandColor(val)}`}
                       >
                         {s.val || "—"}
                       </span>
                     </div>
-                    <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-muted/30 h-2 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full bg-primary rounded-full"
                         initial={{ width: 0 }}
