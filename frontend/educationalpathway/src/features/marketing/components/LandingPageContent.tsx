@@ -37,28 +37,28 @@ const features = [
   {
     icon: Award,
     title: "Smart Scholarship Match",
-    description: "Our AI engine analyzes your academic profile, goals, and background to surface scholarships perfectly aligned with your sheer potential.",
+    description: "Our AI finds the best scholarships for you based on your grades and goals.",
     color: "from-emerald-400 to-emerald-600",
     shadow: "shadow-emerald-500/20",
   },
   {
     icon: Users,
     title: "Expert Counselor Network",
-    description: "Connect with verified counselors who have guided hundreds. Get personalized advice, CV reviews, and targeted interview prep.",
+    description: "Talk to experts who have helped many students. Get advice on your CV and interview prep.",
     color: "from-teal-400 to-cyan-500",
     shadow: "shadow-cyan-500/20",
   },
   {
     icon: BookOpen,
     title: "Academic Path Planning",
-    description: "Visualize deadlines, requirements, and milestones in one cinematic dashboard. Map your journey from today to graduation.",
+    description: "See all your deadlines and requirements in one easy dashboard. Plan your journey to graduation.",
     color: "from-indigo-400 to-violet-500",
     shadow: "shadow-violet-500/20",
   },
   {
     icon: Zap,
     title: "AI-Powered Assessments",
-    description: "Take mock exams powered by AI. Get instant scoring, personalized feedback reports, and adaptive learning tags for rapid improvement.",
+    description: "Take practice exams with AI. Get your score and feedback instantly to help you improve fast.",
     color: "from-amber-400 to-orange-500",
     shadow: "shadow-orange-500/20",
   },
@@ -191,7 +191,7 @@ export const LandingPageContent = () => {
             >
               <Sparkles size={14} className="text-emerald-400 animate-pulse" />
               <span className="bg-clip-text text-transparent bg-linear-to-r from-emerald-300 to-teal-200">
-                Revolutionizing Student Success with AI
+                A better way for students to succeed with AI
               </span>
             </motion.div>
 
@@ -216,7 +216,7 @@ export const LandingPageContent = () => {
               transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="mx-auto max-w-2xl text-xl md:text-2xl text-white/50 leading-relaxed font-medium"
             >
-              The definitive platform for Ethiopian & African students. Discover elite scholarships, master exams, and secure your place at the world's top universities.
+              The best platform for students. Find great scholarships, pass your exams, and get into the world's top universities.
             </motion.p>
 
             <motion.div
@@ -227,7 +227,7 @@ export const LandingPageContent = () => {
             >
               <Link href="/role-selection">
                 <button className="h-16 px-10 rounded-2xl bg-linear-to-r from-emerald-500 to-teal-600 text-white font-black tracking-wide flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:shadow-[0_0_60px_rgba(16,185,129,0.5)]">
-                  GET STARTED FOR FREE
+                  START NOW
                   <ArrowRight size={20} />
                 </button>
               </Link>
@@ -245,14 +245,14 @@ export const LandingPageContent = () => {
             <motion.div 
               animate={{ y: [0, -20, 0] }} 
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-1/4 left-10 w-24 h-24 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-xl flex items-center justify-center shadow-2xl"
+              className="absolute top-1/4 left-10 w-24 h-24 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-xl flex items-center justify-center shadow-2xl"
             >
               <GraduationCap className="text-emerald-400" size={40} />
             </motion.div>
             <motion.div 
               animate={{ y: [0, 20, 0] }} 
               transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute bottom-1/4 right-10 w-32 h-32 rounded-3xl bg-teal-500/10 border border-teal-500/20 backdrop-blur-xl flex items-center justify-center shadow-2xl"
+              className="absolute bottom-1/4 right-10 w-32 h-32 rounded-2xl bg-teal-500/10 border border-teal-500/20 backdrop-blur-xl flex items-center justify-center shadow-2xl"
             >
               <Globe className="text-teal-400" size={48} />
             </motion.div>
@@ -266,10 +266,10 @@ export const LandingPageContent = () => {
             <div className="mb-20 text-center md:text-left">
               <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6 font-serif">
                 Smarter tools. <br />
-                <span className="text-white/40">Accelerated outcomes.</span>
+                <span className="text-white/40">Get better results.</span>
               </h2>
               <p className="text-white/50 text-lg max-w-2xl font-medium">
-                We've built the most comprehensive ecosystem for international education, specifically designed for the next generation of African leaders.
+                We have the best tools for international education, made for the next generation of leaders.
               </p>
             </div>
 
@@ -335,7 +335,7 @@ export const LandingPageContent = () => {
               <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6 font-serif">
                 Your journey, <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-teal-400">mastered.</span>
               </h2>
-              <p className="text-white/50 text-lg font-medium">A simplified, data-driven methodology to take you from dreamer to scholar.</p>
+              <p className="text-white/50 text-lg font-medium">An easy, data-driven way to help you reach your goals.</p>
             </div>
 
             <div className="grid md:grid-cols-4 gap-12 relative">
@@ -383,7 +383,7 @@ export const LandingPageContent = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.1 }}
-                        className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 relative group"
+                        className="p-8 rounded-2xl bg-white/5 border border-white/10 relative group"
                       >
                          <Quote className="absolute top-8 right-8 text-emerald-500/20 w-12 h-12" />
                          <div className="flex items-center gap-4 mb-8">
@@ -414,7 +414,7 @@ export const LandingPageContent = () => {
                    {currentFaqs.map((faq, i) => (
                       <motion.div 
                         key={i}
-                        className={`rounded-3xl border transition-all duration-300 ${activeFaq === i ? 'border-emerald-500/50 bg-white/5' : 'border-white/5 bg-transparent'}`}
+                        className={`rounded-2xl border transition-all duration-300 ${activeFaq === i ? 'border-emerald-500/50 bg-white/5' : 'border-white/5 bg-transparent'}`}
                       >
                          <button 
                            onClick={() => setActiveFaq(activeFaq === i ? null : i)}
@@ -453,19 +453,19 @@ export const LandingPageContent = () => {
           >
             <div className="p-px rounded-2xl bg-linear-to-b from-white/20 to-white/0 shadow-2xl">
               <div className="bg-[#0a0a0a]/90 backdrop-blur-3xl rounded-[calc(1rem-1px)] p-16 md:p-24 border border-white/5">
-                <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mx-auto mb-10 border border-emerald-500/20">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-10 border border-emerald-500/20">
                   <Globe className="h-10 w-10 text-emerald-400" strokeWidth={1.5} />
                 </div>
                 <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-8 font-serif">
                   Ready to go global?
                 </h2>
                 <p className="text-white/50 text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-                  Join 10,000+ students securing their academic futures. Your global education journey begins with a single click.
+                  Join 10,000+ students getting ready for their future. Start your journey today.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-6 justify-center">
                   <Link href="/role-selection">
                     <button className="h-18 px-12 rounded-2xl bg-white text-black font-black tracking-widest text-sm flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shadow-2xl shadow-white/10 uppercase">
-                      LAUNCH PLATFORM
+                      START NOW
                       <ArrowRight size={20} />
                     </button>
                   </Link>

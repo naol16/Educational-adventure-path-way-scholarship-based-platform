@@ -1550,6 +1550,15 @@ export class CounselorService {
     return await this.formatCounselorResponse(counselor, user);
   }
 
+  static async getPublicProfileById(id: number): Promise<any> {
+    const counselor = await CounselorRepository.findById(id);
+    if (!counselor || !counselor.isActive) {
+      throw httpError(404, "Counselor profile not found or inactive");
+    }
+    const user = await User.findByPk(counselor.userId);
+    return await this.formatCounselorResponse(counselor, user);
+  }
+
   static async getStudentBookings(userId: number, role: UserRole = UserRole.STUDENT): Promise<any[]> {
     const baseWhere = {
       status: { [Op.in]: ['pending', 'confirmed', 'started', 'awaiting_confirmation', 'completed'] },

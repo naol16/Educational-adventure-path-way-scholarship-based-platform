@@ -44,10 +44,14 @@ export function DashboardHeader() {
             aria-expanded={showUserMenu}
             aria-haspopup="true"
           >
-            <div className="h-8 w-8 rounded-full primary-gradient flex items-center justify-center shrink-0">
-              <span className="text-primary-foreground text-xs font-bold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-              </span>
+            <div className="h-8 w-8 rounded-full primary-gradient flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-primary/20">
+              {user?.avatarUrl || user?.profileImageUrl ? (
+                <img src={user.avatarUrl || user.profileImageUrl} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-primary-foreground text-xs font-bold">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </span>
+              )}
             </div>
           </button>
 
@@ -71,7 +75,7 @@ export function DashboardHeader() {
                 </div>
 
                 <Link
-                  href={user?.role === 'counselor' ? '/dashboard/counselor/profile' : '/dashboard/student/profile'}
+                  href={user?.role === 'counselor' ? '/dashboard/counselor/profile-info' : '/dashboard/student/profile-info'}
                   className="flex items-center gap-3 px-4 py-2.5 mt-1 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   onClick={() => setShowUserMenu(false)}
                 >
