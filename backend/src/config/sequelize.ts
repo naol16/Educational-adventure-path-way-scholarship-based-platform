@@ -124,7 +124,7 @@ export const connectSequelize = async () => {
 
     // Sync models with database (creates tables if missing)
     // Note: enabled alter: true to apply new column changes
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log("Database models synchronized");
   } catch (error) {
     console.error("Sequelize connection error:", error);
