@@ -64,6 +64,8 @@ class AuthNotifier extends AsyncNotifier<User?> {
         ],
       );
 
+      // Sign out first so the account picker always shows
+      await googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         // User canceled
