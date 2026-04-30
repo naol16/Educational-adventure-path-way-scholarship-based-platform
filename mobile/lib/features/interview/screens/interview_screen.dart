@@ -227,70 +227,176 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> with SingleTi
                   ),
                 ),
                 if (state.history.isNotEmpty) ...[
-                  const SizedBox(height: 40),
-                  Row(
-                    children: [
-                      Icon(LucideIcons.history, color: DesignSystem.primary(context), size: 18),
-                      const SizedBox(width: 10),
-                      Text("PREVIOUS INTERVIEWS", style: DesignSystem.labelStyle(buildContext: context, fontSize: 14)),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  ...state.history
-                      .where((interview) {
-                        final scoreStr = interview['aiEvaluation']?['score']?.split('/')[0] ?? "0";
-                        final score = int.tryParse(scoreStr) ?? 0;
-                        return score > 0;
-                      })
-                      .take(5)
-                      .map((interview) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: InkWell(
-                      onTap: () => ref.read(interviewProvider.notifier).loadInterview(interview),
-                      borderRadius: BorderRadius.circular(15),
-                      child: GlassContainer(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: DesignSystem.primary(context).withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                interview['aiEvaluation']?['score']?.split('/')[0] ?? "0",
-                                style: GoogleFonts.plusJakartaSans(color: DesignSystem.primary(context), fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    interview['country'] ?? "Mock Interview",
-                                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 13),
-                                  ),
-                                  Text(
-                                    interview['createdAt'] != null 
-                                      ? DateTime.parse(interview['createdAt']).toString().split(' ')[0]
-                                      : "Recent",
-                                    style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context), size: 16),
-                          ],
-                        ),
-                      ),
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () => _showInterviewHistory(context, state.history),
+                    icon: Icon(LucideIcons.history, size: 18, color: DesignSystem.primary(context)),
+                    label: Text(
+                      "Previous Interviews (${state.history.where((i) => (int.tryParse(i['aiEvaluation']?['score']?.split('/')[0] ?? '0') ?? 0) > 0).length})",
+                      style: GoogleFonts.inter(color: DesignSystem.primary(context), fontWeight: FontWeight.w600),
                     ),
-                  )).toList(),
-                  const SizedBox(height: 20),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      side: BorderSide(color: DesignSystem.primary(context).withValues(alpha: 0.5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
                 ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showInterviewHistory(BuildContext context, List<dynamic> history) {
+    final scored = history
+        .where((i) => (int.tryParse(i['aiEvaluation']?['score']?.split('/')[0] ?? '0') ?? 0) > 0)
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: DesignSystem.themeBackground(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: DesignSystem.glassBorder(context))),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 16),
+                decoration: BoxDecoration(
+                  color: DesignSystem.glassBorder(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.history, color: DesignSystem.primary(context), size: 20),
+                    const SizedBox(width: 10),
+                    Text("Interview History",
+                        style: GoogleFonts.plusJakartaSans(
+                            color: DesignSystem.mainText(context),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18)),
+                    const Spacer(),
+                    Text("${scored.length} sessions",
+                        style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (scored.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.clipboardList, color: DesignSystem.labelText(context), size: 48),
+                        const SizedBox(height: 12),
+                        Text("No completed interviews yet",
+                            style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 15)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    itemCount: scored.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final interview = scored[index] as Map<String, dynamic>;
+                      final score = interview['aiEvaluation']?['score'] ?? '0/10';
+                      final scoreNum = int.tryParse(score.split('/')[0]) ?? 0;
+                      final country = interview['country'] ?? 'Mock Interview';
+                      final university = interview['university'] ?? '';
+                      final dateStr = interview['createdAt'] != null
+                          ? DateTime.tryParse(interview['createdAt'].toString())
+                                  ?.toLocal()
+                                  .toString()
+                                  .split(' ')[0] ??
+                              'Recent'
+                          : 'Recent';
+                      final scoreColor = scoreNum >= 7
+                          ? const Color(0xFF10B981)
+                          : scoreNum >= 5
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFFF43F5E);
+
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          ref.read(interviewProvider.notifier).loadInterview(interview);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: GlassContainer(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              // Score badge
+                              Container(
+                                width: 48, height: 48,
+                                decoration: BoxDecoration(
+                                  color: scoreColor.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: scoreColor.withValues(alpha: 0.4)),
+                                ),
+                                child: Center(
+                                  child: Text(score,
+                                      style: GoogleFonts.plusJakartaSans(
+                                          color: scoreColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11)),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(country,
+                                        style: GoogleFonts.plusJakartaSans(
+                                            color: DesignSystem.mainText(context),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14)),
+                                    if (university.isNotEmpty)
+                                      Text(university,
+                                          style: GoogleFonts.inter(
+                                              color: DesignSystem.labelText(context), fontSize: 12),
+                                          overflow: TextOverflow.ellipsis),
+                                    const SizedBox(height: 2),
+                                    Text(dateStr,
+                                        style: GoogleFonts.inter(
+                                            color: DesignSystem.labelText(context), fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                              Icon(LucideIcons.chevronRight,
+                                  color: DesignSystem.labelText(context), size: 16),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
