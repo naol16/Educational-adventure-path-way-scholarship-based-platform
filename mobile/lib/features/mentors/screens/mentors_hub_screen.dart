@@ -23,6 +23,15 @@ class MentorsHubScreen extends ConsumerStatefulWidget {
 
 class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
   int _activeSubTab = 0; // 0 for Experts, 1 for Messages
+  String _searchQuery = '';
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +48,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
               children: [
                 const SizedBox(height: 20),
                 _buildHeader(),
+                if (_isSearching) _buildSearchBar(),
                 const SizedBox(height: 20),
                 _buildSubTabSwitcher(),
                 const SizedBox(height: 25),
@@ -80,11 +90,50 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
               GlassContainer(
                 padding: const EdgeInsets.all(10),
                 borderRadius: 12,
-                child: Icon(LucideIcons.search, color: DesignSystem.mainText(context), size: 20),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) {
+                      _searchQuery = '';
+                      _searchController.clear();
+                    }
+                  }),
+                  child: Icon(
+                    _isSearching ? LucideIcons.x : LucideIcons.search,
+                    color: _isSearching ? DesignSystem.primary(context) : DesignSystem.mainText(context),
+                    size: 20,
+                  ),
+                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: DesignSystem.surface(context),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: DesignSystem.glassBorder(context)),
+        ),
+        child: TextField(
+          controller: _searchController,
+          autofocus: true,
+          style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Search by name or expertise...',
+            hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 14),
+            prefixIcon: Icon(LucideIcons.search, color: DesignSystem.labelText(context), size: 18),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+        ),
       ),
     );
   }
@@ -137,11 +186,39 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
     final mentorsAsync = ref.watch(recommendedCounselorsProvider);
 
     return mentorsAsync.when(
-      data: (mentors) => ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: mentors.length,
-        itemBuilder: (context, index) => _buildMentorCard(mentors[index]),
-      ),
+      data: (mentors) {
+        final filtered = _searchQuery.isEmpty
+            ? mentors
+            : mentors.where((m) {
+                final name = m.name.toLowerCase();
+                final position = (m.currentPosition ?? '').toLowerCase();
+                final expertise = m.areasOfExpertise.join(' ').toLowerCase();
+                return name.contains(_searchQuery) ||
+                    position.contains(_searchQuery) ||
+                    expertise.contains(_searchQuery);
+              }).toList();
+
+        if (filtered.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(LucideIcons.searchX, color: DesignSystem.labelText(context), size: 48),
+                const SizedBox(height: 12),
+                Text('No mentors found for "$_searchQuery"',
+                    style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 14),
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) => _buildMentorCard(filtered[index]),
+        );
+      },
       loading: () => _buildShimmerList(),
       error: (err, stack) => Center(child: Text("Error loading experts", style: TextStyle(color: Colors.red))),
     );
@@ -177,16 +254,30 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Line 1: Counselor name + verification badge
                     Row(
                       children: [
-                        Text(mentor.currentPosition ?? "Expert Mentor", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 16)),
+                        Flexible(
+                          child: Text(
+                            mentor.name.isNotEmpty ? mentor.name : (mentor.currentPosition ?? "Expert Mentor"),
+                            style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         if (mentor.verificationStatus == 'verified') ...[
                           const SizedBox(width: 4),
                           const Icon(Icons.verified, color: Colors.blue, size: 14),
                         ]
                       ],
                     ),
-                    Text("${mentor.organization ?? 'Independent'} • ${mentor.yearsOfExperience}y Exp", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12)),
+                    // Line 2: Expertise (first area) instead of org/exp
+                    Text(
+                      mentor.areasOfExpertise.isNotEmpty
+                          ? mentor.areasOfExpertise.first
+                          : (mentor.currentPosition ?? 'Expert Mentor'),
+                      style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -201,6 +292,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                 ),
               ),
               Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text("\$${mentor.hourlyRate.toInt()}", style: GoogleFonts.plusJakartaSans(color: DesignSystem.primary(context), fontWeight: FontWeight.w800, fontSize: 18)),
                   Text("/hr", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10)),

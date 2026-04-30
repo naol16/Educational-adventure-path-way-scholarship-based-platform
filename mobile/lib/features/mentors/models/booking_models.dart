@@ -65,28 +65,35 @@ class Booking {
 class Review {
   final int id;
   final int studentId;
-  final String studentName;
+  final int? bookingId;
+  final int counselorId;
+  final String? studentName;
   final int rating;
-  final String comment;
+  final String? comment;
   final DateTime createdAt;
 
   Review({
     required this.id,
     required this.studentId,
-    required this.studentName,
+    this.bookingId,
+    required this.counselorId,
+    this.studentName,
     required this.rating,
-    required this.comment,
+    this.comment,
     required this.createdAt,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
       id: json['id'],
-      studentId: json['studentId'],
-      studentName: json['student']?['name'] ?? 'Anonymous',
-      rating: json['rating'],
-      comment: json['comment'] ?? '',
-      createdAt: DateTime.parse(json['createdAt']),
+      studentId: json['studentId'] ?? 0,
+      bookingId: json['bookingId'],
+      counselorId: json['counselorId'] ?? 0,
+      // Backend returns studentName directly from CounselorService.getReviews
+      studentName: json['studentName'] ?? json['student']?['name'],
+      rating: json['rating'] ?? 0,
+      comment: json['comment'],
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }

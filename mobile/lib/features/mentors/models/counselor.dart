@@ -3,6 +3,7 @@ import 'package:mobile/models/user.dart';
 class Counselor {
   final int id;
   final int userId;
+  final String name;
   final String bio;
   final List<String> areasOfExpertise;
   final double hourlyRate;
@@ -21,6 +22,7 @@ class Counselor {
   Counselor({
     required this.id,
     required this.userId,
+    required this.name,
     required this.bio,
     required this.areasOfExpertise,
     required this.hourlyRate,
@@ -38,12 +40,42 @@ class Counselor {
   });
 
   factory Counselor.fromJson(Map<String, dynamic> json) {
-    // Backend might return nested user object or just ID
+    // areasOfExpertise can be a comma-separated string or a JSON array string
+    List<String> _parseList(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value.map((e) => e.toString().trim()).toList();
+      final str = value.toString().trim();
+      if (str.startsWith('[')) {
+        try {
+          final decoded = (str
+              .replaceAll('[', '')
+              .replaceAll(']', '')
+              .replaceAll('"', '')
+              .split(','));
+          return decoded.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        } catch (_) {}
+      }
+      return str.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+
+    // Safe name extraction — json['user'] is dynamic, need explicit cast
+    String _parseName() {
+      final direct = json['name'];
+      if (direct != null && direct is String && direct.isNotEmpty) return direct;
+      final user = json['user'];
+      if (user is Map) {
+        final uName = user['name'];
+        if (uName != null && uName is String && uName.isNotEmpty) return uName;
+      }
+      return '';
+    }
+
     return Counselor(
       id: json['id'],
       userId: json['userId'] ?? 0,
+      name: _parseName(),
       bio: json['bio'] ?? '',
-      areasOfExpertise: (json['areasOfExpertise'] as String?)?.split(',').map((e) => e.trim()).toList() ?? [],
+      areasOfExpertise: _parseList(json['areasOfExpertise']),
       hourlyRate: double.tryParse(json['hourlyRate']?.toString() ?? '0') ?? 0.0,
       yearsOfExperience: json['yearsOfExperience'] ?? 0,
       verificationStatus: json['verificationStatus'] ?? 'pending',
@@ -54,8 +86,11 @@ class Counselor {
       universityName: json['universityName'],
       currentPosition: json['currentPosition'],
       organization: json['organization'],
-      specializedCountries: (json['specializedCountries'] as String?)?.split(',').map((e) => e.trim()).toList() ?? [],
-      matchScore: double.tryParse(json['matchScore']?.toString() ?? ''),
+      specializedCountries: _parseList(json['specializedCountries']),
+      // Backend returns 'recommendationScore' from the recommendations endpoint
+      matchScore: double.tryParse(
+            (json['recommendationScore'] ?? json['matchScore'])?.toString() ?? '',
+          ),
     );
   }
 }

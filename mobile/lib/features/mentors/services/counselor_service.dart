@@ -38,10 +38,12 @@ class CounselorService {
   }
 
   Future<Map<String, dynamic>?> createBooking(int counselorId, int slotId, {String? notes}) async {
+    const mobileReturnUrl = 'edupath://payment/success';
     final response = await _apiClient.post('/api/counselors/bookings', body: {
       'counselorId': counselorId,
       'slotId': slotId,
-      'notes': notes,
+      'returnUrl': mobileReturnUrl,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
     });
     if (response.statusCode == 201) {
       final body = jsonDecode(response.body);
@@ -86,8 +88,11 @@ class CounselorService {
   Future<List<Review>> getCounselorReviews(int counselorId) async {
     final response = await _apiClient.get('/api/counselors/$counselorId/reviews');
     if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body)['data'];
-      return data.map((json) => Review.fromJson(json)).toList();
+      final body = jsonDecode(response.body);
+      // Backend returns { data: { reviews: [...], totalReviews, averageRating, ... } }
+      final data = body['data'];
+      final List reviewsList = (data is Map ? data['reviews'] : data) ?? [];
+      return reviewsList.map((json) => Review.fromJson(json)).toList();
     }
     return [];
   }

@@ -178,14 +178,16 @@ class MentorProfileScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Text(mentor.currentPosition ?? "Expert Mentor", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w800, fontSize: 26)),
+                      Flexible(
+                        child: Text(mentor.currentPosition ?? "Expert Mentor", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w800, fontSize: 26), overflow: TextOverflow.ellipsis),
+                      ),
                       if (mentor.verificationStatus == 'verified') ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.verified, color: Colors.blue, size: 22),
                       ]
                     ],
                   ),
-                  Text(mentor.organization ?? "Global Education Consultant", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 16)),
+                  Text(mentor.organization ?? "Global Education Consultant", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 16), overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -288,7 +290,7 @@ class MentorProfileScreen extends ConsumerWidget {
               flex: 3,
               child: PrimaryButton(
                 onPressed: () => _openBookingSheet(context),
-                text: "Book Counseling Session",
+                text: "Book Session",
               ),
             ),
           ],
