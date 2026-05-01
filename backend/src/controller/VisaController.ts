@@ -34,7 +34,7 @@ export class VisaController {
   static async initiateCall(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user?.id;
-      const { country, university } = req.body;
+      const { country, university, interviewType = "visa" } = req.body;
 
       if (!userId) {
         res.status(401).json({ error: "Unauthorized" });
@@ -51,7 +51,8 @@ export class VisaController {
         studentId: student.id,
         studentName: student.user?.name || "Student",
         university: university || student.currentUniversity || "Foreign University",
-        country
+        country,
+        interviewType
       });
 
       res.status(201).json({ status: "success", data: result });
@@ -131,7 +132,7 @@ export class VisaController {
   static async finalizeInterview(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const { transcript } = req.body;
+      const { transcript, interviewType = "visa" } = req.body;
 
       if (!transcript || !Array.isArray(transcript)) {
         res.status(400).json({ error: "Transcript data is required for evaluation." });
@@ -151,7 +152,8 @@ export class VisaController {
 
       const evaluation = await VisaService.evaluateCall({
         interviewId: id,
-        transcript
+        transcript,
+        interviewType
       });
 
       const updated = await VisaMockInterview.findByPk(id);

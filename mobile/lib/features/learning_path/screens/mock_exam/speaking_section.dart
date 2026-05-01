@@ -153,6 +153,7 @@ class _SpeakingSectionState extends ConsumerState<SpeakingSection> {
               ),
               boxShadow: _isRecording ? [
                 BoxShadow(
+                  // ignore: deprecated_member_use
                   color: const Color(0xFF10B981).withOpacity(0.5),
                   blurRadius: 20,
                   spreadRadius: 5,

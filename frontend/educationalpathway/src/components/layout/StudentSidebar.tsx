@@ -40,8 +40,8 @@ export function StudentSidebar() {
     { name: "My Sessions", href: "/dashboard/student/bookings", icon: Clock },
     { name: "Messages", href: "/dashboard/student/chat", icon: MessageSquare },
     { name: "Community", href: "/dashboard/student/community", icon: Users },
-    { name: "Assessment", href: "/dashboard/assessment", icon: ClipboardList },
     { name: "Interview", href: "/dashboard/interview", icon: HelpCircle },
+    { name: "Assessment", href: "/dashboard/learning-path/diagnostic/assessment", icon: ClipboardList },
     { name: "Learning Path", href: "/dashboard/learning-path", icon: Compass },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];

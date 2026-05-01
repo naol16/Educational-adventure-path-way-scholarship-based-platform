@@ -301,7 +301,7 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       {/* Score Header */}
-      <div className="relative rounded-[4rem] overflow-hidden bg-background shadow-2xl border-4 border-primary/20 p-12 lg:p-20 text-center">
+      <div className="relative rounded-lg overflow-hidden bg-background shadow-2xl border-4 border-primary/20 p-12 lg:p-20 text-center">
         <div className="absolute inset-0 primary-gradient opacity-5 pointer-events-none" />
         <div className="relative z-10 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-primary">
@@ -342,7 +342,7 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
           {rubricBreakdown && Object.keys(rubricBreakdown).length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4">
               {Object.entries(rubricBreakdown).map(([key, value]) => (
-                <div key={key} className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-3 text-center">
+                <div key={key} className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-3 text-center">
                   <p className="text-[9px] font-black uppercase tracking-widest opacity-60">
                     {key.replace(/_/g, " ")}
                   </p>
@@ -362,13 +362,13 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
            </h3>
            <div className="grid gap-3">
              {(evaluation?.country_specific_flags || []).map((flag: string, i: number) => (
-               <div key={i} className="p-5 rounded-2xl bg-amber-500/5 border-2 border-amber-500/10 flex items-start gap-4">
+               <div key={i} className="p-5 rounded-lg bg-amber-500/5 border-2 border-amber-500/10 flex items-start gap-4">
                   <Zap className="text-amber-600 shrink-0 mt-0.5" size={18} />
                   <p className="text-sm font-bold text-amber-900/80 leading-relaxed">{flag}</p>
                </div>
              ))}
              {(!evaluation?.country_specific_flags || evaluation.country_specific_flags.length === 0) && (
-               <div className="p-5 rounded-2xl bg-success/5 border-2 border-success/10 flex items-start gap-4">
+               <div className="p-5 rounded-lg bg-success/5 border-2 border-success/10 flex items-start gap-4">
                   <CheckCircle2 className="text-success shrink-0 mt-0.5" size={18} />
                   <p className="text-sm font-bold text-success/80">No significant red flags detected in this session.</p>
                </div>
@@ -380,7 +380,7 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
            </h3>
            <div className="grid gap-3">
              {(evaluation?.focus_areas || []).map((area: string, i: number) => (
-               <div key={i} className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center gap-3">
+               <div key={i} className="p-4 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-3">
                   <div className="size-2 rounded-full bg-primary" />
                   <span className="text-sm font-bold text-foreground/80">{area}</span>
                </div>
@@ -390,7 +390,7 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
 
         {/* Simulation Summary */}
         <div className="space-y-6">
-           <Card className="border-none bg-muted/20 rounded-[3rem] h-full">
+           <Card className="border-none bg-muted/20 rounded-lg h-full">
              <CardBody className="p-8 lg:p-12 space-y-8">
               <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <FileText size={14} className="text-primary" /> Simulation Summary
@@ -419,7 +419,7 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
 
                 {Boolean(interview?.audioUrl) && (
                   <div className="pt-6 border-t border-border/40">
-                    <Button variant="outline" className="w-full h-14 rounded-2xl gap-3 border-2 border-primary/20 hover:bg-primary/5">
+                    <Button variant="outline" className="w-full h-14 rounded-lg gap-3 border-2 border-primary/20 hover:bg-primary/5">
                       <Play size={18} className="text-primary" fill="currentColor" /> Play Audio Recording
                     </Button>
                   </div>
@@ -431,13 +431,13 @@ export function PostInterviewAnalytics({ interviewId, onRestart }: PostInterview
 
       {/* Action Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-12 border-t border-border">
-         <Button onClick={onRestart} size="xl" variant="outline" className="w-full sm:w-auto px-10 h-16 rounded-2xl border-2 gap-3 hover:bg-muted font-black uppercase tracking-widest">
+         <Button onClick={onRestart} size="xl" variant="outline" className="w-full sm:w-auto px-10 h-16 rounded-lg border-2 gap-3 hover:bg-muted font-black uppercase tracking-widest">
            <RotateCcw size={18} /> New Session
          </Button>
-         <Button onClick={() => window.location.href = '/dashboard'} size="xl" className="w-full sm:w-auto px-10 h-16 rounded-2xl primary-gradient gap-3 shadow-xl hover:scale-105 transition-transform font-black uppercase tracking-widest">
+         <Button onClick={() => window.location.href = '/dashboard'} size="xl" className="w-full sm:w-auto px-10 h-16 rounded-lg primary-gradient gap-3 shadow-xl hover:scale-105 transition-transform font-black uppercase tracking-widest">
            <ListRestart size={18} /> Back to Dashboard
          </Button>
-         <Button variant="ghost" className="size-16 rounded-2xl border-2 border-border/50 hover:bg-muted">
+         <Button variant="ghost" className="size-16 rounded-lg border-2 border-border/50 hover:bg-muted">
            <Share2 size={24} className="text-muted-foreground" />
          </Button>
       </div>

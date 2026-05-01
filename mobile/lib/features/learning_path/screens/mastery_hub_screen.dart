@@ -403,7 +403,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                 ),
               )
             ];
-          }).toList(),
+          }),
           const SizedBox(height: 40),
           _buildUltimateGoalButton(context, path),
           const SizedBox(height: 120),
@@ -1177,8 +1177,10 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       margin: const EdgeInsets.only(left: 24, top: 12),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: badgeColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(100),
+        // ignore: deprecated_member_use
         border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Text(

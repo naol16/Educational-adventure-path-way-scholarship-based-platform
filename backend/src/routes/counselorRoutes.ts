@@ -25,6 +25,7 @@ const router = Router();
 
 router.get('/ping', (_req, res) => res.status(200).send('pong'));
 router.get('/directory', validate(counselorDirectoryValidation), CounselorController.publicDirectory);
+router.get('/directory/:id', validate(idParamValidation), CounselorController.getById);
 router.get('/banks', CounselorController.getBanks);
 
 router.use(authenticate);

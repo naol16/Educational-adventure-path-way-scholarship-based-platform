@@ -95,7 +95,7 @@ class PDFLibraryScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ...levelPdfs.map((pdf) => _buildPdfCard(context, ref, pdf, accentColor)).toList(),
+        ...levelPdfs.map((pdf) => _buildPdfCard(context, ref, pdf, accentColor)),
         const SizedBox(height: 32),
       ],
     );

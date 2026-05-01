@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -91,7 +90,7 @@ class VideoLibraryScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ...levelVideos.map((video) => _buildVideoCard(context, ref, video, accentColor)).toList(),
+        ...levelVideos.map((video) => _buildVideoCard(context, ref, video, accentColor)),
         const SizedBox(height: 32),
       ],
     );

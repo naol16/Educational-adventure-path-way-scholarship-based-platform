@@ -193,6 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   await ref.read(authProvider.notifier).loginWithGoogle();
                                 } catch (e) {
                                   if (mounted) {
+                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text(_messageForError(e))),
                                     );

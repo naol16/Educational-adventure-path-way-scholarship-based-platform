@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/learning_path/providers/toefl_task_provider.dart';
@@ -72,7 +73,9 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
         builder: (context, ref, _) {
           final state = ref.watch(toeflTaskProvider);
           final score = state.sectionalScores[skill];
-          print("[ToeflDiagnosticScreen] Overlay for $skill. Score in state: $score");
+          if (kDebugMode) {
+            print("[ToeflDiagnosticScreen] Overlay for $skill. Score in state: $score");
+          }
           final feedback = state.lastSectionResult?['feedback'] ?? (score != null ? "Ready for the next challenge?" : "Awaiting evaluation...");
           final isZero = score == 0;
 
@@ -184,15 +187,19 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
     while (mounted) {
       final state = ref.read(toeflTaskProvider);
       if (state.result != null) {
+        // ignore: use_build_context_synchronously
         Navigator.pop(context); // Close dialog
         Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
         );
         break;
       }
       if (state.error != null) {
+        // ignore: use_build_context_synchronously
         Navigator.pop(context);
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
         break;
       }

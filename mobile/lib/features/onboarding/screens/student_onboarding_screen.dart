@@ -53,9 +53,11 @@ class _StudentOnboardingScreenState
       final state = ref.read(onboardingProvider);
       if (state.gpa != null) _gpaController.text = state.gpa.toString();
       if (state.graduationYear != null)
+        // ignore: curly_braces_in_flow_control_structures
         _gradYearController.text = state.graduationYear.toString();
       if (state.city != null) _cityController.text = state.city!;
       if (state.previousUniversity != null)
+        // ignore: curly_braces_in_flow_control_structures
         _uniController.text = state.previousUniversity!;
     });
   }
@@ -986,7 +988,7 @@ class _StudentOnboardingScreenState
               children: [
                 Switch(
                   value: state.emailNotif,
-                  activeColor: DesignSystem.primary(context),
+                  activeThumbColor: DesignSystem.primary(context),
                   onChanged: (val) =>
                       notifier.updateField((s) => s.copyWith(emailNotif: val)),
                 ),
@@ -1000,7 +1002,7 @@ class _StudentOnboardingScreenState
               children: [
                 Switch(
                   value: state.inSystemNotif,
-                  activeColor: DesignSystem.primary(context),
+                  activeThumbColor: DesignSystem.primary(context),
                   onChanged: (val) => notifier.updateField(
                     (s) => s.copyWith(inSystemNotif: val),
                   ),

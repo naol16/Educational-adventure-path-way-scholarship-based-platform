@@ -8,6 +8,7 @@ export const getVisaGuidelines = async (country: string) => {
 export const initiateVisaCall = async (studentInfo: {
   country: string;
   university?: string;
+  interviewType?: string;
 }) => {
   const response = await api.post("/visa/initiate-call", studentInfo);
   return response.data;
@@ -18,8 +19,8 @@ export const getVisaInterviewAnalysis = async (interviewId: string) => {
   return response.data;
 };
 
-export const finalizeVisaInterview = async (interviewId: string, transcript: any[]) => {
-  const response = await api.post(`/visa/finalize/${interviewId}`, { transcript });
+export const finalizeVisaInterview = async (interviewId: string, transcript: any[], interviewType?: string) => {
+  const response = await api.post(`/visa/finalize/${interviewId}`, { transcript, interviewType });
   return response.data;
 };
 

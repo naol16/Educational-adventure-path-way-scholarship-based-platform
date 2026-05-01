@@ -16,8 +16,10 @@ class ExamSwitcher extends StatelessWidget {
         width: 220,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
+          // ignore: deprecated_member_use
           color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(20),
+          // ignore: deprecated_member_use
           border: Border.all(color: Colors.white.withOpacity(0.1)),
         ),
         child: Row(
@@ -43,6 +45,7 @@ class ExamSwitcher extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive ? activeColor : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
+            // ignore: deprecated_member_use
             boxShadow: isActive ? [BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 10)] : [],
           ),
           child: Center(

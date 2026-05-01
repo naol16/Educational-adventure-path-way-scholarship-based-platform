@@ -107,6 +107,11 @@ export const getCounselors = async (params?: any): Promise<{ rows: any[], count:
   return response.data;
 };
 
+export const getCounselorById = async (id: number | string): Promise<any> => {
+  const response = await api.get(`/counselors/directory/${id}`);
+  return response.data;
+};
+
 export const createBooking = async (slotId: number) => {
   const response = await api.post('/counselors/bookings', { slotId });
   return response.data;

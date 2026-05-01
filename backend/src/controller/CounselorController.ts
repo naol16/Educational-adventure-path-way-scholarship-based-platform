@@ -361,6 +361,15 @@ export class CounselorController {
     }
   }
 
+  static async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.getPublicProfileById(Number(req.params.id));
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getStudentBookings(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await CounselorService.getStudentBookings(req.user!.id, req.user!.role);

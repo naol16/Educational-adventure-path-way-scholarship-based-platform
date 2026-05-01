@@ -339,7 +339,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
         {/* Form */}
         <form
           onSubmit={handleSubmit(handleFormSubmit)}
-          className="bg-card rounded-lg border border-border p-6"
+          className="bg-card rounded-2xl border border-border p-6"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -598,7 +598,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     {/* Current Education Level */}
                     <div className="space-y-1">
                       <label htmlFor="currentEducationLevel" className="text-label">
-                        Current Education Level{" "}
+                        Highest level of school finished{" "}
                         <span className="text-destructive">*</span>
                       </label>
                       <select
@@ -617,7 +617,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     {/* Degree Seeking */}
                     <div className="space-y-1">
                       <label htmlFor="degreeSeeking" className="text-label">
-                        Degree Seeking <span className="text-destructive">*</span>
+                        Degree you want to get <span className="text-destructive">*</span>
                       </label>
                       <select
                         id="degreeSeeking"
@@ -634,7 +634,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     {/* Field of Study */}
                     <div className="space-y-1 md:col-span-2">
                       <label className="text-label">
-                        Field of Study <span className="text-destructive">*</span>
+                        What do you want to study? <span className="text-destructive">*</span>
                       </label>
                       <Select
                         isMulti
@@ -658,7 +658,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     {/* Previous University */}
                     <div className="space-y-1">
                       <label className="text-label">
-                        Previous University
+                        Your school
                       </label>
                       <Select
                         options={previousUnis.map((u) => ({
@@ -686,7 +686,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     {/* Graduation Year */}
                     <div className="space-y-1">
                       <label className="text-label">
-                        Graduation Year
+                        Year you finished school
                       </label>
                       <div className="relative">
                         <Calendar

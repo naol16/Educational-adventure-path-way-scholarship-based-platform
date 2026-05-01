@@ -1,5 +1,4 @@
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -421,6 +420,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
                     } else {
                       if (context.mounted) {
+                        // ignore: use_build_context_synchronously
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Could not launch application URL')),
                         );
@@ -428,6 +428,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                     }
                   } else {
                     if (context.mounted) {
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('No application URL available for this scholarship')),
                       );
@@ -468,12 +469,14 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   await ref.read(scholarshipWatchlistProvider.notifier).toggleWatchlist(widget.scholarshipId);
                   ref.invalidate(dashboardStatsProvider);
                   if (context.mounted) {
+                    // ignore: use_build_context_synchronously
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(isTracked ? 'Removed from Watchlist' : 'Added to Watchlist')),
                     );
                   }
                 } catch (e) {
                   if (context.mounted) {
+                    // ignore: use_build_context_synchronously
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Failed to update watchlist')),
                     );

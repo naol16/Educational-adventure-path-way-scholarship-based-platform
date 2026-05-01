@@ -6,6 +6,9 @@ export interface AdminStats {
   students: number;
   counselors: number;
   admins: number;
+  totalRevenue: number;
+  pendingCounselors: number;
+  pendingPayouts: number;
 }
 
 export const getAllUsers = async (page = 1, limit = 10): Promise<User[]> => {

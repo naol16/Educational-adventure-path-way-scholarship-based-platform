@@ -14,7 +14,7 @@ export function Card({ className, glass, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card text-card-foreground shadow-sm transition-all duration-300",
+        "rounded-2xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300",
         glass && "glass-morphism backdrop-blur-xl",
         className
       )}

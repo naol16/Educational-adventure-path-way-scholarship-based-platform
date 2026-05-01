@@ -169,12 +169,20 @@ export class OnboardingService {
                 }, 1000);
             }
         } else if (user.role === UserRole.COUNSELOR) {
-            await repository.update(userId, {
+            const counselorUpdates: any = {
                 bio: updateData.bio || "",
-                areasOfExpertise: updateData.areasOfExpertise ? JSON.stringify(updateData.areasOfExpertise) : "[]",
+                areasOfExpertise: updateData.areasOfExpertise ? (typeof updateData.areasOfExpertise === 'string' ? updateData.areasOfExpertise : JSON.stringify(updateData.areasOfExpertise)) : "[]",
                 yearsOfExperience: updateData.yearsOfExperience || 0,
                 isOnboarded: true
-            });
+            };
+
+            if (files && files.avatar) {
+                const avatarUrl = await FileService.uploadFile(files.avatar.data, "profiles/avatars");
+                await UserRepository.update(userId, { avatarUrl } as any);
+                counselorUpdates.profileImageUrl = avatarUrl;
+            }
+
+            await repository.update(userId, counselorUpdates);
         }
 
         return AuthService.getUserWithProfile(user);

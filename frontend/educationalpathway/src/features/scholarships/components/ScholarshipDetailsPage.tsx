@@ -50,6 +50,30 @@ const safeString = (val: any) => {
   return val || "";
 };
 
+const cleanDataText = (text: string | null | undefined) => {
+  if (!text) return "";
+  
+  // 1. Remove common scraped noise/headers
+  let clean = text
+    .replace(/<iframe.*?<\/iframe>/gi, '') // Remove iframes (GTM, etc.)
+    .replace(/Go to main content/gi, '')
+    .replace(/We’re hiring!/gi, '')
+    .replace(/menu/gi, '')
+    .replace(/For Students For Institutions.*?Guides & reports/gi, '') // Remove common nav blocks
+    .replace(/Home \/ News & Insights \/ Guides & reports/gi, '')
+    .replace(/Read more/gi, '')
+    .replace(/Filter/gi, '')
+    .trim();
+
+  // 2. Remove other HTML tags if they exist as text
+  clean = clean.replace(/<[^>]*>?/gm, '');
+
+  // 3. Cleanup multiple spaces/newlines
+  clean = clean.replace(/\s\s+/g, ' ');
+
+  return clean;
+};
+
 export default function ScholarshipDetailsPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -385,13 +409,17 @@ export default function ScholarshipDetailsPage() {
 
           {/* Content sections */}
           <div className="space-y-12">
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">Description</h3>
-                 <div className="flex-1 h-px bg-border/40" />
+            <section className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <div className="h-2 w-2 rounded-full bg-primary" />
+                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground/60">Description</h3>
+                 <div className="flex-1 h-px bg-linear-to-r from-border/60 to-transparent" />
               </div>
-              <div className="text-base text-muted-foreground leading-relaxed text-balance">
-                {scholarship.description || "The scholarship provider has not yet listed a full detailed description."}
+              <div className="p-8 rounded-3xl bg-card border border-border/50 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/2 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-base text-muted-foreground leading-[1.8] relative z-10 whitespace-pre-wrap">
+                  {cleanDataText(scholarship.description) || "The scholarship provider has not yet listed a full detailed description."}
+                </div>
               </div>
             </section>
 
@@ -402,7 +430,7 @@ export default function ScholarshipDetailsPage() {
                    <div className="flex-1 h-px bg-border/40" />
                 </div>
                 <div className="p-8 rounded-2xl bg-muted/40 border border-border/50 font-medium text-foreground italic leading-[1.8] text-sm">
-                  "{scholarship.requirements}"
+                  "{cleanDataText(scholarship.requirements)}"
                 </div>
               </section>
             )}
@@ -414,64 +442,87 @@ export default function ScholarshipDetailsPage() {
            <motion.div 
              initial={{ opacity: 0, scale: 0.98 }}
              animate={{ opacity: 1, scale: 1 }}
-             className="sticky top-24 space-y-6"
+             className="space-y-6"
            >
               {/* Refactored AI Match Card */}
-              <div className="bg-card border border-border/80 shadow-2xl shadow-primary/5 rounded-4xl p-8 space-y-10 overflow-hidden group">
-                 <div className={`absolute top-0 right-0 w-32 h-32 ${matchInfo.bgColor} rounded-full blur-3xl -mr-16 -mt-16 transition-colors duration-500`} />
+              <div className="bg-card/40 backdrop-blur-2xl rounded-4xl p-8 space-y-10 overflow-hidden group relative">
+                 {/* Animated Background Orbs */}
+                 <div className={`absolute top-0 right-0 w-48 h-48 ${matchInfo.bgColor} rounded-full blur-[100px] -mr-24 -mt-24 transition-colors duration-1000 group-hover:scale-125`} />
+                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-[80px] -ml-16 -mb-16" />
                  
-                 <div className="space-y-3 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                       <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[4px]">Match Probability</p>
+                 <div className="relative z-10 space-y-8 text-center">
+                    <div className="space-y-1">
+                       <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">AI Evaluation</p>
                        <div className="flex items-center justify-center gap-2">
-                          <matchInfo.icon size={16} className={matchInfo.color} />
-                          <span className={`${matchInfo.color} text-xs font-black uppercase tracking-widest`}>{matchInfo.label}</span>
+                          <matchInfo.icon size={14} className={matchInfo.color} />
+                          <span className={`${matchInfo.color} text-[11px] font-black uppercase tracking-widest`}>{matchInfo.label}</span>
                        </div>
                     </div>
                     
-                    <div className="text-8xl font-black text-foreground tracking-tighter flex items-center justify-center gap-1 group-hover:scale-105 transition-transform">
-                       {matchScore}
-                       <span className={`text-2xl font-bold ${matchInfo.color}`}>%</span>
-                    </div>
-
-                    <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full ${matchInfo.bgColor} ${matchInfo.color} text-[10px] font-black uppercase tracking-widest border border-current opacity-30`}>
-                       {matchInfo.description}
+                    {/* High-Fidelity Circular Progress */}
+                    <div className="relative flex items-center justify-center py-4">
+                       <svg className="w-48 h-48 transform -rotate-90">
+                          <circle
+                             cx="96"
+                             cy="96"
+                             r="88"
+                             stroke="currentColor"
+                             strokeWidth="4"
+                             fill="transparent"
+                             className="text-muted/10"
+                          />
+                          <motion.circle
+                             cx="96"
+                             cy="96"
+                             r="88"
+                             stroke="currentColor"
+                             strokeWidth="12"
+                             fill="transparent"
+                             strokeDasharray={552.92}
+                             initial={{ strokeDashoffset: 552.92 }}
+                             animate={{ strokeDashoffset: 552.92 - (552.92 * matchScore) / 100 }}
+                             transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
+                             className={matchScore >= 85 ? 'text-emerald-500' : matchScore >= 40 ? 'text-primary' : 'text-destructive'}
+                             strokeLinecap="round"
+                          />
+                       </svg>
+                       <div className="absolute flex flex-col items-center">
+                          <div className="text-6xl font-black text-foreground tracking-tighter flex items-end">
+                             {matchScore}
+                             <span className="text-xl font-bold text-muted-foreground mb-2">%</span>
+                          </div>
+                          <div className={`px-3 py-0.5 rounded-full ${matchInfo.bgColor} ${matchInfo.color} text-[9px] font-black uppercase tracking-widest border border-current/20`}>
+                             {matchInfo.description}
+                          </div>
+                       </div>
                     </div>
                  </div>
 
-                 {/* Match Progress Gauge */}
-                 <div className="space-y-2">
-                    <div className="h-3 w-full bg-muted rounded-full p-[3px] border border-border/20 shadow-inner">
-                       <motion.div 
-                         initial={{ width: 0 }}
-                         animate={{ width: `${matchScore}%` }}
-                         transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                         className={`h-full rounded-full shadow-lg ${matchScore >= 85 ? 'bg-emerald-500 shadow-emerald-500/20' : matchScore >= 40 ? 'bg-primary shadow-primary/20' : 'bg-destructive shadow-destructive/20'}`}
-                       />
+                 {/* Strategic Insight Box */}
+                 <div className="relative z-10 p-6 rounded-3xl bg-linear-to-b from-muted/50 to-muted/20 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                       <Sparkles size={14} className="text-primary fill-primary/20" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Strategic Insight</span>
                     </div>
-                 </div>
-
-                 <div className="bg-muted px-6 py-5 rounded-2xl border border-border/40 relative">
-                    <Zap className="absolute -top-2 -right-2 h-6 w-6 text-primary fill-primary/20 p-1 bg-card rounded-lg border border-border/40" />
-                    <p className="text-xs font-bold text-foreground/80 leading-relaxed italic text-balance text-center">
+                    <p className="text-xs font-medium text-foreground/70 leading-relaxed italic text-balance">
                        "{scholarship.matchReason || "Our AI recommends this opportunity based on your strategic field of focus and location preference."}"
                     </p>
                  </div>
 
-                 <div className="space-y-4 pt-4">
+                 <div className="relative z-10 space-y-4 pt-2">
                     <Button 
                       onClick={handleBeginApplication}
                       disabled={isActionLoading}
-                      className="flex items-center justify-center gap-4 w-full h-16 primary-gradient text-white font-black text-sm rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all border-none"
+                      className="flex items-center justify-center gap-4 w-full h-16 primary-gradient text-white font-black text-sm rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all border-none"
                     >
-                      {trackingInfo?.status === 'APPLIED' ? 'VIEW APPLICATION' : 'BEGIN APPLICATION'}
+                      {trackingInfo?.status === 'APPLIED' ? 'VIEW APPLICATION' : 'APPLY NOW'}
                       <ExternalLink size={18} />
                     </Button>
                     
                     <button 
                       onClick={handleToggleSave}
                       disabled={isActionLoading}
-                      className={`w-full h-16 rounded-2xl border border-border/80 text-xs font-black uppercase tracking-widest hover:bg-muted transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${trackingInfo ? 'bg-primary/5 border-primary/20 text-primary' : ''}`}
+                      className={`w-full h-16 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-muted transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${trackingInfo ? 'bg-primary/5 text-primary' : 'bg-card'}`}
                     >
                       {trackingInfo ? (
                         <>
@@ -481,15 +532,18 @@ export default function ScholarshipDetailsPage() {
                       ) : (
                         <>
                           <Bookmark size={18} />
-                          SAVE OPPORTUNITY
+                          SAVE FOR LATER
                         </>
                       )}
                     </button>
                  </div>
 
-                 <p className="text-[9px] text-center text-muted-foreground/40 font-bold uppercase tracking-wider pt-2 flex items-center justify-center gap-2 opacity-50">
-                    <CheckCircle2 size={10} /> Verified Enrollment Link
-                 </p>
+                 <div className="relative z-10 pt-2 flex items-center justify-center gap-2 opacity-30 group-hover:opacity-60 transition-opacity">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <p className="text-[9px] text-center text-muted-foreground font-black uppercase tracking-wider">
+                       Verified Enrollment Link
+                    </p>
+                 </div>
               </div>
            </motion.div>
         </div>

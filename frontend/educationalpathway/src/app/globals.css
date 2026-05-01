@@ -188,54 +188,98 @@ button {
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 70%, #059669 100%);
+  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.15), transparent 40%),
+              radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.15), transparent 40%),
+              #050505;
+}
+
+.mesh-gradient {
+  background-color: #050505;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(161, 84%, 48%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(188, 86%, 53%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(222, 47%, 11%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(161, 84%, 48%, 0.15) 0px, transparent 50%);
 }
 
 /* ---------------- GLASS MORPHISM ---------------- */
 
 .glass-morphism {
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dark .glass-morphism {
-  background: rgba(16, 185, 129, 0.05);
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .dark .glass-card {
-  background: rgba(24, 24, 27, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(24, 24, 27, 0.4);
+  backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.gradient-border {
+  position: relative;
+  border-radius: inherit;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.1));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-600 to-teal-800;
-}
-
-.dark .gradient-text {
-  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-400 to-teal-500;
+  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-400 via-teal-300 to-cyan-400;
 }
 
 .stat-card-glow {
   position: absolute;
   top: 0;
   right: 0;
-  width: 100px;
-  height: 100px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.2;
+  filter: blur(60px);
+  opacity: 0.15;
   z-index: -1;
+}
+
+/* ---------------- ANIMATIONS ---------------- */
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 4s ease-in-out infinite;
 }
 
 /* ---------------- TYPOGRAPHY ---------------- */

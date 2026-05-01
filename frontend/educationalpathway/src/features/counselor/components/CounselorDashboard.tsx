@@ -91,9 +91,9 @@ export const CounselorDashboard = () => {
               <Clock className="h-10 w-10 text-warning" />
             </div>
             <div className="space-y-3">
-              <h1 className="text-3xl font-black tracking-tight">Verification Under Review</h1>
+              <h1 className="text-3xl font-black tracking-tight">Checking Your Account</h1>
               <p className="text-muted-foreground leading-relaxed">
-                Our administrative team is currently reviewing your application. This process usually takes <span className="font-bold text-foreground">24-48 hours</span>.
+                Our team is checking your account now. This usually takes <span className="font-bold text-foreground">24-48 hours</span>.
               </p>
             </div>
             <div className="p-4 bg-muted/30 rounded-lg border border-border">
@@ -131,10 +131,10 @@ export const CounselorDashboard = () => {
             </div>
             <div className="space-y-2">
               <h1 className="text-3xl font-black tracking-tight">Application Rejected</h1>
-              <p className="text-muted-foreground">Unfortunately, your counselor application was not approved at this time.</p>
+              <p className="text-muted-foreground">Your account was not approved at this time.</p>
             </div>
             <p className="text-sm text-muted-foreground pb-4">
-              Common reasons include incomplete documentation or mismatch with platform requirements. Please contact support for more details.
+              Common reasons are missing papers or not fitting our needs. Please talk to support for more help.
             </p>
             <Button variant="outline" className="w-full h-12 border-border">
               Contact Support
@@ -151,7 +151,7 @@ export const CounselorDashboard = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="lg:col-span-3 rounded-lg border border-border bg-card p-6 flex items-center justify-between relative overflow-hidden shadow-sm"
+          className="lg:col-span-3 rounded-2xl border border-border bg-card p-6 flex items-center justify-between relative overflow-hidden shadow-sm"
         >
           <div className="flex flex-wrap gap-4 relative z-10">
             <Link href="/dashboard/counselor/bookings">
@@ -178,11 +178,11 @@ export const CounselorDashboard = () => {
                 <TrendingUp className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <p className="text-small font-black uppercase tracking-tighter opacity-60">Success Rate</p>
+                <p className="text-small font-black uppercase tracking-tighter opacity-60">Success</p>
                 <h3 className="text-4xl font-black text-foreground mt-1">
                   {Math.round(Number(counselorProfile?.ratingPercentage || 0))}%
                 </h3>
-                <p className="text-[10px] text-muted-foreground mt-1 font-bold">Feedback Score</p>
+                <p className="text-[10px] text-muted-foreground mt-1 font-bold">Your Score</p>
               </div>
             </CardBody>
           </Card>
@@ -193,7 +193,7 @@ export const CounselorDashboard = () => {
                 <Users className="h-8 w-8 text-emerald-500" />
               </div>
               <div>
-                <p className="text-small font-black uppercase tracking-tighter opacity-60">Total Impact</p>
+                <p className="text-small font-black uppercase tracking-tighter opacity-60">Your Help</p>
                 <h3 className="text-4xl font-black text-foreground mt-1">
                   {statsData?.assignedStudents || 0}
                 </h3>
@@ -207,7 +207,7 @@ export const CounselorDashboard = () => {
         {/* Earning & Payout Card Row */}
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6 w-full">
           <Card className="border-border bg-slate-900 text-white shadow-xl overflow-hidden relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardBody className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
               <div className="flex items-center gap-6 w-full md:w-auto">
                 <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -254,11 +254,11 @@ export const CounselorDashboard = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="flex justify-between items-end border-b border-border pb-4">
             <div>
-              <h2 className="h3">Mentorship Overview</h2>
-              <p className="text-small mt-1">Assigned students and their engagement levels.</p>
+              <h2 className="h3">Your Students</h2>
+              <p className="text-small mt-1">See your students and how they are doing.</p>
             </div>
             <Link href="/dashboard/students" className="text-xs font-bold text-primary hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-              Explore All <ChevronRight size={14} />
+              See All <ChevronRight size={14} />
             </Link>
           </div>
 
@@ -312,7 +312,7 @@ export const CounselorDashboard = () => {
           <Card className="border-border bg-card shadow-sm flex-1">
             <CardBody className="p-8 flex flex-col h-full">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="font-black text-sm uppercase tracking-widest">Immediate Agenda</h3>
+                <h3 className="font-black text-sm uppercase tracking-widest">Up Next</h3>
                 <div className="p-1 px-2 bg-muted rounded-lg text-[10px] font-bold">Upcoming</div>
               </div>
 
@@ -345,7 +345,7 @@ export const CounselorDashboard = () => {
           </Card>
 
           {/* Engagement Card */}
-          <div className="p-8 rounded-lg bg-primary/10 border border-primary/20 shadow-inner group overflow-hidden relative">
+          <div className="p-8 rounded-2xl bg-primary/10 border border-primary/20 shadow-inner group overflow-hidden relative">
             <div className="relative z-10 flex items-start gap-4">
               <div className="p-2.5 bg-primary rounded-lg shadow-md group-hover:rotate-12 transition-transform">
                 <TrendingUp className="h-5 w-5 text-white" />

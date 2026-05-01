@@ -55,6 +55,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   Future<void> setAccentColor(Color color) async {
     state = state.copyWith(accentColor: color);
+    // ignore: deprecated_member_use
     await _storage.write(key: 'accent_color', value: color.value.toString());
   }
 }

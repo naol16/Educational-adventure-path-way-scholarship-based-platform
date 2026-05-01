@@ -75,7 +75,7 @@ export const ScholarshipExplorer = () => {
       {/* Refined Header Section */}
       <motion.section 
         variants={item}
-        className="relative overflow-hidden rounded-lg border border-border/60 bg-card p-10 md:p-12 shadow-sm"
+        className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-10 md:p-12 shadow-sm"
       >
         <div className="absolute top-0 right-0 w-1/3 h-full bg-linear-to-bl from-primary/5 via-transparent to-transparent opacity-50" />
         
@@ -83,7 +83,7 @@ export const ScholarshipExplorer = () => {
           <div className="max-w-xl space-y-4">
              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
                <Sparkles size={12} className="fill-primary" />
-               Matched For Your Pathway
+               Scholarships for you
              </div>
              
              <h1 className="text-4xl font-bold tracking-tight text-foreground">
@@ -162,7 +162,7 @@ export const ScholarshipExplorer = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-muted/20 border border-border/50 rounded-xl px-6 py-6"
+              className="overflow-hidden bg-muted/20 border border-border/50 rounded-2xl px-6 py-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">

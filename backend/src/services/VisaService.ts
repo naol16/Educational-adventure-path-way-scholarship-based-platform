@@ -29,8 +29,9 @@ export class VisaService {
     studentName: string;
     university: string;
     country: string;
+    interviewType?: string;
   }) {
-    const { studentId, studentName, university, country } = studentInfo;
+    const { studentId, studentName, university, country, interviewType = "visa" } = studentInfo;
 
     const interview = await VisaMockInterview.create({
       studentId,
@@ -38,7 +39,37 @@ export class VisaService {
       status: "Pending",
     });
 
-    const systemPrompt = `Role: Strict Consular Officer for ${country}
+    let systemPrompt = "";
+    let firstMessage = "";
+
+    if (interviewType === "scholarship") {
+      systemPrompt = `Role: Senior Scholarship Committee Director for ${university} in ${country}
+Greeting: You MUST start the conversation immediately by greeting the applicant and asking about their academic motivation.
+Context:
+- University: ${university}
+- Applicant Name: ${studentName}
+Rules:
+- Be professional, inquisitive, and inspiring.
+- Keep the interview concise: ask 5-7 focused questions.
+- Focus on leadership, academic goals, community impact, and alignment with scholarship values.
+- Do not ask for documentation. Focus purely on their spoken responses and critical thinking.`;
+      
+      firstMessage = `Welcome, ${studentName}. I am the Scholarship Committee Director for ${university}. We have reviewed your application and are excited to speak with you today. To begin, could you tell me what drives your academic passion in your chosen field?`;
+    } else if (interviewType === "admission") {
+      systemPrompt = `Role: University Admissions Officer for ${university} in ${country}
+Greeting: You MUST start the conversation immediately by greeting the applicant and asking why they chose this university.
+Context:
+- University: ${university}
+- Applicant Name: ${studentName}
+Rules:
+- Be welcoming but analytical.
+- Keep the interview concise: ask 5-7 focused questions.
+- Focus on academic readiness, extracurriculars, and cultural fit for the university.
+- Do not ask for documentation.`;
+      
+      firstMessage = `Hello ${studentName}! I'm the Admissions Officer representing ${university}. It's great to meet you. Let's dive right in—out of all the institutions in ${country}, why did you specifically choose us?`;
+    } else {
+      systemPrompt = `Role: Strict Consular Officer for ${country}
 Greeting: You MUST start the conversation immediately by greeting the applicant and asking their purpose of travel.
 Context:
 - University: ${university}
@@ -50,10 +81,13 @@ Rules:
 - Focus on spoken interview performance, clarity, confidence, consistency, and credibility.
 - Do not ask the applicant to show passport or upload documents.`;
 
+      firstMessage = `Good morning. I am the Consular Officer for ${country}. I see you are applying to study at ${university}. What is the main purpose of your travel today?`;
+    }
+
     return {
       interviewId: interview.id,
       systemPrompt,
-      firstMessage: `Good morning. I am the Consular Officer for ${country}. I see you are applying to study at ${university}. What is the main purpose of your travel today?`
+      firstMessage
     };
   }
 
@@ -83,8 +117,9 @@ Rules:
   static async evaluateCall(payload: {
     interviewId: string;
     transcript: Array<{ role: string; content: string }>;
+    interviewType?: string;
   }) {
-    const { interviewId, transcript } = payload;
+    const { interviewId, transcript, interviewType = "visa" } = payload;
     let interview = await VisaMockInterview.findByPk(interviewId);
 
     if (!interview) {
@@ -114,7 +149,37 @@ Rules:
       return emptyEvaluation;
     }
 
-    const evaluationPrompt = `
+    let evaluationCriteria = "";
+    if (interviewType === "scholarship") {
+      evaluationCriteria = `
+      You are a Senior Scholarship Committee Director. Evaluate the following scholarship interview transcript with high academic standards.
+      
+      Evaluation Criteria:
+      1. Academic Motivation: Is the applicant genuinely passionate about their field?
+      2. Leadership & Impact: Did they demonstrate leadership or a desire to impact their community?
+      3. Fit for Scholarship: Does their vision align with top-tier academic funding?
+      4. Articulation: Did they communicate their ideas clearly and confidently?
+      
+      SCORING RULE (ZERO TOLERANCE): 
+      - Give a score of 0/10 if:
+        * The applicant remains silent or provides gibberish.
+        * The applicant is off-topic.
+      - If answers are vague or lack depth, the score MUST be below 4.0.`;
+    } else if (interviewType === "admission") {
+      evaluationCriteria = `
+      You are a University Admissions Officer. Evaluate the following admission interview transcript with high standards.
+      
+      Evaluation Criteria:
+      1. University Fit: Why did they choose this specific university?
+      2. Academic Readiness: Are they prepared for rigorous academic study?
+      3. Extracurriculars: Do they bring value outside of academics?
+      4. Communication: Did they communicate their ideas clearly?
+      
+      SCORING RULE (ZERO TOLERANCE): 
+      - Give a score of 0/10 if the applicant remains silent or provides gibberish.
+      - If answers are generic and show no research about the university, the score MUST be below 4.0.`;
+    } else {
+      evaluationCriteria = `
       You are a senior US Embassy Consular Chief. Evaluate the following visa interview transcript with extreme skepticism and high standards.
       
       Evaluation Criteria:
@@ -130,7 +195,11 @@ Rules:
         * The applicant uses offensive or violating speech.
         * The applicant fails to provide ANY meaningful academic or travel justification.
       - If the applicant's answers are vague, one-liners, or fail to address academic goals for a student visa, the score MUST be below 3.0.
-      - "Visiting California" for a student visa is an automatic REJECTION (score < 2.0).
+      - "Visiting California" for a student visa is an automatic REJECTION (score < 2.0).`;
+    }
+
+    const evaluationPrompt = `
+      ${evaluationCriteria}
 
       You MUST provide your response in valid JSON format ONLY with the following schema:
       {

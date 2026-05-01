@@ -382,8 +382,10 @@ class DashboardScreen extends ConsumerWidget {
     final percentage = (strength * 100).toInt();
     final primaryColor = DesignSystem.primary(context);
     String level = "Beginner";
-    if (percentage > 80) level = "Expert";
-    else if (percentage > 40) level = "Intermediate";
+    if (percentage > 80) {
+      level = "Expert";
+    // ignore: curly_braces_in_flow_control_structures
+    } else if (percentage > 40) level = "Intermediate";
 
     return _buildGlassCard(
       context: context,

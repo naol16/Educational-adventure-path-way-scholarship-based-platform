@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
+import { UploadedFile } from "express-fileupload";
 import { UserService } from "../services/UserService.js";
+import { FileService } from "../services/FileService.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { UpdateUserDto, UserRole } from "../types/userTypes.js";
 
@@ -33,6 +35,28 @@ export class UserController {
         res.status(404).json({ error: "User not found" });
         return;
       }
+      res.json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async uploadAvatar(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      if (!req.files || !req.files.avatar) {
+        res.status(400).json({ error: "No avatar file uploaded" });
+        return;
+      }
+
+      const avatarFile = (Array.isArray(req.files.avatar) ? req.files.avatar[0] : req.files.avatar) as UploadedFile;
+      const avatarUrl = await FileService.uploadFile(avatarFile.data, "profile_pictures");
+
+      const user = await UserService.updateProfile(req.user.id, { avatarUrl });
       res.json(user);
     } catch (error) {
       next(error);

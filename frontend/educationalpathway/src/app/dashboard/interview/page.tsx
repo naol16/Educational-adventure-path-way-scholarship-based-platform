@@ -19,15 +19,17 @@ type CallEndEvent = {
 export default function InterviewPage() {
   const [step, setStep] = useState<Step>("hub");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [interviewType, setInterviewType] = useState<string>("visa");
   const [vapiStartPayload, setVapiStartPayload] = useState<Record<string, any> | string | null>(null);
   const [interviewId, setInterviewId] = useState<string>("");
 
-  const handleStartInterview = async (country: string, university: string) => {
-    const loadingToast = toast.loading("Preparing your embassy connection...");
+  const handleStartInterview = async (country: string, university: string, type: string = "visa") => {
+    const loadingToast = toast.loading("Preparing your interview connection...");
     try {
       setSelectedCountry(country);
+      setInterviewType(type);
       
-      const res = await initiateVisaCall({ country, university } as any);
+      const res = await initiateVisaCall({ country, university, interviewType: type });
       const data = res?.status === "success" ? res.data : res;
 
       if (!data?.interviewId) {
@@ -49,7 +51,7 @@ export default function InterviewPage() {
 
   const handleCallEnd = useCallback((event: CallEndEvent & { transcript?: any[] }) => {
     if (event.callStarted) {
-      finalizeVisaInterview(event.interviewId, event.transcript || []).catch((err) => {
+      finalizeVisaInterview(event.interviewId, event.transcript || [], interviewType).catch((err) => {
         console.error("Finalize interview failed", err);
       });
       if (event.reason === "user_interrupted") {
@@ -74,7 +76,7 @@ export default function InterviewPage() {
       toast.error("Interview ended unexpectedly before it started.");
     }
     setStep("hub");
-  }, []);
+  }, [interviewType]);
 
   return (
     <div className="container mx-auto px-4 py-8">
