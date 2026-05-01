@@ -8,33 +8,75 @@ import { AIService } from "./AIService.js";
 import { AssessmentRepository } from "../repositories/AssessmentRepository.js";
 
 export class LearningPathService {
-  // ─── IELTS Mission Catalog (untouched) ────────────────────────────────────
-  private static missionData: any = {
-    reading: [
-      { title: "The Bird's Eye View", objective: "Master timing and test structure to stop feeling rushed." },
-      { title: "Skimming vs. Scanning", objective: "Learn to navigate text rapidly without reading every word." },
-      { title: "The Paraphrase Key", objective: "Unlock the secret to finding answers hidden in synonyms." },
-      { title: "The Logic Traps", objective: "Stop falling for 'Not Given' and 'False' traps in Section 3." },
-      { title: "The Full Run", objective: "Practice full-length passages under strict simulated conditions." }
-    ],
-    listening: [
-      { title: "Precision Hearing", objective: "Capture names, numbers, and dates without missing a beat." },
-      { title: "Situational Tracking", objective: "Follow directions and map locations without getting lost." },
-      { title: "The Echo Trap", objective: "Identify distractors and speaker corrections in real-time." }
-    ],
-    writing: [
-      { title: "The Grammar Engine", objective: "Build the foundation of tenses and subject-verb agreement." },
-      { title: "Sentence Architecture", objective: "Combine simple ideas into high-scoring complex sentences." },
-      { title: "Describing Trends", objective: "Master the vocabulary for charts, graphs, and line trends." },
-      { title: "The 4-Paragraph Blueprint", objective: "Learn the universal structure for a high-scoring Task 2 essay." },
-      { title: "Idea Generation", objective: "Never run out of points to write about in Task 2 brainstorming." }
-    ],
-    speaking: [
-      { title: "The Icebreaker", objective: "Master Part 1 confidence for hometown, hobbies, and studies." },
-      { title: "Clear Comms", objective: "Reduce filler words and improve natural pronunciation flow." },
-      { title: "The Storyteller", objective: "Master the Part 2 cue card and talk for 2 minutes non-stop." },
-      { title: "Opinion Logic", objective: "Structure abstract arguments in Part 3 using the A.R.E method." }
-    ]
+  // ─── IELTS Mission Catalog — Level-differentiated ──────────────────────────
+  private static ieltsMissionData: Record<string, Record<string, Array<{ title: string; objective: string }>>> = {
+    easy: {
+      reading: [
+        { title: "Decoding Foundations", objective: "Master skimming basics to understand the general topic of a passage." },
+        { title: "Scanning for Specifics", objective: "Locate names, dates, and numbers instantly without reading the full text." },
+        { title: "The Grammar Link", objective: "Solve Sentence Completion questions using subject-verb agreement clues." },
+        { title: "Basic T/F/NG", objective: "Understand the fundamental difference between 'False' and 'Not Given'." }
+      ],
+      listening: [
+        { title: "Precision Hearing (Section 1)", objective: "Capture spelling and numbers accurately in Section 1 (Form Filling)." },
+        { title: "Map Navigation", objective: "Learn directional vocabulary for Section 2 map labelling." },
+        { title: "Keyword Spotting", objective: "Identify the exact moment a speaker transitions to the next question." }
+      ],
+      writing: [
+        { title: "Sentence Architecture", objective: "Write error-free simple and compound sentences on common topics." },
+        { title: "Task 1 Foundations (Overview)", objective: "Master the 'Overview' paragraph for charts and graphs." },
+        { title: "The 4-Paragraph Map", objective: "Learn the basic structure: Intro, Body 1, Body 2, Conclusion." }
+      ],
+      speaking: [
+        { title: "Part 1 Confidence", objective: "Build 3-sentence answers for hometown, hobbies, and studies." },
+        { title: "Fluency Starters", objective: "Learn 10 filler phrases to buy time while thinking." },
+        { title: "Pronunciation Core", objective: "Master word stress for common academic vocabulary." }
+      ]
+    },
+    medium: {
+      reading: [
+        { title: "Synonym Mapping", objective: "Unlock the secret to finding answers hidden in synonyms." },
+        { title: "Heading Mastery", objective: "Differentiate between the 'Main Idea' and 'Supporting Details'." },
+        { title: "Summary Completion", objective: "Use context and parts of speech to fill gaps in complex summaries." },
+        { title: "Logic Traps", objective: "Stop falling for 'Not Given' and 'False' traps in Section 3." }
+      ],
+      listening: [
+        { title: "Distractor Detection", objective: "Identify when a speaker corrects themselves (the 'Wait, actually' trap)." },
+        { title: "Multi-Choice Logic", objective: "Handle Section 3 discussions where multiple speakers agree/disagree." },
+        { title: "Tone & Attitude", objective: "Recognize the speaker's opinion through intonation and hedging words." }
+      ],
+      writing: [
+        { title: "Cohesion & Coherence", objective: "Use linking words (Furthermore, Conversely, Consequently) correctly." },
+        { title: "Describing Trends", objective: "Master vocabulary for fluctuation, plateau, and exponential growth." },
+        { title: "Idea Generation", objective: "Brainstorm 2 strong arguments for Task 2 prompts in under 3 minutes." }
+      ],
+      speaking: [
+        { title: "The Storyteller (Part 2)", objective: "Use the PPF Method (Past, Present, Future) to speak for 2 minutes." },
+        { title: "Lexical Range", objective: "Replace 'good/bad' with 'beneficial/detrimental' and other synonyms." },
+        { title: "Complex Structures", objective: "Incorporate If-clauses and Relative clauses into your speech." }
+      ]
+    },
+    hard: {
+      reading: [
+        { title: "Scientific Analysis", objective: "Navigate 900-word academic texts on specialized/technical topics." },
+        { title: "Implicit Meaning", objective: "Solve 'Writer's Views' (Yes/No/Not Given) based on subtle tone." },
+        { title: "Time Architecture", objective: "Complete 3 full passages in 55 minutes to allow for a final review." }
+      ],
+      listening: [
+        { title: "Academic Lectures", objective: "Take structured notes on Section 4 (monologues) at native speed." },
+        { title: "Accent Adaptation & Speed Training", objective: "Handle diverse accents and 1.2x-speed audio so the real test feels slow." }
+      ],
+      writing: [
+        { title: "Lexical Sophistication", objective: "Use rare collocations and idiomatic academic language." },
+        { title: "Advanced Argument", objective: "Write 'Nuanced' Task 2 essays (concession and refutation)." },
+        { title: "Task 1 Comparison", objective: "Compare multiple data sets (e.g., Table + Bar Chart) in one report." }
+      ],
+      speaking: [
+        { title: "Abstract Logic (Part 3)", objective: "Use the A.R.E Method (Assertion, Reason, Evidence) for deep topics." },
+        { title: "Idiomatic Flow", objective: "Use 'Natural Phrasal Verbs' without sounding forced." },
+        { title: "Zero Filler Mastery", objective: "Eliminate all 'um/uh' pauses during high-pressure abstract debates." }
+      ]
+    }
   };
 
   // ─── TOEFL iBT Mission Catalog — 51 unique missions (3 levels × 4 skills) ──
@@ -556,15 +598,16 @@ export class LearningPathService {
       // TOEFL: pick the level-specific catalog (3 distinct tracks, no content recycled).
       // IELTS: use the original catalog and let the mobile filter by adaptive level count.
       const isToefl = (path.examType || '').toUpperCase() === 'TOEFL';
-      const toeflLevel = (path.proficiencyLevel || 'easy').toLowerCase() as 'easy' | 'medium' | 'hard';
+      const currentLevel = (path.proficiencyLevel || 'easy').toLowerCase() as 'easy' | 'medium' | 'hard';
       const skillMissions = isToefl
-        ? (this.toeflMissionData[toeflLevel]?.[skill] || [])
-        : (this.missionData[skill] || []);
+        ? (this.toeflMissionData[currentLevel]?.[skill] || [])
+        : (this.ieltsMissionData[currentLevel]?.[skill] || []);
       const validVideos = videosProgress.filter((v) => v !== null);
       const validPdfs = pdfsProgress.filter((p) => p !== null);
 
       for (let i = 0; i < skillMissions.length; i++) {
         const missionInfo = skillMissions[i];
+        if (!missionInfo) continue;
         
         // Videos: 5 per mission
         const videoStart = i * 5;
