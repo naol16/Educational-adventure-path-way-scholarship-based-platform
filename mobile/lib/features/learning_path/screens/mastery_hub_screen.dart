@@ -187,7 +187,13 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
 
   Widget _buildHubContent(BuildContext context, FormattedLearningPath path, Color primaryColor) {
     final sectionData = path.skills[_selectedTab.toLowerCase()];
-    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder score
+    
+    // Map backend string level to UI enum
+    final levelStr = path.proficiencyLevel.toLowerCase();
+    final adaptiveLevel = levelStr == 'hard' 
+        ? AdaptiveLevel.hard 
+        : (levelStr == 'medium' ? AdaptiveLevel.medium : AdaptiveLevel.easy);
+
     final missions = AdaptivePathGenerator.filterMissions(
       sectionData?.missions ?? [],
       _selectedTab,
@@ -1083,7 +1089,10 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   Widget _buildAdaptiveLevelBadge(BuildContext context, FormattedLearningPath path) {
-    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder
+    final levelStr = path.proficiencyLevel.toLowerCase();
+    final adaptiveLevel = levelStr == 'hard' 
+        ? AdaptiveLevel.hard 
+        : (levelStr == 'medium' ? AdaptiveLevel.medium : AdaptiveLevel.easy);
     final label = AdaptivePathGenerator.getBadgeLabel(adaptiveLevel);
     Color badgeColor;
     
