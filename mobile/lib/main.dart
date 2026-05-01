@@ -6,7 +6,24 @@ import 'package:mobile/core/providers/router_provider.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/providers/theme_provider.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
+
   runApp(
     const ProviderScope(
       child: AppRoot(),

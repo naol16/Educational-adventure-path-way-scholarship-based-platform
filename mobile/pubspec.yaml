@@ -58,6 +58,10 @@ dependencies:
   webview_flutter: ^4.13.1
   socket_io_client: 3.1.4
   table_calendar: ^3.1.2
+  firebase_core: ^3.1.1
+  firebase_messaging: ^15.0.3
+  flutter_local_notifications: ^17.2.1
+  jitsi_meet_flutter_sdk: ^12.1.1
 
 dev_dependencies:
   flutter_test:

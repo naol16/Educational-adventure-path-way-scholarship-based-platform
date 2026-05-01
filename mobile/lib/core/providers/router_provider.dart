@@ -10,7 +10,7 @@ import 'package:mobile/features/auth/screens/role_selection_screen.dart';
 import 'package:mobile/features/onboarding/screens/student_onboarding_screen.dart';
 import 'package:mobile/features/core/screens/main_layout_screen.dart';
 import 'package:mobile/features/core/screens/settings_screen.dart';
-import 'package:mobile/features/core/screens/notification_screen.dart';
+import 'package:mobile/features/notifications/screens/notification_list_screen.dart';
 import 'package:mobile/features/core/screens/edit_profile_screen.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.dart';
@@ -118,7 +118,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationScreen(),
+        builder: (context, state) => const NotificationListScreen(),
       ),
       GoRoute(
         path: '/edit-profile',
