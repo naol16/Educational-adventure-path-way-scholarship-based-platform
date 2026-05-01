@@ -32,7 +32,7 @@ export class ScholarshipNotificationService {
 
       // 2. Parse User Preferences
       const prefs = this.parsePreferences(student.notificationPreferences);
-      
+
       const title = `Scholarship Match: ${scholarship.title}`;
       const message = `We've found a new scholarship that matches your profile! Click to view details and apply.`;
 
@@ -43,7 +43,8 @@ export class ScholarshipNotificationService {
           title,
           message,
           'SCHOLARSHIP_MATCH',
-          scholarship.id
+          scholarship.id,
+          false // Do not send generic email
         );
         console.log(`[ScholarshipNotification] In-app notification sent to user ${user.id} for scholarship ${scholarship.id}`);
       }
@@ -59,7 +60,7 @@ export class ScholarshipNotificationService {
             description: scholarship.description || "",
             deadline: scholarship.deadline || null
           },
-          scholarship.matchReason
+          scholarship.match_reason
         );
         console.log(`[ScholarshipNotification] Email notification sent to ${user.email} for scholarship ${scholarship.id}`);
       }
@@ -80,7 +81,7 @@ export class ScholarshipNotificationService {
     // Requirement says "immediately after a match is detected"
     // To avoid spamming, we notify only the top 3 best new matches if it's a batch
     const topNewMatches = matches.slice(0, 3);
-    
+
     for (const match of topNewMatches) {
       await this.notifyMatch(user, student, match);
     }
@@ -89,7 +90,7 @@ export class ScholarshipNotificationService {
   private static parsePreferences(prefsStr: string | null): { email: boolean; inSystem: boolean } {
     const defaults = { email: true, inSystem: true };
     if (!prefsStr) return defaults;
-    
+
     try {
       const parsed = typeof prefsStr === 'string' ? JSON.parse(prefsStr) : prefsStr;
       return {

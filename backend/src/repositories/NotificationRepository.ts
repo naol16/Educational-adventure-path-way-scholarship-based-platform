@@ -45,7 +45,7 @@ export class NotificationRepository {
 
   static async findUserWithToken(userId: number) {
     return await User.findByPk(userId, {
-      attributes: ["id", "fcmToken"],
+      attributes: ["id", "fcmToken", "email", "name"],
     });
   }
 

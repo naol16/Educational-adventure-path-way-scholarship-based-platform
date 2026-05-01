@@ -30,6 +30,7 @@ export class PaymentService {
         };
 
         try {
+            console.log('[Chapa] Initializing payment with payload:', JSON.stringify({ ...payload, email: '***' }));
             const response = await axios.post('https://api.chapa.co/v1/transaction/initialize', payload, {
                 headers: {
                     Authorization: `Bearer ${configs.CHAPA_SECRET_KEY}`,
@@ -38,8 +39,10 @@ export class PaymentService {
             });
             return response.data;
         } catch (error: any) {
-            console.error('Chapa initialization error:', error.response?.data || error.message);
-            throw new Error('Failed to initialize payment with Chapa');
+            const chapaError = error.response?.data;
+            const detail = typeof chapaError === 'object' ? JSON.stringify(chapaError) : (chapaError || error.message);
+            console.error('Chapa initialization error:', detail);
+            throw new Error(`Failed to initialize payment with Chapa: ${detail}`);
         }
     }
 
