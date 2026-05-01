@@ -10,6 +10,9 @@ import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/counselor/screens/student_progress_detail_screen.dart';
 import 'package:mobile/features/counselor/widgets/reschedule_booking_bottom_sheet.dart';
+import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/core/services/meeting_service.dart';
+import 'package:mobile/features/core/widgets/pre_flight_meeting_dialog.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final CounselorBooking booking;
@@ -81,8 +84,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   Widget _buildStatusHeader(BuildContext context, CounselorBooking booking) {
     Color statusColor;
     IconData statusIcon;
+    String label = booking.status.toUpperCase();
+
     switch (booking.status) {
       case 'confirmed': statusColor = const Color(0xFF10B981); statusIcon = LucideIcons.checkCircle; break;
+      case 'started': statusColor = DesignSystem.primary(context); statusIcon = LucideIcons.video; break;
+      case 'awaiting_confirmation': 
+        statusColor = const Color(0xFFF59E0B); 
+        statusIcon = LucideIcons.clock; 
+        label = "WAITING FOR STUDENT";
+        break;
       case 'completed': statusColor = Colors.blue; statusIcon = LucideIcons.checkSquare; break;
       case 'cancelled': statusColor = Colors.red; statusIcon = LucideIcons.xCircle; break;
       default: statusColor = const Color(0xFFF59E0B); statusIcon = LucideIcons.clock;
@@ -96,7 +107,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         children: [
           Icon(statusIcon, color: statusColor, size: 18),
           const SizedBox(width: 8),
-          Text(booking.status.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: statusColor, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+          Text(label, style: GoogleFonts.plusJakartaSans(color: statusColor, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
         ],
       ),
     );
@@ -185,16 +196,59 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   }
 
   Widget _buildJoinButton(BuildContext context, CounselorBooking booking) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(backgroundColor: DesignSystem.primary(context), foregroundColor: Colors.black, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), elevation: 0),
-        onPressed: () => _joinMeeting(booking),
-        icon: const Icon(LucideIcons.video),
-        label: Text('JOIN GOOGLE MEET', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16)),
-      ),
+    final isStarted = booking.status == 'started';
+    return Column(
+      children: [
+        if (booking.status == 'confirmed') ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: DesignSystem.primary(context), foregroundColor: Colors.black, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), elevation: 0),
+              onPressed: _isUpdating ? null : () => _updateStatus('started'),
+              icon: const Icon(LucideIcons.play),
+              label: Text('START SESSION', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (isStarted) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), elevation: 0),
+              onPressed: _isUpdating ? null : () => _updateStatus('awaiting_confirmation'),
+              icon: const Icon(LucideIcons.checkCircle),
+              label: Text('MARK AS COMPLETED', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (booking.status == 'confirmed' || isStarted)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(foregroundColor: DesignSystem.primary(context), side: BorderSide(color: DesignSystem.primary(context)), padding: const EdgeInsets.all(18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+              onPressed: () => _joinMeeting(booking),
+              icon: const Icon(LucideIcons.video),
+              label: Text(isStarted ? 'RE-JOIN MEETING' : 'JOIN MEETING', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+          ),
+        if (booking.status == 'awaiting_confirmation')
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.2))),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.info, color: Color(0xFFF59E0B), size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Waiting for student to confirm and rate the session. Funds will be released once confirmed.', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFF59E0B), fontWeight: FontWeight.w600))),
+              ],
+            ),
+          ),
+      ],
     );
   }
+
 
   Widget _buildPendingActions(BuildContext context, CounselorBooking booking) {
     return Row(
@@ -253,17 +307,29 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     if (confirm == true) _updateStatus('cancelled');
   }
 
-  Future<void> _joinMeeting(CounselorBooking booking) async {
-    if (booking.meetingLink != null) {
-      final url = Uri.parse(booking.meetingLink!);
-      if (await canLaunchUrl(url)) await launchUrl(url);
-    } else {
-      final res = await ref.read(counselorAppServiceProvider).joinSession(booking.id);
-      if (res != null && res['meetingLink'] != null) {
-        final url = Uri.parse(res['meetingLink']);
-        if (await canLaunchUrl(url)) await launchUrl(url);
-      }
+  void _joinMeeting(CounselorBooking booking) {
+    final user = ref.read(authProvider).valueOrNull;
+    if (user == null) return;
+
+    final roomName = booking.meetingLink;
+    if (roomName == null || roomName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Meeting room not available yet.')),
+      );
+      return;
     }
+
+    PreFlightDialog.show(context, () {
+      MeetingService.joinMeeting(
+        roomName: roomName,
+        user: user,
+        counselorName: user.name ?? 'Counselor',
+        onClosed: () {
+          ref.invalidate(counselorUpcomingBookingsProvider);
+          if (mounted) Navigator.pop(context);
+        },
+      );
+    });
   }
 
   void _showRescheduleSheet(BuildContext context) {

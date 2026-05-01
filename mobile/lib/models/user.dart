@@ -23,6 +23,11 @@ class User {
     this.previousUniversity,
     this.graduationYear,
     this.gpa,
+    this.preferredDegreeLevel,
+    this.preferredFundingType,
+    this.studyMode,
+    this.preferredCountries,
+    this.preferredUniversities,
     required this.raw,
   });
 
@@ -47,6 +52,13 @@ class User {
   final String? previousUniversity;
   final int? graduationYear;
   final double? gpa;
+
+  // Preferences
+  final List<String>? preferredDegreeLevel;
+  final String? preferredFundingType;
+  final String? studyMode;
+  final List<String>? preferredCountries;
+  final List<dynamic>? preferredUniversities;
 
   final Map<String, dynamic> raw;
 
@@ -80,6 +92,11 @@ class User {
       previousUniversity: readValue<String>(json, const ['previousUniversity', 'previous_university', 'currentUniversity', 'current_university']),
       graduationYear: readInt(json, const ['graduationYear', 'graduation_year']),
       gpa: readDouble(json, const ['gpa', 'calculatedGpa', 'calculated_gpa']),
+      preferredDegreeLevel: readStringList(json, const ['preferredDegreeLevel', 'preferred_degree_level']),
+      preferredFundingType: readValue<String>(json, const ['preferredFundingType', 'preferred_funding_type']),
+      studyMode: readValue<String>(json, const ['studyMode', 'study_mode']),
+      preferredCountries: readStringList(json, const ['preferredCountries', 'preferred_countries']),
+      preferredUniversities: json['preferredUniversities'] ?? json['preferred_universities'],
       raw: Map<String, dynamic>.from(json),
     );
   }

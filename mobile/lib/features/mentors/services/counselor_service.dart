@@ -38,11 +38,9 @@ class CounselorService {
   }
 
   Future<Map<String, dynamic>?> createBooking(int counselorId, int slotId, {String? notes}) async {
-    const mobileReturnUrl = 'edupath://payment/success';
     final response = await _apiClient.post('/api/counselors/bookings', body: {
       'counselorId': counselorId,
       'slotId': slotId,
-      'returnUrl': mobileReturnUrl,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
     });
     if (response.statusCode == 201) {
@@ -77,13 +75,22 @@ class CounselorService {
   }
 
   Future<List<Booking>> getMyBookings() async {
-    final response = await _apiClient.get('/api/counselors/me/bookings');
+    final response = await _apiClient.get('/api/counselors/student/bookings');
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body)['data'];
       return data.map((json) => Booking.fromJson(json)).toList();
     }
     return [];
   }
+
+  Future<bool> reviewAndConfirmBooking(int bookingId, int rating, String? comment) async {
+    final response = await _apiClient.post('/api/counselors/bookings/$bookingId/review-confirm', body: {
+      'rating': rating,
+      if (comment != null) 'comment': comment,
+    });
+    return response.statusCode == 200;
+  }
+
 
   Future<List<Review>> getCounselorReviews(int counselorId) async {
     final response = await _apiClient.get('/api/counselors/$counselorId/reviews');

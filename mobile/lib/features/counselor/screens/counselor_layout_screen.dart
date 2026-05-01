@@ -38,21 +38,13 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
     return Scaffold(
       backgroundColor: isDark ? DesignSystem.background : DesignSystem.backgroundLight,
       resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          IndexedStack(index: currentIndex, children: _screens),
-          _buildBottomNav(currentIndex),
-        ],
-      ),
+      body: IndexedStack(index: currentIndex, children: _screens),
+      bottomNavigationBar: _buildBottomNav(currentIndex),
     );
   }
 
   Widget _buildBottomNav(int currentIndex) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: ClipRRect(
+    return ClipRRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaY: 10, sigmaX: 10),
           child: Container(
@@ -76,7 +68,6 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
               ],
             ),
           ),
-        ),
       ),
     );
   }

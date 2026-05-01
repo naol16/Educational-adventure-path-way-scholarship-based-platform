@@ -600,9 +600,10 @@ export class CounselorService {
 
     // Use caller-supplied returnUrl (mobile deep link) or fall back to web URL
     const defaultReturnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
-    const returnUrl = (dto as any).returnUrl
-      ? `${(dto as any).returnUrl}?bookingId=${booking.id}&tx_ref=${tx_ref}`
-      : defaultReturnUrl;
+    
+    // Chapa requires a valid https:// return_url — deep links (edupath://) are rejected.
+    // For mobile, we always use the web success page; the mobile WebView intercepts it via URL matching.
+    const returnUrl = defaultReturnUrl;
 
     const chapaResponse = await PaymentService.initializePayment(
       tx_ref,
@@ -732,22 +733,11 @@ export class CounselorService {
               console.error("[ConfirmBooking] Error fetching attendee emails:", e);
             }
 
-            // Generate Google Meet Link
-            let meetingLink = `https://meet.edu-pathway.com/session-${booking.id}`;
-            try {
-              if (slot) {
-                console.log(`[ConfirmBooking] Creating Google Meet for booking ${booking.id}`);
-                meetingLink = await GoogleMeetService.createMeeting(
-                  "Counseling Session: Educational Pathway",
-                  `Counseling session between student and counselor.`,
-                  slot.startTime,
-                  60,
-                  attendees
-                );
-              }
-            } catch (e) {
-              console.error("[ConfirmBooking] Google Meet creation failed, using fallback:", e);
-            }
+            // Generate In-App Jitsi Meeting Link (Room Name)
+            // Example: Pathway-Session-123-1698765432100
+            const timestamp = Date.now();
+            const meetingLink = `Pathway-Session-${booking.id}-${timestamp}`;
+            console.log(`[ConfirmBooking] Generated In-App Meeting Room: ${meetingLink}`);
 
             await booking.update({ status: 'confirmed', meetingLink });
             if (slot) {
@@ -800,7 +790,8 @@ export class CounselorService {
                     "Booking Confirmed",
                     `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
-                    booking.id
+                    booking.id,
+                    false
                   );
                 } catch (notifyError) {
                   console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
@@ -1022,6 +1013,9 @@ export class CounselorService {
     if ((dto.status === "completed" || dto.status === "awaiting_confirmation") && booking.status !== "started") throw httpError(409, "Can only complete a started booking");
     if (dto.status === "cancelled" && booking.status === "completed") throw httpError(409, "Cannot cancel a completed booking");
 
+    if (dto.status === "confirmed") {
+      await booking.update({ status: "confirmed" });
+    }
     if (dto.status === "started") await booking.update({ status: "started", startedAt: new Date() });
     if (dto.status === "completed" || dto.status === "awaiting_confirmation") {
       await booking.update({ status: "awaiting_confirmation", completedAt: new Date() });
@@ -1140,7 +1134,14 @@ export class CounselorService {
     if (!slot) throw httpError(404, "Slot not found");
     const start = new Date(slot.startTime);
     const end = new Date(slot.endTime);
-    if (now > end) throw httpError(409, "This session has already ended");
+    
+    // Allow joining if session is started OR if it's within 60 mins after the scheduled end (grace period for late starters)
+    const gracePeriod = 60 * 60 * 1000;
+    const isPastGrace = now.getTime() > (end.getTime() + gracePeriod);
+    
+    if (booking.status !== "started" && isPastGrace) {
+      throw httpError(409, "This session has already ended and the grace period has passed");
+    }
 
     const meetingLink = booking.meetingLink || slot.meetingLink || `https://meet.edu-pathway.com/session-${booking.id}`;
     // Allow immediate access once the meeting exists; only mark started near/after scheduled start.
@@ -1418,6 +1419,12 @@ export class CounselorService {
       student?.dataValues?.user ||
       null;
 
+    const payment =
+      (typeof booking?.get === "function" ? booking.get("payment") : null) ||
+      booking?.payment ||
+      booking?.dataValues?.payment ||
+      null;
+
     return {
       id: booking.id,
       studentId: booking.studentId,
@@ -1453,6 +1460,13 @@ export class CounselorService {
         status: slot.status,
         reservedStudentId: slot.reservedStudentId,
         meetingLink: slot.meetingLink,
+      } : null,
+      payment: payment ? {
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: payment.status,
+        tx_ref: payment.tx_ref
       } : null
     };
   }
@@ -1555,6 +1569,10 @@ export class CounselorService {
             association: 'slot',
             required: false,
           },
+          {
+            association: 'payment',
+            required: false,
+          },
         ],
         order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']],
       });
@@ -1577,6 +1595,10 @@ export class CounselorService {
         },
         {
           association: 'slot',
+          required: false,
+        },
+        {
+          association: 'payment',
           required: false,
         },
       ],

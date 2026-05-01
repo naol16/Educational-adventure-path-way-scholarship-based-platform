@@ -10,6 +10,9 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/core/widgets/notification_bell.dart';
+import 'package:mobile/features/core/services/meeting_service.dart';
+import 'package:mobile/features/core/widgets/pre_flight_meeting_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 class CounselorDashboardScreen extends ConsumerWidget {
@@ -97,6 +100,8 @@ class CounselorDashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+        const NotificationBell(),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: () => context.push('/counselor-profile'),
           child: CircleAvatar(
@@ -328,7 +333,20 @@ class CounselorDashboardScreen extends ConsumerWidget {
             ),
             if (booking.meetingLink != null)
               GestureDetector(
-                onTap: () => launchUrl(Uri.parse(booking.meetingLink!)),
+                onTap: () {
+                  final user = ref.read(authProvider).valueOrNull;
+                  if (user == null) return;
+                  PreFlightDialog.show(context, () {
+                    MeetingService.joinMeeting(
+                      roomName: booking.meetingLink!,
+                      user: user,
+                      counselorName: user.name ?? 'Counselor',
+                      onClosed: () {
+                        ref.invalidate(counselorUpcomingBookingsProvider);
+                      },
+                    );
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(12)),

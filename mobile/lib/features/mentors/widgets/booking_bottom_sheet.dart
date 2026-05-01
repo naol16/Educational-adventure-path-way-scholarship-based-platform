@@ -201,8 +201,10 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
         onPageFinished: (_) => setState(() => _isLoading = false),
         onNavigationRequest: (request) {
           final url = request.url;
-          // Intercept our deep link — Chapa redirected back after payment
-          if (url.startsWith('edupath://')) {
+          // Intercept the web success page redirect from Chapa
+          // Backend returns to: FRONTEND_URL/dashboard/student/bookings/success?bookingId=...&tx_ref=...
+          if (url.contains('/dashboard/student/bookings/success') ||
+              url.contains('bookings/success')) {
             _handlePaymentReturn(url);
             return NavigationDecision.prevent;
           }
@@ -216,13 +218,12 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
   }
 
   void _handlePaymentReturn(String url) {
-    final uri = Uri.tryParse(url.replaceFirst('edupath://', 'https://'));
+    final uri = Uri.tryParse(url);
     final txRef = uri?.queryParameters['tx_ref'];
     final bookingId = uri?.queryParameters['bookingId'];
 
     Navigator.pop(context); // close WebView
 
-    // Show result screen
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -305,7 +306,7 @@ class _PaymentResultScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               Text(
-                'Your payment is being verified. Your session will be confirmed shortly.',
+                'Your payment is being verified. You can now track your session status in the sessions dashboard.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                     color: DesignSystem.labelText(context), fontSize: 15, height: 1.5),
@@ -319,10 +320,11 @@ class _PaymentResultScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'Ref: $txRef',
+                    'Reference: $txRef',
                     style: GoogleFonts.inter(
                         color: DesignSystem.labelText(context),
-                        fontSize: 11),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -331,16 +333,18 @@ class _PaymentResultScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Pop back to the mentors/bookings screen
+                    // Pop back to the root shell. 
+                    // From there, the student can navigate to the Sessions tab/screen.
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DesignSystem.primary(context),
-                    foregroundColor: Colors.white,
+                    foregroundColor: Colors.black, // Dark text on amber/yellow background
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
-                  child: Text('View My Bookings',
+                  child: Text('View My Sessions',
                       style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),

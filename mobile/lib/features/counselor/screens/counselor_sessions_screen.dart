@@ -8,6 +8,10 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/counselor/screens/session_detail_screen.dart';
+import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/core/services/meeting_service.dart';
+import 'package:mobile/features/core/widgets/pre_flight_meeting_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CounselorSessionsScreen extends ConsumerStatefulWidget {
   const CounselorSessionsScreen({super.key});
@@ -17,7 +21,7 @@ class CounselorSessionsScreen extends ConsumerStatefulWidget {
 }
 
 class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScreen> {
-  int _tab = 0; // 0=upcoming 1=pending 2=completed
+  int _tab = 0; // 0=ongoing 1=upcoming 2=pending 3=completed
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +82,7 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
   }
 
   Widget _buildTabBar(BuildContext context) {
-    final tabs = ['Upcoming', 'Pending', 'Completed'];
+    final tabs = ['Ongoing', 'Upcoming', 'Pending', 'Completed'];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -117,16 +121,33 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
   }
 
   List<CounselorBooking> _filterBookings(List<CounselorBooking> all) {
+    final now = DateTime.now();
+    final buffer = const Duration(minutes: 5);
+
     switch (_tab) {
-      case 0: return all.where((b) => b.status == 'confirmed').toList();
-      case 1: return all.where((b) => b.status == 'pending').toList();
-      case 2: return all.where((b) => b.status == 'completed').toList();
-      default: return all;
+      case 0: // Ongoing
+        return all.where((b) {
+          if (!['confirmed', 'started'].contains(b.status)) return false;
+          if (b.slot == null) return b.status == 'started';
+          return (now.isAfter(b.slot!.startTime.subtract(buffer)) && now.isBefore(b.slot!.endTime)) || b.status == 'started';
+        }).toList();
+      case 1: // Upcoming
+        return all.where((b) {
+          if (b.status != 'confirmed') return false;
+          if (b.slot == null) return false;
+          return b.slot!.startTime.isAfter(now.add(buffer));
+        }).toList();
+      case 2: // Pending
+        return all.where((b) => b.status == 'pending').toList();
+      case 3: // Completed
+        return all.where((b) => b.status == 'completed' || (b.status == 'confirmed' && b.slot != null && b.slot!.endTime.isBefore(now))).toList();
+      default:
+        return all;
     }
   }
 
   Widget _buildEmpty(BuildContext context) {
-    final labels = ['upcoming', 'pending', 'completed'];
+    final labels = ['ongoing', 'upcoming', 'pending', 'completed'];
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -173,9 +194,26 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
                       ],
                     ),
                   ),
-                  _buildStatusBadge(context, booking.status),
+                  _buildStatusBadge(context, booking.status, isOngoing: _tab == 0),
                 ],
               ),
+              if (_tab == 0) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: booking.meetingLink != null ? () => _startMeeting(context, booking) : null,
+                    icon: const Icon(LucideIcons.video, size: 16),
+                    label: const Text("JOIN SESSION NOW"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -191,7 +229,14 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, String status) {
+  Widget _buildStatusBadge(BuildContext context, String status, {bool isOngoing = false}) {
+    if (isOngoing) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+        child: Text("LIVE", style: GoogleFonts.inter(color: Colors.red, fontSize: 10, fontWeight: FontWeight.w900)),
+      );
+    }
     Color color;
     String label;
     switch (status) {
@@ -206,5 +251,22 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
       decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
       child: Text(label, style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
     );
+  }
+
+  void _startMeeting(BuildContext context, CounselorBooking booking) {
+    final user = ref.read(authProvider).valueOrNull;
+    if (user == null || booking.meetingLink == null) return;
+
+    PreFlightDialog.show(context, () {
+      MeetingService.joinMeeting(
+        roomName: booking.meetingLink!,
+        user: user,
+        counselorName: user.name ?? 'Counselor',
+        onClosed: () {
+          // Refresh list when they close the meeting
+          ref.invalidate(counselorUpcomingBookingsProvider);
+        },
+      );
+    });
   }
 }
