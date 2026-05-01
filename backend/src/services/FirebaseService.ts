@@ -40,7 +40,7 @@ export class FirebaseService {
             const message = {
                 notification: { title, body },
                 token: token,
-                data: data ? { ...data, scholarshipId: String(data.scholarshipId || "") } : undefined
+                data: data ? Object.entries(data).reduce((acc, [key, value]) => ({ ...acc, [key]: String(value) }), {}) : undefined
             };
 
             const response = await admin.messaging().send(message);
