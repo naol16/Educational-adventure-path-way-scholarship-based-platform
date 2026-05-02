@@ -26,6 +26,17 @@ router.post(
   AuthController.register,
 );
 router.post(
+  "/send-otp",
+  createAccountLimiter,
+  validate(registerValidation),
+  AuthController.sendRegistrationOTP,
+);
+router.post(
+  "/verify-otp",
+  createAccountLimiter,
+  AuthController.verifyRegistrationOTP,
+);
+router.post(
   "/login",
   authLimiter,
   validate(loginValidation),
