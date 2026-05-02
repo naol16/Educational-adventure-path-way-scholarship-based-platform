@@ -1,9 +1,11 @@
 import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import configs from "../config/configs.js";
 import { AIChatMessage } from "../models/AIChatMessage.js";
 import { Scholarship } from "../models/Scholarship.js";
 
 const groq = new Groq({ apiKey: configs.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(configs.GEMINI_API_KEY as string);
 
 export class AIChatService {
     static async askGeneralAssistant(message: string, sessionId: string, userId?: number) {
@@ -28,14 +30,28 @@ export class AIChatService {
             { role: "user", content: message }
         ];
 
-        const completion = await groq.chat.completions.create({
-            messages: messages as any[],
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.7,
-            max_tokens: 1024,
-        });
-
-        const assistantMessage = completion.choices[0]?.message?.content || "I'm sorry, I couldn't process that right now.";
+        let assistantMessage = "";
+        try {
+            const completion = await groq.chat.completions.create({
+                messages: messages as any[],
+                model: "llama-3.3-70b-versatile",
+                temperature: 0.7,
+                max_tokens: 1024,
+            });
+            assistantMessage = completion.choices[0]?.message?.content || "";
+        } catch (err) {
+            console.warn("AI service failed, falling back to Gemini...", err);
+            try {
+                const model = genAI.getGenerativeModel({ model: configs.GEMINI_MODEL || "gemini-1.5-flash" });
+                const result = await model.generateContent({
+                    contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+                });
+                assistantMessage = result.response.text();
+            } catch (geminiErr) {
+                console.error("Gemini fallback failed:", geminiErr);
+                assistantMessage = "I'm sorry, I couldn't process that right now.";
+            }
+        }
 
         // Save assistant message
         const savedAssistantMsg = await AIChatMessage.create({
@@ -83,14 +99,28 @@ Answer the student's questions specifically regarding this scholarship. Be conci
             { role: "user", content: message }
         ];
 
-        const completion = await groq.chat.completions.create({
-            messages: messages as any[],
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.7,
-            max_tokens: 1024,
-        });
-
-        const assistantMessage = completion.choices[0]?.message?.content || "I'm sorry, I couldn't process that right now.";
+        let assistantMessage = "";
+        try {
+            const completion = await groq.chat.completions.create({
+                messages: messages as any[],
+                model: "llama-3.3-70b-versatile",
+                temperature: 0.7,
+                max_tokens: 1024,
+            });
+            assistantMessage = completion.choices[0]?.message?.content || "";
+        } catch (err) {
+            console.warn("AI service failed, falling back to Gemini...", err);
+            try {
+                const model = genAI.getGenerativeModel({ model: configs.GEMINI_MODEL || "gemini-1.5-flash" });
+                const result = await model.generateContent({
+                    contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+                });
+                assistantMessage = result.response.text();
+            } catch (geminiErr) {
+                console.error("Gemini fallback failed:", geminiErr);
+                assistantMessage = "I'm sorry, I couldn't process that right now.";
+            }
+        }
 
         const savedAssistantMsg = await AIChatMessage.create({
             sessionId,

@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   PlayCircle,
   BookOpen,
@@ -68,7 +67,7 @@ interface Mission {
   title: string;
   objective: string;
   videos: Video[];
-  pdfs: any[]; // Adjust if needed
+  pdfs: any[]; 
   isCompleted: boolean;
   isUnitTestCompleted: boolean;
 }
@@ -83,7 +82,7 @@ interface SkillData {
 interface LearningPathData {
   proficiencyLevel: 'easy' | 'medium' | 'hard';
   skills: Record<string, SkillData>;
-  learningMode?: Record<string, any[]>;
+  learningMode?: Record<string, any>;
   competencyGapAnalysis?: any;
   curriculumMap?: any;
   current_progress_percentage?: number;
@@ -280,9 +279,8 @@ const calculateSkillProgress = (pathData: LearningPathData, skill: string, pract
             const completed = mission.videos.filter(v => v.isCompleted).length;
             videoScore = (completed / mission.videos.length) * 0.4;
         }
-        let pdfScore = 0;
         let practiceScore = practiceRatio * 0.4;
-        let missionProgress = videoScore + pdfScore + practiceScore;
+        let missionProgress = videoScore + practiceScore;
         totalWeightedProgress += (missionProgress / missions.length);
     }
     return Math.min(1.0, totalWeightedProgress);
@@ -299,17 +297,20 @@ function SkillGauge({ label, value, examType, color }: { label: string, value: n
         <div className="flex flex-col items-center gap-2">
             <div className="relative h-14 w-14 flex items-center justify-center">
                 <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 52 52">
-                    <circle className="text-muted/10 stroke-current" strokeWidth="4" cx="26" cy="26" r="22" fill="transparent" />
-                    <circle className="stroke-current transition-all duration-1000 ease-out" style={{ color }}
-                            strokeWidth="4" strokeDasharray={`${circumference}`} strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round" cx="26" cy="26" r="22" fill="transparent" />
+                    <circle className="text-slate-100 dark:text-zinc-800 stroke-current" strokeWidth="4" cx="26" cy="26" r="22" fill="transparent" />
+                    <circle 
+                        className="stroke-current transition-all duration-1000" 
+                        style={{ color, strokeDasharray: circumference, strokeDashoffset }}
+                        strokeWidth="4" 
+                        strokeLinecap="round" cx="26" cy="26" r="22" fill="transparent" 
+                    />
                 </svg>
                 <div className="flex flex-col items-center mt-0.5">
-                    <span className="text-xs font-bold leading-none">{currentVal}</span>
-                    <span className="text-[6px] font-bold text-muted-foreground uppercase">{maxLabel}</span>
+                    <span className="text-[10px] font-bold leading-none">{currentVal}</span>
+                    <span className="text-[5px] font-medium text-muted-foreground uppercase tracking-widest">{maxLabel}</span>
                 </div>
             </div>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
         </div>
     );
 }
@@ -333,34 +334,35 @@ const getPathfinderTip = (level: string, tab: string) => {
         if (t === 'writing') return { text: "Your grammar is perfect, but stylistic choices matter. Try using a more active structure to sound authoritative.", title: "Refine stylistic choices..." };
         if (t === 'speaking') return { text: "It's time for the panel pressure. Focus on idiomatic naturalness and deep abstract reasoning.", title: "Focus on idiomatic naturalness..." };
     }
-    return { text: "Keep progressing to master this skill.", title: "Pathfinder Insights" };
+    return { text: "Keep progressing to master this skill.", title: "Learning Insights" };
 };
 
-function PathfinderTip({ level, tab, colorClass }: { level: string, tab: string, colorClass: string }) {
+function PathfinderTip({ level, tab }: { level: string, tab: string }) {
     const tip = getPathfinderTip(level, tab);
     const [expanded, setExpanded] = useState(false);
     
     return (
         <div 
           onClick={() => setExpanded(!expanded)}
-          className={`cursor-pointer max-w-xl mx-auto rounded-3xl border transition-all duration-300 bg-card/60 backdrop-blur-md ${expanded ? 'p-6 shadow-xl border-primary/50' : 'p-4 shadow-sm border-primary/20'} mb-16 relative z-20`}
+          className={`cursor-pointer max-w-2xl mx-auto rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all ${expanded ? 'p-6' : 'p-4'} mb-12`}
         >
             <div className="flex items-center justify-between">
                <div className="flex items-center gap-3">
-                   <div className={`p-2 rounded-full bg-primary/10 text-primary`}>
-                       <Sparkles size={expanded ? 20 : 16} className="text-current" />
+                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                       <Sparkles size={16} />
                    </div>
-                   {!expanded ? (
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{tip.title}</span>
-                   ) : (
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Pathfinder Tip</span>
-                   )}
+                   <div className="flex flex-col items-start">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Strategic Tip</span>
+                       {!expanded && (
+                           <span className="text-xs font-semibold text-foreground/80">{tip.title}</span>
+                       )}
+                   </div>
                </div>
-               {!expanded && <ChevronRight size={14} className="text-primary/50" />}
+               <ChevronRight size={14} className={`text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`} />
             </div>
             {expanded && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                <div className="mt-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                         {tip.text}
                     </p>
                 </div>
@@ -382,7 +384,6 @@ export function LearningPathView() {
   const [practiceAnswers, setPracticeAnswers] = useState<Record<string, Record<number, string>>>({});
   const [showExplanation, setShowExplanation] = useState<Record<string, Record<number, boolean>>>({});
   
-  // Audio Recording for Speaking Practice
   const [isRecording, setIsRecording] = useState<Record<number, boolean>>({});
   const [recordingSeconds, setRecordingSeconds] = useState<Record<number, number>>({});
   const [evaluationResults, setEvaluationResults] = useState<Record<number, any>>({});
@@ -391,26 +392,23 @@ export function LearningPathView() {
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervals = useRef<Record<number, NodeJS.Timeout>>({});
   
-  // Mission & Unit Test State
   const [activeMission, setActiveMission] = useState<number | null>(null);
   const [showUnitTest, setShowUnitTest] = useState(false);
   const [generatingMission, setGeneratingMission] = useState(false);
   const [unitTestContent, setUnitTestContent] = useState<any>(null);
   const [unitTestResults, setUnitTestResults] = useState<any>(null);
   const [isSubmittingTest, setIsSubmittingTest] = useState(false);
+  const [loadingUnitTestIndex, setLoadingUnitTestIndex] = useState<number | null>(null);
   const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
   const [pathView, setPathView] = useState<"path" | "assessment" | "result">("path");
   const [activeAssessment, setActiveAssessment] = useState<any>(null);
   const [selectedAssessmentResult, setSelectedAssessmentResult] = useState<any>(null);
 
-  // Theme configuration based on environment mode
   const theme = {
     primary: envMode === "IELTS" ? "emerald" : "blue",
-    bg: envMode === "IELTS" ? "bg-emerald-500/5" : "bg-blue-500/5",
     text: envMode === "IELTS" ? "text-emerald-600" : "text-blue-600",
-    border: envMode === "IELTS" ? "border-emerald-200" : "border-blue-200",
-    gradient: envMode === "IELTS" ? "from-emerald-500 to-teal-500" : "from-blue-500 to-indigo-500",
-    accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500"
+    gradient: envMode === "IELTS" ? "from-emerald-600 to-teal-500" : "from-blue-600 to-indigo-500",
+    accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
   };
 
   const load = async () => {
@@ -420,37 +418,25 @@ export function LearningPathView() {
       const pathData = res?.skills ? res : (res?.data?.skills ? res.data : null);
       if (pathData) {
         setData(pathData);
-
-        // --- NEW FIX: Rebuild local UI State from the Backend ---
         const initialExplanations: Record<string, Record<number, boolean>> = {};
         const initialAnswers: Record<string, Record<number, string>> = {};
 
         Object.keys(pathData.skills).forEach((skill) => {
           initialExplanations[skill] = {};
           initialAnswers[skill] = {};
-          
           const modeData = pathData.learningMode?.[skill];
           const questions = Array.isArray(modeData) ? modeData : modeData?.questions || [];
-          
           questions.forEach((q: any, i: number) => {
             if (q.isCompleted) {
-              // Lock the UI for completed questions
               initialExplanations[skill][i] = true;
-              
-              // Try to populate past answers if the backend provides them
               const pastAnswer = q.user_answer || q.userAnswer || q.answer_text;
-              if (pastAnswer) {
-                initialAnswers[skill][i] = pastAnswer;
-              }
+              if (pastAnswer) initialAnswers[skill][i] = pastAnswer;
             }
           });
         });
 
-        // Merge with existing state so we don't accidentally wipe out unsaved typing during a sync
         setPracticeAnswers(prev => ({ ...prev, ...initialAnswers }));
         setShowExplanation(prev => ({ ...prev, ...initialExplanations }));
-        // --------------------------------------------------------
-
         const skills = Object.keys(pathData.skills);
         if (skills.length > 0 && !skills.includes(activeTab)) setActiveTab(skills[0]);
       } else {
@@ -470,9 +456,7 @@ export function LearningPathView() {
       if (!prev) return prev;
       const newData = JSON.parse(JSON.stringify(prev));
       const video = newData.skills[activeTab].videos.find((v: any) => v.id === videoId);
-      if (video) {
-        video.isCompleted = !video.isCompleted;
-      }
+      if (video) video.isCompleted = !video.isCompleted;
       return newData;
     });
 
@@ -514,7 +498,6 @@ export function LearningPathView() {
     });
 
     try {
-      // NEW FIX: Pass the `answer` payload
       await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer });
     } catch (error) {
       console.error("Failed to track question progress", error);
@@ -529,7 +512,6 @@ export function LearningPathView() {
     const answer = practiceAnswers[skill]?.[qIndex] || "";
     if (answer.trim().length > 0) {
       setShowExplanation(prev => ({ ...prev, [skill]: { ...(prev[skill] || {}), [qIndex]: true } }));
-      
       setData(prev => {
         if (!prev) return prev;
         const newData = JSON.parse(JSON.stringify(prev));
@@ -538,9 +520,7 @@ export function LearningPathView() {
         if (questions[qIndex]) questions[qIndex].isCompleted = true;
         return newData;
       });
-
       try {
-        // NEW FIX: Pass the `answer` payload to the backend
         await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer });
       } catch (error) {
         console.error("Failed to track textarea progress", error);
@@ -559,7 +539,6 @@ export function LearningPathView() {
          handleEvaluateSpeaking(qIndex, blob);
          stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorderRef.current.start();
       setIsRecording(prev => ({ ...prev, [qIndex]: true }));
       setRecordingSeconds(prev => ({ ...prev, [qIndex]: 0 }));
@@ -586,11 +565,9 @@ export function LearningPathView() {
       const normalizedResult = (result && typeof result === 'object' && 'data' in result)
         ? (result as { data?: any }).data
         : result;
-
       if (normalizedResult) {
         setEvaluationResults(prev => ({ ...prev, [qIndex]: normalizedResult }));
         setShowExplanation(prev => ({ ...prev, [activeTab]: { ...(prev[activeTab] || {}), [qIndex]: true } }));
-        
         const modeData = data?.learningMode?.[activeTab];
         const questions = Array.isArray(modeData) ? modeData : (modeData as any)?.questions || [];
         if (questions[qIndex]) {
@@ -609,41 +586,30 @@ export function LearningPathView() {
     try {
       setCompleting(true);
       setSyncHint(null);
-
       const localAnswers = practiceAnswers[section];
       if (localAnswers) {
          for (const [qIndex, answerText] of Object.entries(localAnswers)) {
             if (answerText.trim().length > 0 && !showExplanation[section]?.[Number(qIndex)]) {
-               // NEW FIX: Also pass `answer` in the failsafe sync
                await trackProgress({ questionIndex: Number(qIndex), section, isCompleted: true, answer: answerText }).catch(() => {});
             }
          }
       }
-
       if (data?.skills[section] && !data.skills[section].isNoteCompleted) {
          await trackProgress({ isNote: true, section, isCompleted: true }).catch(() => {});
       }
-
       await completeSection(section);
       setCompletedSections(prev => ({ ...prev, [section]: true }));
-      await load(); // <-- Re-fetches the UI, which will now rebuild perfectly due to our update in load()
-      
-      // Ticket 3: Trigger assessment generation automatically after module completion
-      try {
-        toast.loading(`Initializing ${section} assessment...`, { id: "gen-assessment" });
-        const res = await generateAssessment({ 
-          examType: envMode, 
-          difficulty: data?.proficiencyLevel || "Medium",
-          skill: section as any
-        } as any);
-        toast.dismiss("gen-assessment");
-        setActiveAssessment(res);
-        setPathView("assessment");
-        toast.success(`${section} assessment ready!`);
-      } catch (err) {
-        toast.dismiss("gen-assessment");
-        console.error("Failed to auto-generate assessment", err);
-        toast.error("Could not start assessment automatically.");
+      await load(); 
+      if (!data) return;
+      const skillNames = Object.keys(data.skills);
+      const nextIdx = skillNames.indexOf(section) + 1;
+      if (nextIdx < skillNames.length) {
+        setActiveTab(skillNames[nextIdx]);
+        toast.success(`Module ${section} complete! Moving to ${skillNames[nextIdx]}.`);
+        const el = document.getElementById("skills-navigation-section");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        toast.success(`All learning modules complete! You can now take the final mock exam.`);
       }
     } catch (err) {
       console.error("Failed to complete section", err);
@@ -653,108 +619,95 @@ export function LearningPathView() {
     }
   };
 
-   const handleSyncAllCompletedSections = async () => {
-      if (!data) return;
-      try {
-         setSyncingAll(true);
-         setSyncHint(null);
+  const handleSyncAllCompletedSections = async () => {
+    if (!data) return;
+    try {
+      setSyncingAll(true);
+      setSyncHint(null);
+      const skillNames = Object.keys(data.skills);
+      const completedSkills = skillNames.filter((skill) => isSkillLocallyComplete(data, skill, practiceAnswers));
+      for (const skill of completedSkills) await completeSection(skill);
+      const completedFlags = completedSkills.reduce((acc, skill) => ({ ...acc, [skill]: true }), {} as Record<string, boolean>);
+      setCompletedSections((prev) => ({ ...prev, ...completedFlags }));
+      await load();
+    } catch (err) {
+      console.error("Failed to sync all completed sections", err);
+      setSyncHint("Could not sync all sections. Please try again.");
+    } finally {
+      setSyncingAll(false);
+    }
+  };
 
-         const skillNames = Object.keys(data.skills);
-         const completedSkills = skillNames.filter((skill) => isSkillLocallyComplete(data, skill, practiceAnswers));
+  const handleStartMission = async (mIndex: number) => {
+    setActiveMission(mIndex);
+    setTimeout(() => {
+       const el = document.getElementById("curriculum-modules-section");
+       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
-         for (const skill of completedSkills) {
-            await completeSection(skill);
-         }
+  const handleTakeUnitTest = async (mIndex: number) => {
+    try {
+       setLoadingUnitTestIndex(mIndex);
+       setIsSubmittingTest(true);
+       const res = await generateUnitTest({ 
+          skill: activeTab, 
+          level: data?.proficiencyLevel || 'easy',
+          examType: currentExamType 
+       });
+       setUnitTestContent(res?.data || res);
+       setActiveMission(mIndex);
+       setShowUnitTest(true);
+       setUnitTestResults(null);
+    } catch (err) {
+       console.error("Failed to generate unit test", err);
+    } finally {
+       setIsSubmittingTest(false);
+       setLoadingUnitTestIndex(null);
+    }
+  };
 
-         const completedFlags = completedSkills.reduce(
-            (acc, skill) => ({ ...acc, [skill]: true }),
-            {} as Record<string, boolean>,
-         );
-         setCompletedSections((prev) => ({ ...prev, ...completedFlags }));
-         await load();
-      } catch (err) {
-         console.error("Failed to sync all completed sections", err);
-         setSyncHint("Could not sync all sections. Please try again.");
-      } finally {
-         setSyncingAll(false);
-      }
-   };
-
-   const handleStartMission = async (mIndex: number) => {
-      setActiveMission(mIndex);
-      // Automatically scroll down to the curriculum modules section
-      setTimeout(() => {
-         const el = document.getElementById("curriculum-modules-section");
-         if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-         }
-      }, 100);
-   };
-
-   const handleTakeUnitTest = async (mIndex: number) => {
-      try {
-         setIsSubmittingTest(true);
-         const res = await generateUnitTest({ 
-            skill: activeTab, 
-            level: data?.proficiencyLevel || 'easy',
-            examType: currentExamType 
-         });
-         setUnitTestContent(res?.data || res);
-         setActiveMission(mIndex);
-         setShowUnitTest(true);
-         setUnitTestResults(null);
-      } catch (err) {
-         console.error("Failed to generate unit test", err);
-      } finally {
-         setIsSubmittingTest(false);
-      }
-   };
-
-   const handleSubmitUnitTest = async (responses: any[]) => {
-      if (activeMission === null) return;
-      try {
-         setIsSubmittingTest(true);
-         const res = await submitUnitTest({
-            skill: activeTab,
-            responses,
-            missionIndex: activeMission
-         });
-         setUnitTestResults(res?.data || res);
-         if (res?.data?.passed || res?.passed) {
-            await load(); // Refresh progress
-         }
-      } catch (err) {
-         console.error("Failed to submit unit test", err);
-      } finally {
-         setIsSubmittingTest(false);
-      }
-   };
+  const handleSubmitUnitTest = async (responses: any[]) => {
+    if (activeMission === null) return;
+    try {
+       setIsSubmittingTest(true);
+       const res = await submitUnitTest({
+          skill: activeTab,
+          responses,
+          missionIndex: activeMission
+       });
+       setUnitTestResults(res?.data || res);
+       if (res?.data?.passed || res?.passed) await load();
+    } catch (err) {
+       console.error("Failed to submit unit test", err);
+    } finally {
+       setIsSubmittingTest(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-        <p className="text-muted-foreground font-medium text-xs uppercase tracking-widest">Constructing Curriculum Matrix...</p>
+        <p className="text-muted-foreground text-xs uppercase tracking-widest">Loading Learning Path...</p>
       </div>
     );
   }
 
   if (error === "Not found") {
     return (
-      <div className="max-w-xl mx-auto py-24 text-center space-y-10">
-         <div className="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
-            <Compass className="h-12 w-12 text-primary" />
+      <div className="max-w-xl mx-auto py-24 text-center space-y-8">
+         <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+            <Compass className="h-8 w-8 text-slate-400" />
          </div>
-         <div className="space-y-4">
-            <h2 className="text-3xl font-bold tracking-tight">Begin Your Journey</h2>
-            <p className="text-muted-foreground font-normal text-base leading-relaxed">
-               Take the diagnostic assessment to unlock your personalized learning path.
+         <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Begin Your Journey</h2>
+            <p className="text-muted-foreground text-sm">
+               Take the diagnostic assessment to unlock your learning path.
             </p>
          </div>
          <Link href="/dashboard/learning-path/diagnostic/assessment">
-            <Button size="lg" className="px-12 h-14 rounded-2xl primary-gradient text-white shadow-xl shadow-primary/20 font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform">
-               START ASSESSMENT
-            </Button>
+            <Button className="rounded-2xl px-8">START ASSESSMENT</Button>
          </Link>
       </div>
     );
@@ -764,48 +717,31 @@ export function LearningPathView() {
 
   const currentSkill = data.skills[activeTab];
   const progress = data.current_progress_percentage || 0;
-   const skillNames = Object.keys(data.skills);
-   const skillStatusList = skillNames.map((skill) => getSkillCompletionStatus(data, skill, practiceAnswers));
-   const locallyCompletedSkillCount = skillStatusList.filter((s) => s.complete).length;
-   const localUnitsTotal = skillNames.length;
-   const localUnitsCompleted = locallyCompletedSkillCount;
-   const localProgress = localUnitsTotal > 0 ? Math.round((localUnitsCompleted / localUnitsTotal) * 100) : 0;
-   const isOutOfSync = localProgress > progress;
-   const incompleteSkillStatus = skillStatusList.filter((s) => !s.complete);
+  const skillNames = Object.keys(data.skills);
+  const skillStatusList = skillNames.map((skill) => getSkillCompletionStatus(data, skill, practiceAnswers));
+  const locallyCompletedSkillCount = skillStatusList.filter((s) => s.complete).length;
+  const localUnitsTotal = skillNames.length;
+  const localUnitsCompleted = locallyCompletedSkillCount;
+  const localProgress = localUnitsTotal > 0 ? Math.round((localUnitsCompleted / localUnitsTotal) * 100) : 0;
+  const isOutOfSync = localProgress > progress;
+  const incompleteSkillStatus = skillStatusList.filter((s) => !s.complete);
   const canLevelUp = progress >= 100;
-   const currentExamType = normalizeExamType(
-      data.examType || data.exam_type || data.competencyGapAnalysis?.exam_type || data.competencyGapAnalysis?.examType,
-   );
+  const currentExamType = normalizeExamType(data.examType || data.exam_type || data.competencyGapAnalysis?.exam_type || data.competencyGapAnalysis?.examType);
 
   const modeData = data.learningMode?.[activeTab];
-  const pQues = Array.isArray(modeData) ? modeData : (modeData as any)?.questions || [];
+  const pQues = Array.isArray(modeData) ? modeData : ((modeData as any)?.questions || (modeData as any)?.practice_questions || ((modeData as any)?.prompt ? [modeData] : []));
   const listeningScript = (modeData as any)?.script || null;
   const listeningAudio = (modeData as any)?.audio_base64 || null;
-
   const pTotal = pQues.length;
-  const pComp = pQues.filter((q: any, idx: number) => {
-    if (q.isCompleted) return true;
-    const answer = practiceAnswers[activeTab]?.[idx];
-    if (answer !== undefined && String(answer).trim().length > 0) return true;
-    return false;
-  }).length;
-
+  const pComp = pQues.filter((q: any, idx: number) => (q.isCompleted || (practiceAnswers[activeTab]?.[idx] && practiceAnswers[activeTab]?.[idx].trim().length > 0))).length;
   const vTotal = currentSkill?.videos?.length || 0;
   const vComp = currentSkill?.videos?.filter(v => v.isCompleted).length || 0;
-
   const isSectionSaved = completedSections[activeTab] || false;
 
   if (pathView === "assessment" && activeAssessment) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-        <AssessmentTest
-          examData={activeAssessment}
-          onComplete={() => {
-            setActiveAssessment(null);
-            setPathView("path");
-            load();
-          }}
-        />
+        <AssessmentTest examData={activeAssessment} onComplete={() => { setActiveAssessment(null); setPathView("path"); load(); }} />
       </div>
     );
   }
@@ -813,99 +749,63 @@ export function LearningPathView() {
   if (pathView === "result" && selectedAssessmentResult) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-        <AssessmentResultView
-          testId={selectedAssessmentResult.testId || selectedAssessmentResult.test_id || ""}
-          examType={selectedAssessmentResult.examType}
-          difficulty={selectedAssessmentResult.difficulty}
-          initialData={selectedAssessmentResult.evaluation}
-          onBack={() => {
-            setSelectedAssessmentResult(null);
-            setPathView("path");
-          }}
-        />
+        <AssessmentResultView testId={selectedAssessmentResult.testId || selectedAssessmentResult.test_id || ""} examType={selectedAssessmentResult.examType} difficulty={selectedAssessmentResult.difficulty} initialData={selectedAssessmentResult.evaluation} onBack={() => { setSelectedAssessmentResult(null); setPathView("path"); }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-16 pb-32 max-w-7xl mx-auto px-4 md:px-8">
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-end justify-between border-b border-border/60 pb-12">
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
+    <div className="space-y-8 pb-32 max-w-7xl mx-auto px-4 md:px-8">
+      {/* HEADER SECTION */}
+      <div className="py-8 border-b border-slate-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="space-y-2 text-center md:text-left">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
              <EnvironmentSwitcher mode={envMode} onChange={setEnvMode} />
-             <span className={`px-4 py-1.5 rounded-full border text-[9px] font-bold uppercase tracking-widest ${levelConfig[data.proficiencyLevel].color} ${levelConfig[data.proficiencyLevel].bg} ${levelConfig[data.proficiencyLevel].border}`}>
+             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${levelConfig[data.proficiencyLevel].bg} ${levelConfig[data.proficiencyLevel].color} border ${levelConfig[data.proficiencyLevel].border}`}>
                Tier: {levelConfig[data.proficiencyLevel].label}
              </span>
           </div>
-          <div className="relative space-y-3">
-            <div className={`absolute -inset-10 opacity-20 blur-3xl rounded-full z-0 ${envMode === "IELTS" ? 'bg-emerald-400' : 'bg-blue-400'} animate-pulse`} />
-            <h1 className="relative z-10 text-6xl md:text-7xl font-black tracking-tighter leading-none uppercase bg-linear-to-br from-foreground via-foreground/80 to-transparent bg-clip-text text-transparent drop-shadow-sm">
-              Mastery Hub
-            </h1>
-            <p className="relative z-10 text-muted-foreground font-medium text-sm md:text-base flex items-center gap-2 max-w-lg">
-               <Sparkles size={16} className={`${theme.accent} shrink-0`} /> 
-               Leveling up your {envMode} proficiency through AI-sequenced missions.
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Your Learning Path</h1>
+          <p className="text-muted-foreground text-sm max-w-lg">
+             Master {envMode} skills through sequenced missions and AI-driven practice.
+          </p>
         </div>
 
-        <div className="relative flex items-center gap-10 bg-card/60 backdrop-blur-2xl p-8 rounded-[40px] border border-white/20 shadow-2xl overflow-hidden group">
-           <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-700 bg-.gradient-to-r ${envMode === "IELTS" ? 'from-emerald-400 to-transparent' : 'from-blue-400 to-transparent'}`} />
-           <div className="relative z-10 text-right space-y-1">
-              <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest opacity-60">Overall Mastery</p>
-              <div className="flex items-baseline gap-1 justify-end">
-                <span className={`text-5xl font-black leading-none tracking-tighter ${theme.text} drop-shadow-sm`}>{progress}%</span>
-                <span className="text-[10px] font-bold text-muted-foreground tracking-widest">SYNCED</span>
-              </div>
-              <p className={`text-[10px] font-bold uppercase tracking-widest ${theme.text} opacity-60 mt-2`}>Local Track: {localProgress}%</p>
+        <div className="flex items-center gap-6 p-6 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm">
+           <div className="text-right space-y-1">
+              <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Overall Mastery</p>
+              <span className={`text-4xl font-bold ${theme.text}`}>{progress}%</span>
            </div>
-           <div className="relative z-10 h-24 w-24 flex items-center justify-center">
-              <div className={`absolute inset-0 rounded-full blur-xl opacity-20 ${envMode === "IELTS" ? 'bg-emerald-500' : 'bg-blue-500'}`} />
-              <svg className="absolute inset-0 h-full w-full -rotate-90 drop-shadow-md" viewBox="0 0 100 100">
-                 <circle className="text-muted/10 stroke-current" strokeWidth="6" cx="50" cy="50" r="44" fill="transparent" />
-                 <circle className={`stroke-current transition-all duration-1000 ease-out ${envMode === "IELTS" ? 'text-emerald-500' : 'text-blue-500'}`}
-                         strokeWidth="8" strokeDasharray={`${progress * 2.76} 276`}
-                         strokeLinecap="round" cx="50" cy="50" r="44" fill="transparent" />
-              </svg>
-              <Trophy size={28} className={`${theme.accent} drop-shadow-sm`} />
+           <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-primary">
+              <Trophy size={24} />
            </div>
         </div>
       </div>
 
-         {(isOutOfSync || syncHint || incompleteSkillStatus.length > 0) && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-               <div className="space-y-2">
-                  <p className="text-sm text-amber-900">
-                     {syncHint || `You completed ${localProgress}% locally, but synced progress is ${progress}%. Click Sync All Completed to push every finished section.`}
-                  </p>
-                  {incompleteSkillStatus.length > 0 && (
-                     <div className="text-xs text-amber-900/90 space-y-1">
-                        {incompleteSkillStatus.map((s) => (
-                           <p key={s.skill}>
-                              {s.skill.toUpperCase()}: videos {s.videosDone}/{s.videosTotal}, questions {s.questionsDone}/{s.questionsTotal}, note {s.noteComplete ? "done" : "pending"}
-                           </p>
-                        ))}
-                     </div>
-                  )}
-               </div>
-               <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={handleSyncAllCompletedSections} disabled={syncingAll || completing}>
-                     {syncingAll ? "Syncing..." : "Sync All Completed"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleCompleteSection(activeTab)} disabled={completing}>
-                     Sync {activeTab}
-                  </Button>
-               </div>
-            </div>
-         )}
+      {(isOutOfSync || syncHint || incompleteSkillStatus.length > 0) && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+           <div className="space-y-1">
+              <p className="text-sm text-amber-900 font-medium">
+                 {syncHint || `You have unsynced local progress (${localProgress}% vs ${progress}%).`}
+              </p>
+              {incompleteSkillStatus.length > 0 && (
+                 <div className="text-[11px] text-amber-900/70">
+                    Pending: {incompleteSkillStatus.map(s => s.skill).join(", ")}
+                 </div>
+              )}
+           </div>
+           <div className="flex items-center gap-2">
+              <Button size="sm" onClick={handleSyncAllCompletedSections} disabled={syncingAll || completing}>
+                 {syncingAll ? "Syncing..." : "Sync All"}
+              </Button>
+           </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
-        {/* SIDEBAR */}
-        <div className="lg:col-span-1 space-y-12">
-           {/* SKILL OVERVIEW GAUGES */}
-           <div className="p-6 rounded-[40px] bg-card/60 backdrop-blur-xl border border-white/10 shadow-xl shadow-primary/5 flex items-center justify-between lg:grid lg:grid-cols-2 lg:gap-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        {/* SIDEBAR NAVIGATION */}
+        <div className="lg:col-span-1 space-y-8">
+           <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm grid grid-cols-2 gap-4">
               {['reading', 'listening', 'writing', 'speaking'].map(s => {
                   const val = calculateSkillProgress(data, s, practiceAnswers);
                   const isIELTS = envMode === "IELTS";
@@ -916,543 +816,387 @@ export function LearningPathView() {
               })}
            </div>
 
-           <div className="space-y-4">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest px-2 text-muted-foreground opacity-40">Skill Dimensions</h4>
-              <div className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar">
+           <div className="space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2">Dimensions</p>
+              <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
                  {Object.keys(data.skills).map((skill) => {
                     const Icon = skillIcons[skill];
                     const active = activeTab === skill;
                     const saved = completedSections[skill];
-                    const skillTheme = active ? (envMode === "IELTS" ? "bg-emerald-500 text-white border-emerald-400" : "bg-blue-600 text-white border-blue-500") : "bg-card/50 text-muted-foreground hover:bg-muted/80 border-border/40";
-                    
                     return (
                        <button
                          key={skill}
                          onClick={() => setActiveTab(skill)}
-                         className={`group relative shrink-0 flex items-center justify-between p-5 rounded-3xl transition-all duration-500 font-bold uppercase text-[11px] tracking-[0.2em] border min-w-[150px] lg:w-full overflow-hidden ${skillTheme} ${active ? 'shadow-2xl shadow-primary/20 scale-[1.03] z-10' : 'hover:scale-[1.01] hover:shadow-lg'}`}
+                         className={`flex items-center justify-between p-4 rounded-2xl transition-all border shrink-0 min-w-[140px] lg:w-full ${active ? 'bg-primary text-white border-primary shadow-md' : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-muted-foreground hover:bg-slate-50'}`}
                        >
-                          {active && (
-                            <div className="absolute inset-0 bg-white/20 blur-xl opacity-50" />
-                          )}
-                          <div className="relative z-10 flex items-center gap-4">
-                             <div className={`p-2 rounded-xl transition-colors ${active ? 'bg-white/20 text-white' : 'bg-primary/10 ' + theme.accent}`}>
-                                <Icon size={16} />
-                             </div>
-                             <span>{skill}</span>
+                          <div className="flex items-center gap-3">
+                             <Icon size={16} />
+                             <span className="font-bold uppercase text-[11px] tracking-wide">{skill}</span>
                           </div>
-                          <div className="relative z-10">
-                             {saved
-                               ? <CheckCircle2 size={18} className={active ? "text-white" : "text-emerald-500"} />
-                               : <ChevronRight size={16} className={`transition-all duration-300 ${active ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0"}`} />
-                             }
-                          </div>
+                          {saved && <CheckCircle2 size={16} />}
                        </button>
                     );
                  })}
               </div>
            </div>
-
-           <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 space-y-6 grayscale opacity-80">
-              <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary/60">
-                 <BarChart3 size={18} />
+           
+           <div className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 space-y-4">
+              <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                 <BarChart3 size={16} />
               </div>
-              <div className="space-y-2">
-                 <h5 className="text-[10px] font-medium uppercase tracking-widest leading-none">Promotion Target</h5>
-                 <p className="text-[11px] font-normal text-muted-foreground leading-relaxed">Complete all 4 skill sections to reach 100% and unlock tier-elevation.</p>
+              <div className="space-y-1">
+                 <p className="text-[10px] font-bold uppercase tracking-widest">Target</p>
+                 <p className="text-[11px] text-muted-foreground leading-relaxed">Complete all 4 skill sections to unlock your final mock exam.</p>
               </div>
            </div>
-
-           {/* CURRICULUM MAP PANEL */}
-           {data.curriculumMap && (
-              <div className="p-8 rounded-3xl bg-linear-to-br from-primary/5 to-accent/5 border border-primary/10 space-y-6">
-                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-white shrink-0">
-                       <MapIcon size={16} />
-                    </div>
-                    <h5 className="text-[10px] font-bold uppercase tracking-widest">Growth Sprints</h5>
-                 </div>
-                 <div className="space-y-3">
-                    {data.curriculumMap.sprints?.map((sprint: any, i: number) => (
-                       <div key={i} className="flex gap-3">
-                          <div className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold ${sprint.is_remedial ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>W{sprint.week}</div>
-                          <p className="text-[10px] text-muted-foreground leading-tight pt-1">{sprint.goal}</p>
-                       </div>
-                    ))}
-                 </div>
-              </div>
-           )}
         </div>
 
-        {/* MAIN FEED */}
-        <div className="lg:col-span-3 space-y-24">
-           <AnimatePresence mode="wait">
-              <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-24">
+        {/* MAIN CONTENT AREA */}
+        <div className="lg:col-span-3 space-y-12">
+           <div className="space-y-12">
+              {/* 01 ANALYSIS SECTION */}
+              <section className="space-y-6">
+                 <div className="flex items-center gap-3 px-2">
+                    <div className="h-4 w-1 bg-primary rounded-full" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Strategic Overview</h2>
+                 </div>
 
-                 {/* 01 COMPETENCY STRATEGY */}
-                 <section className="space-y-10">
-                    <div className="flex items-center gap-2 px-2">
-                       <span className="h-1 w-4 bg-primary/40 rounded-full" />
-                       <h2 className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary/70">01 / Competency Strategy</h2>
+                 <div className="p-8 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm space-y-8">
+                    <div className="space-y-4">
+                       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
+                          <TrendingUp size={14} /> Gap Analysis
+                       </div>
+                       <h3 className="text-xl font-bold leading-snug">
+                          {data.competencyGapAnalysis?.proficiency_profile || "Analyzing your assessment results..."}
+                       </h3>
+                       <div className="flex flex-wrap gap-2 pt-2">
+                          {data.competencyGapAnalysis?.weaknesses?.map((w: string, i: number) => (
+                             <span key={i} className="px-3 py-1 bg-slate-100 dark:bg-zinc-800 rounded-lg text-[10px] font-semibold text-slate-600 dark:text-zinc-400">
+                                Focus: {w}
+                             </span>
+                          ))}
+                       </div>
                     </div>
 
-                    <div className="space-y-12">
-                       <div className="space-y-6">
-                          <h3 className="text-2xl font-semibold tracking-tight">Gap Analysis Summary</h3>
-                          <div className="max-w-4xl text-lg font-normal leading-relaxed text-foreground/80 italic">
-                             "{data.competencyGapAnalysis?.proficiency_profile || "Analyzing student response profile..."}"
-                          </div>
-                          <div className="flex flex-wrap gap-2 pt-2">
-                             {data.competencyGapAnalysis?.weaknesses?.map((w: string, i: number) => (
-                                <span key={i} className="px-3 py-1 bg-red-500/5 text-red-600 rounded-full text-[10px] font-medium uppercase border border-red-200/10 tracking-widest">{w}</span>
-                             ))}
-                          </div>
+                    <div className="pt-6 border-t border-slate-100 dark:border-zinc-800 space-y-6">
+                       <div className="flex items-center justify-between gap-4">
+                         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            <BookMarked size={16} /> Strategic Directive
+                         </div>
+                         <Button
+                           size="sm"
+                           variant={currentSkill?.isNoteCompleted ? "secondary" : "outline"}
+                           onClick={handleToggleNote}
+                           className="h-9 rounded-2xl text-[10px] font-bold uppercase tracking-widest"
+                         >
+                           {currentSkill?.isNoteCompleted ? <><CheckCircle2 size={12} className="mr-2" /> Directive Logged</> : "Acknowledge"}
+                         </Button>
                        </div>
+                       <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {data.competencyGapAnalysis?.section_analysis?.[activeTab] || currentSkill?.notes}
+                       </div>
+                    </div>
+                 </div>
+              </section>
 
-                       <div className="space-y-4 pt-10 border-t border-border/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-primary/50">
-                               <BookMarked size={14} /> Subject Directive
+              {/* 02 MISSIONS SECTION */}
+              <section className="space-y-8">
+                 <div className="flex items-center gap-3 px-2">
+                    <div className="h-4 w-1 bg-primary rounded-full" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Skill Missions</h2>
+                 </div>
+
+                 <PathfinderTip level={data.proficiencyLevel} tab={activeTab} />
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {currentSkill.missions?.map((m: any, i: number) => {
+                       const isLocked = i > 0 && !currentSkill.missions[i - 1].isCompleted;
+                       const isActive = activeMission === i && !isLocked;
+                       const isDone = m.isCompleted;
+                       return (
+                          <div key={i} className={`p-6 rounded-2xl border transition-all ${isLocked ? 'bg-slate-50/50 opacity-50' : isActive ? 'bg-white border-primary shadow-md' : 'bg-white hover:border-slate-300'} relative`}>
+                             <div className="flex items-start justify-between mb-4">
+                                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${isLocked ? 'bg-slate-100 text-slate-400' : isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                                   {isLocked ? <Lock size={18} /> : isDone ? <CheckCircle2 size={20} /> : <Target size={20} />}
+                                </div>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Mission {i + 1}</span>
+                             </div>
+                             <h4 className="font-bold text-lg mb-2">{m.title}</h4>
+                             <p className="text-xs text-muted-foreground mb-6 line-clamp-2">{m.objective}</p>
+                             <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleStartMission(i)} disabled={isLocked} className="flex-1 rounded-2xl text-[10px] font-bold uppercase tracking-widest h-10">
+                                   {isDone ? 'Review' : 'Start'}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleTakeUnitTest(i)} 
+                                  disabled={isLocked || m.isUnitTestCompleted || isSubmittingTest} 
+                                  className="flex-1 rounded-2xl text-[10px] font-bold uppercase tracking-widest h-10"
+                                >
+                                   {m.isUnitTestCompleted ? 'Verified' : loadingUnitTestIndex === i ? <Loader2 size={16} className="animate-spin" /> : 'Test'}
+                                </Button>
+                             </div>
+                          </div>
+                       );
+                    })}
+                 </div>
+              </section>
+
+              {/* 03 CONTENT FEED SECTION */}
+              <section className="space-y-12" id="curriculum-modules-section">
+                 <div className="flex items-center gap-3 px-2">
+                    <div className="h-4 w-1 bg-primary rounded-full" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Instructional Content</h2>
+                 </div>
+
+                 {/* Video Modules */}
+                 <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                       <h4 className="font-bold text-sm tracking-wide">Video Lessons</h4>
+                       <span className="text-[10px] font-bold text-primary">{vComp} / {vTotal} COMPLETED</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       {currentSkill?.videos?.map((v, i) => (
+                         <div key={v.id} className={`p-6 rounded-2xl border bg-white dark:bg-zinc-900 transition-all ${v.isCompleted ? 'border-emerald-200 bg-emerald-50/20' : ''}`}>
+                            <div className="flex items-start gap-4 mb-4">
+                               <div className="h-20 w-20 rounded-2xl overflow-hidden border bg-slate-100 shrink-0 relative group">
+                                  <img src={v.thubnail} className="h-full w-full object-cover" />
+                                  {v.videolink && (
+                                    <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-all text-white">
+                                       <PlayCircle size={24} />
+                                    </a>
+                                  )}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                  <p className={`font-bold text-sm mb-1 truncate ${v.isCompleted ? 'text-muted-foreground line-through' : ''}`}>{v.title || `Lesson ${i + 1}`}</p>
+                                  <p className="text-[10px] text-muted-foreground uppercase font-medium">Module {i + 1}</p>
+                               </div>
+                               <button onClick={() => handleToggleVideo(v.id)} className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${v.isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-300 hover:text-primary'}`}>
+                                  {v.isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                               </button>
                             </div>
-                            <button
-                              onClick={handleToggleNote}
-                              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-medium uppercase tracking-widest transition-all ${currentSkill?.isNoteCompleted ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-muted/50 border-border/50 text-muted-foreground hover:bg-muted'}`}
-                            >
-                              {currentSkill?.isNoteCompleted ? <CheckCircle2 size={10} /> : <Circle size={10} />}
-                              {currentSkill?.isNoteCompleted ? 'Directive Acknowledged' : 'Mark as Read'}
-                            </button>
-                          </div>
-                          <div className="text-sm font-normal text-muted-foreground/90 leading-relaxed max-w-4xl whitespace-pre-wrap">
-                             {data.competencyGapAnalysis?.section_analysis?.[activeTab] || currentSkill?.notes}
-                          </div>
-                       </div>
+                         </div>
+                       ))}
                     </div>
-                 </section>
+                 </div>
 
-                 {/* ADVENTURE PATH: MISSIONS */}
-                 <section className="space-y-12">
-                    <div className="flex flex-col items-center text-center space-y-4 mb-8">
-                        <PathfinderTip level={data.proficiencyLevel} tab={activeTab} colorClass={theme.bg} />
+                 {/* Practice Questions */}
+                 <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                       <h4 className="font-bold text-sm tracking-wide">Application Matrix</h4>
+                       <span className="text-[10px] font-bold text-primary">{pComp} / {pTotal} RESOLVED</span>
                     </div>
 
-                    <div className="flex flex-col items-center text-center space-y-4 mb-16">
-                       <div className="flex items-center gap-2">
-                          <span className={`h-1 w-8 ${envMode === "IELTS" ? 'bg-emerald-400' : 'bg-blue-400'} rounded-full`} />
-                          <h2 className="text-xs font-black uppercase tracking-[0.4em] text-muted-foreground">The Adventure Path</h2>
-                          <span className={`h-1 w-8 ${envMode === "IELTS" ? 'bg-emerald-400' : 'bg-blue-400'} rounded-full`} />
-                       </div>
-                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Complete missions to unlock the final assessment</p>
-                    </div>
- 
-                    <div className="relative max-w-2xl mx-auto pb-20">
-                       {/* Connecting Line Path */}
-                       <div className="absolute left-1/2 top-0 bottom-0 w-1.5 bg-muted/20 -translate-x-1/2 z-0 rounded-full overflow-hidden shadow-inner">
-                          <motion.div 
-                            className={`w-full relative ${envMode === "IELTS" ? 'bg-emerald-500' : 'bg-blue-600'} shadow-[0_0_15px_rgba(var(--primary),0.5)]`}
-                            initial={{ height: 0 }}
-                            animate={{ height: `${(currentSkill.missions?.filter((m: any) => m.isCompleted).length / (currentSkill.missions?.length || 1)) * 100}%` }}
-                            transition={{ duration: 2, ease: "easeOut" }}
-                          >
-                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-8 bg-white rounded-full blur-sm opacity-50 mix-blend-overlay" />
-                          </motion.div>
-                       </div>
+                    <div className="space-y-6">
+                       {pQues.length > 0 ? pQues.map((q: any, idx: number) => {
+                         const scoreMeta = activeTab === 'speaking' && evaluationResults[idx] ? getSpeakingScoreMeta(evaluationResults[idx], currentExamType) : null;
+                         return (
+                           <div key={idx} className="p-8 rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm space-y-8">
+                              <div className="flex items-start gap-4">
+                                 <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">0{idx + 1}</div>
+                                 <h5 className="text-lg font-bold leading-tight">"{String(q.question || q.prompt)}"</h5>
+                              </div>
 
-                       <div className="space-y-32 relative z-10">
-                          {currentSkill.missions?.map((m: any, i: number) => {
-                             const isLocked = i > 0 && !currentSkill.missions[i - 1].isCompleted;
-                             const isActive = activeMission === i && !isLocked;
-                             const isDone = m.isCompleted;
-                             const isEven = i % 2 === 0;
+                              {activeTab === 'listening' && listeningScript && (
+                                <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-dashed">
+                                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Transcript</p>
+                                  <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">{listeningScript}</p>
+                                </div>
+                              )}
 
-                             return (
-                               <motion.div 
-                                 key={i}
-                                 initial={{ opacity: 0, x: isEven ? -20 : 20 }}
-                                 whileInView={{ opacity: 1, x: 0 }}
-                                 viewport={{ once: true }}
-                                 className={`flex flex-col items-center ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 md:gap-16`}
-                               >
-                                  {/* MISSION NODE */}
-                                  <div className="relative">
-                                     <button
-                                       onClick={() => !isLocked && handleStartMission(i)}
-                                       className={`size-24 rounded-[32px] flex items-center justify-center transition-all duration-500 ${isLocked ? 'bg-muted/50 border-2 border-border/40 text-muted-foreground/30' : isDone ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 rotate-12' : isActive ? 'primary-gradient text-white shadow-2xl shadow-primary/30 scale-110' : 'bg-card border-2 border-primary/20 text-primary hover:border-primary'}`}
-                                     >
-                                        {isLocked ? <Lock size={28} /> : isDone ? <CheckCircle2 size={32} /> : <Target size={32} />}
-                                        
-                                        {/* Particle/Glow for Active */}
-                                        {isActive && (
-                                          <motion.div 
-                                            className="absolute inset-0 rounded-[32px] border-4 border-primary/40"
-                                            animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
-                                            transition={{ duration: 2, repeat: Infinity }}
-                                          />
-                                        )}
-                                     </button>
-                                     <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isLocked ? 'text-muted-foreground/40' : theme.text}`}>
-                                           Mission 0{i + 1}
-                                        </span>
-                                     </div>
-                                  </div>
+                              {(q.audio_base64 || listeningAudio) && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border max-w-xl">
+                                   <audio controls className="w-full h-8" src={`data:audio/mp3;base64,${q.audio_base64 || listeningAudio}`} />
+                                </div>
+                              )}
 
-                                  {/* MISSION DETAILS CARD */}
-                                  <div className={`relative flex-1 w-full max-w-sm p-8 rounded-[40px] border transition-all duration-700 overflow-hidden group ${isLocked ? 'bg-muted/5 border-border/20 opacity-50 hover:opacity-70' : isActive ? 'bg-card/80 backdrop-blur-xl border-primary/50 shadow-2xl shadow-primary/20 scale-[1.02]' : 'bg-card/40 backdrop-blur-md border-border/40 hover:border-primary/30 hover:shadow-xl'}`}>
-                                     {isActive && <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent pointer-events-none" />}
-                                     <div className="relative z-10 flex items-center justify-between mb-4">
-                                        <h4 className={`text-2xl font-black tracking-tight ${isActive ? 'text-foreground drop-shadow-sm' : 'text-foreground/70 group-hover:text-foreground transition-colors'}`}>{m.title}</h4>
-                                        {isDone && <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-emerald-500/20 shadow-sm">Mastered</span>}
-                                     </div>
-                                     <p className="text-xs text-muted-foreground leading-relaxed mb-8">{m.objective}</p>
-                                     
-                                     <div className="flex gap-3">
-                                        <Button 
-                                          onClick={() => handleStartMission(i)}
-                                          disabled={isLocked}
-                                          className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest ${isActive ? 'primary-gradient text-white' : 'bg-muted/50 text-foreground'}`}
-                                        >
-                                           {isDone ? 'Review' : isActive ? 'Continue' : 'Start'}
-                                        </Button>
-                                        <Button 
-                                          onClick={() => handleTakeUnitTest(i)}
-                                          disabled={isLocked || m.isUnitTestCompleted}
-                                          variant="outline"
-                                          className={`flex-1 h-12 rounded-2xl text-[9px] font-black uppercase tracking-widest ${m.isUnitTestCompleted ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600' : ''}`}
-                                        >
-                                           {m.isUnitTestCompleted ? 'Test Passed' : 'Final Exam'}
-                                        </Button>
-                                     </div>
-                                  </div>
-                               </motion.div>
-                             );
-                          })}
-
-                          {/* DYNAMIC END NODE */}
-                          <div className="flex flex-col items-center">
-                             <button 
-                               onClick={() => setGeneratingMission(true)}
-                               className="size-20 rounded-[24px] border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-primary hover:bg-primary/10 transition-all hover:scale-110 group"
-                             >
-                                <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
-                             </button>
-                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4 opacity-40">Generate Extra Mission</p>
-                          </div>
-                       </div>
-                    </div>
-                 </section>
-
-                 {/* 02 CURRICULUM MODULES */}
-                 <section className="space-y-10" id="curriculum-modules-section">
-                    <div className="flex items-center gap-2 px-2">
-                       <span className="h-1 w-4 bg-primary/40 rounded-full" />
-                       <h2 className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary/70">02 / Curriculum Modules</h2>
-                    </div>
-
-                    <div className="space-y-24">
-                       {/* Video Modules */}
-                       <div className="space-y-8">
-                          <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                             <h4 className="font-medium text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-40">Instructional Log Feed</h4>
-                             <span className="text-[9px] font-medium uppercase tracking-widest text-primary/60">{vComp} / {vTotal} COMPLETED</span>
-                          </div>
-
-                          <div className="divide-y divide-border/60">
-                             {currentSkill?.videos?.map((v, i) => (
-                               <div key={v.id} className="flex items-center py-6 gap-8 group">
-                                  <button onClick={() => handleToggleVideo(v.id)} className={`${v.isCompleted ? 'text-primary' : 'text-muted-foreground/10 hover:text-primary transition-colors'}`}>
-                                     {v.isCompleted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                                  </button>
-                                  <div className="min-w-0 flex-1 flex flex-col md:flex-row md:items-center gap-8">
-                                     <div className="h-14 w-14 bg-slate-50 rounded-full shrink-0 flex items-center justify-center text-slate-300 overflow-hidden relative border border-border/40 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all">
-                                        <img src={v.thubnail} className="h-full w-full object-cover" />
-                                        {v.videolink && (
-                                          <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/30 text-white transition-all opacity-0 hover:opacity-100"><PlayCircle size={18} /></a>
-                                        )}
-                                     </div>
-                                     <div className="flex-1 space-y-1">
-                                        <p className={`text-lg font-medium tracking-tight ${v.isCompleted ? 'text-muted-foreground line-through opacity-40' : 'text-foreground/90'}`}>{v.title || `Instructional Module 0${i + 1}`}</p>
-                                        <div className="flex items-center gap-3 text-[9px] font-medium uppercase tracking-widest text-muted-foreground opacity-30">
-                                           <span>TIER {data.proficiencyLevel.toUpperCase()}</span>
-                                           <span className="h-1 w-1 bg-border rounded-full" />
-                                           <span>LOG MODULE</span>
+                              {(q.options || q.choices) ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl">
+                                   {(q.options || q.choices).map((opt: string) => {
+                                     const rev = showExplanation[activeTab]?.[idx];
+                                     const correct = isCorrectOption(q.answer || q.correct_answer || q.correctAnswer, opt, q.options || q.choices);
+                                     const selected = practiceAnswers[activeTab]?.[idx] === opt;
+                                     return (
+                                        <button key={opt} disabled={rev} onClick={() => handleSelectAnswer(activeTab, idx, opt)}
+                                                className={`text-left p-4 rounded-2xl text-sm font-medium transition-all border ${rev ? correct ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : selected ? 'bg-red-50 border-red-300 text-red-700' : 'bg-slate-50 border-transparent opacity-50' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
+                                           {opt}
+                                        </button>
+                                     );
+                                   })}
+                                </div>
+                              ) : activeTab === 'speaking' ? (
+                                <div className="space-y-6 max-w-2xl">
+                                   {scoreMeta ? (
+                                     <div className="space-y-4">
+                                        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                                           <div className="flex items-center justify-between mb-2">
+                                              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Result: {scoreMeta.label} {scoreMeta.displayScore}</p>
+                                              <span className="text-[9px] font-bold text-emerald-700/60">{scoreMeta.examType}</span>
+                                           </div>
+                                           <div className="w-full h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+                                              <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${scoreMeta.percent}%` }} />
+                                           </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {['pronunciation', 'fluency', 'coherence'].map(key => (
+                                                <div key={key} className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                                                     <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{key}</p>
+                                                     <p className="text-[10px] leading-tight text-slate-600 line-clamp-2">{(evaluationResults[idx] as any)[key] || "Feedback pending"}</p>
+                                                </div>
+                                            ))}
                                         </div>
                                      </div>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-
-                       {/* Practice Matrix */}
-                       <div className="space-y-8">
-                          <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                             <h4 className="font-medium text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-40">Practical Application Matrix</h4>
-                             <span className="text-[9px] font-medium uppercase tracking-widest text-primary/60">{pComp} / {pTotal} RESOLVED</span>
-                          </div>
-
-                          <div className="divide-y divide-border/60">
-                             {pQues.length > 0 ? pQues.map((q: any, idx: number) => (
-                               <div key={idx} className="py-12 space-y-8">
-                                  <div className="space-y-4">
-                                     <div className="flex items-center gap-3">
-                                        <div className="h-6 w-6 rounded-full border border-primary/20 flex items-center justify-center text-[9px] font-medium text-primary opacity-60">0{idx + 1}</div>
-                                        <h5 className="text-xl font-medium tracking-tight leading-tight italic text-foreground/80">"{String(q.question || q.prompt)}"</h5>
+                                   ) : (
+                                     <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-slate-50 border border-dashed text-center">
+                                       {isRecording[idx] ? (
+                                         <>
+                                           <div className="flex items-center gap-4">
+                                              <div className="size-2 bg-destructive rounded-full animate-pulse" />
+                                              <span className="text-xl font-mono font-bold text-destructive">{Math.floor((recordingSeconds[idx] || 0) / 60)}:{(recordingSeconds[idx] || 0) % 60 < 10 ? '0' : ''}{(recordingSeconds[idx] || 0) % 60}</span>
+                                           </div>
+                                           <Button size="sm" onClick={() => stopRecording(idx)} variant="destructive" className="rounded-2xl px-6">
+                                              Stop & Evaluate
+                                           </Button>
+                                         </>
+                                       ) : (
+                                         <>
+                                           <p className="text-sm font-bold">Ready to Practice?</p>
+                                           <p className="text-[11px] text-muted-foreground mb-2">Record your response for immediate AI scoring.</p>
+                                           <Button size="sm" disabled={evaluating[idx]} onClick={() => startRecording(idx)} className="rounded-2xl px-8">
+                                              {evaluating[idx] ? <><Loader2 size={14} className="mr-2 animate-spin" /> Evaluating...</> : <><Mic size={14} className="mr-2" /> Start Recording</>}
+                                           </Button>
+                                         </>
+                                       )}
                                      </div>
-
-                                     {/* LISTENING SCRIPT */}
-                                     {activeTab === 'listening' && listeningScript && (
-                                       <div className="space-y-4">
-                                         <div className="p-6 bg-muted/30 rounded-2xl border border-border/50">
-                                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 opacity-40">Audio Transcript</p>
-                                           <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{listeningScript}</p>
-                                         </div>
-                                       </div>
-                                     )}
-
-                                     {/* AUDIO PLAYER WITH ON-ENDED TRACKING */}
-                                     {(q.audio_base64 || listeningAudio) && (
-                                       <div className="p-5 bg-linear-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-2xl space-y-3 max-w-2xl">
-                                          <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-widest text-primary/60">
-                                             <Headphones size={12} /> Listening Stimulus
-                                          </div>
-                                          <audio 
-                                            controls 
-                                            className="w-full h-10" 
-                                            src={`data:audio/mp3;base64,${q.audio_base64 || listeningAudio}`}
-                                          >
-                                             Your browser does not support the audio element.
-                                          </audio>
-                                       </div>
-                                     )}
-
-                                     {/* RENDER QUESTIONS */}
-                                     {(q.options || q.choices) ? (
-                                       <div className="grid md:grid-cols-2 gap-3 max-w-3xl pt-2">
-                                          {(q.options || q.choices).map((opt: string) => {
-                                            const rev = showExplanation[activeTab]?.[idx];
-                                            const correct = isCorrectOption(q.answer || q.correct_answer || q.correctAnswer, opt, q.options || q.choices);
-                                            const selected = practiceAnswers[activeTab]?.[idx] === opt;
-                                            return (
-                                               <button key={opt} disabled={rev} onClick={() => handleSelectAnswer(activeTab, idx, opt)}
-                                                       className={`text-left p-4 rounded-xl text-sm font-medium transition-all border tracking-tight flex items-center justify-between gap-3 ${rev ? correct ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : selected ? 'bg-red-50 border-red-300 text-red-700' : 'bg-muted border-transparent opacity-50' : 'bg-muted/20 border-transparent hover:border-primary/40'}`}>
-                                                  <span>{opt}</span>
-                                                  {rev && correct && <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />}
-                                                  {rev && selected && !correct && <AlertCircle size={16} className="shrink-0 text-red-600" />}
-                                               </button>
-                                            );
-                                          })}
-                                       </div>
-                                     ) : activeTab === 'speaking' ? (
-                                       <div className="space-y-6 max-w-2xl">
-                                          {evaluationResults[idx] ? (
-                                             (() => {
-                                                const scoreMeta = getSpeakingScoreMeta(evaluationResults[idx], currentExamType);
-                                                return (
-                                                   <div className="space-y-4">
-                                                      <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
-                                                         <div className="flex items-center justify-between gap-3">
-                                                            <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-700">Speaking {scoreMeta.label}</p>
-                                                            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-700/80">{scoreMeta.examType}</span>
-                                                         </div>
-                                                         <p className="text-2xl font-semibold text-emerald-700 leading-none">
-                                                            {scoreMeta.displayScore}
-                                                            <span className="text-sm font-medium text-emerald-700/70"> / {scoreMeta.max}</span>
-                                                         </p>
-                                                         <div className="w-full h-2 bg-emerald-100 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${scoreMeta.percent}%` }} />
-                                                         </div>
-                                                         {scoreMeta.score === null && (
-                                                            <p className="text-[10px] text-emerald-800/80">Numeric score is unavailable in this response. Feedback is shown below.</p>
-                                                         )}
-                                                      </div>
-
-                                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                          {[
-                                                             { label: 'Pronunciation', val: evaluationResults[idx].pronunciation },
-                                                             { label: 'Fluency', val: evaluationResults[idx].fluency },
-                                                             { label: 'Coherence', val: evaluationResults[idx].coherence },
-                                                          ].map((stat, i) => (
-                                                             <div key={i} className="p-3 rounded-xl bg-card border border-border space-y-1">
-                                                                  <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-                                                                  <p className="text-[10px] leading-tight text-foreground/80 line-clamp-3">{stat.val || "No detailed feedback"}</p>
-                                                             </div>
-                                                          ))}
-                                                      </div>
-                                                   </div>
-                                                );
-                                             })()
-                                          ) : (
-                                             <div className="flex flex-col items-center gap-4 p-8 rounded-3xl bg-muted/20 border border-dashed border-border/60">
-                                               {isRecording[idx] ? (
-                                                 <>
-                                                   <div className="flex items-center gap-4">
-                                                      <div className="size-3 bg-destructive rounded-full animate-pulse" />
-                                                      <span className="text-xl font-mono font-bold text-destructive">{Math.floor((recordingSeconds[idx] || 0) / 60)}:{(recordingSeconds[idx] || 0) % 60 < 10 ? '0' : ''}{(recordingSeconds[idx] || 0) % 60}</span>
-                                                   </div>
-                                                   <Button onClick={() => stopRecording(idx)} className="rounded-full bg-destructive hover:bg-destructive/90 text-white gap-2">
-                                                      <StopCircle size={16} /> Stop & Evaluate
-                                                   </Button>
-                                                 </>
-                                               ) : (
-                                                 <>
-                                                   <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                      <Mic size={24} />
-                                                   </div>
-                                                   <div className="text-center space-y-1">
-                                                      <p className="text-sm font-bold">Ready to Practice?</p>
-                                                      <p className="text-xs text-muted-foreground">Record your response for immediate AI scoring.</p>
-                                                   </div>
-                                                   <Button disabled={evaluating[idx]} onClick={() => startRecording(idx)} className="rounded-full primary-gradient text-white gap-2">
-                                                      {evaluating[idx] ? <><Loader2 size={16} className="animate-spin" /> Evaluating...</> : <><Mic size={16} /> Start Recording</>}
-                                                   </Button>
-                                                 </>
-                                               )}
-                                             </div>
-                                          )}
-                                       </div>
-                                     ) : (
-                                       // TEXTAREA + EXPLICIT SUBMIT BUTTON
-                                       <div className="p-6 bg-slate-50/50 border border-border/60 rounded-2xl space-y-4">
-                                          <textarea 
-                                             className="w-full bg-transparent text-lg font-normal placeholder:text-muted-foreground/20 focus:outline-none min-h-[120px] tracking-tight resize-y"
-                                             placeholder="Input formalized response transcript..." 
-                                             // NEW FIX: Show a clear message if the backend says it's saved but we don't have the text available
-                                             value={practiceAnswers[activeTab]?.[idx] ?? (q.isCompleted ? "(Answer locked and saved.)" : "")}
-                                             disabled={showExplanation[activeTab]?.[idx]}
-                                             onChange={(e) => handleTextareaChange(activeTab, idx, e.target.value)} 
-                                          />
-                                          {!showExplanation[activeTab]?.[idx] ? (
-                                             <div className="flex justify-end pt-2 border-t border-border/40">
-                                                <Button 
-                                                   onClick={() => handleSubmitTextAnswer(activeTab, idx)}
-                                                   disabled={!practiceAnswers[activeTab]?.[idx]?.trim()}
-                                                   className="gap-2 px-6 bg-primary text-white hover:bg-primary/90 rounded-xl"
-                                                >
-                                                   <Send size={16} /> Submit Answer
-                                                </Button>
-                                             </div>
-                                          ) : (
-                                             <div className="flex justify-end pt-2 border-t border-border/40">
-                                                <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
-                                                   <CheckCircle2 size={16} /> Answer Locked
-                                                </div>
-                                             </div>
-                                          )}
-                                       </div>
-                                     )}
-
-                                     {showExplanation[activeTab]?.[idx] && (
-                                       <div className="p-6 bg-indigo-50/40 border-l border-indigo-400 rounded-r-2xl animate-in fade-in duration-700">
-                                          <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-widest text-indigo-500 mb-3 opacity-60">
-                                             <Sparkles size={12} /> Evaluative Appraisal
-                                          </div>
-                                          <div className="text-base font-normal text-indigo-900 leading-relaxed italic max-w-4xl opacity-90">
-                                             "{String(q.explanation || q.tips || q.sample_answer || q.sample_response)}"
-                                          </div>
-                                       </div>
-                                     )}
-                                  </div>
-                               </div>
-                             )) : (
-                               <div className="py-20 flex flex-col items-center justify-center text-center opacity-10">
-                                  <Lock size={32} className="mb-4" />
-                                  <p className="text-[10px] font-medium uppercase tracking-widest">Protocol Sync Pending</p>
+                                   )}
                                 </div>
-                             )}
-                          </div>
-                       </div>
-                    </div>
-                 </section>
+                              ) : (
+                                <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 border rounded-2xl space-y-4">
+                                   <textarea 
+                                      className="w-full bg-transparent text-sm font-medium placeholder:text-muted-foreground/40 focus:outline-none min-h-[120px] resize-none"
+                                      placeholder="Type your response here..." 
+                                      value={practiceAnswers[activeTab]?.[idx] ?? (q.isCompleted ? "(Answer locked and saved.)" : "")}
+                                      disabled={showExplanation[activeTab]?.[idx]}
+                                      onChange={(e) => handleTextareaChange(activeTab, idx, e.target.value)} 
+                                   />
+                                   {!showExplanation[activeTab]?.[idx] ? (
+                                      <div className="flex justify-end pt-2 border-t">
+                                         <Button 
+                                            size="sm"
+                                            onClick={() => handleSubmitTextAnswer(activeTab, idx)}
+                                            disabled={!practiceAnswers[activeTab]?.[idx]?.trim()}
+                                            className="rounded-2xl px-6"
+                                         >
+                                            Submit Answer
+                                         </Button>
+                                      </div>
+                                   ) : (
+                                      <div className="flex justify-end pt-2 border-t text-[11px] font-bold text-emerald-600">
+                                         <CheckCircle2 size={14} className="mr-2" /> Answer Saved
+                                      </div>
+                                   )}
+                                </div>
+                              )}
 
-                 {/* FINALIZE SECTION BUTTON */}
-                  <div className="flex flex-col items-center gap-4 pt-4 pb-12 border-b border-border/40">
-                    {isSectionSaved ? (
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="flex items-center gap-3 px-8 py-4 bg-primary/5 border border-primary/20 rounded-2xl">
-                           <CheckCircle2 size={20} className="text-primary" />
-                           <span className="text-sm font-semibold text-primary uppercase tracking-widest">{activeTab} Section Saved</span>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={async () => {
-                             try {
-                                toast.loading("Fetching latest results...", { id: "fetch-results" });
-                                const res = await getAssessmentProgress(envMode);
-                                toast.dismiss("fetch-results");
-                                const items = Array.isArray(res) ? res : res?.data || [];
-                                const latest = items.filter((i: any) => i.examType === envMode && i.evaluation?.score_breakdown?.[activeTab]).reverse()[0];
-                                if (latest) {
-                                   setSelectedAssessmentResult(latest);
-                                   setPathView("result");
-                                } else {
-                                   toast.error("No assessment result found for this section.");
-                                }
-                             } catch (err) {
-                                toast.dismiss("fetch-results");
-                                toast.error("Failed to load results.");
-                             }
-                          }}
-                          className="text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100"
-                        >
-                           View Latest {activeTab} Results
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => handleCompleteSection(activeTab)}
-                        disabled={completing}
-                        size="lg"
-                        className="px-12 h-14 rounded-2xl primary-gradient text-white shadow-xl shadow-primary/20 font-semibold uppercase tracking-widest text-[11px] hover:scale-105 transition-transform disabled:opacity-60 disabled:scale-100"
-                      >
-                        {completing ? (
-                          <><Loader2 size={16} className="mr-3 animate-spin" /> Saving {activeTab} Module...</>
-                        ) : (
-                          <>Complete {activeTab} Module & Save Progress <CheckCircle2 className="ml-3 h-4 w-4" /></>
-                        )}
-                      </Button>
-                    )}
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-50">
-                      Saves all videos, notes & practice for {activeTab}
-                    </p>
-                  </div>
-
-                 {/* ULTIMATE MOCK EXAM BUTTON */}
-                 <div className="pt-16 pb-12">
-                     <div className="relative w-full h-88 sm:h-64 rounded-[32px] overflow-hidden shadow-2xl shadow-primary/20 group">
-                        <div className="absolute inset-0 bg-slate-900" />
-                        <div className={`absolute inset-0 bg-linear-to-t from-black/90 to-black/20 z-10`} />
-                        <div className={`absolute inset-0 bg-linear-to-t ${envMode === "IELTS" ? 'from-emerald-900/60' : 'from-blue-900/60'} mix-blend-multiply z-10`} />
-                        
-                        <div className="absolute inset-0 p-8 z-20 flex flex-col justify-end items-start">
-                            <div className={`px-3 py-1.5 rounded-full ${envMode === "IELTS" ? 'bg-emerald-500' : 'bg-blue-500'} flex items-center gap-2 mb-4`}>
-                                <Unlock size={12} className="text-white" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-white">Ultimate Goal Unlocked</span>
-                            </div>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">Full Mastery Mock Exam</h3>
-                            <p className="text-white/80 text-sm font-medium max-w-lg mb-6 leading-relaxed">
-                                You have mastered all skills. Step into the arena and claim your certification.
-                            </p>
-                            <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"}>
-                                <Button disabled={!canLevelUp} className={`rounded-xl px-8 py-6 text-xs font-bold uppercase tracking-widest shadow-xl transition-all ${canLevelUp ? (envMode === "IELTS" ? 'bg-emerald-500 hover:bg-emerald-400 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white') : 'bg-white/10 text-white/50 border border-white/20'}`}>
-                                    {canLevelUp ? "START MOCK EXAM" : "UNAVAILABLE"}
-                                </Button>
-                            </Link>
-                        </div>
-
-                        {!canLevelUp && (
-                           <div className="absolute top-6 right-6 z-30">
-                              <div className="p-3 rounded-full bg-black/40 backdrop-blur-md">
-                                 <Lock className="text-white/70" size={20} />
-                              </div>
+                              {showExplanation[activeTab]?.[idx] && (
+                                <div className="p-6 bg-slate-50 border-l-4 border-slate-400 rounded-r-xl">
+                                   <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-2">AI Explanation</p>
+                                   <p className="text-sm text-slate-600 leading-relaxed italic">
+                                      "{String(q.explanation || q.tips || q.sample_answer || q.sample_response)}"
+                                   </p>
+                                </div>
+                              )}
                            </div>
-                        )}
-                     </div>
+                         );
+                       }) : (
+                         <div className="py-16 text-center bg-slate-50/50 border border-dashed rounded-2xl opacity-40">
+                            <Lock size={24} className="mx-auto mb-2" />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">Protocol Sync Pending</p>
+                         </div>
+                       )}
+                    </div>
                  </div>
+              </section>
 
-              </motion.div>
-           </AnimatePresence>
+              {/* SAVE PROGRESS BUTTON */}
+              <div className="flex flex-col items-center gap-6 pt-12">
+                 {isSectionSaved ? (
+                   <div className="flex flex-col items-center gap-4">
+                      <div className="flex items-center gap-3 px-8 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                         <CheckCircle2 size={20} className="text-emerald-500" />
+                         <span className="text-sm font-bold text-emerald-700 uppercase tracking-wide">{activeTab} Mastery Logged</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={async () => {
+                           try {
+                              const res = await getAssessmentProgress(envMode);
+                              const items = Array.isArray(res) ? res : res?.data || [];
+                              const latest = items.filter((i: any) => i.examType === envMode && i.evaluation?.score_breakdown?.[activeTab]).reverse()[0];
+                              if (latest) { setSelectedAssessmentResult(latest); setPathView("result"); }
+                              else toast.error("No result found.");
+                           } catch (err) { toast.error("Failed to load."); }
+                        }}
+                        className="text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100"
+                      >
+                         <History size={12} className="mr-2" /> View Results
+                      </Button>
+                   </div>
+                 ) : (
+                   <Button
+                     onClick={() => handleCompleteSection(activeTab)}
+                     disabled={completing}
+                     className="px-12 h-14 rounded-2xl font-bold uppercase tracking-widest text-xs"
+                   >
+                     {completing ? "Saving..." : `Save ${activeTab} Progress`}
+                   </Button>
+                 )}
+              </div>
+
+              {/* FINAL ASSESSMENT CARD */}
+              <div className={`mt-24 p-10 rounded-2xl border transition-all ${canLevelUp ? 'bg-primary text-white border-primary shadow-xl' : 'bg-slate-50 dark:bg-zinc-900 border-slate-200 opacity-60'}`}>
+                 <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="space-y-4 text-center md:text-left">
+                       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${canLevelUp ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                          {canLevelUp ? <Unlock size={12} /> : <Lock size={12} />} Final Mock Exam
+                       </div>
+                       <h3 className="text-3xl font-bold tracking-tight uppercase">Ready for Graduation?</h3>
+                       <p className={`text-sm max-w-xl leading-relaxed ${canLevelUp ? 'text-white/80' : 'text-muted-foreground'}`}>
+                          {canLevelUp 
+                            ? "You have completed the full curriculum for this tier. Take the final mock exam to validate your band score and graduate to the next level." 
+                            : "Complete all skill missions and instructional logs to unlock your final comprehensive assessment."}
+                       </p>
+                    </div>
+                    <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"}>
+                       <Button 
+                         disabled={!canLevelUp} 
+                         variant={canLevelUp ? "secondary" : "outline"}
+                         className="rounded-2xl h-14 px-10 font-bold uppercase tracking-widest text-xs"
+                       >
+                          {canLevelUp ? "START FINAL TEST" : "LOCKED"}
+                       </Button>
+                    </Link>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
+
+      {activeMission !== null && (
+         <UnitTestOverlay 
+            show={showUnitTest} 
+            onClose={() => setShowUnitTest(false)}
+            unitTestContent={unitTestContent}
+            setUnitTestContent={setUnitTestContent}
+            unitTestResults={unitTestResults}
+            onSubmit={handleSubmitUnitTest}
+            isSubmitting={isSubmittingTest}
+            activeTab={activeTab}
+         />
+      )}
     </div>
   );
 }

@@ -42,12 +42,12 @@ interface CriteriaMatch {
   studentValue: string;
   requiredValue: string;
   isMatched: boolean;
-  icon: any;
+  icon: React.ElementType;
 }
 
-const safeString = (val: any) => {
+const safeString = (val: unknown) => {
   if (Array.isArray(val)) return val.join(", ");
-  return val || "";
+  return (val as string) || "";
 };
 
 const cleanDataText = (text: string | null | undefined) => {
@@ -98,10 +98,10 @@ export default function ScholarshipDetailsPage() {
             setScholarship(data);
             setTrackingInfo(data.tracking || null);
             setError(null);
-        } catch (err: any) {
-        console.error("Failed to fetch scholarship details:", err);
-        setError("Failed to load scholarship details. Please try again later.");
-      } finally {
+        } catch (err: unknown) {
+          console.error("Failed to fetch scholarship details:", err);
+          setError("Failed to load scholarship details. Please try again later.");
+        } finally {
         setLoading(false);
       }
     };
@@ -115,7 +115,7 @@ export default function ScholarshipDetailsPage() {
     const criteria: CriteriaMatch[] = [];
 
     // Helper to extract values from stringified JSON or arrays
-    const extractValues = (val: any): string[] => {
+    const extractValues = (val: unknown): string[] => {
       if (!val) return [];
       if (Array.isArray(val)) return val;
       if (typeof val === 'string') {
@@ -344,30 +344,46 @@ export default function ScholarshipDetailsPage() {
              <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Award Value</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                    <DollarSign size={18} />
-                  </div>
-                  <p className="text-xl font-black text-foreground truncate">{scholarship.amount || "Varies"}</p>
+                   <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                      <DollarSign size={18} />
+                   </div>
+                   <p className="text-xl font-black text-foreground truncate">{scholarship.amount || "Varies"}</p>
                 </div>
              </div>
              <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Study Level</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <GraduationCap size={18} />
-                  </div>
-                  <p className="text-xl font-black text-foreground truncate">{scholarship.degreeLevels?.[0] || "All"}</p>
+                   <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                      <GraduationCap size={18} />
+                   </div>
+                   <p className="text-xl font-black text-foreground truncate">{scholarship.degreeLevels?.[0] || "All"}</p>
                 </div>
              </div>
              <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm transition-all hover:bg-muted/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Intake</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-3">Host Country</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
-                    <Clock size={18} />
-                  </div>
-                  <p className="text-xl font-black text-foreground truncate">{scholarship.intakeSeason || "2024/25"}</p>
+                   <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <Globe2 size={18} />
+                   </div>
+                   <p className="text-xl font-black text-foreground truncate">{scholarship.country || "Global"}</p>
                 </div>
              </div>
+          </div>
+          
+          {/* Geographic Context (Map) */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-1 bg-primary rounded-full" />
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Geographic Context</h2>
+            </div>
+            <div className="w-full h-80 rounded-3xl overflow-hidden border border-border/40 bg-muted/20 relative shadow-2xl shadow-primary/5">
+              <iframe 
+                width="100%" 
+                height="100%" 
+                style={{ border: 0, filter: 'grayscale(10%) contrast(1.1) brightness(1.05)' }} 
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(scholarship.country || 'Global')}&t=&z=4&ie=UTF8&iwloc=&output=embed`}
+              ></iframe>
+            </div>
           </div>
 
           {/* Criteria Matching Section */}

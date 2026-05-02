@@ -31,11 +31,16 @@ interface AssessmentQuestion {
   options: string[];
 }
 
+interface WritingSpeakingQuestion {
+  id: string | number;
+  prompt: string;
+}
+
 interface AssessmentSections {
   reading?: { passage?: string; questions?: AssessmentQuestion[] };
   listening?: { audio_base64?: string; questions?: AssessmentQuestion[] };
-  writing?: { prompt?: string };
-  speaking?: { prompt?: string };
+  writing?: { prompt?: string; questions?: WritingSpeakingQuestion[] };
+  speaking?: { prompt?: string; questions?: WritingSpeakingQuestion[] };
 }
 
 interface AssessmentBlueprint {
@@ -125,7 +130,8 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     border: isTOEFL ? "border-blue-200" : "border-emerald-200",
     accent: isTOEFL ? "text-blue-500" : "text-emerald-500",
     bg: isTOEFL ? "bg-blue-50" : "bg-emerald-50",
-    btn: isTOEFL ? "primary-gradient-blue" : "primary-gradient-emerald"
+    btn: isTOEFL ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-500 hover:bg-emerald-600",
+    optionSelected: isTOEFL ? "border-blue-500 bg-blue-50 text-blue-700" : "border-emerald-500 bg-emerald-50 text-emerald-700"
   };
 
   const [currentSection, setCurrentSection] = useState<SectionKey>("reading");
@@ -147,14 +153,13 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [completedSections, setCompletedSections] = useState<Set<SectionKey>>(
     new Set(),
   );
+  const [showSectionSummary, setShowSectionSummary] = useState(false);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -196,7 +201,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
         setCompletedSections((prev) => new Set(prev).add(currentSection));
       }
       setCurrentSection(next);
-      setCurrentQuestionIdx(0);
+      setShowSectionSummary(false); // Reset summary when moving to next
     },
     [currentSection, responses, audioBlob, sections]
   );
@@ -333,139 +338,175 @@ export function AssessmentTest({ examData, onComplete }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={currentSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-          {currentSection === "reading" && (
-            <div className="flex flex-col gap-8 max-w-3xl mx-auto">
-              <Card className="border border-border/60 rounded-[32px] bg-muted/10">
-                <CardBody className="p-8 max-h-[300px] overflow-y-auto custom-scrollbar">
-                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{sections.reading?.passage}</p>
-                </CardBody>
-              </Card>
-              {sections.reading?.questions && (
-                <div className="space-y-8">
-                  <div className="flex justify-between items-center px-2">
-                    <span className="text-[10px] font-black text-muted-foreground">Question {currentQuestionIdx + 1} of {sections.reading?.questions?.length || 0}</span>
-                  </div>
-                  <div className="space-y-6">
-                    <h4 className="text-xl font-bold">{sections.reading?.questions?.[currentQuestionIdx]?.question}</h4>
-                    <div className="grid gap-3">
-                      {sections.reading?.questions?.[currentQuestionIdx]?.options?.map((opt, j) => {
-                        const qId = sections.reading?.questions?.[currentQuestionIdx]?.id || currentQuestionIdx;
-                        const isSelected = responses.reading[qId] === opt;
-                        return (
-                          <button key={j} onClick={() => handleOptionSelect("reading", qId, opt)} className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group ${isSelected ? theme.border + " " + theme.bg + " " + theme.text : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}>
-                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? theme.border + " bg-white " + theme.text : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
-                                 {String.fromCharCode(65 + j)}
-                             </div>
-                             <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* Redundant navigation buttons removed, footer handles navigation */}
-                </div>
-              )}
+        {showSectionSummary ? (
+          <motion.div 
+            key="summary"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-xl mx-auto py-12 text-center space-y-8"
+          >
+            <div className={`mx-auto size-20 rounded-full ${theme.bg} flex items-center justify-center`}>
+              <CheckCircle2 className={`size-10 ${theme.accent}`} />
             </div>
-          )}
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black">{SECTION_META[currentSection].label} Completed!</h2>
+              <p className="text-muted-foreground">You have finished all questions in this section.</p>
+            </div>
+            
+            <div className="p-6 bg-muted/30 rounded-3xl border border-border/50">
+               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Next Section</p>
+               <h3 className="text-xl font-bold capitalize">{SECTION_ORDER[currentIdx + 1]}</h3>
+            </div>
 
-          {currentSection === "listening" && (
-            <div className="flex flex-col gap-8 max-w-3xl mx-auto">
-              <Card className="border border-border/60 rounded-[32px] bg-muted/10 overflow-hidden text-center">
-                <CardBody className="p-8 space-y-4">
-                  <Headphones className="size-10 mx-auto opacity-40" />
-                  <audio controls className="w-full" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
-                </CardBody>
-              </Card>
-              {sections.listening?.questions && (
-                <div className="space-y-8">
-                  <div className="flex justify-between items-center px-2"><span className="text-[10px] font-black text-muted-foreground">Question {currentQuestionIdx + 1} of {sections.listening?.questions?.length || 0}</span></div>
-                  <div className="space-y-6">
-                    <h4 className="text-xl font-bold">{sections.listening?.questions?.[currentQuestionIdx]?.question}</h4>
-                    <div className="grid gap-3">
-                      {sections.listening?.questions?.[currentQuestionIdx]?.options?.map((opt, j) => {
-                        const qId = sections.listening?.questions?.[currentQuestionIdx]?.id || currentQuestionIdx;
-                        const isSelected = responses.listening[qId] === opt;
-                        return (
-                          <button key={j} onClick={() => handleOptionSelect("listening", qId, opt)} className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group ${isSelected ? theme.border + " " + theme.bg + " " + theme.text : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}>
-                             <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? theme.border + " bg-white " + theme.text : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
-                                 {String.fromCharCode(65 + j)}
-                             </div>
-                             <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+            <Button 
+              onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
+              className={`rounded-2xl px-12 h-16 font-black uppercase tracking-widest text-xs shadow-xl transition-all ${theme.btn} text-white w-full`}
+            >
+              Continue to {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} <ArrowRight className="ml-3" />
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div key={currentSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
+            {currentSection === "reading" && (
+              <div className="flex flex-col gap-8 max-w-3xl mx-auto">
+                <Card className="border border-border/60 rounded-[32px] bg-muted/10">
+                  <CardBody className="p-8 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{sections.reading?.passage}</p>
+                  </CardBody>
+                </Card>
+                {sections.reading?.questions && (
+                  <div className="space-y-12">
+                    {sections.reading.questions.map((q: any, i: number) => {
+                      const qId = q.id || i;
+                      return (
+                        <div key={qId} className="space-y-6">
+                          <h4 className="text-xl font-bold">{i + 1}. {q.question}</h4>
+                          <div className="grid gap-3">
+                            {q.options?.map((opt: string, j: number) => {
+                              const isSelected = responses.reading[qId] === opt;
+                              return (
+                                <button 
+                                  key={j} 
+                                  onClick={() => handleOptionSelect("reading", qId, opt)} 
+                                  className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
+                                >
+                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
+                                       {String.fromCharCode(65 + j)}
+                                   </div>
+                                   <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {/* Redundant navigation buttons removed, footer handles navigation */}
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentSection === "writing" && (
-            <div className="max-w-3xl mx-auto space-y-8">
-              <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 italic text-sm text-muted-foreground">{sections.writing?.prompt}</CardBody></Card>
-              <textarea value={responses.writing} onChange={(e) => setResponses({ ...responses, writing: e.target.value })} placeholder="Composition synthesis..." className="w-full h-96 p-8 rounded-[40px] border-2 border-border/40 bg-card text-foreground focus:outline-none resize-none" />
-            </div>
-          )}
-
-          {currentSection === "speaking" && (
-            <div className="max-w-3xl mx-auto space-y-8 text-center">
-              <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 font-bold italic">{sections.speaking?.prompt}</CardBody></Card>
-              <div className="p-12 bg-card rounded-[40px] border-2 border-border/40 shadow-xl space-y-6">
-                {isRecording ? (
-                  <button onClick={stopRecording} className="size-24 rounded-full bg-red-500 text-white flex items-center justify-center animate-pulse"><StopCircle size={32} /></button>
-                ) : (
-                  <button onClick={startRecording} className={`size-24 rounded-full ${theme.primary} text-white flex items-center justify-center shadow-xl`}><Mic size={32} /></button>
                 )}
-                {audioBlob && <p className="text-success text-xs font-bold uppercase tracking-widest">Audio Stream Captured</p>}
               </div>
-            </div>
-          )}
-        </motion.div>
+            )}
+
+            {currentSection === "listening" && (
+              <div className="flex flex-col gap-8 max-w-3xl mx-auto">
+                <Card className="border border-border/60 rounded-[32px] bg-muted/10 overflow-hidden text-center">
+                  <CardBody className="p-8 space-y-4">
+                    <Headphones className="size-10 mx-auto opacity-40" />
+                    <audio controls className="w-full" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
+                  </CardBody>
+                </Card>
+                {sections.listening?.questions && (
+                  <div className="space-y-12">
+                    {sections.listening.questions.map((q: any, i: number) => {
+                      const qId = q.id || i;
+                      return (
+                        <div key={qId} className="space-y-6">
+                          <h4 className="text-xl font-bold">{i + 1}. {q.question}</h4>
+                          <div className="grid gap-3">
+                            {q.options?.map((opt: string, j: number) => {
+                              const isSelected = responses.listening[qId] === opt;
+                              return (
+                                <button 
+                                  key={j} 
+                                  onClick={() => handleOptionSelect("listening", qId, opt)} 
+                                  className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
+                                >
+                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
+                                       {String.fromCharCode(65 + j)}
+                                   </div>
+                                   <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {currentSection === "writing" && (
+              <div className="max-w-3xl mx-auto space-y-8">
+                <div className="px-2"><span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Writing Task 1 of 1</span></div>
+                <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 italic text-sm text-muted-foreground">{sections.writing?.questions?.[0]?.prompt || sections.writing?.prompt}</CardBody></Card>
+                <textarea value={responses.writing} onChange={(e) => setResponses({ ...responses, writing: e.target.value })} placeholder="Composition synthesis..." className="w-full h-96 p-8 rounded-[40px] border-2 border-border/40 bg-card text-foreground focus:outline-none resize-none" />
+              </div>
+            )}
+
+            {currentSection === "speaking" && (
+              <div className="max-w-3xl mx-auto space-y-8 text-center">
+                <div className="px-2"><span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Speaking Task 1 of 1</span></div>
+                <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 font-bold italic">{sections.speaking?.questions?.[0]?.prompt || sections.speaking?.prompt}</CardBody></Card>
+                <div className="p-12 bg-card rounded-[40px] border-2 border-border/40 shadow-xl space-y-6">
+                  {isRecording ? (
+                    <button onClick={stopRecording} className="size-24 rounded-full bg-red-500 text-white flex items-center justify-center animate-pulse"><StopCircle size={32} /></button>
+                  ) : (
+                    <button onClick={startRecording} className={`size-24 rounded-full ${theme.primary} text-white flex items-center justify-center shadow-xl`}><Mic size={32} /></button>
+                  )}
+                  {audioBlob && <p className="text-success text-xs font-bold uppercase tracking-widest">Audio Stream Captured</p>}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0">
-        <Button 
-          variant="ghost" 
-          onClick={() => {
-            if (currentQuestionIdx > 0) {
-              setCurrentQuestionIdx(prev => prev - 1);
-            } else if (currentIdx > 0) {
-              handleSectionChange(SECTION_ORDER[currentIdx - 1]);
-            }
-          }}
-          disabled={currentIdx === 0 && currentQuestionIdx === 0}
-          className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100"
-        >
-          <ArrowLeft className="mr-3" /> Back
-        </Button>
-        
-        <div className="flex gap-2">
-          {SECTION_ORDER.map((sec) => (
-            <div key={sec} className={`h-1.5 rounded-full transition-all ${currentSection === sec ? "w-12 " + theme.primary : "w-4 bg-muted"}`} />
-          ))}
-        </div>
-
-        {currentIdx < 3 || (currentSection === "reading" || currentSection === "listening" ? currentQuestionIdx < (sections[currentSection]?.questions?.length || 0) - 1 : false) ? (
+      {!showSectionSummary && (
+        <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0">
           <Button 
+            variant="outline" 
             onClick={() => {
-              const currentQs = sections[currentSection]?.questions || [];
-              if (currentQuestionIdx < currentQs.length - 1) {
-                setCurrentQuestionIdx(prev => prev + 1);
-              } else if (currentIdx < 3) {
-                handleSectionChange(SECTION_ORDER[currentIdx + 1]);
+              if (currentIdx > 0) {
+                handleSectionChange(SECTION_ORDER[currentIdx - 1]);
               }
-            }} 
-            className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] ${theme.primary} text-white`}
+            }}
+            disabled={currentIdx === 0}
+            className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted transition-all shadow-sm"
           >
-            Continue <ArrowRight className="ml-3" />
+            <ArrowLeft className="mr-3 size-4" /> Back
           </Button>
-        ) : (
-          <Button onClick={handleSubmit} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] bg-black text-white`}>Finalize Exam <CheckCircle2 className="ml-3" /></Button>
-        )}
-      </div>
+          
+          <div className="flex gap-2">
+            {SECTION_ORDER.map((sec) => (
+              <div key={sec} className={`h-1.5 rounded-full transition-all ${currentSection === sec ? "w-12 " + theme.primary : "w-4 bg-muted"}`} />
+            ))}
+          </div>
+
+          {currentIdx < 3 ? (
+            <Button 
+              onClick={() => {
+                setShowSectionSummary(true);
+              }} 
+              className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg hover:shadow-xl transition-all ${theme.btn} text-white`}
+            >
+              Continue <ArrowRight className="ml-3 size-4" />
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] bg-black text-white`}>Finalize Exam <CheckCircle2 className="ml-3" /></Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

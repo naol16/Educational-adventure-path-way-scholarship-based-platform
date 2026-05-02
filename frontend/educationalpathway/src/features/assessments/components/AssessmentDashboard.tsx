@@ -65,6 +65,8 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
     accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
     bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
     border: envMode === "IELTS" ? "border-emerald-200" : "border-blue-200",
+    gradient: envMode === "IELTS" ? "from-emerald-500 to-emerald-600" : "from-blue-600 to-blue-700",
+    btn: envMode === "IELTS" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700",
   };
 
   useEffect(() => {
@@ -140,8 +142,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const thresholdBand = isTOEFL ? 90 : 6.5;
   const bandPercent = Math.min(100, (parseFloat(averages.band) / maxScore) * 100);
 
-  // Last 7 items for chart (filtered by type)
-  const chartData = progressData.filter((d) => d.examType === examType).slice(-7);
+  // Filter data by current exam type
+  const historyData = progressData.filter((d) => d.examType === examType);
+  const chartData = historyData.slice(-7);
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 pb-20">
@@ -149,7 +152,13 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/60 pb-12">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <EnvironmentSwitcher mode={envMode} onChange={setEnvMode} />
+            <EnvironmentSwitcher 
+              mode={envMode} 
+              onChange={(mode) => {
+                setEnvMode(mode);
+                setExamType(mode); // Synchronize exam generation type with dashboard mode
+              }} 
+            />
             <span className={`px-4 py-1.5 rounded-full border text-[9px] font-bold uppercase tracking-widest ${theme.bg} ${theme.text} ${theme.border}`}>
               Diagnostic Protocol
             </span>
@@ -166,10 +175,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
         </div>
         <Button
           onClick={fetchStats}
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] opacity-40 hover:opacity-100 transition-opacity"
+          className="font-bold uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted/50 transition-all shadow-sm"
         >
+          <Loader2 className={`mr-2 size-3 ${loadingStats ? 'animate-spin' : ''}`} />
           Refresh Data Stream
         </Button>
       </div>
@@ -266,25 +276,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               </div>
 
               <div className="space-y-8">
-                {/* Exam Type Toggle */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40 px-2">Exam Protocol</label>
-                  <div className="flex gap-2 p-1 bg-muted/20 rounded-2xl border border-border/40">
-                    {(["IELTS", "TOEFL"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setExamType(t)}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                          examType === t
-                            ? "bg-white text-foreground shadow-sm border border-border/40"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Exam Type Toggle removed as it is now synchronized with global Environment Switcher */}
 
                 {/* Complexity level selection removed for standardized assessments */}
               </div>
@@ -309,16 +301,16 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <Button
                 onClick={handleStartExam}
                 disabled={loading}
-                className="w-full primary-gradient py-6 text-base font-bold mt-2"
+                className={`w-full py-6 text-base font-bold mt-2 shadow-lg hover:shadow-xl transition-all duration-300 ${theme.btn} text-white`}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin mr-2 size-4" /> Generating
+                    <Loader2 className="animate-spin mr-2 size-5" /> Generating
                     Exam...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 size-4" /> Generate Assessment
+                    <Sparkles className="mr-2 size-5" /> Generate Assessment
                   </>
                 )}
               </Button>
@@ -384,7 +376,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 <div className="flex items-center justify-center h-48">
                   <Loader2 className="animate-spin text-primary size-8" />
                 </div>
-              ) : progressData.length === 0 ? (
+              ) : historyData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground gap-3">
                   <AlertCircle className="size-12 opacity-20" />
                   <p className="font-medium">No assessments yet</p>
@@ -394,7 +386,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 </div>
               ) : (
                  <div className="space-y-4">
-                   {[...progressData].reverse().map((item, index) => (
+                   {[...historyData].reverse().map((item, index) => (
                      <motion.div
                        key={item.id || index}
                        initial={{ opacity: 0, y: 12 }}
@@ -435,22 +427,22 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                          </div>
                        </div>
  
-                       <Button
-                         onClick={() => {
-                           const normalizedItem = {
-                             ...item,
-                             testId: item.testId || item.test_id
-                           };
-                           onViewResult(normalizedItem);
-                         }}
-                         variant="ghost"
-                         size="sm"
-                         className="gap-2 px-6 h-12 rounded-2xl font-bold uppercase tracking-widest text-[9px] opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white"
-                       >
-                         <Eye size={14} />
-                         View Matrix
-                         <ChevronRight size={14} />
-                       </Button>
+                        <Button
+                          onClick={() => {
+                            const normalizedItem = {
+                              ...item,
+                              testId: item.testId || item.test_id
+                            };
+                            onViewResult(normalizedItem);
+                          }}
+                          variant="secondary"
+                          size="sm"
+                          className={`gap-2 px-6 h-12 rounded-2xl font-bold uppercase tracking-widest text-[9px] transition-all border border-border/40 shadow-sm ${theme.text} hover:bg-muted`}
+                        >
+                          <Eye size={14} />
+                          View Matrix
+                          <ChevronRight size={14} />
+                        </Button>
                      </motion.div>
                    ))}
                  </div>

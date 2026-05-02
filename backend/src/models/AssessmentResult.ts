@@ -5,6 +5,7 @@ import {
     DataType,
     ForeignKey,
     BelongsTo,
+    Default,
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
@@ -77,6 +78,14 @@ export class AssessmentResult extends Model {
         allowNull: true,
     })
     declare blueprint: any;
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_diagnostic'
+    })
+    declare isDiagnostic: boolean;
 
     @CreatedAt
     @Column({

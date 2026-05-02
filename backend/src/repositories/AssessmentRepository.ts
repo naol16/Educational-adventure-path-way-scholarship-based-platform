@@ -39,6 +39,15 @@ export class AssessmentRepository {
     }
 
     /**
+     * Find the diagnostic assessment result for a student, optionally filtered by exam type.
+     */
+    static async findDiagnostic(studentId: number, examType?: string): Promise<AssessmentResult | null> {
+        const where: any = { studentId, isDiagnostic: true };
+        if (examType) where.examType = examType;
+        return await AssessmentResult.findOne({ where });
+    }
+
+    /**
      * Delete all assessment results for a specific student.
      */
     static async deleteByStudentId(studentId: number): Promise<void> {
