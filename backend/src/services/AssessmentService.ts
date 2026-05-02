@@ -248,8 +248,25 @@ export class AssessmentService {
       );
     } catch (err) {
       console.warn("Groq 70B failed for generation, falling back to Gemini...");
-      const fallbackChain = geminiModel.pipe(new StringOutputParser());
-      response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
+      try {
+        const fallbackChain = geminiModel.pipe(new StringOutputParser());
+        response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
+      } catch (geminiErr: any) {
+        console.error("Gemini fallback also failed. Using safety mock exam.");
+        response = JSON.stringify({
+          status: "success",
+          data: {
+            test_id: testId,
+            exam_summary: { type: examType, difficulty: difficulty, focus_skill: skill || "all", is_fallback: true },
+            sections: {
+              reading: { passage: "Safety Mode Passage...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+              listening: { script: "Safety Mode Script...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+              writing: { questions: [{ id: 1, prompt: "Safety Writing Prompt" }] },
+              speaking: { questions: [{ id: 1, prompt: "Safety Speaking Prompt" }] }
+            }
+          }
+        });
+      }
     }
 
     // Ensure response is valid JSON
