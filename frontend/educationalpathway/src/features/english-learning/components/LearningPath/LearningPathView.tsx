@@ -83,7 +83,7 @@ interface SkillData {
 interface LearningPathData {
   proficiencyLevel: 'easy' | 'medium' | 'hard';
   skills: Record<string, SkillData>;
-  learningMode?: Record<string, any[]>;
+  learningMode?: Record<string, any>;
   competencyGapAnalysis?: any;
   curriculumMap?: any;
   current_progress_percentage?: number;
@@ -626,24 +626,21 @@ export function LearningPathView() {
 
       await completeSection(section);
       setCompletedSections(prev => ({ ...prev, [section]: true }));
-      await load(); // <-- Re-fetches the UI, which will now rebuild perfectly due to our update in load()
+      await load(); 
       
-      // Ticket 3: Trigger assessment generation automatically after module completion
-      try {
-        toast.loading(`Initializing ${section} assessment...`, { id: "gen-assessment" });
-        const res = await generateAssessment({ 
-          examType: envMode, 
-          difficulty: data?.proficiencyLevel || "Medium",
-          skill: section as any
-        } as any);
-        toast.dismiss("gen-assessment");
-        setActiveAssessment(res);
-        setPathView("assessment");
-        toast.success(`${section} assessment ready!`);
-      } catch (err) {
-        toast.dismiss("gen-assessment");
-        console.error("Failed to auto-generate assessment", err);
-        toast.error("Could not start assessment automatically.");
+      // Navigate to next skill instead of generating assessment
+      if (!data) return;
+      const skillNames = Object.keys(data.skills);
+      const nextIdx = skillNames.indexOf(section) + 1;
+      if (nextIdx < skillNames.length) {
+        setActiveTab(skillNames[nextIdx]);
+        toast.success(`Module ${section} complete! Moving to ${skillNames[nextIdx]}.`);
+        
+        // Scroll to top of skills section
+        const el = document.getElementById("skills-navigation-section");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        toast.success(`All learning modules complete! You can now take the final mock exam.`);
       }
     } catch (err) {
       console.error("Failed to complete section", err);
@@ -778,7 +775,9 @@ export function LearningPathView() {
    );
 
   const modeData = data.learningMode?.[activeTab];
-  const pQues = Array.isArray(modeData) ? modeData : (modeData as any)?.questions || [];
+  const pQues = Array.isArray(modeData) 
+    ? modeData 
+    : ((modeData as any)?.questions || (modeData as any)?.practice_questions || ((modeData as any)?.prompt ? [modeData] : []));
   const listeningScript = (modeData as any)?.script || null;
   const listeningAudio = (modeData as any)?.audio_base64 || null;
 
@@ -1313,7 +1312,7 @@ export function LearningPathView() {
                                        // TEXTAREA + EXPLICIT SUBMIT BUTTON
                                        <div className="p-6 bg-slate-50/50 border border-border/60 rounded-2xl space-y-4">
                                           <textarea 
-                                             className="w-full bg-transparent text-lg font-normal placeholder:text-muted-foreground/20 focus:outline-none min-h-[120px] tracking-tight resize-y"
+                                             className="w-full bg-transparent text-lg font-normal placeholder:text-muted-foreground/20 focus:outline-none min-h-30 tracking-tight resize-y"
                                              placeholder="Input formalized response transcript..." 
                                              // NEW FIX: Show a clear message if the backend says it's saved but we don't have the text available
                                              value={practiceAnswers[activeTab]?.[idx] ?? (q.isCompleted ? "(Answer locked and saved.)" : "")}
@@ -1418,7 +1417,7 @@ export function LearningPathView() {
 
                  {/* ULTIMATE MOCK EXAM BUTTON */}
                  <div className="pt-16 pb-12">
-                     <div className="relative w-full h-88 sm:h-64 rounded-[32px] overflow-hidden shadow-2xl shadow-primary/20 group">
+                     <div className="relative w-full h-88 sm:h-64 rounded-4xl overflow-hidden shadow-2xl shadow-primary/20 group">
                         <div className="absolute inset-0 bg-slate-900" />
                         <div className={`absolute inset-0 bg-linear-to-t from-black/90 to-black/20 z-10`} />
                         <div className={`absolute inset-0 bg-linear-to-t ${envMode === "IELTS" ? 'from-emerald-900/60' : 'from-blue-900/60'} mix-blend-multiply z-10`} />

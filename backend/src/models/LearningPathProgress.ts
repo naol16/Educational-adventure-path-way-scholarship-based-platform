@@ -86,6 +86,14 @@ export class LearningPathProgress extends Model {
     declare section: 'Reading' | 'Listening' | 'Writing' | 'Speaking';
 
     @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        field: 'exam_type',
+        defaultValue: 'IELTS'
+    })
+    declare examType: 'IELTS' | 'TOEFL';
+
+    @Column({
         type: DataType.TEXT,
         allowNull: true,
         field: 'answer_text'

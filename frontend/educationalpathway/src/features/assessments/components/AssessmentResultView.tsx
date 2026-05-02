@@ -24,7 +24,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { getAssessmentResult } from "../api/assessment-api";
-import { LearningPathView } from "@/features/english-learning/components/LearningPath/LearningPathView";
 
 interface AssessmentResultViewProps {
   testId: string;
@@ -450,14 +449,6 @@ export function AssessmentResultView({
         </div>
       )}
 
-      {/* Personalized Learning Path */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        <LearningPathView />
-      </motion.div>
     </div>
   );
 }

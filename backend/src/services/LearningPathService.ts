@@ -142,8 +142,8 @@ export class LearningPathService {
     });
   }
 
-  static async getFormattedPath(studentId: number) {
-    const path = await LearningPathRepository.findByStudentId(studentId);
+  static async getFormattedPath(studentId: number, examType?: string) {
+    const path = await LearningPathRepository.findByStudentId(studentId, examType);
     if (!path) return null;
 
     const skills = ["reading", "listening", "writing", "speaking"];
@@ -434,7 +434,7 @@ export class LearningPathService {
    * Dynamically generates a full mission content (Practice Drill & Unit Test) using AI,
    * with sequentially varying question types based on the missionIndex.
    */
-  static async generateMissionContent(skill: string, level: string, topic: string, missionIndex: number = 0) {
+  static async generateMissionContent(skill: string, level: string, topic: string, missionIndex: number = 0, examType: string = 'IELTS') {
     const isReading = skill.toLowerCase().includes('reading');
     const isListening = skill.toLowerCase().includes('listening');
     const isWriting = skill.toLowerCase().includes('writing');
@@ -460,19 +460,20 @@ export class LearningPathService {
     const type2 = types[nextIndex];
 
     const prompt = `
-      Role: Senior IELTS/TOEFL Content Architect
+      Role: Senior ${examType} Content Architect
       Task: Generate a dynamic, highly accurate Mission for the ${skill} section.
       Difficulty: ${level}
       Topic/Theme: ${topic || "Academic Subject"}
       
       Requirements: 
-      ${isReading ? "- Provide a 300-400 word academic Reading Passage." : ""}
-      ${isListening ? "- Provide a detailed Listening Script (conversation or lecture). Add a distractor (speaker corrects themselves) to trick the student." : ""}
-      ${isWriting ? "- Provide a short writing prompt or scenario (e.g., a paragraph with deliberate errors, or a Task 1 graph description)." : ""}
-      ${isSpeaking ? "- Provide a Speaking Examiner prompt (e.g., questions about hometown, a Cue Card, or abstract discussion questions)." : ""}
-      - The Practice Drill must use the ${type1} question type and contain 2 questions.
-      - The Unit Test must use the ${type2} question type and contain 3 questions.
-      - For each question, provide the correct answer and a 'feedbackTip' explaining why it's correct or explaining the trap.
+      - The content MUST be PRACTICAL-BASED. Focus on real-world exam application, common traps, and high-frequency scenarios rather than pure theory.
+      ${isReading ? "- Provide a 300-400 word academic Reading Passage that includes subtle traps for the student to identify." : ""}
+      ${isListening ? "- Provide a detailed Listening Script (conversation or lecture). Add a distractor (speaker corrects themselves) to mimic the real exam pressure." : ""}
+      ${isWriting ? "- Provide a PRACTICAL writing scenario (e.g., a sample paragraph needing correction, a graph requiring trend analysis, or a brainstorming prompt for a complex Task 2 topic)." : ""}
+      ${isSpeaking ? "- Provide a REAL-TIME speaking prompt. The student will be expected to record a spontaneous response to this, simulating the examiner's room." : ""}
+      - The Practice Drill must use the ${type1} question type and contain 2 questions focused on applying strategies.
+      - The Unit Test must use the ${type2} question type and contain 3 questions that validate mastery of the practical skill.
+      - For each question, provide the correct answer and a 'feedbackTip' that explains the logical process or identifies the trap.
       
       Return ONLY a valid JSON object in this schema:
       {

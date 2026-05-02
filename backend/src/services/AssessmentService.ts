@@ -186,6 +186,7 @@ export class AssessmentService {
     difficulty: "Easy" | "Medium" | "Hard",
     skill?: string,
     studentId?: number,
+    isDiagnostic: boolean = false,
   ) {
     const testId = uuidv4();
 
@@ -198,6 +199,10 @@ export class AssessmentService {
 
     if (skill) {
       examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Generate exactly 5 questions/prompts for this section. Leave other sections empty or null.`;
+    } else if (isDiagnostic) {
+      examInstructions += " This is a DIAGNOSTIC assessment. Ensure the questions cover a broad range of skill sub-categories (e.g., for Reading: Skimming, Scanning, Detail, Inference) to help identify specific weaknesses.";
+    } else {
+      examInstructions += " This is a FULL MOCK EXAM. Ensure it strictly follows the official exam format and timing pressures.";
     }
 
     const prompt = PromptTemplate.fromTemplate(`
@@ -309,6 +314,7 @@ export class AssessmentService {
           evaluation: { score_breakdown: {}, section_notes: {}, learning_mode: {} },
           scoreBreakdown: {},
           overallBand: 0,
+          isDiagnostic,
        });
     }
     // Sanitize for frontend
@@ -332,6 +338,7 @@ export class AssessmentService {
     responses: any,
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string },
+    isDiagnostic: boolean = false,
   ) {
     let blueprint: any;
 
@@ -361,6 +368,7 @@ export class AssessmentService {
           blueprint,
           responses,
           studentId,
+          isDiagnostic,
           audioData: audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : null,
         },
         { jobId: testId, removeOnComplete: { age: 3600 }, removeOnFail: { age: 24 * 3600 } },
@@ -377,7 +385,8 @@ export class AssessmentService {
         responses,
         studentId,
         { updateProgress: async () => {} } as any, // Mock job for progress updates
-        audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : undefined
+        audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : undefined,
+        isDiagnostic
       ).catch(err => console.error(`[AssessmentService] Background evaluation failed for ${testId}:`, err));
 
       return { status: "processing", testId, message: "Service is running in degraded mode. Results may take longer." };
@@ -424,7 +433,11 @@ export class AssessmentService {
     // Save/Update progress in AssessmentResult table
     const { AssessmentResult } = await import("../models/AssessmentResult.js");
     let result = await AssessmentResult.findOne({ where: { testId } });
+    
     if (!result) {
+      // Check if the original generation was diagnostic
+      const isDiagnostic = blueprint.isDiagnostic || false; 
+      
       result = await AssessmentResult.create({
         studentId,
         testId,
@@ -434,6 +447,7 @@ export class AssessmentService {
         evaluation: { score_breakdown: {}, section_notes: {}, learning_mode: {} },
         scoreBreakdown: {},
         overallBand: 0,
+        isDiagnostic
       });
     }
 
@@ -466,6 +480,7 @@ export class AssessmentService {
     studentId: number,
     job: Job,
     audioData?: { base64: string; mimetype: string },
+    isDiagnostic: boolean = false,
   ) {
     const finalEvaluation: any = {
       score_breakdown: {},
@@ -545,12 +560,13 @@ export class AssessmentService {
           evaluation: finalEvaluation,
           scoreBreakdown: finalEvaluation.score_breakdown,
           overallBand: finalEvaluation.overall_band,
+          isDiagnostic,
         }),
-        LearningPathService.generateForStudent(
+        isDiagnostic ? LearningPathService.generateForStudent(
           studentId,
           finalEvaluation,
           (blueprint.data?.exam_summary?.type || "IELTS") as "IELTS" | "TOEFL"
-        )
+        ) : Promise.resolve()
       ];
 
       await Promise.all(dbOperations);
@@ -670,10 +686,10 @@ export class AssessmentService {
          {special_instruction}
       2. Provide honest, critical academic feedback. If the student performed poorly, explain why in detail.
       3. Generate "Learning Mode" content:
-         - For Reading: 3 practice questions with answers/explanations.
-         - For Listening: A script and 3 questions with answers/explanations.
-         - For Writing: A sample answer and explanation.
-         - For Speaking: A sample response and tips.
+         - For Reading: 3 practice questions with answers/explanations. Ensure these are inside a "questions" array.
+         - For Listening: A script and 3 questions with answers/explanations. Ensure these are inside a "questions" array.
+         - For Writing: 1 new writing prompt to practice. Ensure it is inside a "questions" array.
+         - For Speaking: 1 new speaking prompt to practice. Ensure it is inside a "questions" array.
 
       Return JSON schema:
       {{

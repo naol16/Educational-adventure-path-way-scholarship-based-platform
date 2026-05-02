@@ -142,8 +142,9 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   const thresholdBand = isTOEFL ? 90 : 6.5;
   const bandPercent = Math.min(100, (parseFloat(averages.band) / maxScore) * 100);
 
-  // Last 7 items for chart (filtered by type)
-  const chartData = progressData.filter((d) => d.examType === examType).slice(-7);
+  // Filter data by current exam type
+  const historyData = progressData.filter((d) => d.examType === examType);
+  const chartData = historyData.slice(-7);
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 pb-20">
@@ -151,7 +152,13 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border/60 pb-12">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <EnvironmentSwitcher mode={envMode} onChange={setEnvMode} />
+            <EnvironmentSwitcher 
+              mode={envMode} 
+              onChange={(mode) => {
+                setEnvMode(mode);
+                setExamType(mode); // Synchronize exam generation type with dashboard mode
+              }} 
+            />
             <span className={`px-4 py-1.5 rounded-full border text-[9px] font-bold uppercase tracking-widest ${theme.bg} ${theme.text} ${theme.border}`}>
               Diagnostic Protocol
             </span>
@@ -269,32 +276,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               </div>
 
               <div className="space-y-8">
-                {/* Exam Type Toggle */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40 px-2">Exam Protocol</label>
-                  <div className="flex gap-2 p-1 bg-muted/20 rounded-2xl border border-border/40">
-                    {(["IELTS", "TOEFL"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setExamType(t)}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 ${
-                          examType === t
-                            ? "text-white"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {examType === t && (
-                          <motion.div
-                            layoutId="activeExamType"
-                            className={`absolute inset-0 rounded-xl shadow-md z-[-1] ${t === 'IELTS' ? 'bg-emerald-600' : 'bg-blue-600'}`}
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                          />
-                        )}
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Exam Type Toggle removed as it is now synchronized with global Environment Switcher */}
 
                 {/* Complexity level selection removed for standardized assessments */}
               </div>
@@ -394,7 +376,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 <div className="flex items-center justify-center h-48">
                   <Loader2 className="animate-spin text-primary size-8" />
                 </div>
-              ) : progressData.length === 0 ? (
+              ) : historyData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground gap-3">
                   <AlertCircle className="size-12 opacity-20" />
                   <p className="font-medium">No assessments yet</p>
@@ -404,7 +386,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 </div>
               ) : (
                  <div className="space-y-4">
-                   {[...progressData].reverse().map((item, index) => (
+                   {[...historyData].reverse().map((item, index) => (
                      <motion.div
                        key={item.id || index}
                        initial={{ opacity: 0, y: 12 }}
