@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import configs from "../config/configs.js";
 
-export const sendEmail = async (options: { to: string; subject: string; text: string }) => {
+export const sendEmail = async (options: { to: string; subject: string; text: string; html?: string }) => {
     // Create transporter
     const transporter = nodemailer.createTransport({
         host: configs.SMTP_HOST,
@@ -19,7 +19,7 @@ export const sendEmail = async (options: { to: string; subject: string; text: st
         to: options.to,
         subject: options.subject,
         text: options.text,
-        // you can also add html: options.html if you want to send html emails
+        html: options.html,
     };
 
     // Send email

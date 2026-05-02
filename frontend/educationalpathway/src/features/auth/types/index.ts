@@ -64,3 +64,8 @@ export interface ResetPasswordData {
   newPassword?: string;
   confirmPassword?: string;
 }
+
+export interface VerifyOTPData {
+  email: string;
+  otp: string;
+}

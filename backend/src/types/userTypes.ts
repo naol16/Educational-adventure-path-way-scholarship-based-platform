@@ -12,6 +12,7 @@ export interface User {
   googleId?: string;
   role: UserRole;
   isActive: boolean;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,7 @@ export interface CreateUserDto {
   password?: string;
   googleId?: string;
   role?: UserRole;
+  isVerified?: boolean;
 }
 
 export interface UpdateUserDto {
@@ -29,7 +31,11 @@ export interface UpdateUserDto {
   email?: string;
   role?: UserRole;
   isActive?: boolean;
+  isVerified?: boolean;
   googleId?: string;
+  verificationCode?: string;
+  verificationCodeExpires?: Date;
+  password?: string;
 }
 
 export interface UserResponse {
@@ -38,6 +44,7 @@ export interface UserResponse {
   email: string;
   role: UserRole;
   isActive: boolean;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

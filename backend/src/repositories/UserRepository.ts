@@ -6,13 +6,14 @@ import { CreateUserDto, UpdateUserDto, UserRole } from "../types/userTypes.js";
 
 export class UserRepository {
     static async create(userData: CreateUserDto): Promise<User> {
-        const { name, email, password, googleId, role = UserRole.STUDENT } = userData;
+        const { name, email, password, googleId, role = UserRole.STUDENT, isVerified = false } = userData;
         const user = await User.create({
             name,
             email,
             password,
             googleId,
             role,
+            isVerified,
         });
         return user;
     }

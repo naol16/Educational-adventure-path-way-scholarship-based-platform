@@ -4,6 +4,7 @@ import {
   RegisterData, 
   ForgotPasswordData, 
   ResetPasswordData,
+  VerifyOTPData,
   AuthResponse
 } from '../types';
 
@@ -19,6 +20,15 @@ export const googleLogin = async (credential: string, role?: string): Promise<Au
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
   const response = await api.post('/auth/register', data);
+  return response.data;
+};
+
+export const sendRegistrationOTP = async (data: RegisterData): Promise<void> => {
+  await api.post('/auth/send-otp', data);
+};
+
+export const verifyRegistrationOTP = async (data: { email: string; otp: string }): Promise<AuthResponse> => {
+  const response = await api.post('/auth/verify-otp', data);
   return response.data;
 };
 
