@@ -9,10 +9,10 @@ import 'package:mobile/features/learning_path/screens/mock_exam/sections/listeni
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/writing_section.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/speaking_section.dart';
 
-const _kSections = ['Reading', 'Listening', 'Writing', 'Speaking'];
+const _kSections = ['Listening', 'Reading', 'Writing', 'Speaking'];
 const _kSectionIcons = [
-  LucideIcons.bookOpen,
   LucideIcons.headphones,
+  LucideIcons.bookOpen,
   LucideIcons.edit3,
   LucideIcons.mic,
 ];
@@ -195,7 +195,8 @@ class _TimerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const sectionMinutes = [20, 15, 40, 15];
+    final isToefl = state.examType == 'TOEFL';
+    final sectionMinutes = isToefl ? [35, 36, 16, 29] : [30, 60, 60, 14];
     final total = sectionMinutes[state.currentSectionIndex] * 60;
     final pct = total > 0 ? state.timeRemaining.inSeconds / total : 0.0;
 
@@ -309,8 +310,12 @@ class _SectionBody extends StatelessWidget {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: switch (idx) {
-        0 => const ReadingSectionWidget(key: ValueKey('reading')),
-        1 => const ListeningSectionWidget(key: ValueKey('listening')),
+        0 => isToefl 
+            ? const ReadingSectionWidget(key: ValueKey('reading'))
+            : const ListeningSectionWidget(key: ValueKey('listening')),
+        1 => isToefl
+            ? const ListeningSectionWidget(key: ValueKey('listening'))
+            : const ReadingSectionWidget(key: ValueKey('reading')),
         2 => isToefl
             ? const SpeakingSectionWidget(key: ValueKey('speaking'))
             : const WritingSectionWidget(key: ValueKey('writing')),

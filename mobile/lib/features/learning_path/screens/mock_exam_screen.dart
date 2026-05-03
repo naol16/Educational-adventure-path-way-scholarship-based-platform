@@ -6,6 +6,7 @@ import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_active
 import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_grading.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_result.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_break.dart';
+import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_overview.dart';
 
 class MockExamScreen extends ConsumerStatefulWidget {
   /// Pass the active exam type so the dashboard pre-selects IELTS or TOEFL.
@@ -32,6 +33,7 @@ class _MockExamScreenState extends ConsumerState<MockExamScreen> {
 
     return switch (view) {
       MockExamView.dashboard => const MockExamDashboard(),
+      MockExamView.overview  => const MockExamOverview(),
       MockExamView.exam      => const MockExamActive(),
       MockExamView.grading   => const MockExamGrading(),
       MockExamView.result    => const MockExamResult(),

@@ -4,7 +4,7 @@ import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/features/learning_path/models/assessment_model.dart';
 import 'package:mobile/features/learning_path/services/assessment_api_service.dart';
 
-enum MockExamView { dashboard, exam, grading, result, breakTime }
+enum MockExamView { dashboard, overview, exam, grading, result, breakTime }
 
 class MockExamState {
   final MockExamView view;
@@ -103,9 +103,9 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
   };
 
   // TOEFL section order: Reading → Listening → Speaking → Writing
-  // IELTS section order: Reading → Listening → Writing  → Speaking
+  // IELTS section order: Listening → Reading → Writing  → Speaking
   static const Map<String, Map<int, int>> _examSectionMinutes = {
-    'IELTS': {0: 20, 1: 15, 2: 40, 3: 15},
+    'IELTS': {0: 30, 1: 60, 2: 60, 3: 14},
     'TOEFL': {0: 35, 1: 36, 2: 16, 3: 29},
   };
 
@@ -145,10 +145,8 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
         answers: {},
         completedSections: {},
         currentSectionIndex: 0,
-        view: MockExamView.exam,
-        timeRemaining: Duration(minutes: _minutesForSection(0)),
+        view: MockExamView.overview,
       );
-      _startSectionTimer();
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('403') || msg.contains('learning path') || msg.contains('100%')) {
@@ -160,6 +158,14 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
         state = state.copyWith(isGenerating: false, error: 'Failed to generate exam. Please try again.');
       }
     }
+  }
+
+  void startExam() {
+    state = state.copyWith(
+      view: MockExamView.exam,
+      timeRemaining: Duration(minutes: _minutesForSection(0)),
+    );
+    _startSectionTimer();
   }
 
   void _startSectionTimer() {
@@ -225,7 +231,9 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
   }
 
   void _markCurrentSectionComplete() {
-    final sectionNames = ['reading', 'listening', 'writing', 'speaking'];
+    final sectionNames = _isToefl 
+      ? ['reading', 'listening', 'speaking', 'writing']
+      : ['listening', 'reading', 'writing', 'speaking'];
     final current = sectionNames[state.currentSectionIndex];
     final updated = Set<String>.from(state.completedSections)..add(current);
     state = state.copyWith(completedSections: updated);
@@ -264,6 +272,8 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
       'listening': listening,
       'writing': state.answers['writing'] ?? '',
       'speaking': state.answers['speaking_text'] ?? '',
+      'candidateName': state.answers['candidateName'] ?? '',
+      'candidateID': state.answers['candidateID'] ?? '',
     };
   }
 

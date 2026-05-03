@@ -1,10 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
@@ -273,17 +271,17 @@ class CounselorDashboardScreen extends ConsumerWidget {
               );
             }
             return Column(
-              children: bookings.take(3).map((b) => _buildSessionCard(context, b)).toList(),
+              children: bookings.take(3).map((b) => _buildSessionCard(context, ref, b)).toList(),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
         ),
       ],
     );
   }
 
-  Widget _buildSessionCard(BuildContext context, CounselorBooking booking) {
+  Widget _buildSessionCard(BuildContext context, WidgetRef ref, CounselorBooking booking) {
     final slot = booking.slot;
     final startTime = slot?.startTime;
     final primary = DesignSystem.primary(context);
@@ -340,7 +338,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
                     MeetingService.joinMeeting(
                       roomName: booking.meetingLink!,
                       user: user,
-                      counselorName: user.name ?? 'Counselor',
+                      counselorName: user.name,
                       onClosed: () {
                         ref.invalidate(counselorUpcomingBookingsProvider);
                       },
