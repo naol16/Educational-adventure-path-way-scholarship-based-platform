@@ -1,7 +1,9 @@
 import { Op } from 'sequelize';
-import Booking from '../models/Booking.js';
+import { Booking } from '../models/Booking.js';
+import { Student } from '../models/Student.js';
 import { CounselorService } from '../services/CounselorService.js';
-import sequelize from '../config/sequelize.js';
+import { sequelize } from '../config/sequelize.js';
+import { Transaction } from 'sequelize';
 
 export class SettlementService {
     /**
@@ -32,15 +34,20 @@ export class SettlementService {
 
             for (const booking of stagnantBookings) {
                 try {
-                    await sequelize.transaction(async (t) => {
+                    await sequelize.transaction(async (t: Transaction) => {
                         console.log(`[SettlementService] Processing auto-release for Booking #${booking.id}`);
                         
+                        const student = await Student.findByPk(booking.studentId);
+                        if (!student) throw new Error(`Student not found for booking ${booking.id}`);
+
                         // We reuse the logic from CounselorService to ensure consistency in ledger updates
                         await CounselorService.reviewAndConfirmBooking(
+                            student.userId,
                             booking.id,
-                            5, // Default 5 star rating for auto-release
-                            "Automatically released after 7 days of inactivity.",
-                            t
+                            {
+                                rating: 5,
+                                comment: "Automatically released after 7 days of inactivity."
+                            }
                         );
                     });
                 } catch (innerError) {

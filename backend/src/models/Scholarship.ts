@@ -96,6 +96,13 @@ export class Scholarship extends Model {
     declare originalUrl: string;
 
     @Column({
+        type: DataType.STRING(512),
+        allowNull: true,
+        field: 'application_url'
+    })
+    declare applicationUrl: string | null;
+
+    @Column({
         type: DataType.STRING(32), // MD5 hash is 32 chars
         allowNull: true,
         field: 'content_hash'

@@ -261,8 +261,9 @@ export default function ScholarshipDetailsPage() {
     if (!scholarship || isActionLoading) return;
     
     // Open URL first to be responsive
-    if (scholarship.originalUrl) {
-      window.open(scholarship.originalUrl, '_blank');
+    const applyUrl = scholarship.applicationUrl || scholarship.originalUrl;
+    if (applyUrl) {
+      window.open(applyUrl, '_blank');
     }
 
     setIsActionLoading(true);

@@ -240,6 +240,7 @@ export class ScholarshipDiscoveryService {
         intakeSeason: metadata.intakeSeason || manualIntakeSeason || null,
         country: metadata.country || manualCountry || null,
         originalUrl: url,
+        applicationUrl: await this.extractApplicationUrl($, url, strategyManager, browser),
         contentHash,
       };
 
@@ -394,6 +395,82 @@ export class ScholarshipDiscoveryService {
       intakeSeason: intakeSeason?.toString(),
       country: country?.toString(),
     };
+  }
+
+  private static async extractApplicationUrl($: any, baseUrl: string, strategyManager: StrategyManager, browser: Browser, depth = 0): Promise<string | null> {
+    if (depth > 1) return null; // Limit to 1 hop to avoid infinite loops
+
+    const applySelectors = [
+      'a[href*="apply"]',
+      'a[href*="application"]',
+      'a[href*="form"]',
+      'a:contains("Apply Now")',
+      'a:contains("Application")',
+      'a:contains("Online Application")',
+      'a:contains("How to Apply")',
+      'a:contains("Click here to apply")'
+    ];
+
+    let candidateUrls: string[] = [];
+
+    $(applySelectors.join(',')).each((_: any, el: any) => {
+      const href = $(el).attr('href');
+      if (href) {
+        try {
+          const abs = new URL(href, baseUrl).toString();
+          if (abs !== baseUrl && !candidateUrls.includes(abs)) {
+            candidateUrls.push(abs);
+          }
+        } catch (e) {}
+      }
+    });
+
+    if (candidateUrls.length === 0) return null;
+
+    // Sort to prioritize direct forms or external links
+    const prioritized = candidateUrls.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      
+      // External forms (Google Forms, Typeform, etc.) are top priority
+      const isExternalForm = (url: string) => 
+        url.includes('docs.google.com/forms') || 
+        url.includes('typeform.com') || 
+        url.includes('surveymonkey.com') ||
+        url.includes('formstack.com');
+
+      if (isExternalForm(a) && !isExternalForm(b)) return -1;
+      if (!isExternalForm(a) && isExternalForm(b)) return 1;
+
+      // Links with "form" or "start" are better than "how-to-apply"
+      if (aLower.includes('form') && !bLower.includes('form')) return -1;
+      if (!aLower.includes('form') && bLower.includes('form')) return 1;
+
+      return 0;
+    });
+
+    const bestUrl = prioritized[0];
+    if (!bestUrl) return null;
+
+    // If the best URL looks like a "How to Apply" or instructions page, let's peek inside
+    const isInstructionsPage = bestUrl.toLowerCase().includes('how-to-apply') || 
+                           bestUrl.toLowerCase().includes('instructions') ||
+                           bestUrl.toLowerCase().includes('guidelines');
+
+    if (isInstructionsPage && depth === 0) {
+      console.log(`[DEEP-SCAN] Following intermediate link: ${bestUrl}`);
+      try {
+        const result = await strategyManager.executeAdaptiveScrape(bestUrl, browser);
+        const $deep = cheerio.load(result.html);
+        // Recurse once
+        const deeperUrl = await this.extractApplicationUrl($deep, bestUrl, strategyManager, browser, depth + 1);
+        if (deeperUrl) return deeperUrl;
+      } catch (e) {
+        console.warn(`[DEEP-SCAN] Failed to peek into ${bestUrl}`);
+      }
+    }
+
+    return bestUrl;
   }
 
   private static extractDeadlineFromJsonLd($: any): string | null {
