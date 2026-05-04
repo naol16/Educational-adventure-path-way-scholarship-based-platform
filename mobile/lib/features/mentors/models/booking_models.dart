@@ -19,8 +19,8 @@ class AvailabilitySlot {
     return AvailabilitySlot(
       id: json['id'],
       counselorId: json['counselorId'],
-      startTime: DateTime.parse(json['startTime']),
-      endTime: DateTime.parse(json['endTime']),
+      startTime: DateTime.parse(json['startTime']).toLocal(),
+      endTime: DateTime.parse(json['endTime']).toLocal(),
       status: json['status'],
       meetingLink: json['meetingLink'],
     );
@@ -74,10 +74,10 @@ class PaymentInfo {
 
   factory PaymentInfo.fromJson(Map<String, dynamic> json) {
     return PaymentInfo(
-      id: json['id'],
-      amount: (json['amount'] as num).toDouble(),
+      id: json['id'] ?? 0,
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
       currency: json['currency'] ?? 'ETB',
-      status: json['status'],
+      status: json['status'] ?? 'pending',
       txRef: json['tx_ref'],
     );
   }
@@ -112,17 +112,17 @@ class Booking {
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
-      id: json['id'],
-      studentId: json['studentId'],
-      counselorId: json['counselorId'],
-      slotId: json['slotId'],
-      status: json['status'],
+      id: json['id'] ?? 0,
+      studentId: json['studentId'] ?? 0,
+      counselorId: json['counselorId'] ?? 0,
+      slotId: json['slotId'] ?? 0,
+      status: json['status'] ?? 'pending',
       meetingLink: json['meetingLink'],
       notes: json['notes'],
       slot: json['slot'] != null ? AvailabilitySlot.fromJson(json['slot']) : null,
       counselor: json['counselor'] != null ? BookingCounselor.fromJson(json['counselor']) : null,
       payment: json['payment'] != null ? PaymentInfo.fromJson(json['payment']) : null,
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 }

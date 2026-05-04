@@ -17,6 +17,7 @@ import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.da
 import 'package:mobile/features/counselor/screens/counselor_layout_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
+import 'package:mobile/features/mentors/screens/student_payment_history_screen.dart';
 
 /// Notifies [GoRouter] when [authProvider] changes so top-level [redirect] runs again.
 final authRouterRefreshProvider = Provider<AuthRouterRefresh>((ref) {
@@ -123,6 +124,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/student-payment-history',
+        builder: (context, state) => const StudentPaymentHistoryScreen(),
       ),
     ],
   );
