@@ -26,8 +26,10 @@ class MasteryHubScreen extends ConsumerStatefulWidget {
 }
 
 class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with TickerProviderStateMixin {
+  final List<String> _tabs = ['Reading', 'Listening', 'Writing', 'Speaking'];
   String _selectedTab = 'Reading';
   late AnimationController _staggerController;
+  late PageController _pageController;
   bool _hasTriggeredIntro = false;
 
   @override
@@ -37,11 +39,13 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
+    _pageController = PageController(initialPage: _tabs.indexOf(_selectedTab));
   }
 
   @override
   void dispose() {
     _staggerController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -186,7 +190,40 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   Widget _buildHubContent(BuildContext context, FormattedLearningPath path, Color primaryColor) {
-    final sectionData = path.skills[_selectedTab.toLowerCase()];
+    return NestedScrollView(
+      physics: const BouncingScrollPhysics(),
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 30),
+                _buildSkillOverview(context, path, primaryColor),
+                const SizedBox(height: 35),
+                _buildModuleSelector(context),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ),
+      ],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedTab = _tabs[index];
+          });
+        },
+        children: _tabs.map((tab) => _buildMissionsForTab(context, path, tab)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMissionsForTab(BuildContext context, FormattedLearningPath path, String tabName) {
+    final sectionData = path.skills[tabName.toLowerCase()];
     
     // Map backend string level to UI enum
     final levelStr = path.proficiencyLevel.toLowerCase();
@@ -196,7 +233,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
 
     final missions = AdaptivePathGenerator.filterMissions(
       sectionData?.missions ?? [],
-      _selectedTab,
+      tabName,
       adaptiveLevel,
       examType: path.examType,
     );
@@ -208,12 +245,6 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
-          const SizedBox(height: 30),
-          _buildSkillOverview(context, path, primaryColor),
-          const SizedBox(height: 35),
-          _buildModuleSelector(context),
-          const SizedBox(height: 30),
           if (missions.isEmpty && videos.isEmpty)
             Center(
               child: Padding(
@@ -238,7 +269,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             } else {
               isLocked = index > 0 && !(videos[index - 1].isCompleted);
               bool isPracticeCompleted = false;
-              final skillKey = _selectedTab.toLowerCase();
+              final skillKey = tabName.toLowerCase();
               final learningMode = path.learningMode;
               if (learningMode is Map) {
                 final skillLm = learningMode[skillKey];
@@ -319,7 +350,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                                 video: item is Mission ? _getMissionVideo(item, path) : item as PathVideo,
                                 index: index,
                                 phase: missionPhase,
-                                section: _selectedTab,
+                                section: tabName,
                                 sectionData: sectionData ?? SkillPathSection(videos: [], pdfs: [], notes: '', isNoteCompleted: false, missions: []),
                                 learningMode: path.learningMode,
                                 mission: item is Mission ? item : null,
@@ -764,23 +795,22 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: [
-          _buildTab(context, "Reading", _selectedTab == 'Reading'),
-          _buildTab(context, "Listening", _selectedTab == 'Listening'),
-          _buildTab(context, "Writing", _selectedTab == 'Writing'),
-          _buildTab(context, "Speaking", _selectedTab == 'Speaking'),
-        ],
+        children: _tabs.asMap().entries.map((entry) {
+          return _buildTab(context, entry.value, _selectedTab == entry.value, entry.key);
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildTab(BuildContext context, String label, bool active) {
+  Widget _buildTab(BuildContext context, String label, bool active, int index) {
     final primaryColor = DesignSystem.primary(context);
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedTab = label;
-        });
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(right: 12),

@@ -26,10 +26,18 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
   String _searchQuery = '';
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _activeSubTab);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -53,7 +61,16 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                 _buildSubTabSwitcher(),
                 const SizedBox(height: 25),
                 Expanded(
-                  child: _activeSubTab == 0 ? _buildExpertsList() : _buildMessagesList(),
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => _activeSubTab = index);
+                    },
+                    children: [
+                      _buildExpertsList(),
+                      _buildMessagesList(),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -159,7 +176,13 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
     bool isActive = _activeSubTab == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _activeSubTab = index),
+        onTap: () {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
