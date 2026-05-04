@@ -96,7 +96,11 @@ class User {
       preferredFundingType: readValue<String>(json, const ['preferredFundingType', 'preferred_funding_type']),
       studyMode: readValue<String>(json, const ['studyMode', 'study_mode']),
       preferredCountries: readStringList(json, const ['preferredCountries', 'preferred_countries']),
-      preferredUniversities: json['preferredUniversities'] ?? json['preferred_universities'],
+      preferredUniversities: (() {
+        final v = json['preferredUniversities'] ?? json['preferred_universities'];
+        if (v is List) return v;
+        return null;
+      })(),
       raw: Map<String, dynamic>.from(json),
     );
   }
