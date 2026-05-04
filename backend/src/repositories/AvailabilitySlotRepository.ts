@@ -34,6 +34,8 @@ export class AvailabilitySlotRepository {
 
         if (filters?.status && ['available', 'booked', 'cancelled'].includes(filters.status)) {
             whereClause.status = filters.status;
+        } else {
+            whereClause.status = { [Op.ne]: 'cancelled' };
         }
 
         return AvailabilitySlot.findAll({

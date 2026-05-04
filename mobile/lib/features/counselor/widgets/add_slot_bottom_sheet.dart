@@ -134,6 +134,7 @@ class _AddSlotBottomSheetState extends ConsumerState<AddSlotBottomSheet> {
         'dayOfWeek': _selectedDay,
         'startTime': '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
         'endTime': '${_endTime.hour.toString().padLeft(2, '0')}:${_endTime.minute.toString().padLeft(2, '0')}',
+        'utcOffset': DateTime.now().timeZoneOffset.inMinutes,
       }
     ]);
     setState(() => _isSubmitting = false);

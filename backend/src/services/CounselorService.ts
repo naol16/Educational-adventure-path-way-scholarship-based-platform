@@ -482,20 +482,31 @@ export class CounselorService {
 
         const [startH, startM] = slot.startTime.split(':').map(Number);
         const [endH, endM] = slot.endTime.split(':').map(Number);
+        const offsetMinutes = slot.utcOffset || 0;
 
-        const date = new Date(now);
-        // Find the next occurrence of this day of the week
-        const currentDay = now.getDay();
+        // Get current UTC time in milliseconds
+        const nowUtcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+        // User's current local time as a UTC Date object
+        const userNow = new Date(nowUtcMs + (offsetMinutes * 60000));
+
+        // Find the next occurrence of this day of the week in the user's timezone
+        const currentDay = userNow.getUTCDay();
         let diff = targetDay - currentDay;
         if (diff < 0) diff += 7; // Ensure we move forward
 
-        date.setDate(now.getDate() + diff + (week * 7));
+        // Set the target date in UTC matching the user's requested time
+        const userStartTime = new Date(userNow);
+        userStartTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userStartTime.setUTCHours(startH as number, startM, 0, 0);
 
-        const startTime = new Date(date);
-        startTime.setHours(startH as number, startM, 0, 0);
+        // Convert back to absolute UTC timestamp
+        const startTime = new Date(userStartTime.getTime() - (offsetMinutes * 60000));
 
-        const endTime = new Date(date);
-        endTime.setHours(endH as number, endM, 0, 0);
+        const userEndTime = new Date(userNow);
+        userEndTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userEndTime.setUTCHours(endH as number, endM, 0, 0);
+        
+        const endTime = new Date(userEndTime.getTime() - (offsetMinutes * 60000));
 
         // Skip if this time has already passed
         if (startTime < now) continue;

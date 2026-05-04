@@ -58,6 +58,7 @@ export interface CreateSlotDto {
     startTime: string; // HH:mm format
     endTime: string;   // HH:mm format
     isRecurring?: boolean;
+    utcOffset?: number; // Minutes from UTC
 }
 
 export interface UpdateSlotDto {
