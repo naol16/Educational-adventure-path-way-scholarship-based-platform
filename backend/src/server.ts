@@ -45,7 +45,7 @@ async function start() {
         console.warn("⚠️ Assessment worker skipped (Redis not connected)");
     }
 
-    // Initialize Scholarship Ingestion System
+    //Initialize Scholarship Ingestion System
     // await seedScholarshipSources();
     // startScholarshipCron();
 

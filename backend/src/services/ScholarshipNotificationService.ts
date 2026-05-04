@@ -59,7 +59,7 @@ export class ScholarshipNotificationService {
             description: scholarship.description || "",
             deadline: scholarship.deadline || null
           },
-          scholarship.matchReason
+          scholarship.match_reason || "Our AI detected a high degree of compatibility between your academic profile and this opportunity's requirements."
         );
         console.log(`[ScholarshipNotification] Email notification sent to ${user.email} for scholarship ${scholarship.id}`);
       }
