@@ -9,6 +9,7 @@ import {
     UpdatedAt,
 } from "sequelize-typescript";
 import { TrackedScholarship } from "./TrackedScholarship.js";
+import type { TrackedScholarship as TrackedScholarshipType } from "./TrackedScholarship.js";
 
 @Table({
     tableName: "scholarship_milestones",
@@ -78,5 +79,5 @@ export class ScholarshipMilestone extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => TrackedScholarship)
-    trackedScholarship!: TrackedScholarship;
+    trackedScholarship!: TrackedScholarshipType;
 }

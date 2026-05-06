@@ -13,6 +13,10 @@ import { Student } from "./Student.js";
 import { Scholarship } from "./Scholarship.js";
 import { ScholarshipMilestone } from "./ScholarshipMilestone.js";
 
+import type { Student as StudentType } from "./Student.js";
+import type { Scholarship as ScholarshipType } from "./Scholarship.js";
+import type { ScholarshipMilestone as ScholarshipMilestoneType } from "./ScholarshipMilestone.js";
+
 @Table({
     tableName: "tracked_scholarships",
     timestamps: true,
@@ -79,11 +83,11 @@ export class TrackedScholarship extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Scholarship)
-    scholarship!: Scholarship;
+    scholarship!: ScholarshipType;
 
     @HasMany(() => ScholarshipMilestone)
-    milestones!: ScholarshipMilestone[];
+    milestones!: ScholarshipMilestoneType[];
 }

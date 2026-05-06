@@ -14,6 +14,9 @@ import {
 import { User } from "./User.js";
 import { Conversation } from "./Conversation.js";
 
+import type { User as UserType } from "./User.js";
+import type { Conversation as ConversationType } from "./Conversation.js";
+
 @Table({
     tableName: "chat_messages",
     timestamps: true,
@@ -85,8 +88,8 @@ export class ChatMessage extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Conversation)
-    conversation!: Conversation;
+    conversation!: ConversationType;
 
     @BelongsTo(() => User)
-    sender!: User;
+    sender!: UserType;
 }

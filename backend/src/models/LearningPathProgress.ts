@@ -12,6 +12,10 @@ import { Student } from "./Student.js";
 import { Video } from "./Video.js";
 import { Pdf } from "./Pdf.js";
 
+import type { Student as StudentType } from "./Student.js";
+import type { Video as VideoType } from "./Video.js";
+import type { Pdf as PdfType } from "./Pdf.js";
+
 @Table({
     tableName: "learning_path_progress",
     timestamps: true,
@@ -123,11 +127,11 @@ export class LearningPathProgress extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Video)
-    video!: Video;
+    video!: VideoType;
 
     @BelongsTo(() => Pdf)
-    pdf!: Pdf;
+    pdf!: PdfType;
 }

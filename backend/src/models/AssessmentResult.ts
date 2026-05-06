@@ -10,6 +10,7 @@ import {
     UpdatedAt,
 } from "sequelize-typescript";
 import { Student } from "./Student.js";
+import type { Student as StudentType } from "./Student.js";
 
 @Table({
     tableName: "assessment_results",
@@ -102,5 +103,5 @@ export class AssessmentResult extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 }

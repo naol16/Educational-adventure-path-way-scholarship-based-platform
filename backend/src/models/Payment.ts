@@ -11,6 +11,9 @@ import {
 import { Student } from "./Student.js";
 import { Booking } from "./Booking.js";
 
+import type { Student as StudentType } from "./Student.js";
+import type { Booking as BookingType } from "./Booking.js";
+
 @Table({
     tableName: "payments",
     timestamps: true,
@@ -95,8 +98,8 @@ export class Payment extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Booking)
-    booking!: Booking;
+    booking!: BookingType;
 }
