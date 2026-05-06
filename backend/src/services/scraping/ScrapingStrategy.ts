@@ -271,7 +271,7 @@ export class BrowserProxyStrategy implements ScrapingStrategy {
         // });
 
         // For now, try headed mode as a last resort (some sites allow headed browsers)
-        const headedBrowser = await chromium.launch({ headless: false });
+        const headedBrowser = await chromium.launch({ headless: true });
         const context = await headedBrowser.newContext({
             userAgent: AntiDetectionService.getRandomUserAgent(),
             ...AntiDetectionService.getStealthOptions()

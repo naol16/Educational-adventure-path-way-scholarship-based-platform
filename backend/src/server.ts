@@ -45,9 +45,11 @@ async function start() {
         console.warn("⚠️ Assessment worker skipped (Redis not connected)");
     }
 
-    //Initialize Scholarship Ingestion System
-    await seedScholarshipSources();
+    // Start Cron Jobs immediately
     startScholarshipCron();
+
+    // Initialize Scholarship Ingestion System in background (don't block cron/startup)
+    seedScholarshipSources().catch(err => console.error("Background seeding failed:", err));
 
   } catch (err) {
     console.error("Failed to connect to database:", err);

@@ -18,7 +18,7 @@ import { ScholarshipNotificationService } from "./ScholarshipNotificationService
 
 export class ScholarshipDiscoveryService {
   private static isRunning = false;
-  private static MAX_CONCURRENT_SOURCES = 3;
+  private static MAX_CONCURRENT_SOURCES = 1;
   private static MAX_LINKS_PER_SOURCE = 30;
 
   private static isLikelyScholarshipLink(url: string): boolean {
@@ -59,7 +59,8 @@ export class ScholarshipDiscoveryService {
       });
 
       const sources = await ScholarshipSourceRepository.findAllActive();
-      console.log(`Starting discovery for ${sources.length} sources...`);
+      console.log(`[DISCOVERY] Starting discovery for ${sources.length} sources...`);
+      console.log(`[DISCOVERY] Concurrency: ${this.MAX_CONCURRENT_SOURCES}, Links per source: ${this.MAX_LINKS_PER_SOURCE}`);
 
       // Process sources with limited concurrency
       for (let i = 0; i < sources.length; i += this.MAX_CONCURRENT_SOURCES) {
