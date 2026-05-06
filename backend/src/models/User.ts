@@ -26,6 +26,7 @@ import type { Counselor as CounselorType } from "./Counselor.js";
 import type { Student as StudentType } from "./Student.js";
 import type { Notification as NotificationType } from "./Notification.js";
 import { UserRole } from "../types/userTypes.js";
+import type { UserRole as UserRoleType } from "../types/userTypes.js";
 
 @Table({
     tableName: "users",

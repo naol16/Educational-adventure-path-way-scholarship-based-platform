@@ -1,5 +1,6 @@
 import { Table, Column, Model, DataType, PrimaryKey, Default, ForeignKey, BelongsTo } from "sequelize-typescript";
 import { Student } from "./Student.js";
+import type { Student as StudentType } from "./Student.js";
 
 @Table({
   tableName: "visa_mock_interviews",

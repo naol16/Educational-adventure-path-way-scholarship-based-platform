@@ -13,6 +13,7 @@ import {
 import { User } from "./User.js";
 import type { User as UserType } from "./User.js";
 import { CounselorReview } from "./CounselorReview.js";
+import type { CounselorReview as CounselorReviewType } from "./CounselorReview.js";
 
 @Table({
     tableName: "students",

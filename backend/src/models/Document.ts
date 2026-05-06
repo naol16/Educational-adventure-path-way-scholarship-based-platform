@@ -10,6 +10,8 @@ import {
 } from "sequelize-typescript";
 import { Student } from "./Student.js";
 import { Counselor } from "./Counselor.js";
+import type { Student as StudentType } from "./Student.js";
+import type { Counselor as CounselorType } from "./Counselor.js";
 
 @Table({
   tableName: "documents",

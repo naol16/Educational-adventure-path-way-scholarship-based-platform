@@ -11,6 +11,9 @@ import {
 import { Counselor } from "./Counselor.js";
 import { Booking } from "./Booking.js";
 import { Payment } from "./Payment.js";
+import type { Counselor as CounselorType } from "./Counselor.js";
+import type { Booking as BookingType } from "./Booking.js";
+import type { Payment as PaymentType } from "./Payment.js";
 
 @Table({
     tableName: "counselor_wallet_transactions",

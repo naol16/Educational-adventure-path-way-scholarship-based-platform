@@ -9,6 +9,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 
 @Table({
   tableName: "counselor_messages",

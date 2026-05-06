@@ -16,6 +16,10 @@ import { AvailabilitySlot } from './AvailabilitySlot.js';
 import { Booking } from './Booking.js';
 import { CounselorReview } from './CounselorReview.js';
 import { CounselorPayout } from './CounselorPayout.js';
+import type { AvailabilitySlot as AvailabilitySlotType } from './AvailabilitySlot.js';
+import type { Booking as BookingType } from './Booking.js';
+import type { CounselorReview as CounselorReviewType } from './CounselorReview.js';
+import type { CounselorPayout as CounselorPayoutType } from './CounselorPayout.js';
 
 @Table({
     tableName: "counselors",

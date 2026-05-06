@@ -11,6 +11,7 @@ import {
     BelongsTo,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 
 @Table({
     tableName: "user_warnings",
