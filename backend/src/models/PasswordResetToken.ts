@@ -12,6 +12,7 @@ import {
     CreatedAt,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 
 @Table({
     tableName: "password_reset_tokens",
@@ -34,7 +35,7 @@ export class PasswordResetToken extends Model {
     declare userId: number;
 
     @BelongsTo(() => User)
-    user!: User;
+    user!: UserType;
 
     @Unique
     @Column({

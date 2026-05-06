@@ -11,6 +11,7 @@ import {
     HasMany,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 import { AvailabilitySlot } from './AvailabilitySlot.js';
 import { Booking } from './Booking.js';
 import { CounselorReview } from './CounselorReview.js';
@@ -321,7 +322,7 @@ export class Counselor extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => User, { as: 'user' })
-    user!: User;
+    user!: UserType;
 
     @HasMany(() => AvailabilitySlot, { foreignKey: 'counselorId' })
     availabilitySlots!: AvailabilitySlot[];

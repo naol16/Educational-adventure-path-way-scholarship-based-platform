@@ -11,6 +11,7 @@ import {
     HasMany,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 import { CounselorReview } from "./CounselorReview.js";
 
 @Table({
@@ -414,7 +415,7 @@ export class Student extends Model {
 
     // Association with explicit alias to match service queries
     @BelongsTo(() => User, { as: 'user' })
-    user!: User;
+    user!: UserType;
 
     @HasMany(() => CounselorReview, { foreignKey: 'studentId' })
     reviews!: CounselorReview[];

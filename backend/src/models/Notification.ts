@@ -9,6 +9,7 @@ import {
     UpdatedAt,
 } from "sequelize-typescript";
 import { User } from "./User.js";
+import type { User as UserType } from "./User.js";
 
 @Table({
     tableName: "notifications",
@@ -96,5 +97,5 @@ export class Notification extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => User)
-    user!: User;
+    user!: UserType;
 }
