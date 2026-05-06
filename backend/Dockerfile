@@ -10,6 +10,8 @@ COPY package*.json ./
 # 4. Install dependencies
 RUN npm install
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/node_modules/.bin/ms-playwright
+RUN npx playwright install chromium --with-deps
 # 5. Copy the rest of the source code
 COPY . .
 
