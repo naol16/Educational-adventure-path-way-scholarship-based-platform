@@ -11,7 +11,6 @@ import 'package:mobile/features/counselor/screens/session_detail_screen.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/core/services/meeting_service.dart';
 import 'package:mobile/features/core/widgets/pre_flight_meeting_dialog.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class CounselorSessionsScreen extends ConsumerStatefulWidget {
   const CounselorSessionsScreen({super.key});
@@ -22,6 +21,19 @@ class CounselorSessionsScreen extends ConsumerStatefulWidget {
 
 class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScreen> {
   int _tab = 0; // 0=ongoing 1=upcoming 2=pending 3=completed
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _tab);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,22 +49,31 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
             _buildTabBar(context),
             const SizedBox(height: 16),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async => ref.invalidate(counselorUpcomingBookingsProvider),
-                color: DesignSystem.primary(context),
-                child: bookingsAsync.when(
-                  data: (bookings) {
-                    final filtered = _filterBookings(bookings);
-                    if (filtered.isEmpty) return _buildEmpty(context);
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: filtered.length,
-                      itemBuilder: (ctx, i) => _buildBookingCard(context, filtered[i]),
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: Colors.red))),
-                ),
+              child: bookingsAsync.when(
+                data: (bookings) {
+                  return PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (i) => setState(() => _tab = i),
+                    itemCount: 4,
+                    itemBuilder: (ctx, tabIndex) {
+                      final filtered = _filterForIndex(bookings, tabIndex);
+                      return RefreshIndicator(
+                        onRefresh: () async => ref.invalidate(counselorUpcomingBookingsProvider),
+                        color: DesignSystem.primary(context),
+                        child: filtered.isEmpty 
+                          ? Stack(children: [ListView(), _buildEmpty(context, tabIndex)])
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              itemCount: filtered.length,
+                              itemBuilder: (ctx, i) => _buildBookingCard(context, filtered[i], tabIndex),
+                            ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: Colors.red))),
               ),
             ),
           ],
@@ -93,7 +114,10 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
             final active = _tab == i;
             return Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _tab = i),
+                onTap: () {
+                  setState(() => _tab = i);
+                  _pageController.animateToPage(i, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(vertical: 10),
@@ -120,11 +144,11 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
     );
   }
 
-  List<CounselorBooking> _filterBookings(List<CounselorBooking> all) {
+  List<CounselorBooking> _filterForIndex(List<CounselorBooking> all, int index) {
     final now = DateTime.now();
     final buffer = const Duration(minutes: 5);
 
-    switch (_tab) {
+    switch (index) {
       case 0: // Ongoing
         return all.where((b) {
           if (!['confirmed', 'started'].contains(b.status)) return false;
@@ -146,7 +170,7 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
     }
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmpty(BuildContext context, int tabIndex) {
     final labels = ['ongoing', 'upcoming', 'pending', 'completed'];
     return Center(
       child: Column(
@@ -154,14 +178,14 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
         children: [
           Icon(LucideIcons.calendar, color: DesignSystem.labelText(context), size: 56),
           const SizedBox(height: 16),
-          Text('No ${labels[_tab]} sessions', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 18, fontWeight: FontWeight.w700)),
+          Text('No ${labels[tabIndex]} sessions', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 18, fontWeight: FontWeight.w700)),
           Text("You're all clear here.", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
         ],
       ),
     );
   }
 
-  Widget _buildBookingCard(BuildContext context, CounselorBooking booking) {
+  Widget _buildBookingCard(BuildContext context, CounselorBooking booking, int tabIndex) {
     final primary = DesignSystem.primary(context);
     final startTime = booking.slot?.startTime;
 
@@ -194,10 +218,10 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
                       ],
                     ),
                   ),
-                  _buildStatusBadge(context, booking.status, isOngoing: _tab == 0),
+                  _buildStatusBadge(context, booking.status, isOngoing: tabIndex == 0),
                 ],
               ),
-              if (_tab == 0) ...[
+              if (tabIndex == 0) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -261,7 +285,7 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
       MeetingService.joinMeeting(
         roomName: booking.meetingLink!,
         user: user,
-        counselorName: user.name ?? 'Counselor',
+        counselorName: user.name,
         onClosed: () {
           // Refresh list when they close the meeting
           ref.invalidate(counselorUpcomingBookingsProvider);

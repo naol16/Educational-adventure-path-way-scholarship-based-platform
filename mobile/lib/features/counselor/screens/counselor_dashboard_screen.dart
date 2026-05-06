@@ -11,6 +11,7 @@ import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/core/widgets/notification_bell.dart';
 import 'package:mobile/features/core/services/meeting_service.dart';
 import 'package:mobile/features/core/widgets/pre_flight_meeting_dialog.dart';
+import 'package:mobile/features/counselor/screens/counselor_layout_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class CounselorDashboardScreen extends ConsumerWidget {
@@ -51,7 +52,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
                       children: [
                         _buildHeader(context, profileAsync),
                         const SizedBox(height: 24),
-                        _buildStatsRow(context, overviewAsync),
+                        _buildStatsRow(context, overviewAsync, ref),
                         const SizedBox(height: 24),
                         _buildEarningsCard(context, profileAsync),
                         const SizedBox(height: 24),
@@ -153,37 +154,44 @@ class CounselorDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(BuildContext context, AsyncValue<CounselorDashboardOverview?> overviewAsync) {
+  Widget _buildStatsRow(BuildContext context, AsyncValue<CounselorDashboardOverview?> overviewAsync, WidgetRef ref) {
     final overview = overviewAsync.valueOrNull;
     return Row(
       children: [
-        _buildStatCard(context, '${overview?.assignedStudents ?? 0}', 'Students', LucideIcons.users, const Color(0xFF10B981)),
+        // Students tab (index 3)
+        _buildStatCard(context, '${overview?.assignedStudents ?? 0}', 'Students', LucideIcons.users, const Color(0xFF10B981), onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = 3),
         const SizedBox(width: 10),
-        _buildStatCard(context, '${overview?.upcomingBookings ?? 0}', 'Upcoming', LucideIcons.calendarCheck, DesignSystem.primary(context)),
+        // Sessions tab (index 1) – upcoming
+        _buildStatCard(context, '${overview?.upcomingBookings ?? 0}', 'Upcoming', LucideIcons.calendarCheck, DesignSystem.primary(context), onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = 1),
         const SizedBox(width: 10),
-        _buildStatCard(context, '${overview?.completedSessions ?? 0}', 'Done', LucideIcons.checkCircle, const Color(0xFF06B6D4)),
+        // Sessions tab (index 1) – completed
+        _buildStatCard(context, '${overview?.completedSessions ?? 0}', 'Done', LucideIcons.checkCircle, const Color(0xFF06B6D4), onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = 1),
         const SizedBox(width: 10),
-        _buildStatCard(context, '${overview?.pendingBookings ?? 0}', 'Pending', LucideIcons.clock, const Color(0xFFF59E0B)),
+        // Sessions tab (index 1) – pending
+        _buildStatCard(context, '${overview?.pendingBookings ?? 0}', 'Pending', LucideIcons.clock, const Color(0xFFF59E0B), onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = 1),
       ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String value, String label, IconData icon, Color color) {
+  Widget _buildStatCard(BuildContext context, String value, String label, IconData icon, Color color, {VoidCallback? onTap}) {
     return Expanded(
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        borderRadius: 20,
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(value, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 20, fontWeight: FontWeight.w800)),
-            Text(label, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10, fontWeight: FontWeight.w600)),
-          ],
+      child: GestureDetector(
+        onTap: onTap,
+        child: GlassContainer(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          borderRadius: 20,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(value, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 20, fontWeight: FontWeight.w800)),
+              Text(label, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10, fontWeight: FontWeight.w600)),
+            ],
+          ),
         ),
       ),
     );
@@ -248,7 +256,10 @@ class CounselorDashboardScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Upcoming Sessions', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 18, fontWeight: FontWeight.w800)),
-            Text('View All', style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.w700)),
+            GestureDetector(
+              onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = 1,
+              child: Text('View All', style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
           ],
         ),
         const SizedBox(height: 12),

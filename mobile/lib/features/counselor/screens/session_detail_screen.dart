@@ -28,7 +28,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final booking = widget.booking;
-    final primary = DesignSystem.primary(context);
     final isPending = booking.status == 'pending';
 
     return Scaffold(
@@ -323,7 +322,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       MeetingService.joinMeeting(
         roomName: roomName,
         user: user,
-        counselorName: user.name ?? 'Counselor',
+        counselorName: user.name,
         onClosed: () {
           ref.invalidate(counselorUpcomingBookingsProvider);
           if (mounted) Navigator.pop(context);

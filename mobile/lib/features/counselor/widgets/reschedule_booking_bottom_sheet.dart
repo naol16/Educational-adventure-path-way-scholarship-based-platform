@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
@@ -25,7 +24,6 @@ class _RescheduleBookingBottomSheetState extends ConsumerState<RescheduleBooking
   @override
   Widget build(BuildContext context) {
     final slotsAsync = ref.watch(counselorSlotsProvider);
-    final primary = DesignSystem.primary(context);
 
     return Container(
       padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),

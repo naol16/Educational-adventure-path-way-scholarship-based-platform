@@ -32,7 +32,6 @@ class _ShareDocumentBottomSheetState extends ConsumerState<ShareDocumentBottomSh
   @override
   Widget build(BuildContext context) {
     final studentsAsync = ref.watch(counselorStudentsProvider);
-    final primary = DesignSystem.primary(context);
 
     return Container(
       padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
