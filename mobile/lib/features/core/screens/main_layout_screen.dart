@@ -93,17 +93,12 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? primaryColor.withValues(alpha: 0.1) : Colors.transparent,
+              color: isActive ? primaryColor.withValues(alpha: 0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: AnimatedCrossFade(
-              firstChild: Icon(inactiveIcon, color: color, size: 22),
-              secondChild: Icon(activeIcon, color: color, size: 22),
-              crossFadeState: isActive ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 200),
-            ),
+            child: Icon(isActive ? activeIcon : inactiveIcon, color: color, size: 22),
           ),
           const SizedBox(height: 4),
           Text(

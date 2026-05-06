@@ -9,6 +9,7 @@ import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/counselor/screens/counselor_documents_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_reviews_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.dart';
 
 class CounselorProfileScreen extends ConsumerWidget {
   const CounselorProfileScreen({super.key});
@@ -92,10 +93,13 @@ class CounselorProfileScreen extends ConsumerWidget {
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: DesignSystem.primary(context), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                  child: const Icon(LucideIcons.camera, color: Colors.white, size: 16),
+                child: GestureDetector(
+                  onTap: () => _editProfile(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: DesignSystem.primary(context), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                    child: const Icon(LucideIcons.camera, color: Colors.white, size: 16),
+                  ),
                 ),
               ),
             ],
@@ -181,8 +185,11 @@ class CounselorProfileScreen extends ConsumerWidget {
   }
 
   void _editProfile(BuildContext context) {
-    // Navigate back to onboarding but in "edit" mode or similar
-    // For now, let's just show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit feature coming soon')));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CounselorOnboardingScreen(isEditMode: true)),
+    ).then((_) {
+      // Refresh profile when returning from edit
+    });
   }
 }

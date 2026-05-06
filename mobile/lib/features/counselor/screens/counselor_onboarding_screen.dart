@@ -14,7 +14,8 @@ import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class CounselorOnboardingScreen extends ConsumerStatefulWidget {
-  const CounselorOnboardingScreen({super.key});
+  final bool isEditMode;
+  const CounselorOnboardingScreen({super.key, this.isEditMode = false});
 
   @override
   ConsumerState<CounselorOnboardingScreen> createState() => _CounselorOnboardingScreenState();
@@ -445,10 +446,27 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         'isOnboarded': true,
       };
 
-      final ok = await ref.read(counselorAppServiceProvider).submitApplication(payload);
+      final svc = ref.read(counselorAppServiceProvider);
+      final bool ok;
+      if (widget.isEditMode) {
+        ok = await svc.updateProfile(payload);
+      } else {
+        ok = await svc.submitApplication(payload);
+      }
+
       if (ok) {
-        await ref.read(authProvider.notifier).refreshProfile();
-        if (mounted) context.go('/home');
+        ref.invalidate(counselorProfileProvider);
+        if (!widget.isEditMode) {
+          await ref.read(authProvider.notifier).refreshProfile();
+          if (mounted) context.go('/home');
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile updated successfully!')),
+            );
+            Navigator.pop(context);
+          }
+        }
       } else {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to save. Check fields.')));
       }

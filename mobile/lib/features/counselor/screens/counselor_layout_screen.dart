@@ -61,10 +61,10 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
             child: Row(
               children: [
                 Expanded(child: _buildNavItem(LucideIcons.home, Icons.home_rounded, "Home", 0, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.calendarCheck, LucideIcons.calendarCheck, "Sessions", 1, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.calendar, LucideIcons.calendar, "Schedule", 2, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.users, LucideIcons.users, "Students", 3, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.messageSquare, LucideIcons.messageSquare, "Messages", 4, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.calendarCheck, Icons.event_available_rounded, "Sessions", 1, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.calendar, Icons.calendar_month_rounded, "Schedule", 2, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.users, Icons.people_rounded, "Students", 3, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.messageSquare, Icons.message_rounded, "Messages", 4, currentIndex)),
               ],
             ),
           ),
@@ -85,9 +85,9 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(horizontal: isActive ? 16 : 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? primaryColor.withValues(alpha: 0.1) : Colors.transparent,
+              color: isActive ? primaryColor.withValues(alpha: 0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(isActive ? activeIcon : inactiveIcon, color: color, size: 22),
