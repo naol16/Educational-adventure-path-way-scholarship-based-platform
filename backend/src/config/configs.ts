@@ -9,16 +9,21 @@ function normalizeSecret(value?: string) {
   return trimmed.replace(/^Bearer\s+/i, "").trim();
 }
 
+function normalizeUrl(url?: string) {
+  if (!url) return undefined;
+  return url.trim().replace(/\/+$/, "");
+}
+
 function setConfigs() {
   return {
     // Server Config
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "5000"),
-    SERVER_URL: process.env.SERVER_URL || process.env.BACKEND_URL || "https://capable-famished-shallot.ngrok-free.dev/",
+    SERVER_URL: normalizeUrl(process.env.SERVER_URL) || normalizeUrl(process.env.BACKEND_URL) || "https://capable-famished-shallot.ngrok-free.dev",
     HOST_URL: process.env.HOST_URL,
-    FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
-    PRODUCTION_URL: process.env.PRODUCTION_URL,
-    BACKEND_URL: process.env.BACKEND_URL,
+    FRONTEND_URL: normalizeUrl(process.env.FRONTEND_URL) || "http://localhost:3000",
+    PRODUCTION_URL: normalizeUrl(process.env.PRODUCTION_URL),
+    BACKEND_URL: normalizeUrl(process.env.BACKEND_URL) || normalizeUrl(process.env.SERVER_URL) || "https://educational-adventure-path-way.onrender.com",
     
     // Database Config
     DB_HOST: process.env.DB_HOST || "localhost",
@@ -79,7 +84,7 @@ function setConfigs() {
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || "AIzaSyAvNCBYazIHrubYy3rXXvIxV4HDFBIEOYs",
-    GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+    GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
 
     ASSESSMENT_USE_QUEUE: process.env.ASSESSMENT_USE_QUEUE === "true",
     REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",

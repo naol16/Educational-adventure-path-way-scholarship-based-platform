@@ -54,8 +54,12 @@ export const CounselorDashboard = () => {
       ]);
       setStatsData(stats);
       setCounselorProfile(profile);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch counselor data:', error);
+      // If 403, it means the user has the wrong role
+      if (error.response?.status === 403) {
+        router.push("/role-selection");
+      }
     } finally {
       setLoading(false);
     }

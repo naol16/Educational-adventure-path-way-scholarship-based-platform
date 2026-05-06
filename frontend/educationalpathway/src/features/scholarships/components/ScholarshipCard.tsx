@@ -106,7 +106,7 @@ export const ScholarshipCard = ({ scholarship }: ScholarshipCardProps) => {
               </Link>
 
               <a 
-                 href={scholarship.originalUrl}
+                 href={scholarship.applicationUrl || scholarship.originalUrl}
                  target="_blank"
                  rel="noopener noreferrer"
                  className="flex-1 h-10 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 text-xs font-bold shadow-md shadow-emerald-500/10 hover:shadow-lg transition-all"

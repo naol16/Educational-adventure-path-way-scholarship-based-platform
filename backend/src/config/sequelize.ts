@@ -122,9 +122,8 @@ export const connectSequelize = async () => {
       hasVectorExtension = false;
     }
 
-    // Sync models with database (creates tables if missing)
-    // Note: enabled alter: true to apply new column changes
-    await sequelize.sync();
+    // Sync models with database (creates tables if missing, updates columns if alter is true)
+    await sequelize.sync({ alter: true });
     console.log("Database models synchronized");
   } catch (error) {
     console.error("Sequelize connection error:", error);

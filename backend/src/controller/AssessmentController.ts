@@ -2,43 +2,68 @@ import { Request, Response, NextFunction } from "express";
 import { AssessmentService } from "../services/AssessmentService.js";
 import { StudentRepository } from "../repositories/StudentRepository.js";
 import { LearningPathRepository } from "../repositories/LearningPathRepository.js";
+import { AssessmentResult } from "../models/AssessmentResult.js";
 
 export class AssessmentController {
   static async generate(req: Request, res: Response, next: NextFunction) {
     try {
-      const examType =
-        typeof req.body?.examType === "string" ? req.body.examType.trim() : "";
+      let examTypeRaw = typeof req.body?.examType === "string" ? req.body.examType.trim() : "";
       const difficulty = "medium"; // Standardized
-      const skill =
-        typeof req.body?.skill === "string" ? req.body.skill.trim() : undefined;
+      const skill = typeof req.body?.skill === "string" ? req.body.skill.trim() : undefined;
 
-      if (!examType) {
+      const student = req.user?.id ? await StudentRepository.findByUserId(req.user.id) : null;
+
+      // Fallback to student's previous preference if not provided
+      if (!examTypeRaw && student) {
+        const path = await LearningPathRepository.findByStudentId(student.id);
+        if (path && path.examType) {
+          examTypeRaw = path.examType;
+        } else {
+           // Try to find from any previous assessment
+           const { AssessmentRepository } = await import("../repositories/AssessmentRepository.js");
+           const lastResult = await AssessmentResult.findOne({ where: { studentId: student.id }, order: [['createdAt', 'DESC']] });
+           if (lastResult) examTypeRaw = lastResult.examType;
+        }
+      }
+
+      if (!examTypeRaw) {
         res.status(400).json({ error: "examType is required" });
         return;
       }
 
-      const examTypeUpper = examType.toUpperCase();
+      const examTypeUpper = examTypeRaw.toUpperCase();
       if (!["IELTS", "TOEFL"].includes(examTypeUpper)) {
         res.status(400).json({ error: "examType must be IELTS or TOEFL" });
         return;
       }
 
-      const student = req.user?.id ? await StudentRepository.findByUserId(req.user.id) : null;
+      let isDiagnostic = false;
 
-      if (student && !req.body?.force && !skill) {
-        const path = await LearningPathRepository.findByStudentId(student.id);
-        if (path && path.currentProgressPercentage < 100) {
-          res.status(403).json({
-            error: "Learning path completion required.",
-            message: "You must complete 100% of your learning path before generating a full mock exam.",
-            currentProgress: path.currentProgressPercentage
-          });
-          return;
+      if (student && !skill) {
+        // Check if they already have a diagnostic for THIS exam type
+        const { AssessmentRepository } = await import("../repositories/AssessmentRepository.js");
+        const diagnostic = await AssessmentRepository.findDiagnostic(student.id, examTypeUpper);
+        
+        if (!diagnostic) {
+          isDiagnostic = true;
+          console.log(`[AssessmentController] Student ${student.id} has no diagnostic for ${examTypeUpper}. Setting isDiagnostic=true.`);
+        } else {
+          // They have a diagnostic for this exam type, so this is a Mock Exam. Check gating.
+          const path = await LearningPathRepository.findByStudentId(student.id, examTypeUpper);
+          if (!req.body?.force && path && path.currentProgressPercentage < 100) {
+            res.status(403).json({
+              error: "Learning path completion required.",
+              message: "You must complete 100% of your learning path before generating a full mock exam.",
+              currentProgress: path.currentProgressPercentage
+            });
+            return;
+          }
+          console.log(`[AssessmentController] Student ${student.id} has diagnostic. Generating MOCK EXAM.`);
         }
       }
 
-      const result = await AssessmentService.generateExam(examType as any, difficulty as any, skill, student?.id);
-      res.status(201).json(result);
+      const result = await AssessmentService.generateExam(examTypeUpper as any, difficulty as any, skill, student?.id, isDiagnostic);
+      res.status(201).json({ ...result, isDiagnostic });
     } catch (error) {
       next(error);
     }
@@ -87,12 +112,18 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
+
+      // Check if this test was marked as diagnostic in the DB
+      const { AssessmentResult } = await import("../models/AssessmentResult.js");
+      const testRecord = await AssessmentResult.findOne({ where: { testId: test_id } });
+      const isDiagnostic = testRecord ? testRecord.isDiagnostic : false;
       
       const result = await AssessmentService.submitAssessment(
         test_id,
         parsedResponses,
         student.id,
         audioData,
+        isDiagnostic
       );
       if (result.status === "processing") {
          console.log(`[AssessmentController] ⚠️ Redis unavailable. Processing ${test_id} in background fallback.`);

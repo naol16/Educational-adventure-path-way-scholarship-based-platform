@@ -1,7 +1,10 @@
 import { Op } from 'sequelize';
 import { Booking } from '../models/Booking.js';
+import { Payment } from '../models/Payment.js';
+import { Student } from '../models/Student.js';
 import { CounselorService } from '../services/CounselorService.js';
 import { sequelize } from '../config/sequelize.js';
+import { Transaction } from 'sequelize';
 
 export class SettlementService {
     /**
@@ -15,32 +18,42 @@ export class SettlementService {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         try {
-            // Find bookings that are 'completed' (session happened) 
-            // but still 'held' (funds not released)
-            // and the session date is older than 7 days
+            // Find bookings that are 'awaiting_confirmation' (counselor finished, student hasn't confirmed)
+            // and the completion date is older than 7 days
             const stagnantBookings = await Booking.findAll({
                 where: {
-                    status: 'completed',
-                    paymentStatus: 'held',
-                    appointmentDate: {
+                    status: 'awaiting_confirmation',
+                    completedAt: {
                         [Op.lt]: sevenDaysAgo
                     }
-                }
+                },
+                include: [{
+                    model: Payment,
+                    as: 'payment',
+                    where: {
+                        escrowStatus: 'held'
+                    }
+                }]
             });
 
             console.log(`[SettlementService] Found ${stagnantBookings.length} bookings for auto-release.`);
 
             for (const booking of stagnantBookings) {
                 try {
-                    await sequelize.transaction(async (t) => {
+                    await sequelize.transaction(async (t: Transaction) => {
                         console.log(`[SettlementService] Processing auto-release for Booking #${booking.id}`);
                         
+                        const student = await Student.findByPk(booking.studentId);
+                        if (!student) throw new Error(`Student not found for booking ${booking.id}`);
+
                         // We reuse the logic from CounselorService to ensure consistency in ledger updates
                         await CounselorService.reviewAndConfirmBooking(
+                            student.userId,
                             booking.id,
-                            5, // Default 5 star rating for auto-release
-                            "Automatically released after 7 days of inactivity.",
-                            t
+                            {
+                                rating: 5,
+                                comment: "Automatically released after 7 days of inactivity."
+                            }
                         );
                     });
                 } catch (innerError) {

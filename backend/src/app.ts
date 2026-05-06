@@ -12,28 +12,8 @@ import configs from "./config/configs.js";
 import debugRoutes from "./routes/debugRoutes.js";
 
 const app: Application = express();
-// Simple request logger
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
-});
 
-
-app.use(helmet());
-app.use(compression());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ 
-  limit: "1mb",
-  verify: (req: any, res, buf) => {
-    req.rawBody = buf;
-  }
-}));
-app.use(cookieParser());
-app.use(expressupload());
-
-// Global Rate Limiter
-app.use(apiLimiter);
-
+// 1. CORS MUST BE FIRST to ensure all responses (including errors/rate-limits) have headers
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -43,7 +23,6 @@ const allowedOrigins = [
   "http://127.0.0.1:5000",
 ];
 
-// Add production URL if available
 if (configs.PRODUCTION_URL) {
   allowedOrigins.push(configs.PRODUCTION_URL);
 }
@@ -51,7 +30,6 @@ if (configs.PRODUCTION_URL) {
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       if (
         allowedOrigins.indexOf(origin) !== -1 ||
@@ -75,6 +53,28 @@ app.use(
     ],
   }),
 );
+
+// 2. Logging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// 3. Security and Optimization
+app.use(helmet());
+app.use(compression());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ 
+  limit: "1mb",
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+app.use(cookieParser());
+app.use(expressupload());
+
+// 4. Rate Limiting
+app.use(apiLimiter);
 
 // Routes
 app.use("/api/auth", routes.authRouter);

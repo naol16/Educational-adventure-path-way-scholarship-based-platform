@@ -14,10 +14,16 @@ frontend/educationalpathway/.env
 .env
 .env.*
 !**/.env.example
-#local testin gfiles
+# local testin gfiles
 backend/check-env.js
 backend/test-db.js
-backend/node_modules
+**/node_modules/
+
+# Scratch and Temp files
+**/scratch/
+/tmp/
+.gemini/
+
 # IDE and System files
 .vscode/
 .idea/

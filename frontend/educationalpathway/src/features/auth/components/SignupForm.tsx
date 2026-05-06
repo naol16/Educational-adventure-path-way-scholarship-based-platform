@@ -28,11 +28,14 @@ export function SignupForm({
     role: initialRole || queryRole || "student",
   });
 
+  const [step, setStep] = useState<'details' | 'otp'>('details');
+  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, googleLogin } = useAuth();
+  const [resendTimer, setResendTimer] = useState(0);
+  const { googleLogin, register, verifyRegistrationOTP, sendRegistrationOTP } = useAuth();
 
   useEffect(() => {
     if (queryRole && (queryRole === "student" || queryRole === "counselor")) {
@@ -40,20 +43,60 @@ export function SignupForm({
     }
   }, [queryRole]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
+  const handleSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
       await register(formData);
+      setStep('otp');
+      setResendTimer(60); // Start 60s cooldown
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to sign up. Please try again."));
+      setError(getErrorMessage(err, "Failed to register. Please try again."));
     } finally {
       setIsLoading(false);
     }
+  };
 
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await verifyRegistrationOTP({ email: formData.email, otp });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Invalid OTP or registration failed."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendTimer > 0) return;
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      await sendRegistrationOTP(formData);
+      setResendTimer(60);
+      setOtp(''); // Clear current OTP input
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to resend OTP."));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,114 +123,120 @@ export function SignupForm({
         <Card className="bg-card border border-border rounded-lg">
 
           <CardHeader className="text-center pt-10 pb-4">
-
             <h1 className="text-3xl font-semibold text-foreground">
-              Create Account
+              {step === 'details' ? 'Create Account' : 'Activate Account'}
             </h1>
-
             <p className="text-sm text-muted-foreground mt-2">
-              Sign up to get started
+              {step === 'details' ? 'Sign up to get started' : `We've sent an activation code to ${formData.email}`}
             </p>
-
           </CardHeader>
 
           <CardBody className="px-8 pb-8 space-y-6">
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-
-              {/* Name */}
-
-              <div className="space-y-2">
-
-                <Label className="text-label">
-                  Full Name
-                </Label>
-
-                <Input
-                  type="text"
-                  required
-                  placeholder="Enter your name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="h-12 bg-muted border-border"
-                />
-
-              </div>
-
-              {/* Email */}
-
-              <div className="space-y-2">
-
-                <Label className="text-label">
-                  Email
-                </Label>
-
-                <Input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="h-12 bg-muted border-border"
-                />
-
-              </div>
-
-              {/* Password */}
-
-              <div className="space-y-2">
-
-                <Label className="text-label">
-                  Password
-                </Label>
-
-                <div className="relative">
-
+            {step === 'details' ? (
+              <form onSubmit={handleSubmitDetails} className="space-y-5">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label className="text-label">Full Name</Label>
                   <Input
-                    type={showPassword ? "text" : "password"}
+                    type="text"
                     required
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    className="h-12 bg-muted border-border pr-12"
+                    placeholder="Enter your name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="h-12 bg-muted border-border"
                   />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label className="text-label">Email</Label>
+                  <Input
+                    type="email"
+                    required
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="h-12 bg-muted border-border"
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="space-y-2">
+                  <Label className="text-label">Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="h-12 bg-muted border-border pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 text-xs bg-destructive/10 text-destructive rounded-lg border border-destructive/20 animate-in fade-in slide-in-from-top-1">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" size="lg" className="w-full h-12" isLoading={isLoading}>
+                  Continue
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-label">Activation Code</Label>
+                  <Input
+                    type="text"
+                    required
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    maxLength={6}
+                    className="h-12 bg-muted border-border text-center text-2xl tracking-[0.5em]"
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-3 text-xs bg-destructive/10 text-destructive rounded-lg border border-destructive/20 animate-in fade-in slide-in-from-top-1">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" size="lg" className="w-full h-12" isLoading={isLoading}>
+                  Activate Account
+                </Button>
+
+                <div className="flex flex-col space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={resendTimer > 0 || isLoading}
+                    className="text-sm font-medium text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                  >
+                    {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Didn't get the code? Resend"}
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setStep('details')}
+                    className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    Change Email or Details
                   </button>
-
                 </div>
-
-              </div>
-
-              {error && (
-                <div className="p-3 text-xs bg-destructive/10 text-destructive rounded-lg border border-destructive/20 animate-in fade-in slide-in-from-top-1">
-                  {error}
-                </div>
-              )}
-
-              {/* Submit */}
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-12"
-                isLoading={isLoading}
-              >
-                Sign Up
-              </Button>
-
-            </form>
+              </form>
+            )}
 
             {/* Divider */}
 

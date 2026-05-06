@@ -22,6 +22,8 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   refreshUser: () => Promise<void>;
+  sendRegistrationOTP: (data: RegisterData) => Promise<void>;
+  verifyRegistrationOTP: (data: { email: string; otp: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,23 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const { user, accessToken } = await authApi.register(data);
-
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("user", JSON.stringify(user));
-
-      setUser(user);
-      
-      if (user.role === 'admin') {
-        router.push("/dashboard/admin");
-      } else if (user.role === 'counselor') {
-        router.push("/dashboard/counselor");
-      } else if (user.role === 'student') {
-        router.push("/dashboard/student");
-      } else {
-        // Fallback
-        router.push("/dashboard/student/profile");
-      }
+      await authApi.register(data);
     } catch (error: unknown) {
       throw error;
     }
@@ -153,6 +139,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendRegistrationOTP = async (data: RegisterData) => {
+    try {
+      await authApi.sendRegistrationOTP(data);
+    } catch (error: unknown) {
+      throw error;
+    }
+  };
+
+  const verifyRegistrationOTP = async (data: { email: string; otp: string }) => {
+    try {
+      const { user, accessToken } = await authApi.verifyRegistrationOTP(data);
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      setUser(user);
+      
+      if (user.role === 'admin') {
+        router.push("/dashboard/admin");
+      } else if (user.role === 'counselor') {
+        router.push("/dashboard/counselor");
+      } else if (user.role === 'student') {
+        router.push("/dashboard/student");
+      } else {
+        router.push("/dashboard/student/profile");
+      }
+    } catch (error: unknown) {
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -166,6 +183,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateUser,
         refreshUser,
+        sendRegistrationOTP,
+        verifyRegistrationOTP,
       }}
     >
       {children}

@@ -9,6 +9,7 @@ export interface Scholarship {
   intakeSeason: string | null;
   country: string | null;
   originalUrl: string;
+  applicationUrl: string | null;
   degreeLevels: string[];
   createdAt: string;
   updatedAt: string;

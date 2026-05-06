@@ -75,6 +75,14 @@ export class User extends Model {
     })
     declare isActive: boolean;
 
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_verified'
+    })
+    declare isVerified: boolean;
+
     @CreatedAt
     @Column({
         type: DataType.DATE,
@@ -102,6 +110,20 @@ export class User extends Model {
         field: 'fcm_token'
     })
     declare fcmToken?: string;
+
+    @Column({
+        type: DataType.STRING(10),
+        allowNull: true,
+        field: 'verification_code'
+    })
+    declare verificationCode?: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'verification_code_expires'
+    })
+    declare verificationCodeExpires?: Date;
 
 
 

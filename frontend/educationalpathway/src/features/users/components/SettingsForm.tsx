@@ -8,13 +8,13 @@ import {
   Palette
 } from "lucide-react";
 
-import { Button } from "@/components/ui/Button";
-import { useTheme, ThemeMode } from "@/providers/theme-context";
+import { useTheme } from "@/providers/theme-context";
 import { useAuth } from "@/providers/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const SettingsForm = () => {
   const { mode, setMode } = useTheme();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("appearance");
 

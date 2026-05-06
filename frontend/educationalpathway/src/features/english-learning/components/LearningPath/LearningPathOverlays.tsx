@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface UnitTestOverlayProps {
@@ -37,16 +37,16 @@ export const UnitTestOverlay = ({
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+            className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl border"
           >
             <div className="p-8 border-b border-border/40 flex items-center justify-between">
               <div className="space-y-1">
                 <h2 className="text-2xl font-semibold tracking-tight uppercase">Unit Test: {activeTab} Mastery</h2>
                 <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground opacity-40">Verification Protocol Active</p>
               </div>
-              <Button variant="ghost" onClick={onClose} className="rounded-full h-10 w-10 p-0">
-                <StopCircle size={20} />
-              </Button>
+                <Button variant="ghost" onClick={onClose} className="rounded-full h-10 w-10 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                  <X size={20} className="text-muted-foreground" />
+                </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-12 space-y-12">
@@ -67,46 +67,49 @@ export const UnitTestOverlay = ({
               ) : (
                 <div className="space-y-12">
                   {unitTestContent?.passage && (
-                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 italic text-lg leading-relaxed">
+                    <div className="p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-border/40 text-zinc-800 dark:text-zinc-200 text-lg leading-relaxed shadow-sm">
                       {unitTestContent.passage}
                     </div>
                   )}
                   {unitTestContent?.script && (
-                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 italic text-sm leading-relaxed whitespace-pre-wrap">
+                    <div className="p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-border/40 text-zinc-800 dark:text-zinc-200 text-sm font-medium leading-relaxed whitespace-pre-wrap shadow-sm">
                       {unitTestContent.script}
                     </div>
                   )}
                   
-                  <div className="space-y-12">
-                    {unitTestContent?.questions?.map((q: any, qi: number) => (
-                      <div key={qi} className="space-y-6">
-                        <h4 className="text-xl font-medium tracking-tight leading-tight italic">"{q.question}"</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {q.options?.map((opt: string, oi: number) => (
-                            <button 
-                              key={oi}
-                              onClick={() => {
-                                const newR = [...(unitTestContent.userResponses || [])];
-                                newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
-                                setUnitTestContent({ ...unitTestContent, userResponses: newR });
-                              }}
-                              className={`text-left p-6 rounded-2xl border transition-all ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/40'}`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
+                    <div className="space-y-12">
+                      {unitTestContent?.questions?.map((q: any, qi: number) => (
+                        <div key={qi} className="space-y-6">
+                          <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex gap-3">
+                            <span className="opacity-20">{qi + 1}.</span>
+                            <span>{q.question}</span>
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {q.options?.map((opt: string, oi: number) => (
+                              <button 
+                                key={oi}
+                                onClick={() => {
+                                  const newR = [...(unitTestContent.userResponses || [])];
+                                  newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
+                                  setUnitTestContent({ ...unitTestContent, userResponses: newR });
+                                }}
+                                className={`text-left p-6 rounded-2xl border transition-all text-sm font-medium ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/5 text-primary' : 'border-border/60 hover:border-primary/40 text-muted-foreground hover:text-foreground'}`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                  <div className="flex justify-center pt-8">
+                  <div className="flex justify-center pt-12 pb-8">
                     <Button 
                       onClick={() => onSubmit(unitTestContent.userResponses || [])}
                       disabled={isSubmitting || (unitTestContent?.questions?.length !== unitTestContent?.userResponses?.filter(Boolean).length)}
-                      className="px-16 h-14 rounded-2xl primary-gradient text-white font-bold uppercase tracking-widest"
+                      className="px-20 h-16 rounded-[25px] primary-gradient text-white font-black uppercase tracking-[0.3em] text-[12px] shadow-2xl shadow-primary/40 hover:scale-105 transition-all"
                     >
-                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Finalize Verification'}
+                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Authorize Verification'}
                     </Button>
                   </div>
                 </div>
@@ -144,9 +147,16 @@ export const DynamicMissionOverlay = ({
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-[40px] w-full max-w-xl p-12 space-y-10 shadow-2xl"
+            className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-xl p-10 space-y-8 shadow-xl border overflow-hidden relative"
           >
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 relative">
+              <Button 
+                variant="ghost" 
+                onClick={onClose} 
+                className="absolute -top-4 -right-4 rounded-full h-10 w-10 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X size={20} className="text-muted-foreground" />
+              </Button>
               <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto">
                 <Sparkles size={32} />
               </div>
