@@ -1,10 +1,20 @@
+# Ignore local dependencies
 node_modules
 dist
+
+# Ignore local environment/secrets
 .env
-*.log
+.env.local
+
+# Ignore git and logs
 .git
 .gitignore
-Dockerfile
-.dockerignore
+*.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore temp files
 tmp
-C:\Users\HP\AppData\Local\ms-playwright
+temp
