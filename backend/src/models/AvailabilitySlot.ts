@@ -8,8 +8,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Counselor } from "./Counselor.js";
-import type { Counselor as CounselorType } from "./Counselor.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
 
 @Table({
     tableName: "availability_slots",

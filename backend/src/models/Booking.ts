@@ -8,15 +8,10 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Counselor } from "./Counselor.js";
-import { AvailabilitySlot } from "./AvailabilitySlot.js";
-import { Payment } from "./Payment.js";
-
-import type { Student as StudentType } from "./Student.js";
-import type { Counselor as CounselorType } from "./Counselor.js";
-import type { AvailabilitySlot as AvailabilitySlotType } from "./AvailabilitySlot.js";
-import type { Payment as PaymentType } from "./Payment.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
+import { AvailabilitySlot, type AvailabilitySlot as AvailabilitySlotType } from "./AvailabilitySlot.js";
+import { Payment, type Payment as PaymentType } from "./Payment.js";
 
 @Table({
     tableName: "bookings",

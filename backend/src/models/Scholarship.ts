@@ -11,8 +11,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { ScholarshipSource } from "./ScholarshipSource.js";
-import type { ScholarshipSource as ScholarshipSourceType } from "./ScholarshipSource.js";
+import { ScholarshipSource, type ScholarshipSource as ScholarshipSourceType } from "./ScholarshipSource.js";
 
 @Table({
     tableName: "scholarships",

@@ -8,8 +8,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { TrackedScholarship } from "./TrackedScholarship.js";
-import type { TrackedScholarship as TrackedScholarshipType } from "./TrackedScholarship.js";
+import { TrackedScholarship, type TrackedScholarship as TrackedScholarshipType } from "./TrackedScholarship.js";
 
 @Table({
     tableName: "scholarship_milestones",

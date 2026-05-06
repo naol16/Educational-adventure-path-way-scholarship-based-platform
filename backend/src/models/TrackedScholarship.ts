@@ -9,13 +9,9 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Scholarship } from "./Scholarship.js";
-import { ScholarshipMilestone } from "./ScholarshipMilestone.js";
-
-import type { Student as StudentType } from "./Student.js";
-import type { Scholarship as ScholarshipType } from "./Scholarship.js";
-import type { ScholarshipMilestone as ScholarshipMilestoneType } from "./ScholarshipMilestone.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Scholarship, type Scholarship as ScholarshipType } from "./Scholarship.js";
+import { ScholarshipMilestone, type ScholarshipMilestone as ScholarshipMilestoneType } from "./ScholarshipMilestone.js";
 
 @Table({
     tableName: "tracked_scholarships",

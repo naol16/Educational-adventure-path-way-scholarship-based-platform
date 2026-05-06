@@ -8,12 +8,9 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Counselor } from "./Counselor.js";
-import { Booking } from "./Booking.js";
-import { Payment } from "./Payment.js";
-import type { Counselor as CounselorType } from "./Counselor.js";
-import type { Booking as BookingType } from "./Booking.js";
-import type { Payment as PaymentType } from "./Payment.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
+import { Booking, type Booking as BookingType } from "./Booking.js";
+import { Payment, type Payment as PaymentType } from "./Payment.js";
 
 @Table({
     tableName: "counselor_wallet_transactions",
@@ -104,11 +101,11 @@ export class CounselorWalletTransaction extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Counselor)
-    counselor!: Counselor;
+    counselor!: CounselorType;
 
     @BelongsTo(() => Booking)
-    booking!: Booking;
+    booking!: BookingType;
 
     @BelongsTo(() => Payment)
-    payment!: Payment;
+    payment!: PaymentType;
 }

@@ -10,11 +10,8 @@ import {
     UpdatedAt,
     BelongsTo,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { Conversation } from "./Conversation.js";
-
-import type { User as UserType } from "./User.js";
-import type { Conversation as ConversationType } from "./Conversation.js";
+import { User, type User as UserType } from "./User.js";
+import { Conversation, type Conversation as ConversationType } from "./Conversation.js";
 
 @Table({
     tableName: "conversation_participants",

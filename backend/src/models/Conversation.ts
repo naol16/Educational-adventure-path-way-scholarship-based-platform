@@ -13,13 +13,9 @@ import {
     ForeignKey,
     BelongsTo,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { ConversationParticipant } from "./ConversationParticipant.js";
-import { ChatMessage } from "./ChatMessage.js";
-
-import type { User as UserType } from "./User.js";
-import type { ConversationParticipant as ConversationParticipantType } from "./ConversationParticipant.js";
-import type { ChatMessage as ChatMessageType } from "./ChatMessage.js";
+import { User, type User as UserType } from "./User.js";
+import { ConversationParticipant, type ConversationParticipant as ConversationParticipantType } from "./ConversationParticipant.js";
+import { ChatMessage, type ChatMessage as ChatMessageType } from "./ChatMessage.js";
 
 @Table({
     tableName: "conversations",

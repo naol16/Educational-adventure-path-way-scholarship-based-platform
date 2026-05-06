@@ -11,8 +11,7 @@ import {
     UpdatedAt,
     HasMany,
 } from "sequelize-typescript";
-import { Scholarship } from "./Scholarship.js";
-import type { Scholarship as ScholarshipType } from "./Scholarship.js";
+import { Scholarship, type Scholarship as ScholarshipType } from "./Scholarship.js";
 
 @Table({
     tableName: "scholarship_sources",

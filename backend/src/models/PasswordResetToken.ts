@@ -11,8 +11,7 @@ import {
     Default,
     CreatedAt,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import type { User as UserType } from "./User.js";
+import { User, type User as UserType } from "./User.js";
 
 @Table({
     tableName: "password_reset_tokens",

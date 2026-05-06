@@ -8,8 +8,7 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import type { User as UserType } from "./User.js";
+import { User, type User as UserType } from "./User.js";
 
 @Table({
   tableName: "counselor_messages",
@@ -63,8 +62,8 @@ export class CounselorMessage extends Model {
   declare updatedAt: Date;
 
   @BelongsTo(() => User, { foreignKey: "senderUserId", as: "sender" })
-  sender!: User;
+  sender!: UserType;
 
   @BelongsTo(() => User, { foreignKey: "recipientUserId", as: "recipient" })
-  recipient!: User;
+  recipient!: UserType;
 }

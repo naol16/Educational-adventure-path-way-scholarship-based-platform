@@ -10,10 +10,8 @@ import {
     UpdatedAt,
     HasMany,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import type { User as UserType } from "./User.js";
-import { CounselorReview } from "./CounselorReview.js";
-import type { CounselorReview as CounselorReviewType } from "./CounselorReview.js";
+import { User, type User as UserType } from "./User.js";
+import { CounselorReview, type CounselorReview as CounselorReviewType } from "./CounselorReview.js";
 
 @Table({
     tableName: "students",
@@ -419,5 +417,5 @@ export class Student extends Model {
     user!: UserType;
 
     @HasMany(() => CounselorReview, { foreignKey: 'studentId' })
-    reviews!: CounselorReview[];
+    reviews!: CounselorReviewType[];
 }

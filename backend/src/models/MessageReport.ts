@@ -10,8 +10,8 @@ import {
     UpdatedAt,
     BelongsTo,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { ChatMessage } from "./ChatMessage.js";
+import { User, type User as UserType } from "./User.js";
+import { ChatMessage, type ChatMessage as ChatMessageType } from "./ChatMessage.js";
 
 @Table({
     tableName: "message_reports",
@@ -67,8 +67,8 @@ export class MessageReport extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => ChatMessage)
-    message!: ChatMessage;
+    message!: ChatMessageType;
 
     @BelongsTo(() => User)
-    reporter!: User;
+    reporter!: UserType;
 }

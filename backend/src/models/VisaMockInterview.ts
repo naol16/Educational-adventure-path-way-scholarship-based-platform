@@ -1,6 +1,5 @@
 import { Table, Column, Model, DataType, PrimaryKey, Default, ForeignKey, BelongsTo } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import type { Student as StudentType } from "./Student.js";
+import { Student, type Student as StudentType } from "./Student.js";
 
 @Table({
   tableName: "visa_mock_interviews",
@@ -17,7 +16,7 @@ export class VisaMockInterview extends Model {
   declare studentId: number;
 
   @BelongsTo(() => Student)
-  declare student: Student;
+  student!: StudentType;
 
   @Column(DataType.STRING)
   declare country: string;

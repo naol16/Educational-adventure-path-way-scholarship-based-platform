@@ -10,8 +10,7 @@ import {
     UpdatedAt,
     BelongsTo,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import type { User as UserType } from "./User.js";
+import { User, type User as UserType } from "./User.js";
 
 @Table({
     tableName: "ai_chat_messages",
@@ -73,5 +72,5 @@ export class AIChatMessage extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => User)
-    user?: User;
+    user?: UserType;
 }

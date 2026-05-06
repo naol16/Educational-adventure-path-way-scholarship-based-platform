@@ -4,7 +4,7 @@
 
  // or higher (ES2020, ESNext)
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",

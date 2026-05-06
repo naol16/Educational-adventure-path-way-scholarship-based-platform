@@ -8,11 +8,8 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Counselor } from "./Counselor.js";
-
-import type { Student as StudentType } from "./Student.js";
-import type { Counselor as CounselorType } from "./Counselor.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
 
 @Table({
     tableName: "counselor_reviews",

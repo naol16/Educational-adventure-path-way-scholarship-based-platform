@@ -12,19 +12,12 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { RefreshToken } from "./RefreshToken.js";
-import { PasswordResetToken } from "./PasswordResetToken.js";
-import { Consultation } from "./Consultation.js";
-import { Counselor } from "./Counselor.js";
-import { Student } from "./Student.js";
-import { Notification } from "./Notification.js";
-
-import type { RefreshToken as RefreshTokenType } from "./RefreshToken.js";
-import type { PasswordResetToken as PasswordResetTokenType } from "./PasswordResetToken.js";
-import type { Consultation as ConsultationType } from "./Consultation.js";
-import type { Counselor as CounselorType } from "./Counselor.js";
-import type { Student as StudentType } from "./Student.js";
-import type { Notification as NotificationType } from "./Notification.js";
+import { RefreshToken, type RefreshToken as RefreshTokenType } from "./RefreshToken.js";
+import { PasswordResetToken, type PasswordResetToken as PasswordResetTokenType } from "./PasswordResetToken.js";
+import { Consultation, type Consultation as ConsultationType } from "./Consultation.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Notification, type Notification as NotificationType } from "./Notification.js";
 import { UserRole } from "../types/userTypes.js";
 import type { UserRole as UserRoleType } from "../types/userTypes.js";
 
