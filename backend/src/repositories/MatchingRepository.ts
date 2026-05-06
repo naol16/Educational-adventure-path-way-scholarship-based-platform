@@ -141,42 +141,40 @@ export class MatchingRepository {
     return students;
   }
   /**
-   * Finds all students whose profile matches the given scholarship embedding above a certain score.
-   */
-  static async findStudentsExceedingThreshold(
-    scholarshipEmbedding: string,
-    threshold: number = 75,
-  ): Promise<any[]> {
-    const students = await Student.findAll({
-      where: {
-        [Op.and]: [
-          Sequelize.literal("embedding IS NOT NULL"),
-          Sequelize.literal(`(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100 > ${threshold}`)
-        ]
-      } as any,
-      attributes: [
-        "id",
-        "userId",
-        [
-          Sequelize.literal(
-            `(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100`,
-          ),
-          "match_score",
-        ],
-      ],
-      include: [
-        {
-          model: User,
-          attributes: ["name", "email", "fcmToken"],
-        },
-      ],
-      having: Sequelize.literal(
-        `(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100 > ${threshold}`,
-      ),
-      raw: true,
-      nest: true,
-    });
+    * Finds all students whose profile matches the given scholarship embedding above a certain score.
+    */
+   static async findStudentsExceedingThreshold(
+     scholarshipEmbedding: string,
+     threshold: number = 75,
+   ): Promise<any[]> {
+     const students = await Student.findAll({
+       where: {
+         [Op.and]: [
+           Sequelize.literal("embedding IS NOT NULL"),
+           Sequelize.literal(`(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100 > ${threshold}`)
+         ]
+       } as any,
+       attributes: [
+         "id",
+         "userId",
+         [
+           Sequelize.literal(
+             `(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100`,
+           ),
+           "match_score",
+         ],
+       ],
+       include: [
+         {
+           model: User,
+           attributes: ["name", "email", "fcmToken"],
+         },
+       ],
+       group: ["Student.id", "User.id"],
+       raw: true,
+       nest: true,
+     });
 
-    return students;
-  }
+     return students;
+   }
 }

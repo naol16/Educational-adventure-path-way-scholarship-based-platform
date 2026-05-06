@@ -9,9 +9,10 @@ export const startScholarshipCron = () => {
     console.log("Running scheduled scholarship discovery...");
     await ScholarshipDiscoveryService.discoverAll();
     
-    // Also run settlement check briefly or on a different schedule
-    console.log("Running scheduled escrow auto-release check...");
-    await SettlementService.autoReleaseEscrow();
+    // TODO: Fix SettlementService booking query (paymentStatus column doesn't exist)
+    // Running escrow auto-release check after fixing the query
+    // console.log("Running scheduled escrow auto-release check...");
+    // await SettlementService.autoReleaseEscrow();
   });
 
   // Schedule deadline reminders to run every hour

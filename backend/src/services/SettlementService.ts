@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
-import Booking from '../models/Booking.js';
+import { Booking } from '../models/Booking.js';
 import { CounselorService } from '../services/CounselorService.js';
-import sequelize from '../config/sequelize.js';
+import { sequelize } from '../config/sequelize.js';
 
 export class SettlementService {
     /**

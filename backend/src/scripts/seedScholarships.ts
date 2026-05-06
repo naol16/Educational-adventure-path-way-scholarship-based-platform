@@ -1,4 +1,8 @@
 import { ScholarshipSourceRepository } from "../repositories/ScholarshipSourceRepository.js";
+import { connectSequelize } from "../config/sequelize.js";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
 
 export const seedScholarshipSources = async () => {
   const sources = [
@@ -140,7 +144,7 @@ export const seedScholarshipSources = async () => {
       domainName: "Study in Sweden",
     },
     {
-      baseUrl: "https://www.studyinaustria.at/en/study/scholarships",
+      baseUrl: "https://www.studyaustria.at/en/study/scholarships",
       domainName: "Study in Austria",
     },
     {
@@ -447,3 +451,17 @@ export const seedScholarshipSources = async () => {
   }
   console.log("Scholarship sources seeding completed.");
 };
+
+// Run only when executed directly
+if (__filename === process.argv[1]) {
+  (async () => {
+    try {
+      await connectSequelize();
+      await seedScholarshipSources();
+      process.exit(0);
+    } catch (error) {
+      console.error("Critical error during seeding:", error);
+      process.exit(1);
+    }
+  })();
+}
