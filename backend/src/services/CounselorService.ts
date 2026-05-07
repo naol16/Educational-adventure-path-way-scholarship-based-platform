@@ -1,5 +1,6 @@
 import { Op, Transaction } from "sequelize";
 import { sequelize } from "../config/sequelize.js";
+import { notificationQueue, isRedisAvailable } from "../config/redis.js";
 import { Counselor } from "../models/Counselor.js";
 import { User } from "../models/User.js";
 import { Student } from "../models/Student.js";
@@ -757,36 +758,50 @@ export class CounselorService {
               // Send direct email invites to both participants as a reliable fallback.
               try {
                 const endTime = new Date(slot.startTime.getTime() + 60 * 60 * 1000);
-                const sendEmailTasks: Promise<void>[] = [];
-
-                if (studentEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                
+                if (isRedisAvailable()) {
+                  // OFF-LOAD TO BACKGROUND WORKER (Instant response)
+                  if (studentEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: studentEmail,
                       recipientName: studentName || "Student",
                       counterpartName: counselorName || "Counselor",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
-                }
-
-                if (counselorEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  if (counselorEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: counselorEmail,
                       recipientName: counselorName || "Counselor",
                       counterpartName: studentName || "Student",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  console.log(`[ConfirmBooking] Email tasks added to background queue for: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                } else {
+                  // FALLBACK: Synchronous (Slow) if Redis is down
+                  const sendEmailTasks: Promise<void>[] = [];
+                  if (studentEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: studentEmail, recipientName: studentName || "Student",
+                      counterpartName: counselorName || "Counselor", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  if (counselorEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: counselorEmail, recipientName: counselorName || "Counselor",
+                      counterpartName: studentName || "Student", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  await Promise.all(sendEmailTasks);
+                  console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
                 }
-
-                await Promise.all(sendEmailTasks);
-                console.log(`[ConfirmBooking] Direct invite emails sent to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
               } catch (emailError) {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
               }
