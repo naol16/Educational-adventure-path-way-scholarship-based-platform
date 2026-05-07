@@ -1,238 +1,551 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
-import 'package:mobile/features/learning_path/models/assessment_model.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
+import 'package:mobile/features/learning_path/models/assessment_model.dart';
 
-class ReadingSectionWidget extends ConsumerWidget {
+class ReadingSectionWidget extends ConsumerStatefulWidget {
   const ReadingSectionWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(mockExamProvider);
-    final notifier = ref.read(mockExamProvider.notifier);
-    final reading = state.blueprint?.sections.reading;
+  ConsumerState<ReadingSectionWidget> createState() => _ReadingSectionWidgetState();
+}
 
-    if (reading == null) {
-      return _EmptySection(label: 'Reading', icon: LucideIcons.bookOpen);
-    }
+class _ReadingSectionWidgetState extends ConsumerState<ReadingSectionWidget> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 700;
-        if (isWide) {
-          return Row(
-            children: [
-              Expanded(flex: 6, child: _PassagePane(passage: reading.passage)),
-              VerticalDivider(width: 1, color: DesignSystem.glassBorder(context)),
-              Expanded(flex: 4, child: _QuestionsPane(questions: reading.questions, prefix: 'R', notifier: notifier, answers: state.answers)),
-            ],
-          );
-        }
-        return DefaultTabController(
-          length: 2,
-          child: Column(
-            children: [
-              TabBar(
-                indicatorColor: DesignSystem.primary(context),
-                labelColor: DesignSystem.primary(context),
-                unselectedLabelColor: DesignSystem.labelText(context),
-                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                tabs: const [Tab(text: 'Passage'), Tab(text: 'Questions')],
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _showPassageOverlay(BuildContext context, String passage) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F172A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  passage,
+                  style: GoogleFonts.lora(color: Colors.white, fontSize: 16, height: 1.6),
+                ),
               ),
-              Expanded(
-                child: TabBarView(
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(mockExamProvider);
+    final section = state.blueprint?.sections.reading;
+    final accent = state.primaryAccent;
+
+    if (section == null) return const Center(child: CircularProgressIndicator());
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: _tabController.index == 1 
+          ? FloatingActionButton.extended(
+              onPressed: () => _showPassageOverlay(context, section.passage),
+              backgroundColor: accent,
+              icon: const Icon(Icons.article_outlined, color: Colors.black),
+              label: Text("VIEW PASSAGE", style: GoogleFonts.plusJakartaSans(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          : null,
+      body: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              onTap: (index) => setState(() {}),
+              indicator: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.white54,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              tabs: const [
+                Tab(text: "PASSAGE"),
+                Tab(text: "QUESTIONS"),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _PassageView(section: section, state: state),
+                _QuestionsView(section: section, state: state),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PassageView extends ConsumerWidget {
+  final ReadingSection section;
+  final MockExamState state;
+
+  const _PassageView({required this.section, required this.state});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...List.generate(section.paragraphs.length, (index) {
+            final label = String.fromCharCode(65 + index);
+            final text = section.paragraphs[index];
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: state.primaryAccent.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(color: state.primaryAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SelectableTextWithHighlights(
+                      text: text,
+                      highlights: state.highlights,
+                      accent: state.primaryAccent,
+                      onSelection: (start, end) {
+                        ref.read(mockExamProvider.notifier).addHighlight(start, end);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectableTextWithHighlights extends StatelessWidget {
+  final String text;
+  final List<Map<String, int>> highlights;
+  final Color accent;
+  final Function(int, int) onSelection;
+
+  const _SelectableTextWithHighlights({
+    required this.text,
+    required this.highlights,
+    required this.accent,
+    required this.onSelection,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    List<TextSpan> spans = [];
+    int current = 0;
+    final sortedHighlights = List<Map<String, int>>.from(highlights)
+      ..sort((a, b) => a['start']!.compareTo(b['start']!));
+
+    for (final h in sortedHighlights) {
+      if (h['start']! > current) {
+        spans.add(TextSpan(text: text.substring(current, h['start']!)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(h['start']!, h['end']!),
+        style: TextStyle(backgroundColor: accent.withOpacity(0.3)),
+      ));
+      current = h['end']!;
+    }
+    if (current < text.length) spans.add(TextSpan(text: text.substring(current)));
+
+    return SelectableText.rich(
+      TextSpan(
+        children: spans,
+        style: GoogleFonts.lora(color: Colors.white.withOpacity(0.9), fontSize: 16, height: 1.6),
+      ),
+      contextMenuBuilder: (context, editableTextState) {
+        return AdaptiveTextSelectionToolbar.buttonItems(
+          anchors: editableTextState.contextMenuAnchors,
+          buttonItems: [
+            ContextMenuButtonItem(
+              label: 'Highlight',
+              onPressed: () {
+                final selection = editableTextState.textEditingValue.selection;
+                onSelection(selection.start, selection.end);
+                editableTextState.hideToolbar();
+              },
+            ),
+            ...editableTextState.contextMenuButtonItems,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _QuestionsView extends ConsumerWidget {
+  final ReadingSection section;
+  final MockExamState state;
+
+  const _QuestionsView({required this.section, required this.state});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final questions = section.questions;
+    final currentQ = questions.isNotEmpty && state.currentQuestionIndex < questions.length
+        ? questions[state.currentQuestionIndex]
+        : null;
+
+    if (currentQ == null) return const SizedBox.shrink();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "QUESTION ${state.currentQuestionIndex + 1}",
+            style: GoogleFonts.plusJakartaSans(color: state.primaryAccent, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1),
+          ),
+          const SizedBox(height: 12),
+          _buildQuestionRenderer(context, ref, currentQ, state),
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionRenderer(BuildContext context, WidgetRef ref, AssessmentQuestion q, MockExamState state) {
+    return switch (q.type) {
+      QuestionType.insert => _InsertRenderer(q: q, state: state, ref: ref),
+      QuestionType.summary => _SummaryRenderer(q: q, state: state, ref: ref),
+      QuestionType.tfng => _TFNGRenderer(q: q, state: state, ref: ref),
+      QuestionType.heading => _HeadingRenderer(q: q, state: state, ref: ref, headings: state.blueprint!.sections.reading!.headings),
+      _ => _MCQRenderer(q: q, state: state, ref: ref),
+    };
+  }
+}
+
+class _MCQRenderer extends StatelessWidget {
+  final AssessmentQuestion q;
+  final MockExamState state;
+  final WidgetRef ref;
+
+  const _MCQRenderer({required this.q, required this.state, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = state.answers['R_${q.id}'];
+    final accent = state.primaryAccent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(q.question, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
+        const SizedBox(height: 24),
+        ...q.options.map((opt) {
+          final isSelected = selected == opt;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => ref.read(mockExamProvider.notifier).updateAnswer('R_${q.id}', opt),
+              borderRadius: BorderRadius.circular(16),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(16),
+                borderColor: isSelected ? accent : null,
+                child: Row(
                   children: [
-                    _PassagePane(passage: reading.passage),
-                    _QuestionsPane(questions: reading.questions, prefix: 'R', notifier: notifier, answers: state.answers),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: isSelected ? accent : Colors.white24, width: 2),
+                        color: isSelected ? accent : Colors.transparent,
+                      ),
+                      child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.black) : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(opt, style: GoogleFonts.inter(color: Colors.white, fontSize: 15)),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PassagePane extends StatelessWidget {
-  final String passage;
-  const _PassagePane({required this.passage});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(LucideIcons.bookOpen, size: 16, color: DesignSystem.primary(context)),
-                const SizedBox(width: 8),
-                Text('Reading Passage',
-                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 15)),
-              ],
             ),
-            const SizedBox(height: 16),
-            SelectableText(
-              passage,
-              style: GoogleFonts.lora(
-                color: DesignSystem.mainText(context),
-                fontSize: 14,
-                height: 1.75,
-              ),
-            ),
-          ],
-        ),
-      ),
+          );
+        }),
+      ],
     );
   }
 }
 
-class _QuestionsPane extends StatelessWidget {
-  final List<AssessmentQuestion> questions;
-  final String prefix;
-  final MockExamNotifier notifier;
-  final Map<String, dynamic> answers;
-  const _QuestionsPane({required this.questions, required this.prefix, required this.notifier, required this.answers});
+class _TFNGRenderer extends StatelessWidget {
+  final AssessmentQuestion q;
+  final MockExamState state;
+  final WidgetRef ref;
+
+  const _TFNGRenderer({required this.q, required this.state, required this.ref});
 
   @override
   Widget build(BuildContext context) {
-    if (questions.isEmpty) {
-      return Center(child: Text('No questions available.', style: DesignSystem.labelStyle(buildContext: context)));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: questions.length,
-      itemBuilder: (context, i) {
-        final q = questions[i];
-        final key = '${prefix}_${q.id}';
-        final selected = answers[key] as String?;
-        return _QuestionCard(
-          index: i,
-          question: q.question,
-          options: q.options,
-          selected: selected,
-          onSelect: (opt) => notifier.updateAnswer(key, opt),
-        );
-      },
-    );
-  }
-}
+    final selected = state.answers['R_${q.id}'];
+    final options = ['TRUE', 'FALSE', 'NOT GIVEN'];
+    final accent = state.primaryAccent;
 
-class _QuestionCard extends StatelessWidget {
-  final int index;
-  final String question;
-  final List<String> options;
-  final String? selected;
-  final ValueChanged<String> onSelect;
-  const _QuestionCard({required this.index, required this.question, required this.options, required this.selected, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = DesignSystem.primary(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 24, height: 24,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(q.question, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
+        const SizedBox(height: 24),
+        Column(
+          children: options.map((opt) {
+            final isSelected = selected == opt;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => ref.read(mockExamProvider.notifier).updateAnswer('R_${q.id}', opt),
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    color: isSelected ? accent : Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isSelected ? accent : Colors.white.withOpacity(0.1)),
                   ),
                   child: Center(
-                    child: Text('${index + 1}',
-                        style: GoogleFonts.inter(color: primary, fontWeight: FontWeight.bold, fontSize: 11)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(question,
-                      style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...options.map((opt) {
-              final isSel = selected == opt;
-              return GestureDetector(
-                onTap: () => onSelect(opt),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSel ? primary.withValues(alpha: 0.1) : DesignSystem.surface(context),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSel ? primary : DesignSystem.glassBorder(context),
-                      width: isSel ? 1.5 : 1,
+                    child: Text(
+                      opt,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: isSelected ? Colors.black : Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 18, height: 18,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSel ? primary : Colors.transparent,
-                          border: Border.all(color: isSel ? primary : DesignSystem.glassBorder(context), width: 1.5),
-                        ),
-                        child: isSel
-                            ? const Icon(Icons.check, size: 11, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(opt,
-                            style: DesignSystem.bodyStyle(
-                                buildContext: context,
-                                fontSize: 13,
-                                fontWeight: isSel ? FontWeight.w600 : FontWeight.normal)),
-                      ),
-                    ],
-                  ),
                 ),
-              );
-            }),
-          ],
+              ),
+            );
+          }).toList(),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _EmptySection extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _EmptySection({required this.label, required this.icon});
+class _HeadingRenderer extends StatelessWidget {
+  final AssessmentQuestion q;
+  final MockExamState state;
+  final WidgetRef ref;
+  final List<String> headings;
+
+  const _HeadingRenderer({required this.q, required this.state, required this.ref, required this.headings});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: DesignSystem.labelText(context).withValues(alpha: 0.3)),
-          const SizedBox(height: 12),
-          Text('$label section not available.',
-              style: DesignSystem.labelStyle(buildContext: context, fontSize: 14)),
-        ],
-      ),
+    final selected = state.answers['R_${q.id}'];
+    final accent = state.primaryAccent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(q.question, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
+        const SizedBox(height: 24),
+        ...headings.map((h) {
+          final isSelected = selected == h;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => ref.read(mockExamProvider.notifier).updateAnswer('R_${q.id}', h),
+              borderRadius: BorderRadius.circular(12),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(12),
+                borderColor: isSelected ? accent : null,
+                child: Row(
+                  children: [
+                    Text(
+                      String.fromCharCode(105 + headings.indexOf(h)),
+                      style: GoogleFonts.jetBrainsMono(color: accent, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(h, style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
+                    ),
+                    if (isSelected) Icon(Icons.check_circle, color: accent, size: 20),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _InsertRenderer extends StatelessWidget {
+  final AssessmentQuestion q;
+  final MockExamState state;
+  final WidgetRef ref;
+
+  const _InsertRenderer({required this.q, required this.state, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIdx = state.answers['R_${q.id}'] as int?;
+    final accent = state.primaryAccent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("SENTENCE INSERTION", style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.5)),
+        const SizedBox(height: 12),
+        GlassContainer(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            q.insertSentence ?? "",
+            style: GoogleFonts.lora(color: Colors.white, fontSize: 16, height: 1.5, fontStyle: FontStyle.italic),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text("Tap the square [■] in the paragraph where this sentence belongs:", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 16),
+        ...List.generate(q.options.length, (index) {
+          final isSelected = selectedIdx == index;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => ref.read(mockExamProvider.notifier).updateAnswer('R_${q.id}', index),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(12),
+                borderColor: isSelected ? accent : null,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: isSelected ? accent : Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(child: Text("${index + 1}", style: TextStyle(color: isSelected ? Colors.black : Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(q.options[index], style: GoogleFonts.inter(color: Colors.white70, fontSize: 13))),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _SummaryRenderer extends StatelessWidget {
+  final AssessmentQuestion q;
+  final MockExamState state;
+  final WidgetRef ref;
+
+  const _SummaryRenderer({required this.q, required this.state, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = (state.answers['R_${q.id}'] as List?)?.cast<String>() ?? [];
+    final accent = state.primaryAccent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(q.question, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
+        const SizedBox(height: 8),
+        Text("Select exactly 3 options:", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 24),
+        ...q.options.map((opt) {
+          final isSelected = selected.contains(opt);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () {
+                final newList = List<String>.from(selected);
+                if (isSelected) {
+                  newList.remove(opt);
+                } else if (newList.length < 3) {
+                  newList.add(opt);
+                }
+                ref.read(mockExamProvider.notifier).updateAnswer('R_${q.id}', newList);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(16),
+                borderColor: isSelected ? accent : null,
+                child: Row(
+                  children: [
+                    Icon(isSelected ? Icons.check_box : Icons.check_box_outline_blank, color: isSelected ? accent : Colors.white24),
+                    const SizedBox(width: 16),
+                    Expanded(child: Text(opt, style: GoogleFonts.inter(color: Colors.white, fontSize: 14))),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
