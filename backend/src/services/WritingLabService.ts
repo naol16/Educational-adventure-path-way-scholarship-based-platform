@@ -44,11 +44,13 @@ export class WritingLabService {
     `);
 
     const chain = groq70b.pipe(new StringOutputParser());
+    console.log(`[WritingLabService] Requesting Groq 70B for essay evaluation (${examType})...`);
     const response = await chain.invoke(await evaluationPrompt.format({
       prompt,
       essay,
       examType
     }));
+    console.log(`[WritingLabService] Evaluation response received (Length: ${response.length})`);
 
     try {
       return JSON.parse(response);

@@ -5,7 +5,6 @@ export const seedScholarshipSources = async () => {
     { baseUrl: "https://en.snu.ac.kr/admission/graduate/scholarships/before_admission", domainName: "Seoul National University" },
     { baseUrl: "https://admission.kaist.ac.kr/intl-graduate/kaist-scholarships/", domainName: "KAIST" },
     { baseUrl: "https://uic.yonsei.ac.kr/main/admission.asp?mid=m04_03_02", domainName: "Yonsei University" },
-    { baseUrl: "https://graduate2.korea.ac.kr/graden/scholarship/scholarship.do", domainName: "Korea University" },
     { baseUrl: "https://www.skku.edu/eng/International/GlobalProgram/GlobalScholarship.do", domainName: "Sungkyunkwan University (SKKU)" },
     { baseUrl: "https://study.hanyang.ac.kr/en/scholarships/international", domainName: "Hanyang University" },
     { baseUrl: "https://www.khu.ac.kr/eng/user/contents/view.do?menuNo=2300164", domainName: "Kyung Hee University" },

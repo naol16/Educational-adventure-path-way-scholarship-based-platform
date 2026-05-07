@@ -93,11 +93,16 @@ Rules:
 
   static async transcribeAudio(filePath: string): Promise<string> {
     try {
+      console.log(`[VisaService] Transcribing audio with Groq Whisper: ${filePath}...`);
       const transcription = await groq.audio.transcriptions.create({
         file: fs.createReadStream(filePath),
         model: "whisper-large-v3",
       });
+      console.log(`[VisaService] Transcription successful (Length: ${transcription.text.length})`);
       return transcription.text;
+    } catch (err: any) {
+      console.error(`[VisaService] Transcription failed: ${err.message}`);
+      throw err;
     } finally {
       if (fs.existsSync(filePath)) {
         fs.promises.unlink(filePath).catch(console.error);
@@ -106,12 +111,20 @@ Rules:
   }
 
   static async getChatCompletion(messages: any[], isJson: boolean = false): Promise<string> {
-    const response = await groq.chat.completions.create({
-      messages: messages,
-      model: "llama-3.3-70b-versatile",
-      response_format: isJson ? { type: "json_object" } : { type: "text" },
-    });
-    return response.choices[0]?.message?.content || "";
+    try {
+        console.log(`[VisaService] Requesting Groq chat completion (Model: llama-3.3-70b-versatile, JSON: ${isJson})...`);
+        const response = await groq.chat.completions.create({
+            messages: messages,
+            model: "llama-3.3-70b-versatile",
+            response_format: isJson ? { type: "json_object" } : { type: "text" },
+        });
+        const content = response.choices[0]?.message?.content || "";
+        console.log(`[VisaService] Groq response received (Length: ${content.length})`);
+        return content;
+    } catch (err: any) {
+        console.error(`[VisaService] Groq chat completion failed: ${err.message}`);
+        throw err;
+    }
   }
 
   static async evaluateCall(payload: {
