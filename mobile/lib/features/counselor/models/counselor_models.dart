@@ -203,6 +203,12 @@ class StudentSummary {
   final String? fieldOfStudy;
   final String? targetCountry;
   final int sessionCount;
+  
+  // Additional profile fields
+  final String? currentDegree;
+  final String? proficiencyScore;
+  final String? researchArea;
+  final String? desiredFunding;
 
   const StudentSummary({
     required this.id,
@@ -213,6 +219,10 @@ class StudentSummary {
     this.fieldOfStudy,
     this.targetCountry,
     required this.sessionCount,
+    this.currentDegree,
+    this.proficiencyScore,
+    this.researchArea,
+    this.desiredFunding,
   });
 
   factory StudentSummary.fromJson(Map<String, dynamic> json) {
@@ -226,6 +236,10 @@ class StudentSummary {
       fieldOfStudy: json['fieldOfStudy'] ?? json['field_of_study'],
       targetCountry: json['countryInterest'] ?? json['country_interest'],
       sessionCount: json['sessionCount'] ?? json['session_count'] ?? 0,
+      currentDegree: json['currentDegree'] ?? json['current_degree'],
+      proficiencyScore: json['proficiencyScore'] ?? json['proficiency_score'],
+      researchArea: json['researchArea'] ?? json['research_area'],
+      desiredFunding: json['desiredFunding'] ?? json['desired_funding'],
     );
   }
 }
@@ -250,9 +264,9 @@ class WalletTransaction {
   factory WalletTransaction.fromJson(Map<String, dynamic> json) {
     return WalletTransaction(
       id: json['id'],
-      type: json['type'] ?? 'credit',
+      type: json['entryType'] ?? json['type'] ?? 'credit',
       amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
-      description: json['description'] ?? '',
+      description: json['note'] ?? json['description'] ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
@@ -278,12 +292,13 @@ class CounselorPayout {
   });
 
   factory CounselorPayout.fromJson(Map<String, dynamic> json) {
+    final details = json['payoutDetails'] as Map<String, dynamic>?;
     return CounselorPayout(
       id: json['id'],
       amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
       status: json['status'] ?? 'pending',
-      bankName: json['bankName'] ?? json['bank_name'],
-      accountNumber: json['accountNumber'] ?? json['account_number'],
+      bankName: details?['bankName'] ?? json['bankName'] ?? json['bank_name'],
+      accountNumber: details?['accountNumber'] ?? json['accountNumber'] ?? json['account_number'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
@@ -342,4 +357,3 @@ class CounselorReview {
     );
   }
 }
-

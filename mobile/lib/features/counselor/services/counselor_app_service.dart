@@ -136,15 +136,21 @@ class CounselorAppService {
     required String bankCode,
     required String accountNumber,
     required String accountName,
+    String? bankName,
   }) async {
     final res = await _api.post('/api/counselors/me/payouts/request', body: {
       'amount': amount,
-      'bankCode': bankCode,
-      'accountNumber': accountNumber,
-      'accountName': accountName,
+      'payoutMethod': 'bank_transfer',
+      'payoutDetails': {
+        'accountNumber': accountNumber,
+        'bankName': bankName ?? 'Bank',
+        'accountHolderName': accountName,
+        'bankCode': bankCode,
+      },
     });
     return res.statusCode == 201 || res.statusCode == 200;
   }
+
 
   Future<List<Map<String, dynamic>>> getBanks() async {
     final res = await _api.get('/api/counselors/banks');
@@ -184,8 +190,9 @@ class CounselorAppService {
     final res = await _api.get('/api/counselors/me/reviews');
     if (res.statusCode == 200) {
       final body = jsonDecode(res.body);
-      final List data = body['data'] ?? body ?? [];
-      return data.cast<Map<String, dynamic>>();
+      final summary = body['data'] ?? body;
+      final List reviews = summary['reviews'] ?? [];
+      return reviews.cast<Map<String, dynamic>>();
     }
     return [];
   }

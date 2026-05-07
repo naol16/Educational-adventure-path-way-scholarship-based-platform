@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
@@ -25,7 +26,7 @@ class StudentProgressDetailScreen extends ConsumerWidget {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                expandedHeight: 220,
+                expandedHeight: 240,
                 backgroundColor: DesignSystem.themeBackground(context),
                 leading: IconButton(
                   icon: Icon(LucideIcons.chevronLeft, color: DesignSystem.mainText(context)),
@@ -53,9 +54,8 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(student.name, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 22, fontWeight: FontWeight.w800)),
-                        if (student.fieldOfStudy != null)
-                          Text(student.fieldOfStudy!, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
-                        const SizedBox(height: 16),
+                        Text(student.email, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -64,10 +64,17 @@ class StudentProgressDetailScreen extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: progressAsync.when(
-                    data: (progress) => _buildProgress(context, progress),
-                    loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
-                    error: (e, _) => Center(child: Text('Failed to load progress', style: TextStyle(color: Colors.red))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildIdentityHub(context),
+                      const SizedBox(height: 32),
+                      progressAsync.when(
+                        data: (progress) => _buildConsultationHistory(context, progress),
+                        loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
+                        error: (e, _) => Center(child: Text('Failed to load consultation history', style: TextStyle(color: Colors.red))),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -78,143 +85,154 @@ class StudentProgressDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgress(BuildContext context, Map<String, dynamic>? progress) {
-    if (progress == null) {
-      return Center(
-        child: Column(
-          children: [
-            Icon(LucideIcons.barChart2, color: DesignSystem.labelText(context), size: 48),
-            const SizedBox(height: 16),
-            Text('No progress data yet', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 16, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
-    }
+  Widget _buildIdentityHub(BuildContext context) {
+    final primary = DesignSystem.primary(context);
+    final labelColor = DesignSystem.labelText(context);
+    final valueColor = DesignSystem.mainText(context);
+
+    bool isMastersOrPhD = student.currentDegree?.toLowerCase().contains('master') == true || 
+                          student.currentDegree?.toLowerCase().contains('phd') == true ||
+                          student.fieldOfStudy?.toLowerCase().contains('graduate') == true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Quick stats
-        Row(
-          children: [
-            _statCard(context, '${progress['sessionCount'] ?? student.sessionCount}', 'Sessions', LucideIcons.calendar),
-            const SizedBox(width: 12),
-            _statCard(context, '${progress['completedMissions'] ?? 0}', 'Missions', LucideIcons.target),
-            const SizedBox(width: 12),
-            _statCard(context, '${progress['scholarshipsTracked'] ?? 0}', 'Scholarships', LucideIcons.award),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Learning path progress
-        if (progress['learningPath'] != null) ...[
-          Text('Learning Path', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          GlassContainer(
-            padding: const EdgeInsets.all(18),
-            borderRadius: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(progress['learningPath']['name'] ?? 'Active Path', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 12),
-                _buildProgressBar(context, (progress['progressPercentage'] as num?)?.toDouble() ?? 0),
-                const SizedBox(height: 6),
-                Text('${(progress['progressPercentage'] as num?)?.toInt() ?? 0}% complete', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12)),
+        Text("ACADEMIC IDENTITY", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 16),
+        GlassContainer(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 24,
+          child: Column(
+            children: [
+              _infoRow(context, LucideIcons.graduationCap, "Current Degree", student.currentDegree ?? "Not specified"),
+              _divider(),
+              _infoRow(context, LucideIcons.bookOpen, "Field of Study", student.fieldOfStudy ?? "Not specified"),
+              _divider(),
+              _infoRow(context, LucideIcons.award, "Proficiency Score", student.proficiencyScore ?? "Pending/None"),
+              _divider(),
+              if (isMastersOrPhD) ...[
+                _infoRow(context, LucideIcons.microscope, "Research Area", student.researchArea ?? "To be defined"),
+                _divider(),
               ],
-            ),
+              _infoRow(context, LucideIcons.banknote, "Desired Funding", student.desiredFunding ?? "Open to all"),
+              _divider(),
+              _infoRow(context, LucideIcons.mapPin, "Target Country", student.targetCountry ?? "International"),
+            ],
           ),
-          const SizedBox(height: 20),
-        ],
-
-        // Assessment results
-        if (progress['assessments'] != null && (progress['assessments'] as List).isNotEmpty) ...[
-          Text('Assessment Results', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          ...(progress['assessments'] as List).take(3).map((a) => _buildAssessmentRow(context, a)).toList(),
-          const SizedBox(height: 20),
-        ],
-
-        // Scholarships
-        if (progress['scholarships'] != null && (progress['scholarships'] as List).isNotEmpty) ...[
-          Text('Tracked Scholarships', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          ...(progress['scholarships'] as List).take(3).map((s) => _buildScholarshipRow(context, s)).toList(),
-        ],
-
-        const SizedBox(height: 80),
+        ),
       ],
     );
   }
 
-  Widget _statCard(BuildContext context, String value, String label, IconData icon) {
-    return Expanded(
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        borderRadius: 18,
-        child: Column(
+  Widget _buildConsultationHistory(BuildContext context, Map<String, dynamic>? progress) {
+    final sessions = (progress?['sessions'] as List?) ?? [];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: DesignSystem.primary(context), size: 20),
-            const SizedBox(height: 8),
-            Text(value, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(label, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10)),
+            Text("CONSULTATION HISTORY", style: DesignSystem.labelStyle(buildContext: context)),
+            Text("${sessions.length} Sessions", style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.w700)),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+        if (sessions.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Column(
+                children: [
+                  Icon(LucideIcons.calendarX2, color: Colors.white10, size: 48),
+                  const SizedBox(height: 12),
+                  Text("No sessions recorded with you yet.", style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+                ],
+              ),
+            ),
+          )
+        else
+          ...sessions.map((s) => _sessionCard(context, s)).toList(),
+      ],
     );
   }
 
-  Widget _buildProgressBar(BuildContext context, double percent) {
-    final pct = (percent / 100).clamp(0.0, 1.0);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: LinearProgressIndicator(
-        value: pct,
-        minHeight: 8,
-        backgroundColor: DesignSystem.surface(context),
-        valueColor: AlwaysStoppedAnimation<Color>(DesignSystem.primary(context)),
-      ),
-    );
-  }
-
-  Widget _buildAssessmentRow(BuildContext context, dynamic a) {
+  Widget _sessionCard(BuildContext context, dynamic session) {
+    final primary = DesignSystem.primary(context);
+    final date = session['date'] != null ? DateTime.tryParse(session['date']) : null;
+    final status = session['status'] ?? 'completed';
+    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: GlassContainer(
-        padding: const EdgeInsets.all(14),
-        borderRadius: 16,
+        padding: const EdgeInsets.all(16),
+        borderRadius: 20,
         child: Row(
           children: [
-            Icon(LucideIcons.fileText, color: DesignSystem.primary(context), size: 16),
-            const SizedBox(width: 10),
-            Expanded(child: Text(a['assessmentType'] ?? 'Assessment', style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 13, fontWeight: FontWeight.w600))),
-            Text('${a['overallBand'] ?? a['totalScore'] ?? '--'}', style: GoogleFonts.plusJakartaSans(color: DesignSystem.primary(context), fontWeight: FontWeight.w800)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScholarshipRow(BuildContext context, dynamic s) {
-    Color statusColor = s['status'] == 'applied' ? const Color(0xFF10B981) : DesignSystem.labelText(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(14),
-        borderRadius: 16,
-        child: Row(
-          children: [
-            Icon(LucideIcons.award, color: DesignSystem.primary(context), size: 16),
-            const SizedBox(width: 10),
-            Expanded(child: Text(s['name'] ?? 'Scholarship', style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 13, fontWeight: FontWeight.w600))),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(s['status'] ?? 'tracking', style: GoogleFonts.inter(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700)),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Icon(LucideIcons.video, color: primary, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    date != null ? DateFormat('MMMM d, yyyy').format(date) : "Recent Session",
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  Text(
+                    session['topic'] ?? "General Counseling",
+                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: status == 'completed' ? const Color(0xFF10B981).withOpacity(0.1) : Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                status.toUpperCase(),
+                style: GoogleFonts.inter(
+                  color: status == 'completed' ? const Color(0xFF10B981) : Colors.amber,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: DesignSystem.primary(context).withValues(alpha: 0.7), size: 18),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: DesignSystem.labelText(context), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                Text(value, style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Divider(color: Colors.white.withOpacity(0.05), height: 24);
   }
 }

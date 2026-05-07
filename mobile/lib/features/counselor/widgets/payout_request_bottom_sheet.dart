@@ -185,12 +185,21 @@ class _PayoutRequestBottomSheetState extends ConsumerState<PayoutRequestBottomSh
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
+    final banks = ref.read(counselorBanksProvider).valueOrNull ?? [];
+    final selectedBank = banks.firstWhere(
+      (b) => b['code']?.toString() == _selectedBankCode,
+      orElse: () => <String, dynamic>{},
+    );
+    final bankName = selectedBank['name']?.toString();
+
     try {
       final ok = await ref.read(counselorAppServiceProvider).requestPayout(
         amount: double.parse(_amountController.text),
         bankCode: _selectedBankCode!,
         accountNumber: _accountNumberController.text,
         accountName: _accountNameController.text,
+        bankName: bankName,
       );
 
       if (mounted) {

@@ -8,11 +8,13 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 class IELTSRestrictedAudioPlayer extends StatefulWidget {
   final String? base64Audio;
   final String? url;
+  final VoidCallback? onComplete;
 
   const IELTSRestrictedAudioPlayer({
     super.key,
     this.base64Audio,
     this.url,
+    this.onComplete,
   });
 
   @override
@@ -60,6 +62,7 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
             setState(() {
               _hasPlayedOnce = true;
             });
+            widget.onComplete?.call();
           }
         }
       });
@@ -106,7 +109,6 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
               Expanded(
                 child: Column(
                   children: [
-                    // In IELTS, seeking is not allowed. We show a non-interactive progress bar.
                     ClipRRect(
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
@@ -150,7 +152,7 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
             const Padding(
               padding: EdgeInsets.only(top: 8.0),
               child: Text(
-                "Standard IELTS Rule: Audio can only be played once.",
+                "Standard Rule: Audio can only be played once.",
                 style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
@@ -167,17 +169,14 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
   }
 }
 
-// ignore: experimental_member_use
 class MyCustomSource extends StreamAudioSource {
   final List<int> bytes;
   MyCustomSource(this.bytes);
 
   @override
-  // ignore: experimental_member_use
   Future<StreamAudioResponse> request([int? start, int? end]) async {
     start ??= 0;
     end ??= bytes.length;
-    // ignore: experimental_member_use
     return StreamAudioResponse(
       sourceLength: bytes.length,
       contentLength: end - start,

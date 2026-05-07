@@ -1,10 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
-import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
 
 class MockExamResult extends ConsumerWidget {
@@ -14,247 +14,158 @@ class MockExamResult extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(mockExamProvider);
     final notifier = ref.read(mockExamProvider.notifier);
-    final primary = DesignSystem.primary(context);
-
     final result = state.result;
-    final evaluation = result?['data'] ?? result?['evaluation'] ?? {};
-    final scoreBreakdown = (evaluation['score_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
-    final overallBand = _toDouble(evaluation['overall_band'] ?? evaluation['overallBand']);
-    final feedbackReport = evaluation['feedback_report'] as String? ?? '';
-    final adaptiveTags = (evaluation['adaptive_learning_tags'] as List?)?.cast<String>() ?? [];
-    final gapAnalysis = evaluation['competency_gap_analysis'];
-    final curriculumMap = evaluation['adaptive_curriculum_map'];
-    final examType = state.examType;
-    final isToefl = examType == 'TOEFL';
-    final maxScore = isToefl ? 120.0 : 9.0;
-    // TOEFL: each section is 0-30. IELTS: each section is 0-9.
-    final maxSectionScore = isToefl ? 30.0 : 9.0;
-    final threshold = isToefl ? 90.0 : 6.5;
+    final accent = state.primaryAccent;
+    final isToefl = state.examType == 'TOEFL';
+
+    if (result == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
+    final scores = result['scores'] as Map<String, dynamic>? ?? {};
+    final overall = result['overall_score'] ?? result['overall_band'] ?? 0.0;
+    
+    // Skill scores for Radar Chart / Scaling
+    final listening = _toDouble(scores['listening'] ?? 0.0);
+    final reading = _toDouble(scores['reading'] ?? 0.0);
+    final writing = _toDouble(scores['writing'] ?? 0.0);
+    final speaking = _toDouble(scores['speaking'] ?? 0.0);
 
     return Scaffold(
-      backgroundColor: DesignSystem.themeBackground(context),
-      body: Stack(
-        children: [
-          Positioned(
-            top: -60, left: -40,
-            child: DesignSystem.buildBlurCircle(primary.withValues(alpha: 0.06), 260),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+      backgroundColor: const Color(0xFF0F172A),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            _ResultHeader(overall: overall, isToefl: isToefl, accent: accent),
+            const SizedBox(height: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  // Success header
-                  _SuccessHeader(overallBand: overallBand, maxScore: maxScore, isToefl: isToefl),
-                  const SizedBox(height: 24),
-
-                  // Score breakdown
-                  _ScoreBreakdown(
-                    scores: scoreBreakdown,
-                    maxScore: maxScore,
-                    maxSectionScore: maxSectionScore,
-                    isToefl: isToefl,
-                  ),
+                  _RadarChartCard(listening: listening, reading: reading, writing: writing, speaking: speaking, accent: accent),
                   const SizedBox(height: 20),
-
-                  // Scholarship threshold
-                  if (overallBand >= threshold) ...[
-                    _ThresholdBadge(threshold: threshold, band: overallBand, isToefl: isToefl),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // AI Feedback
-                  if (feedbackReport.isNotEmpty) ...[
-                    _FeedbackCard(feedback: feedbackReport),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // Areas to improve
-                  if (adaptiveTags.isNotEmpty) ...[
-                    _ImprovementTags(tags: adaptiveTags),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // Gap analysis
-                  if (gapAnalysis != null) ...[
-                    _GapAnalysisCard(data: gapAnalysis),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // Curriculum sprints
-                  if (curriculumMap != null) ...[
-                    _CurriculumCard(data: curriculumMap),
-                    const SizedBox(height: 20),
-                  ],
-
-                  // Back button
-                  PrimaryButton(
-                    text: 'BACK TO DASHBOARD',
-                    onPressed: notifier.backToDashboard,
-                    isOutlined: true,
-                  ),
+                  _InsightCard(overall: overall, isToefl: isToefl, accent: accent),
+                  const SizedBox(height: 20),
+                  _SkillBreakdown(scores: scores, accent: accent),
+                  const SizedBox(height: 40),
+                  _ActionButtons(notifier: notifier, accent: accent),
+                  const SizedBox(height: 60),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  double _toDouble(dynamic v) {
-    if (v == null) return 0.0;
-    if (v is num) return v.toDouble();
-    return double.tryParse(v.toString()) ?? 0.0;
+  double _toDouble(dynamic val) {
+    if (val is int) return val.toDouble();
+    if (val is double) return val;
+    if (val is String) return double.tryParse(val) ?? 0.0;
+    return 0.0;
   }
 }
 
-// ─── Success Header ───────────────────────────────────────────────────────────
-
-class _SuccessHeader extends StatelessWidget {
-  final double overallBand, maxScore;
+class _ResultHeader extends StatelessWidget {
+  final dynamic overall;
   final bool isToefl;
-  const _SuccessHeader({required this.overallBand, required this.maxScore, required this.isToefl});
+  final Color accent;
+  const _ResultHeader({required this.overall, required this.isToefl, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final primary = DesignSystem.primary(context);
-    final pct = (overallBand / maxScore).clamp(0.0, 1.0);
-
+    final maxScore = isToefl ? 120 : 9;
+    
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(LucideIcons.checkCircle, size: 48, color: primary),
-        ),
-        const SizedBox(height: 16),
-        Text('Assessment Complete!',
-            style: DesignSystem.headingStyle(buildContext: context, fontSize: 22)),
-        const SizedBox(height: 6),
         Text(
-          'Your AI evaluation is ready.',
-          style: DesignSystem.labelStyle(buildContext: context, fontSize: 13),
+          "Performance Summary",
+          style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1),
         ),
         const SizedBox(height: 24),
-        GlassContainer(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Text(
-                isToefl ? 'Overall Score' : 'Overall Band Score',
-                style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // 3D Glowing Ring Effect
+            Container(
+              width: 190,
+              height: 190,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: accent.withOpacity(0.1), width: 10),
+                boxShadow: [
+                  BoxShadow(color: accent.withOpacity(0.2), blurRadius: 40, spreadRadius: 10),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                isToefl ? overallBand.toStringAsFixed(0) : overallBand.toStringAsFixed(1),
-                style: DesignSystem.headingStyle(buildContext: context, fontSize: 64)
-                    .copyWith(color: primary),
+            ),
+            Container(
+              width: 170,
+              height: 170,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: SweepGradient(
+                  colors: [accent, accent.withOpacity(0.3), accent],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
               ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: pct),
-                  duration: const Duration(milliseconds: 1000),
-                  curve: Curves.easeOutCubic,
-                  builder: (ctx, val, _) => LinearProgressIndicator(
-                    value: val,
-                    minHeight: 8,
-                    backgroundColor: DesignSystem.surface(context),
-                    valueColor: AlwaysStoppedAnimation(primary),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  decoration: const BoxDecoration(color: Color(0xFF0F172A), shape: BoxShape.circle),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          overall.toString(),
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 48),
+                        ),
+                        Text(
+                          "/ $maxScore",
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                '${(pct * 100).toStringAsFixed(0)}% of max ${isToefl ? '120' : '9.0'}',
-                style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-// ─── Score Breakdown ──────────────────────────────────────────────────────────
+class _RadarChartCard extends StatelessWidget {
+  final double listening, reading, writing, speaking;
+  final Color accent;
 
-class _ScoreBreakdown extends StatelessWidget {
-  final Map<String, dynamic> scores;
-  final double maxScore;
-  final double maxSectionScore;
-  final bool isToefl;
-  const _ScoreBreakdown({required this.scores, required this.maxScore, required this.maxSectionScore, required this.isToefl});
+  const _RadarChartCard({required this.listening, required this.reading, required this.writing, required this.speaking, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _ScoreItem('Reading', scores['reading'], LucideIcons.bookOpen, DesignSystem.primary(context)),
-      _ScoreItem('Listening', scores['listening'], LucideIcons.headphones, Colors.blue),
-      _ScoreItem('Writing', scores['writing'], LucideIcons.edit3, const Color(0xFFF43F5E)),
-      _ScoreItem('Speaking', scores['speaking'], LucideIcons.mic, Colors.orange),
-    ];
-
     return GlassContainer(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(LucideIcons.trendingUp, size: 16, color: DesignSystem.primary(context)),
-              const SizedBox(width: 8),
-              Text('Section Breakdown',
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 15)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...items.map((item) => _buildRow(context, item)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRow(BuildContext context, _ScoreItem item) {
-    final val = _toDouble(item.value);
-    final pct = (val / maxSectionScore).clamp(0.0, 1.0);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(item.icon, size: 14, color: item.color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(item.label,
-                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
-              Text(
-                isToefl ? val.toStringAsFixed(0) : val.toStringAsFixed(1),
-                style: GoogleFonts.plusJakartaSans(
-                    color: item.color, fontWeight: FontWeight.w900, fontSize: 16),
-              ),
+              Icon(LucideIcons.activity, color: accent, size: 18),
+              const SizedBox(width: 10),
+              Text("Skill Distribution", style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: pct),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutCubic,
-              builder: (ctx, v, _) => LinearProgressIndicator(
-                value: v,
-                minHeight: 6,
-                backgroundColor: DesignSystem.surface(context),
-                valueColor: AlwaysStoppedAnimation(item.color),
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 200,
+            width: 200,
+            child: CustomPaint(
+              painter: _RadarChartPainter(
+                values: [listening, reading, writing, speaking],
+                labels: ['LIS', 'REA', 'WRI', 'SPE'],
+                maxValue: (listening > 9) ? 30.0 : 9.0, // Scale based on score range
+                accent: accent,
               ),
             ),
           ),
@@ -262,57 +173,108 @@ class _ScoreBreakdown extends StatelessWidget {
       ),
     );
   }
+}
 
-  double _toDouble(dynamic v) {
-    if (v == null) return 0.0;
-    if (v is num) return v.toDouble();
-    return double.tryParse(v.toString()) ?? 0.0;
+class _RadarChartPainter extends CustomPainter {
+  final List<double> values;
+  final List<String> labels;
+  final double maxValue;
+  final Color accent;
+
+  _RadarChartPainter({required this.values, required this.labels, required this.maxValue, required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width / 2, size.height / 2);
+    final angleStep = (2 * math.pi) / values.length;
+
+    final gridPaint = Paint()..color = Colors.white.withOpacity(0.1)..style = PaintingStyle.stroke..strokeWidth = 1;
+
+    for (var i = 1; i <= 3; i++) {
+      final r = radius * (i / 3);
+      final path = Path();
+      for (var j = 0; j < values.length; j++) {
+        final angle = j * angleStep - math.pi / 2;
+        final x = center.dx + r * math.cos(angle);
+        final y = center.dy + r * math.sin(angle);
+        if (j == 0) path.moveTo(x, y); else path.lineTo(x, y);
+      }
+      path.close();
+      canvas.drawPath(path, gridPaint);
+    }
+
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    for (var j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      final x = center.dx + radius * math.cos(angle);
+      final y = center.dy + radius * math.sin(angle);
+      canvas.drawLine(center, Offset(x, y), gridPaint);
+
+      textPainter.text = TextSpan(text: labels[j], style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold));
+      textPainter.layout();
+      final labelX = center.dx + (radius + 15) * math.cos(angle) - textPainter.width / 2;
+      final labelY = center.dy + (radius + 15) * math.sin(angle) - textPainter.height / 2;
+      textPainter.paint(canvas, Offset(labelX, labelY));
+    }
+
+    final dataPaint = Paint()..color = accent.withOpacity(0.3)..style = PaintingStyle.fill;
+    final borderPaint = Paint()..color = accent..style = PaintingStyle.stroke..strokeWidth = 2;
+
+    final path = Path();
+    for (var j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      final r = radius * (values[j] / maxValue);
+      final x = center.dx + r * math.cos(angle);
+      final y = center.dy + r * math.sin(angle);
+      if (j == 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, dataPaint);
+    canvas.drawPath(path, borderPaint);
+    
+    final pointPaint = Paint()..color = accent;
+    for (var j = 0; j < values.length; j++) {
+      final angle = j * angleStep - math.pi / 2;
+      final r = radius * (values[j] / maxValue);
+      canvas.drawCircle(Offset(center.dx + r * math.cos(angle), center.dy + r * math.sin(angle)), 3, pointPaint);
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-class _ScoreItem {
-  final String label;
-  final dynamic value;
-  final IconData icon;
-  final Color color;
-  const _ScoreItem(this.label, this.value, this.icon, this.color);
-}
-
-// ─── Threshold Badge ──────────────────────────────────────────────────────────
-
-class _ThresholdBadge extends StatelessWidget {
-  final double threshold, band;
+class _InsightCard extends StatelessWidget {
+  final dynamic overall;
   final bool isToefl;
-  const _ThresholdBadge({required this.threshold, required this.band, required this.isToefl});
+  final Color accent;
+  const _InsightCard({required this.overall, required this.isToefl, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      borderColor: Colors.green.withValues(alpha: 0.4),
-      padding: const EdgeInsets.all(16),
+    final double score = double.tryParse(overall.toString()) ?? 0.0;
+    final double max = isToefl ? 120.0 : 9.0;
+    final int match = (score / max * 100).toInt().clamp(0, 100);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [accent.withOpacity(0.1), const Color(0xFF3B82F6).withOpacity(0.1)]),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: accent.withOpacity(0.2)),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(LucideIcons.award, size: 20, color: Colors.green.shade400),
-          ),
-          const SizedBox(width: 12),
+          Icon(LucideIcons.sparkles, color: accent, size: 32),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Scholarship Threshold Achieved!',
-                    style: GoogleFonts.inter(
-                        color: Colors.green.shade400, fontWeight: FontWeight.bold, fontSize: 13)),
-                const SizedBox(height: 2),
-                Text(
-                  'Your ${isToefl ? 'score' : 'band'} of ${isToefl ? band.toStringAsFixed(0) : band.toStringAsFixed(1)} meets the ${isToefl ? threshold.toStringAsFixed(0) : threshold.toStringAsFixed(1)}+ threshold.',
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
-                ),
+                Text("Pathfinder Insight", style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text("You match $match% of the Excellence scholarship requirements now!", style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8), fontSize: 13, height: 1.4)),
               ],
             ),
           ),
@@ -322,278 +284,87 @@ class _ThresholdBadge extends StatelessWidget {
   }
 }
 
-// ─── Feedback Card ────────────────────────────────────────────────────────────
-
-class _FeedbackCard extends StatelessWidget {
-  final String feedback;
-  const _FeedbackCard({required this.feedback});
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(LucideIcons.sparkles, size: 16, color: DesignSystem.primary(context)),
-              const SizedBox(width: 8),
-              Text('AI Feedback Report',
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 15)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: DesignSystem.surface(context),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              feedback,
-              style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13)
-                  .copyWith(height: 1.65),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Improvement Tags ─────────────────────────────────────────────────────────
-
-class _ImprovementTags extends StatelessWidget {
-  final List<String> tags;
-  const _ImprovementTags({required this.tags});
+class _SkillBreakdown extends StatelessWidget {
+  final Map<String, dynamic> scores;
+  final Color accent;
+  const _SkillBreakdown({required this.scores, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.alertCircle, size: 15, color: Color(0xFFF59E0B)),
-              const SizedBox(width: 8),
-              Text('Areas to Improve',
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 14)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: tags.map((tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF87171).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                tag.replaceAll('_', ' '),
-                style: GoogleFonts.inter(
-                    color: const Color(0xFFF87171), fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            )).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Gap Analysis Card ────────────────────────────────────────────────────────
-
-class _GapAnalysisCard extends StatelessWidget {
-  final dynamic data;
-  const _GapAnalysisCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = data['proficiency_profile'] as String? ?? '';
-    final primary = DesignSystem.primary(context);
-
-    return GlassContainer(
-      borderColor: primary.withValues(alpha: 0.25),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(LucideIcons.barChart2, size: 16, color: primary),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Competency Gap Analysis',
-                      style: DesignSystem.headingStyle(buildContext: context, fontSize: 14)),
-                  Text('Diagnostic Profile',
-                      style: DesignSystem.labelStyle(buildContext: context, fontSize: 10)
-                          .copyWith(letterSpacing: 1)),
-                ],
-              ),
-            ],
-          ),
-          if (profile.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: DesignSystem.surface(context),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '"$profile"',
-                style: GoogleFonts.lora(
-                    color: DesignSystem.mainText(context), fontSize: 13, fontStyle: FontStyle.italic, height: 1.5),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Curriculum Card ──────────────────────────────────────────────────────────
-
-class _CurriculumCard extends StatelessWidget {
-  final dynamic data;
-  const _CurriculumCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final sprints = (data['sprints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    if (sprints.isEmpty) return const SizedBox.shrink();
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(LucideIcons.map, size: 16, color: DesignSystem.primary(context)),
-            const SizedBox(width: 8),
-            Text('Post-Exam Curriculum Roadmap',
-                style: DesignSystem.headingStyle(buildContext: context, fontSize: 15)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...sprints.take(3).map((sprint) => _SprintCard(sprint: sprint)),
-        if (sprints.length > 3)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Center(
-              child: Text(
-                'Full curriculum available in your Learning Path.',
-                style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)
-                    .copyWith(fontStyle: FontStyle.italic),
-              ),
-            ),
-          ),
+        _SkillRow(label: "Reading", score: scores['reading'] ?? 0.0, icon: LucideIcons.bookOpen, accent: accent),
+        _SkillRow(label: "Listening", score: scores['listening'] ?? 0.0, icon: LucideIcons.headphones, accent: accent),
+        _SkillRow(label: "Speaking", score: scores['speaking'] ?? 0.0, icon: LucideIcons.mic, accent: accent),
+        _SkillRow(label: "Writing", score: scores['writing'] ?? 0.0, icon: LucideIcons.penTool, accent: accent),
       ],
     );
   }
 }
 
-class _SprintCard extends StatelessWidget {
-  final Map<String, dynamic> sprint;
-  const _SprintCard({required this.sprint});
+class _SkillRow extends StatelessWidget {
+  final String label;
+  final dynamic score;
+  final IconData icon;
+  final Color accent;
+
+  const _SkillRow({required this.label, required this.score, required this.icon, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final week = sprint['week'] ?? 1;
-    final goal = sprint['goal'] as String? ?? '';
-    final tasks = (sprint['tasks'] as List?)?.cast<String>() ?? [];
-    final isRemedial = sprint['is_remedial'] == true;
-    final primary = DesignSystem.primary(context);
+    final double s = double.tryParse(score.toString()) ?? 0.0;
+    String level = "Low";
+    if (s >= (s > 9 ? 24 : 7.5)) level = "Advanced";
+    else if (s >= (s > 9 ? 18 : 6.5)) level = "High-Intermediate";
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: GlassContainer(
-        borderColor: isRemedial
-            ? const Color(0xFFF87171).withValues(alpha: 0.3)
-            : DesignSystem.glassBorder(context),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(icon, color: Colors.white54, size: 18),
+            const SizedBox(width: 16),
             Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: isRemedial
-                        ? const Color(0xFFF87171).withValues(alpha: 0.1)
-                        : primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text('W$week',
-                        style: GoogleFonts.inter(
-                            color: isRemedial ? const Color(0xFFF87171) : primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12)),
-                  ),
-                ),
-                if (isRemedial) ...[
-                  const SizedBox(height: 4),
-                  Text('Remedial',
-                      style: GoogleFonts.inter(
-                          color: const Color(0xFFF87171), fontSize: 8, fontWeight: FontWeight.bold)),
-                ],
+                Text(label, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(level, style: GoogleFonts.inter(color: accent.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.bold)),
               ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(goal,
-                      style: DesignSystem.bodyStyle(buildContext: context, fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  ...tasks.take(2).map((t) => Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 5),
-                          width: 4, height: 4,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: DesignSystem.labelText(context).withValues(alpha: 0.4),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(t,
-                              style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)),
-                        ),
-                      ],
-                    ),
-                  )),
-                  if (tasks.length > 2)
-                    Text('+${tasks.length - 2} more tasks',
-                        style: DesignSystem.labelStyle(buildContext: context, fontSize: 10)
-                            .copyWith(fontStyle: FontStyle.italic)),
-                ],
-              ),
-            ),
+            const Spacer(),
+            Text(score.toString(), style: GoogleFonts.jetBrainsMono(color: accent, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ActionButtons extends StatelessWidget {
+  final MockExamNotifier notifier;
+  final Color accent;
+  const _ActionButtons({required this.notifier, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => notifier.backToDashboard(),
+            style: ElevatedButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 18)),
+            child: Text("BACK TO MASTERY HUB", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: () => notifier.toggleReviewMode(),
+          icon: const Icon(LucideIcons.search, size: 16, color: Colors.white54),
+          label: Text("REVIEW ANSWERS", style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 13)),
+        ),
+      ],
     );
   }
 }
