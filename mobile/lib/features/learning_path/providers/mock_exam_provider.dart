@@ -1,323 +1,422 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/core/providers/dependencies.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mobile/features/learning_path/models/assessment_model.dart';
 import 'package:mobile/features/learning_path/services/assessment_api_service.dart';
+import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_haptics.dart';
+import 'package:mobile/core/providers/dependencies.dart';
 
 enum MockExamView { dashboard, overview, exam, grading, result, breakTime }
 
+enum ToeflSubStage { instruction, reading, listening, preparing, responding }
+
 class MockExamState {
   final MockExamView view;
-  final bool isGenerating;
-  final bool isSubmitting;
-  final bool isPolling;
+  final String examType; // 'IELTS' or 'TOEFL'
   final AssessmentBlueprint? blueprint;
+  final int currentSectionIndex; // IELTS: L(0),R(1),W(2),S(3) | TOEFL: R(0),L(1),S(2),W(3)
+  final int currentQuestionIndex;
   final Map<String, dynamic> answers;
-  final Set<String> completedSections;
-  final int currentSectionIndex;
+  final Map<int, bool> flaggedQuestions;
+  final List<Map<String, int>> highlights;
+  final String? notes; // Persistent notes for Listening/TOEFL
   final Duration timeRemaining;
+  final bool isSubmitting;
   final Map<String, dynamic>? result;
+  final String attemptId;
+  final bool isTransferTime;
+  final String testType; // 'Academic' or 'General'
+  final bool isReviewMode;
+  final String difficulty;
   final List<Map<String, dynamic>> progressHistory;
   final bool isLoadingHistory;
+  final bool isGenerating;
   final String? error;
   final String? learningPathError;
-  final String examType;
-  final String difficulty;
+  
+  // TOEFL specific
+  final ToeflSubStage toeflSubStage;
 
   const MockExamState({
     this.view = MockExamView.dashboard,
-    this.isGenerating = false,
-    this.isSubmitting = false,
-    this.isPolling = false,
+    this.examType = 'IELTS',
     this.blueprint,
-    this.answers = const {},
-    this.completedSections = const {},
     this.currentSectionIndex = 0,
-    this.timeRemaining = const Duration(minutes: 20),
+    this.currentQuestionIndex = 0,
+    this.answers = const {},
+    this.flaggedQuestions = const {},
+    this.highlights = const [],
+    this.notes,
+    this.timeRemaining = Duration.zero,
+    this.isSubmitting = false,
     this.result,
+    this.attemptId = '',
+    this.isTransferTime = false,
+    this.testType = 'Academic',
+    this.isReviewMode = false,
+    this.difficulty = 'Medium',
     this.progressHistory = const [],
     this.isLoadingHistory = false,
+    this.isGenerating = false,
     this.error,
     this.learningPathError,
-    this.examType = 'IELTS',
-    this.difficulty = 'Medium',
+    this.toeflSubStage = ToeflSubStage.instruction,
   });
 
   MockExamState copyWith({
     MockExamView? view,
-    bool? isGenerating,
-    bool? isSubmitting,
-    bool? isPolling,
+    String? examType,
     AssessmentBlueprint? blueprint,
-    Map<String, dynamic>? answers,
-    Set<String>? completedSections,
     int? currentSectionIndex,
+    int? currentQuestionIndex,
+    Map<String, dynamic>? answers,
+    Map<int, bool>? flaggedQuestions,
+    List<Map<String, int>>? highlights,
+    String? notes,
     Duration? timeRemaining,
+    bool? isSubmitting,
     Map<String, dynamic>? result,
+    String? attemptId,
+    bool? isTransferTime,
+    String? testType,
+    bool? isReviewMode,
+    String? difficulty,
     List<Map<String, dynamic>>? progressHistory,
     bool? isLoadingHistory,
+    bool? isGenerating,
     String? error,
-    String? learningPathError,
-    String? examType,
-    String? difficulty,
     bool clearError = false,
+    String? learningPathError,
     bool clearLearningPathError = false,
+    ToeflSubStage? toeflSubStage,
   }) {
     return MockExamState(
       view: view ?? this.view,
-      isGenerating: isGenerating ?? this.isGenerating,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      isPolling: isPolling ?? this.isPolling,
+      examType: examType ?? this.examType,
       blueprint: blueprint ?? this.blueprint,
-      answers: answers ?? this.answers,
-      completedSections: completedSections ?? this.completedSections,
       currentSectionIndex: currentSectionIndex ?? this.currentSectionIndex,
+      currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
+      answers: answers ?? this.answers,
+      flaggedQuestions: flaggedQuestions ?? this.flaggedQuestions,
+      highlights: highlights ?? this.highlights,
+      notes: notes ?? this.notes,
       timeRemaining: timeRemaining ?? this.timeRemaining,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
       result: result ?? this.result,
+      attemptId: attemptId ?? this.attemptId,
+      isTransferTime: isTransferTime ?? this.isTransferTime,
+      testType: testType ?? this.testType,
+      isReviewMode: isReviewMode ?? this.isReviewMode,
+      difficulty: difficulty ?? this.difficulty,
       progressHistory: progressHistory ?? this.progressHistory,
       isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
+      isGenerating: isGenerating ?? this.isGenerating,
       error: clearError ? null : (error ?? this.error),
       learningPathError: clearLearningPathError ? null : (learningPathError ?? this.learningPathError),
-      examType: examType ?? this.examType,
-      difficulty: difficulty ?? this.difficulty,
+      toeflSubStage: toeflSubStage ?? this.toeflSubStage,
+    );
+  }
+
+  // Design Tokens based on Exam Type
+  Color get primaryAccent => examType == 'TOEFL' ? const Color(0xFF6366F1) : const Color(0xFF10B981);
+  
+  bool get isListening => examType == 'TOEFL' ? currentSectionIndex == 1 : currentSectionIndex == 0;
+  bool get isReading => examType == 'TOEFL' ? currentSectionIndex == 0 : currentSectionIndex == 1;
+  bool get isWriting => currentSectionIndex == 2;
+  bool get isSpeaking => currentSectionIndex == 3;
+
+  List<String> get sectionLabels => examType == 'TOEFL' 
+      ? ['Reading', 'Listening', 'Speaking', 'Writing']
+      : ['Listening', 'Reading', 'Writing', 'Speaking'];
+
+  int get totalObjectiveQuestions {
+    if (blueprint == null) return 0;
+    if (isListening) return blueprint!.sections.listening?.questions.length ?? 0;
+    if (isReading) return blueprint!.sections.reading?.questions.length ?? 0;
+    return 0;
+  }
+
+  int get answeredObjectiveQuestions {
+    final prefix = isListening ? 'L_' : (isReading ? 'R_' : '');
+    if (prefix.isEmpty) return 0;
+    return answers.keys.where((k) => k.startsWith(prefix)).length;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'view': view.index,
+    'examType': examType,
+    'blueprint': blueprint?.toJson(),
+    'currentSectionIndex': currentSectionIndex,
+    'currentQuestionIndex': currentQuestionIndex,
+    'answers': answers,
+    'flaggedQuestions': flaggedQuestions.map((k, v) => MapEntry(k.toString(), v)),
+    'highlights': highlights,
+    'notes': notes,
+    'timeRemaining': timeRemaining.inSeconds,
+    'attemptId': attemptId,
+    'testType': testType,
+    'difficulty': difficulty,
+    'toeflSubStage': toeflSubStage.index,
+  };
+
+  factory MockExamState.fromJson(Map<String, dynamic> json) {
+    return MockExamState(
+      view: MockExamView.values[json['view'] ?? 0],
+      examType: json['examType'] ?? 'IELTS',
+      blueprint: json['blueprint'] != null ? AssessmentBlueprint.fromJson(json['blueprint']) : null,
+      currentSectionIndex: json['currentSectionIndex'] ?? 0,
+      currentQuestionIndex: json['currentQuestionIndex'] ?? 0,
+      answers: Map<String, dynamic>.from(json['answers'] ?? {}),
+      flaggedQuestions: (json['flaggedQuestions'] as Map?)?.map((k, v) => MapEntry(int.parse(k), v as bool)) ?? {},
+      highlights: (json['highlights'] as List?)?.map((e) => Map<String, int>.from(e)).toList() ?? [],
+      notes: json['notes'],
+      timeRemaining: Duration(seconds: json['timeRemaining'] ?? 0),
+      attemptId: json['attemptId'] ?? '',
+      testType: json['testType'] ?? 'Academic',
+      difficulty: json['difficulty'] ?? 'Medium',
+      toeflSubStage: ToeflSubStage.values[json['toeflSubStage'] ?? 0],
     );
   }
 }
 
 class MockExamNotifier extends StateNotifier<MockExamState> {
-  MockExamNotifier({required AssessmentApiService apiService})
-      : _api = apiService,
-        super(const MockExamState()) {
+  final AssessmentApiService _api;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  Timer? _timer;
+  Timer? _persistTimer;
+
+  MockExamNotifier(this._api) : super(const MockExamState()) {
+    _restoreState();
     loadHistory();
   }
 
-  final AssessmentApiService _api;
-  Timer? _sectionTimer;
-  Timer? _pollTimer;
-
-  static const Map<int, int> _sectionMinutes = {
-    0: 20, // reading  (IELTS) / reading  (TOEFL 35min → use 35)
-    1: 15, // listening (IELTS) / listening (TOEFL 36min → use 36)
-    2: 40, // writing  (IELTS) / speaking  (TOEFL 16min → use 16)
-    3: 15, // speaking (IELTS) / writing   (TOEFL 29min → use 29)
-  };
-
-  // TOEFL section order: Reading → Listening → Speaking → Writing
-  // IELTS section order: Listening → Reading → Writing  → Speaking
-  static const Map<String, Map<int, int>> _examSectionMinutes = {
-    'IELTS': {0: 30, 1: 60, 2: 60, 3: 14},
-    'TOEFL': {0: 35, 1: 36, 2: 16, 3: 29},
-  };
-
-  // TOEFL has a 10-min break between Listening (index 1) and Speaking (index 2)
-  bool get _isToefl => state.examType == 'TOEFL';
-
-  int _minutesForSection(int index) {
-    final map = _examSectionMinutes[state.examType] ?? _examSectionMinutes['IELTS']!;
-    return map[index] ?? 20;
+  // --- Persistence ---
+  Future<void> _restoreState() async {
+    try {
+      final saved = await _storage.read(key: 'mock_exam_state_v2');
+      if (saved != null) {
+        state = MockExamState.fromJson(jsonDecode(saved));
+        if (state.view == MockExamView.exam || state.view == MockExamView.breakTime) {
+          _startTimer();
+          _startPersistenceTimer();
+        }
+      }
+    } catch (e) {
+      debugPrint("Restore error: $e");
+    }
   }
 
+  void _startPersistenceTimer() {
+    _persistTimer?.cancel();
+    _persistTimer = Timer.periodic(const Duration(seconds: 30), (_) => _saveState());
+  }
+
+  Future<void> _saveState() async {
+    await _storage.write(key: 'mock_exam_state_v2', value: jsonEncode(state.toJson()));
+  }
+
+  // --- History ---
   Future<void> loadHistory() async {
     state = state.copyWith(isLoadingHistory: true);
     try {
       final data = await _api.getProgress();
-      final raw = data['data'];
-      final list = (raw is List) ? raw.cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+      final list = (data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       state = state.copyWith(progressHistory: list, isLoadingHistory: false);
     } catch (_) {
       state = state.copyWith(isLoadingHistory: false);
     }
   }
 
+  // --- Configuration ---
   void setExamType(String type) => state = state.copyWith(examType: type);
+  void setTestType(String type) => state = state.copyWith(testType: type);
   void setDifficulty(String d) => state = state.copyWith(difficulty: d);
 
   Future<void> generateExam() async {
     state = state.copyWith(isGenerating: true, clearError: true, clearLearningPathError: true);
     try {
-      final blueprint = await _api.generate(
-        examType: state.examType,
-        difficulty: state.difficulty,
-      );
-      state = state.copyWith(
-        isGenerating: false,
-        blueprint: blueprint,
-        answers: {},
-        completedSections: {},
-        currentSectionIndex: 0,
-        view: MockExamView.overview,
-      );
+      final blueprint = await _api.generate(examType: state.examType, difficulty: state.difficulty);
+      state = state.copyWith(isGenerating: false, blueprint: blueprint, view: MockExamView.overview);
     } catch (e) {
       final msg = e.toString();
-      if (msg.contains('403') || msg.contains('learning path') || msg.contains('100%')) {
-        state = state.copyWith(
-          isGenerating: false,
-          learningPathError: 'Complete 100% of your learning path to unlock the mock exam.',
-        );
+      if (msg.contains('403') || msg.contains('learning path')) {
+        state = state.copyWith(isGenerating: false, learningPathError: "Complete 100% of your learning path to unlock.");
       } else {
-        state = state.copyWith(isGenerating: false, error: 'Failed to generate exam. Please try again.');
+        state = state.copyWith(isGenerating: false, error: "Failed to generate exam.");
       }
     }
   }
 
   void startExam() {
+    final blueprint = state.blueprint;
+    if (blueprint == null) return;
+
+    final attemptId = "${state.examType}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}";
+    
+    // Initial Section Duration
+    final initialDuration = state.examType == 'TOEFL' 
+        ? const Duration(minutes: 35) // Reading
+        : const Duration(minutes: 30); // Listening
+
     state = state.copyWith(
       view: MockExamView.exam,
-      timeRemaining: Duration(minutes: _minutesForSection(0)),
+      attemptId: attemptId,
+      timeRemaining: initialDuration,
+      currentSectionIndex: 0,
+      currentQuestionIndex: 0,
+      toeflSubStage: state.examType == 'TOEFL' ? ToeflSubStage.reading : ToeflSubStage.instruction,
     );
-    _startSectionTimer();
+    _startTimer();
+    _startPersistenceTimer();
+    MockExamHaptics.sectionComplete();
   }
 
-  void _startSectionTimer() {
-    _sectionTimer?.cancel();
-    final minutes = _minutesForSection(state.currentSectionIndex);
-    state = state.copyWith(timeRemaining: Duration(minutes: minutes));
-    _sectionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final remaining = state.timeRemaining - const Duration(seconds: 1);
-      if (remaining.inSeconds <= 0) {
-        _sectionTimer?.cancel();
-        state = state.copyWith(timeRemaining: Duration.zero);
-      } else {
-        state = state.copyWith(timeRemaining: remaining);
-      }
-    });
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) => _onTick());
   }
 
-  void goToSection(int index) {
-    _markCurrentSectionComplete();
-    _sectionTimer?.cancel();
-    // TOEFL: show 10-min break between Listening (1) and Speaking (2)
-    if (_isToefl && state.currentSectionIndex == 1 && index == 2) {
-      state = state.copyWith(
-        currentSectionIndex: index,
-        view: MockExamView.breakTime,
-        timeRemaining: const Duration(minutes: 10),
-      );
-      _startBreakTimer();
-      return;
-    }
-    state = state.copyWith(currentSectionIndex: index, view: MockExamView.exam);
-    _startSectionTimer();
-  }
-
-  void _startBreakTimer() {
-    _sectionTimer?.cancel();
-    state = state.copyWith(timeRemaining: const Duration(minutes: 10));
-    _sectionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final remaining = state.timeRemaining - const Duration(seconds: 1);
-      if (remaining.inSeconds <= 0) {
-        _sectionTimer?.cancel();
+  void _onTick() {
+    if (state.timeRemaining.inSeconds <= 0) {
+      if (state.view == MockExamView.breakTime) {
         endBreak();
       } else {
-        state = state.copyWith(timeRemaining: remaining);
+        forceSubmit();
       }
-    });
+      return;
+    }
+
+    state = state.copyWith(timeRemaining: state.timeRemaining - const Duration(seconds: 1));
+    if (state.timeRemaining.inSeconds <= 10 && state.timeRemaining.inSeconds > 0) {
+      MockExamHaptics.tickTock();
+    }
   }
 
-  void endBreak() {
-    _sectionTimer?.cancel();
-    state = state.copyWith(view: MockExamView.exam);
-    _startSectionTimer();
+  // --- Navigation & State ---
+  void nextQuestion() {
+    final total = state.totalObjectiveQuestions;
+    if (state.currentQuestionIndex < total - 1) {
+      state = state.copyWith(currentQuestionIndex: state.currentQuestionIndex + 1);
+    } else {
+      nextSection();
+    }
+  }
+
+  void prevQuestion() {
+    if (state.currentQuestionIndex > 0) {
+      state = state.copyWith(currentQuestionIndex: state.currentQuestionIndex - 1);
+    }
+  }
+
+  void jumpToQuestion(int index) => state = state.copyWith(currentQuestionIndex: index);
+
+  void updateAnswer(String key, dynamic value) {
+    final answers = Map<String, dynamic>.from(state.answers);
+    answers[key] = value;
+    state = state.copyWith(answers: answers);
+  }
+
+  void flagQuestion(int index) {
+    final flags = Map<int, bool>.from(state.flaggedQuestions);
+    flags[index] = !(flags[index] ?? false);
+    state = state.copyWith(flaggedQuestions: flags);
+    MockExamHaptics.success();
+  }
+
+  void updateNotes(String val) => state = state.copyWith(notes: val);
+
+  void addHighlight(int start, int end) {
+    final highlights = List<Map<String, int>>.from(state.highlights);
+    highlights.add({'start': start, 'end': end});
+    state = state.copyWith(highlights: highlights);
   }
 
   void nextSection() {
-    if (state.currentSectionIndex < 3) goToSection(state.currentSectionIndex + 1);
+    if (state.currentSectionIndex < 3) {
+      _timer?.cancel();
+      state = state.copyWith(
+        view: MockExamView.breakTime,
+        timeRemaining: const Duration(seconds: 60),
+      );
+      MockExamHaptics.sectionComplete();
+    } else {
+      submitExam();
+    }
   }
 
-  void previousSection() {
-    // TOEFL Listening: no going back once you advance
-    if (_isToefl && state.currentSectionIndex == 1) return;
-    if (state.currentSectionIndex > 0) goToSection(state.currentSectionIndex - 1);
+  void endBreak() {
+    final nextIdx = state.currentSectionIndex + 1;
+    Duration nextDuration;
+    
+    if (state.examType == 'TOEFL') {
+      nextDuration = switch (nextIdx) {
+        1 => const Duration(minutes: 36), // Listening
+        2 => const Duration(minutes: 16), // Speaking
+        3 => const Duration(minutes: 29), // Writing
+        _ => Duration.zero,
+      };
+    } else {
+      nextDuration = switch (nextIdx) {
+        1 => const Duration(minutes: 60), // Reading
+        2 => const Duration(minutes: 60), // Writing
+        3 => const Duration(minutes: 14), // Speaking
+        _ => Duration.zero,
+      };
+    }
+
+    state = state.copyWith(
+      view: MockExamView.exam,
+      currentSectionIndex: nextIdx,
+      currentQuestionIndex: 0,
+      timeRemaining: nextDuration,
+      toeflSubStage: state.examType == 'TOEFL' ? ToeflSubStage.instruction : ToeflSubStage.instruction,
+    );
+    _startTimer();
   }
 
-  void _markCurrentSectionComplete() {
-    final sectionNames = _isToefl 
-      ? ['reading', 'listening', 'speaking', 'writing']
-      : ['listening', 'reading', 'writing', 'speaking'];
-    final current = sectionNames[state.currentSectionIndex];
-    final updated = Set<String>.from(state.completedSections)..add(current);
-    state = state.copyWith(completedSections: updated);
-  }
-
-  void updateAnswer(String key, dynamic value) {
-    final updated = Map<String, dynamic>.from(state.answers)..[key] = value;
-    state = state.copyWith(answers: updated);
+  void advanceToeflStage(ToeflSubStage next) {
+    state = state.copyWith(toeflSubStage: next);
   }
 
   Future<void> submitExam() async {
-    _sectionTimer?.cancel();
-    _markCurrentSectionComplete();
-    state = state.copyWith(isSubmitting: true, clearError: true);
+    state = state.copyWith(view: MockExamView.grading, isSubmitting: true);
+    _timer?.cancel();
+    _persistTimer?.cancel();
+
     try {
-      final bp = state.blueprint!;
-      final responses = _buildResponses();
-      final audioBytes = state.answers['speaking_audio'] as List<int>?;
-      await _api.submit(testId: bp.testId, responses: responses, audioBytes: audioBytes);
-      state = state.copyWith(isSubmitting: false, isPolling: true, view: MockExamView.grading);
-      _startPolling(bp.testId);
+      final responses = {
+        'answers': state.answers,
+        'notes': state.notes,
+        'attemptId': state.attemptId,
+        'examType': state.examType,
+      };
+      final result = await _api.submit(testId: state.blueprint!.testId, responses: responses);
+      state = state.copyWith(view: MockExamView.result, result: result, isSubmitting: false);
+      await _storage.delete(key: 'mock_exam_state_v2');
     } catch (e) {
-      state = state.copyWith(isSubmitting: false, error: 'Submission failed. Please try again.');
+      state = state.copyWith(isSubmitting: false);
     }
   }
 
-  Map<String, dynamic> _buildResponses() {
-    final reading = <String, dynamic>{};
-    final listening = <String, dynamic>{};
-    for (final entry in state.answers.entries) {
-      if (entry.key.startsWith('R_')) reading[entry.key.substring(2)] = entry.value;
-      else if (entry.key.startsWith('L_')) listening[entry.key.substring(2)] = entry.value;
-    }
-    return {
-      'reading': reading,
-      'listening': listening,
-      'writing': state.answers['writing'] ?? '',
-      'speaking': state.answers['speaking_text'] ?? '',
-      'candidateName': state.answers['candidateName'] ?? '',
-      'candidateID': state.answers['candidateID'] ?? '',
-    };
-  }
-
-  void _startPolling(String testId) {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      try {
-        final res = await _api.getResult(testId);
-        final status = res['status'];
-        if (status == 'success') {
-          _pollTimer?.cancel();
-          state = state.copyWith(isPolling: false, result: res, view: MockExamView.result);
-          loadHistory();
-        } else if (status == 'failed') {
-          _pollTimer?.cancel();
-          state = state.copyWith(isPolling: false, error: 'Evaluation failed.', view: MockExamView.dashboard);
-        }
-      } catch (_) {}
-    });
-  }
-
+  void forceSubmit() => submitExam();
   void backToDashboard() {
-    _sectionTimer?.cancel();
-    _pollTimer?.cancel();
-    state = state.copyWith(
-      view: MockExamView.dashboard,
-      blueprint: null,
-      answers: {},
-      completedSections: {},
-      currentSectionIndex: 0,
-      result: null,
-      clearError: true,
-    );
-    loadHistory();
+    state = state.copyWith(view: MockExamView.dashboard);
+    _timer?.cancel();
+    _persistTimer?.cancel();
   }
+  void toggleReviewMode() => state = state.copyWith(isReviewMode: !state.isReviewMode);
 
   @override
   void dispose() {
-    _sectionTimer?.cancel();
-    _pollTimer?.cancel();
+    _timer?.cancel();
+    _persistTimer?.cancel();
     super.dispose();
   }
 }
 
 final mockExamProvider = StateNotifierProvider<MockExamNotifier, MockExamState>((ref) {
-  return MockExamNotifier(apiService: ref.watch(assessmentApiServiceProvider));
+  final api = ref.watch(assessmentApiServiceProvider);
+  return MockExamNotifier(api);
 });

@@ -5,6 +5,9 @@ import 'package:mobile/core/services/api_client.dart';
 import 'package:mobile/core/services/http_helpers.dart';
 import 'package:mobile/features/learning_path/models/assessment_model.dart';
 
+// The provider is already defined in mobile/core/providers/dependencies.dart
+// DO NOT re-define assessmentApiServiceProvider here.
+
 class AssessmentApiService {
   AssessmentApiService({required ApiClient apiClient}) : _api = apiClient;
 
