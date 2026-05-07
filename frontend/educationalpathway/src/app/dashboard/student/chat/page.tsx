@@ -3,6 +3,7 @@
 import { useAuth } from "@/providers/auth-context";
 import { ChatPage } from "@/features/chat/ChatPage";
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
 export default function StudentChatPage() {
   const { user } = useAuth();
@@ -16,15 +17,11 @@ export default function StudentChatPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col space-y-1">
-        <h1 className="h2">Consultation Messages</h1>
-        <p className="text-body text-muted-foreground">
-          Real-time communication with your assigned counselors.
-        </p>
-      </div>
+    <div className="h-full">
 
-      <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />
+      <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin" /></div>}>
+        <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />
+      </Suspense>
     </div>
   );
 }

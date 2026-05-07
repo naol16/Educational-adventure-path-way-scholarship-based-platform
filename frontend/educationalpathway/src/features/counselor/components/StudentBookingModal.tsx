@@ -62,7 +62,7 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-      <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="p-8 border-b border-border bg-muted/20">
           <div className="flex items-center gap-4">
@@ -134,7 +134,7 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
               })}
             </div>
           ) : (
-            <div className="text-center p-12 border-2 border-dashed rounded-3xl border-border bg-muted/10">
+            <div className="text-center p-12 border-2 border-dashed rounded-2xl border-border bg-muted/10">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
               <h3 className="font-bold text-lg">Fully Booked</h3>
               <p className="text-muted-foreground mt-2 max-w-[200px] mx-auto">

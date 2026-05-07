@@ -51,9 +51,31 @@ export class ChatMessage extends Model {
     @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
+        field: 'is_delivered'
+    })
+    declare isDelivered: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'delivered_at'
+    })
+    declare deliveredAt?: Date;
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
         field: 'is_read'
     })
     declare isRead: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'read_at'
+    })
+    declare readAt?: Date;
 
     @Default(false)
     @Column({

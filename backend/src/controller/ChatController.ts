@@ -114,17 +114,26 @@ export class ChatController {
             throw new AppError("No file uploaded", 400);
         }
 
-        const file = req.files.file as any;
-        
-        // Import FileService dynamically or at the top? Wait, ChatController needs FileService!
-        const { FileService } = await import("../services/FileService.js");
-        
-        const secureUrl = await FileService.uploadFile(file.data, "chat_attachments");
+        try {
+            // Handle both single and multiple files if they were sent with the same key
+            const uploadedFile = req.files.file;
+            const file = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile;
+            
+            if (!file) {
+                throw new AppError("File processing failed", 400);
+            }
 
-        res.status(200).json({
-            status: "success",
-            data: { url: secureUrl }
-        });
+            const { FileService } = await import("../services/FileService.js");
+            const secureUrl = await FileService.uploadFile(file.data, "chat_attachments");
+
+            res.status(200).json({
+                status: "success",
+                data: { url: secureUrl }
+            });
+        } catch (error: any) {
+            console.error("[ChatController] Upload failed:", error);
+            throw new AppError(error.message || "File upload failed", 500);
+        }
     });
 
     /**

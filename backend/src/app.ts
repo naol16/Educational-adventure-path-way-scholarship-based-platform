@@ -56,6 +56,10 @@ app.use(
 
 // 2. Logging
 app.use((req, res, next) => {
+  // Skip logging for high-frequency polling endpoints like notifications
+  if (req.path === '/api/notifications' || req.path === '/api/notifications/unread-count') {
+    return next();
+  }
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });

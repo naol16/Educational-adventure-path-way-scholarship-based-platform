@@ -188,7 +188,7 @@ export function StudentSidebar() {
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 80 : 260 }}
-        className="hidden lg:flex sticky top-0 h-screen border-r border-border bg-card flex-col overflow-x-hidden"
+        className="hidden lg:flex sticky top-0 h-screen bg-card flex-col overflow-hidden z-100 transition-all duration-300 ease-in-out shadow-sm"
       >
         <SidebarContent />
       </motion.aside>

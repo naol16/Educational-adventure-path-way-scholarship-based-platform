@@ -75,7 +75,7 @@ export const ScholarshipExplorer = () => {
       {/* Refined Header Section */}
       <motion.section 
         variants={item}
-        className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-10 md:p-12 shadow-sm"
+        className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-10 md:p-12 shadow-sm"
       >
         <div className="absolute top-0 right-0 w-1/3 h-full bg-linear-to-bl from-primary/5 via-transparent to-transparent opacity-50" />
         
@@ -147,7 +147,7 @@ export const ScholarshipExplorer = () => {
           <Button
             onClick={() => setShowFilters(!showFilters)}
             variant={showFilters ? 'primary' : 'outline'}
-            className={`h-11 px-6 rounded-lg flex items-center gap-2 font-bold text-xs transition-all ${showFilters ? 'primary-gradient text-white shadow-lg' : 'border-border/60'}`}
+            className={`h-11 px-6 rounded-lg flex items-center gap-2 font-bold text-xs transition-all ${showFilters ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm' : 'border-border/60'}`}
           >
             <Filter size={14} />
             FILTERS
@@ -162,7 +162,7 @@ export const ScholarshipExplorer = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-muted/20 border border-border/50 rounded-2xl px-6 py-6"
+              className="overflow-hidden bg-muted/20 border border-border/50 rounded-xl px-6 py-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">

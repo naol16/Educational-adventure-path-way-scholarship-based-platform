@@ -56,7 +56,7 @@ export const Modal = ({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className={`relative w-full ${sizeClasses[size]} bg-card border border-border  rounded-lg overflow-hidden z-10`}
+            className={`relative w-full ${sizeClasses[size]} bg-card border border-border rounded-2xl overflow-hidden z-10`}
           >
             {title && (
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">

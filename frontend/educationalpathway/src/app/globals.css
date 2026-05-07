@@ -55,47 +55,35 @@
 :root {
 
   /* Base */
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   /* Surfaces */
   --card: #ffffff;
-  --card-foreground: #111827;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #0f172a;
 
-  /* Primary — Emerald Green (brand only) */
+  /* Primary — High-end Emerald */
   --primary: #059669;
   --primary-foreground: #ffffff;
 
   /* Secondary UI */
-  --secondary: #f3f4f6;
-  --secondary-foreground: #1f2937;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #475569;
 
   /* Muted Surfaces */
-  --muted: #f9fafb;
-  --muted-foreground: #6b7280;
-
-  /* Hover / subtle surfaces */
-  --accent: #f3f4f6;
-  --accent-foreground: #111827;
-
-  /* Semantics */
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
-  --success: #10b981;
-  --warning: #f59e0b;
-  --info: #0ea5e9;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
   /* Borders */
-  --border: #e5e7eb;
-  --input: #f3f4f6;
-  --input-bg: #f4f4f5;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-bg: #f8fafc;
   --ring: #059669;
 
-  --radius: 0.25rem;
+  --radius: 0.75rem;
 }
 
 /* ---------------- DARK MODE ---------------- */
@@ -149,8 +137,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   -webkit-font-smoothing: antialiased;
+}
+
+* {
+  font-family: var(--font-serif) !important;
+  font-weight: normal !important;
 }
 
 /* Unified form control styling — same look in light and dark */
@@ -169,7 +162,7 @@ textarea:focus {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
-  font-weight: 700;
+  font-weight: normal;
   line-height: 1.2;
 }
 
@@ -266,12 +259,8 @@ button {
 }
 
 .mesh-gradient-premium {
-  background-color: #ffffff;
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(161, 84%, 48%, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(188, 86%, 53%, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(222, 47%, 11%, 0.05) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(161, 84%, 48%, 0.1) 0px, transparent 50%);
+  background-color: transparent;
+  background-image: none;
 }
 
 .dark .mesh-gradient-premium {
@@ -318,14 +307,14 @@ button {
 
 /* ---------------- TYPOGRAPHY ---------------- */
 
-.h1 { @apply text-4xl font-extrabold tracking-tight md:text-5xl; font-family: var(--font-serif); }
-.h2 { @apply text-3xl font-bold tracking-tight md:text-4xl; font-family: var(--font-serif); }
-.h3 { @apply text-2xl font-semibold tracking-tight; font-family: var(--font-serif); }
-.h4 { @apply text-xl font-semibold tracking-tight; font-family: var(--font-serif); }
+.h1 { @apply text-4xl tracking-tight md:text-5xl; font-family: var(--font-serif); }
+.h2 { @apply text-3xl tracking-tight md:text-4xl; font-family: var(--font-serif); }
+.h3 { @apply text-2xl tracking-tight; font-family: var(--font-serif); }
+.h4 { @apply text-xl tracking-tight; font-family: var(--font-serif); }
 
 .text-body { @apply text-base leading-relaxed text-foreground; }
-.text-small { @apply text-sm text-muted-foreground font-medium; }
-.text-label { @apply text-xs uppercase tracking-widest font-bold text-muted-foreground; }
+.text-small { @apply text-sm text-muted-foreground; }
+.text-label { @apply text-xs uppercase tracking-widest text-muted-foreground; }
 
 /* ---------------- REACT SELECT ---------------- */
 
@@ -378,7 +367,7 @@ button {
 .react-select__option--is-selected {
   background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
   color: var(--primary) !important;
-  font-weight: 600 !important;
+  font-weight: normal !important;
 }
 
 .react-select__multi-value {
@@ -388,7 +377,7 @@ button {
 
 .react-select__multi-value__label {
   color: var(--primary) !important;
-  font-weight: 600 !important;
+  font-weight: normal !important;
 }
 
 .react-select__multi-value__remove:hover {

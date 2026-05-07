@@ -3,6 +3,7 @@
 import { useAuth } from "@/providers/auth-context";
 import { ChatPage } from "@/features/chat/ChatPage";
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
 export default function CounselorChatPage() {
   const { user } = useAuth();
@@ -24,7 +25,9 @@ export default function CounselorChatPage() {
         </p>
       </div>
 
-      <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />
+      <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin" /></div>}>
+        <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />
+      </Suspense>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export const ScholarshipList = ({ filters, activeTab }: ScholarshipListProps) =>
           {error.includes("onboarded") && (
             <Button 
                onClick={() => window.location.href = '/dashboard/student/profile'}
-               className="primary-gradient text-primary-foreground font-bold rounded-xl"
+               className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg"
             >
               Complete Your Profile
             </Button>
@@ -84,12 +84,13 @@ export const ScholarshipList = ({ filters, activeTab }: ScholarshipListProps) =>
         </div>
       ) : scholarships.length > 0 ? (
         /* Results Grid */
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
           <AnimatePresence mode="popLayout">
             {scholarships.map((s, idx) => (
               <ScholarshipCard
                 key={s.id || `card-${idx}`}
                 scholarship={s}
+                variant="grid"
               />
             ))}
           </AnimatePresence>

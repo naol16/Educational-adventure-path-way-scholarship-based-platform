@@ -69,6 +69,41 @@ export class ChatService {
         });
     }
 
+    static async editMessage(messageId: number, senderId: number, newContent: string) {
+        console.log(`[ChatService] Attempting to edit message: id=${messageId}, senderId=${senderId}, newContent=${newContent}`);
+        if (!messageId || !senderId) throw new Error("Invalid messageId or senderId");
+        
+        const message = await ChatMessage.findByPk(messageId);
+        if (!message) {
+            console.log(`[ChatService] Edit message really not found by PK: ${messageId}`);
+            throw new Error("Message not found");
+        }
+        if (Number(message.senderId) !== Number(senderId)) {
+            console.log(`[ChatService] Edit unauthorized: message.senderId=${message.senderId}, requesting senderId=${senderId}`);
+            throw new Error("Unauthorized to edit");
+        }
+        message.content = newContent;
+        await message.save();
+        return message;
+    }
+
+    static async deleteMessage(messageId: number, senderId: number) {
+        console.log(`[ChatService] Attempting to delete message: id=${messageId}, senderId=${senderId}`);
+        if (!messageId || !senderId) throw new Error("Invalid messageId or senderId");
+        
+        const message = await ChatMessage.findByPk(messageId);
+        if (!message) {
+            console.log(`[ChatService] Delete message really not found by PK: ${messageId}`);
+            throw new Error("Message not found");
+        }
+        if (Number(message.senderId) !== Number(senderId)) {
+            console.log(`[ChatService] Delete unauthorized: message.senderId=${message.senderId}, requesting senderId=${senderId}`);
+            throw new Error("Unauthorized to delete");
+        }
+        await message.destroy();
+        return messageId;
+    }
+
     static async getConversations(userId: number) {
         const conversations = await Conversation.findAll({
             attributes: {
@@ -164,9 +199,23 @@ export class ChatService {
         });
     }
 
-    static async markAsRead(conversationId: number, userId: number) {
+    static async markAsDelivered(messageId: number) {
         return ChatMessage.update(
-            { isRead: true },
+            { 
+                isDelivered: true, 
+                deliveredAt: new Date() 
+            },
+            { where: { id: messageId, isDelivered: false } }
+        );
+    }
+
+    static async markAsRead(conversationId: number, userId: number) {
+        const now = new Date();
+        return ChatMessage.update(
+            { 
+                isRead: true,
+                readAt: now
+            },
             {
                 where: {
                     conversationId,

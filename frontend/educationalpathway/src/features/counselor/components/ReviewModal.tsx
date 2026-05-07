@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal } from '@/components/ui/Model';
+import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Star, Loader2, AlertCircle } from 'lucide-react';
@@ -56,7 +56,7 @@ export const ReviewModal = ({ isOpen, onClose, bookingId, counselorName, onSucce
             title="Session Completion Review"
         >
             <div className="space-y-6 pt-4">
-                <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 flex items-start gap-3">
+                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
                     <AlertCircle className="text-primary mt-1" size={18} />
                     <p className="text-sm text-muted-foreground leading-relaxed">
                         By confirming, you agree that the session with <span className="font-bold text-foreground">{counselorName}</span> was completed successfully. This will release the escrowed funds to the counselor.
@@ -90,7 +90,7 @@ export const ReviewModal = ({ isOpen, onClose, bookingId, counselorName, onSucce
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         placeholder="How did the session go? What helped you the most?"
-                        className="w-full min-h-[100px] bg-muted/50 border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        className="w-full min-h-[100px] bg-muted/50 border border-border rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
                 </div>
 

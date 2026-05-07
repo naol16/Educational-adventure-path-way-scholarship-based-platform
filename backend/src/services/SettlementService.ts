@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 import { Booking } from '../models/Booking.js';
 import { Student } from '../models/Student.js';
+import { Payment } from '../models/Payment.js';
 import { CounselorService } from '../services/CounselorService.js';
 import { sequelize } from '../config/sequelize.js';
 import { Transaction } from 'sequelize';
@@ -23,11 +24,17 @@ export class SettlementService {
             const stagnantBookings = await Booking.findAll({
                 where: {
                     status: 'completed',
-                    paymentStatus: 'held',
-                    appointmentDate: {
+                    completedAt: {
                         [Op.lt]: sevenDaysAgo
                     }
-                }
+                },
+                include: [{
+                    model: Payment,
+                    as: 'payment',
+                    where: {
+                        escrowStatus: 'held'
+                    }
+                }]
             });
 
             console.log(`[SettlementService] Found ${stagnantBookings.length} bookings for auto-release.`);

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Conversation } from "../types";
-import { formatDistanceToNow } from "date-fns";
-import { User, MessageCircle } from "lucide-react";
+import { formatDistanceToNow, isToday, isYesterday, format } from "date-fns";
+import { User, MessageCircle, Search, Plus, MoreVertical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatListProps {
   conversations: Conversation[];
@@ -15,7 +17,17 @@ interface ChatListProps {
 }
 
 export const ChatList = ({ conversations, activeConversationId, onSelect, currentUserId, currentUserRole, onNewChat, onBookSession }: ChatListProps) => {
-  const renderConversation = (conv: Conversation) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredConversations = conversations.filter(conv => {
+    const isGroup = !!conv.isGroup;
+    const participants = conv.members || conv.users || [];
+    const otherUser = participants.find(u => u.id !== currentUserId);
+    const title = isGroup ? conv.name : (otherUser?.name || 'Unknown User');
+    return title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const renderConversation = (conv: Conversation, index: number) => {
     const isGroup = !!conv.isGroup;
     const participants = conv.members || conv.users || [];
     const otherUser = participants.find(u => u.id !== currentUserId);
@@ -25,111 +37,120 @@ export const ChatList = ({ conversations, activeConversationId, onSelect, curren
     const chatTitle = isGroup ? conv.name : (otherUser?.name || 'Unknown User');
     const chatSubtitle = isGroup ? (conv.country || 'Group') : otherUser?.role;
 
+    const formatTime = (dateStr: string) => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return "";
+      if (isToday(date)) return format(date, "HH:mm");
+      if (isYesterday(date)) return "Yesterday";
+      return format(date, "MMM d");
+    };
+
     return (
-      <div
+      <motion.div
         key={conv.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
         onClick={() => onSelect(conv)}
-        className={`w-full p-4 flex items-center gap-3 transition-colors hover:bg-muted cursor-pointer ${isActive ? 'bg-primary/5 border-l-4 border-primary' : 'border-l-4 border-transparent'}`}
+        className={`relative group px-4 py-3 flex items-center gap-3 transition-all cursor-pointer ${isActive ? 'bg-primary/10 border-r-2 border-primary' : 'hover:bg-muted/50'}`}
       >
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-          {isGroup ? (
-            <span className="font-bold text-xs">{conv.country?.substring(0, 2).toUpperCase() || 'GP'}</span>
-          ) : (
-            <User className="h-5 w-5" />
+        <div className="relative shrink-0">
+          <div className="h-12 w-12 rounded-full overflow-hidden bg-primary/5 flex items-center justify-center text-primary border border-border shadow-sm">
+            {isGroup ? (
+              <span className="font-black text-sm">{conv.country?.substring(0, 2).toUpperCase() || 'GP'}</span>
+            ) : (
+              <User className="h-6 w-6" />
+            )}
+          </div>
+          {!isGroup && (
+             <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-emerald-500 shadow-sm" />
           )}
         </div>
 
-        <div className="flex-1 text-left min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <span className={`font-semibold text-sm truncate ${isGroup ? 'text-primary' : ''}`}>{chatTitle}</span>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-                {lastMessage && (() => {
-                  const msgDate = lastMessage.createdAt;
-                  if (!msgDate) return null;
-                  const date = new Date(msgDate);
-                  if (isNaN(date.getTime())) return null;
-
-                  return (
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(date, { addSuffix: true })}
-                    </span>
-                  );
-                })()}
-                {Number(conv.unreadCount) > 0 && (
-                    <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-blue-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow-lg border border-white/20 animate-in fade-in zoom-in duration-300">
-                        {conv.unreadCount}
-                    </span>
-                )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
-              {chatSubtitle}
-            </span>
-            {!isGroup && currentUserRole === 'student' && otherUser?.role === 'counselor' && onBookSession && (
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onBookSession(otherUser.id);
-                    }}
-                    className="ml-auto text-[9px] font-black uppercase text-primary hover:underline bg-primary/5 px-2 py-0.5 rounded"
-                >
-                    Book
-                </button>
-            )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <h4 className={`text-sm font-bold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
+              {chatTitle}
+            </h4>
             {lastMessage && (
-              <p className="text-xs text-muted-foreground truncate flex-1">
-                {lastMessage.content}
-              </p>
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {formatTime(lastMessage.createdAt)}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground truncate leading-tight">
+               {lastMessage ? (
+                 <span className="flex items-center gap-1">
+                   {lastMessage.senderId === currentUserId && <span className="text-[10px] text-primary font-bold shrink-0">You:</span>}
+                   {lastMessage.content.startsWith('[Attached File]') ? '📎 File' : lastMessage.content}
+                 </span>
+               ) : (
+                 <span className="italic opacity-60 uppercase text-[10px] tracking-widest">{chatSubtitle}</span>
+               )}
+            </p>
+            {Number(conv.unreadCount) > 0 && (
+              <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center shadow-sm">
+                {conv.unreadCount}
+              </span>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold">Conversations</h2>
-        </div>
-        {onNewChat && (
-            <button onClick={onNewChat} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center transition-colors shadow-sm" title="New Chat">
-                <span className="text-lg leading-none">+</span>
+    <div className="flex flex-col h-full bg-card/30">
+      {/* Search Header */}
+      <div className="p-4 space-y-4 border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black tracking-tight text-foreground/80">Messages</h2>
+          {onNewChat && (
+            <button 
+              onClick={onNewChat} 
+              className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
+            >
+              <Plus size={18} />
             </button>
-        )}
+          )}
+        </div>
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <input 
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-muted/50 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+          />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {conversations.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">
-            No active conversations.
-          </div>
-        ) : (() => {
-          const personal = conversations.filter(c => !c.isGroup);
-          const groups = conversations.filter(c => c.isGroup);
-
-          return (
-            <>
-              {groups.length > 0 && (
-                <div className="px-4 py-2 bg-muted/30 text-[10px] font-black uppercase tracking-widest text-primary/70 border-b border-border/50">
-                  Community Groups
-                </div>
-              )}
-              {groups.map((conv) => renderConversation(conv))}
-
-              {personal.length > 0 && (
-                <div className="px-4 py-2 bg-muted/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border/50 mt-2">
-                  Personal Messages
-                </div>
-              )}
-              {personal.map((conv) => renderConversation(conv))}
-            </>
-          );
-        })()}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <AnimatePresence mode="popLayout">
+          {filteredConversations.length === 0 ? (
+            <motion.div 
+              key="empty"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="p-12 text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 opacity-20">
+                <Search size={24} />
+              </div>
+              <p className="text-sm text-muted-foreground">No conversations found</p>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col">
+              {filteredConversations.map((conv, idx) => renderConversation(conv, idx))}
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
 };
+

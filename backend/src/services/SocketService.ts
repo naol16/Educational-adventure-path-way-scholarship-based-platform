@@ -3,10 +3,12 @@ import { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import configs from "../config/configs.js";
 import { ChatService } from "./ChatService.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { redisConnection } from "../config/redis.js";
 
 export class SocketService {
     private static io: SocketIOServer;
-    private static userSockets = new Map<number, string>(); // userId -> socketId
+    private static userSockets = new Map<number, string[]>(); // userId -> socketIds[]
 
     static initialize(server: HTTPServer) {
         this.io = new SocketIOServer(server, {
@@ -15,6 +17,11 @@ export class SocketService {
                 methods: ["GET", "POST"]
             }
         });
+
+        // Redis Adapter for scaling
+        const pubClient = redisConnection;
+        const subClient = pubClient.duplicate();
+        this.io.adapter(createAdapter(pubClient, subClient));
 
         this.io.use((socket, next) => {
             const token = socket.handshake.auth.token || socket.handshake.query.token;
@@ -29,35 +36,89 @@ export class SocketService {
             }
         });
 
-        this.io.on("connection", (socket) => {
+        this.io.on("connection", async (socket) => {
             const userId = (socket as any).userId;
-            console.log(`[Socket] User connected: ${userId} (${socket.id})`);
-            this.userSockets.set(userId, socket.id);
+            
+            // Add to tracking
+            const currentSockets = this.userSockets.get(userId) || [];
+            this.userSockets.set(userId, [...currentSockets, socket.id]);
+
+            // Broadcast online status
+            this.io.emit("user_online", userId);
 
             socket.on("join_conversation", (conversationId: number) => {
                 socket.join(`conversation_${conversationId}`);
-                console.log(`[Socket] User ${userId} joined conversation ${conversationId}`);
             });
 
             socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string }) => {
                 try {
                     const message = await ChatService.sendMessage(data.conversationId, userId, data.content);
-                    
-                    // Broadcast to the conversation room
+                    if (!message) return;
+
+                    // Broadcast to conversation room
                     this.io.to(`conversation_${data.conversationId}`).emit("receive_message", message);
                     
-                    // Also notify the receiver specifically if they are not in the room? 
-                    // Room handle it mostly, but for "new message" alerts:
-                    const receiverSocketId = this.userSockets.get(data.receiverId);
-                    if (receiverSocketId) {
-                        this.io.to(receiverSocketId).emit("new_message_alert", {
+                    // Mark as delivered for the receiver (if online)
+                    const receiverSockets = this.userSockets.get(data.receiverId);
+                    if (receiverSockets && receiverSockets.length > 0) {
+                        await ChatService.markAsDelivered(message.id);
+                        this.io.to(`conversation_${data.conversationId}`).emit("message_delivered", {
+                            messageId: message.id,
                             conversationId: data.conversationId,
-                            senderName: (message as any).sender.name,
-                            content: data.content
+                            deliveredAt: new Date()
+                        });
+                    }
+
+                    // Direct alert for mobile/outside-room notifications
+                    if (receiverSockets) {
+                        receiverSockets.forEach(sid => {
+                            this.io.to(sid).emit("new_message_alert", {
+                                conversationId: data.conversationId,
+                                senderName: (message as any).sender?.name || "Someone",
+                                content: data.content
+                            });
                         });
                     }
                 } catch (err) {
                     console.error("[Socket] send_message error:", err);
+                }
+            });
+
+            socket.on("mark_read", async (data: { conversationId: number; messageId?: number }) => {
+                try {
+                    await ChatService.markAsRead(data.conversationId, userId);
+                    this.io.to(`conversation_${data.conversationId}`).emit("messages_read", {
+                        conversationId: data.conversationId,
+                        readerId: userId,
+                        readAt: new Date()
+                    });
+                } catch (err) {
+                    console.error("[Socket] mark_read error:", err);
+                }
+            });
+
+            socket.on("edit_message", async (data: { messageId: number; conversationId: number; content: string }) => {
+                try {
+                    await ChatService.editMessage(data.messageId, userId, data.content);
+                    this.io.to(`conversation_${data.conversationId}`).emit("message_edited", {
+                        messageId: data.messageId,
+                        conversationId: data.conversationId,
+                        content: data.content
+                    });
+                } catch (err) {
+                    console.error("[Socket] edit_message error:", err);
+                }
+            });
+
+            socket.on("delete_message", async (data: { messageId: number; conversationId: number }) => {
+                try {
+                    await ChatService.deleteMessage(data.messageId, userId);
+                    this.io.to(`conversation_${data.conversationId}`).emit("message_deleted", {
+                        messageId: data.messageId,
+                        conversationId: data.conversationId
+                    });
+                } catch (err) {
+                    console.error("[Socket] delete_message error:", err);
                 }
             });
 
@@ -69,8 +130,15 @@ export class SocketService {
             });
 
             socket.on("disconnect", () => {
-                console.log(`[Socket] User disconnected: ${userId}`);
-                this.userSockets.delete(userId);
+                const sockets = this.userSockets.get(userId) || [];
+                const remaining = sockets.filter(sid => sid !== socket.id);
+                
+                if (remaining.length === 0) {
+                    this.userSockets.delete(userId);
+                    this.io.emit("user_offline", userId);
+                } else {
+                    this.userSockets.set(userId, remaining);
+                }
             });
         });
 

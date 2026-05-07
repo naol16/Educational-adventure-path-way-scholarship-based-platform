@@ -170,9 +170,6 @@ export class MatchingRepository {
           attributes: ["name", "email", "fcmToken"],
         },
       ],
-      having: Sequelize.literal(
-        `(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100 > ${threshold}`,
-      ),
       raw: true,
       nest: true,
     });

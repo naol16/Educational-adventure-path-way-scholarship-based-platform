@@ -2,7 +2,7 @@ import { Worker } from "bullmq";
 import { redisOptions } from "../config/redis.js";
 import { AssessmentService } from "../services/AssessmentService.js";
 
-console.log("📂 [AssessmentWorker] Module initialization started...");
+
 
 /**
  * AssessmentWorker evaluates student responses using AI.
@@ -41,7 +41,7 @@ export const assessmentWorker = new Worker(
   },
 );
 
-console.log("🛠️ AssessmentWorker module loaded and worker instance created.");
+
 
 assessmentWorker.on("completed", (job) => {
   console.log(`Job ${job.id} has completed!`);
