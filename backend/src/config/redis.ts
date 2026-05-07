@@ -50,4 +50,8 @@ export const assessmentQueue = new Queue("assessment-queue", {
   connection: redisOptions,
 });
 
+export const notificationQueue = new Queue("notification-queue", {
+  connection: redisOptions,
+});
+
 export const isRedisAvailable = () => redisAvailable;

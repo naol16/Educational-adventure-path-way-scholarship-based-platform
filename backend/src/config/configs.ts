@@ -28,6 +28,7 @@ function setConfigs() {
     DB_NAME: process.env.DB_NAME || "auth_system",
     DB_LOGGING: process.env.DB_LOGGING === "true",
     DB_SSL: process.env.DB_SSL === "true",
+    DB_SYNC: process.env.DB_SYNC === "true",
 
     // Auth Config
     JWT_SECRET: process.env.JWT_SECRET || "tempSecret",
