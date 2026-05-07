@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
@@ -11,111 +10,73 @@ class MockExamBreak extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timeRemaining = ref.watch(mockExamProvider.select((s) => s.timeRemaining));
+    final state = ref.watch(mockExamProvider);
     final notifier = ref.read(mockExamProvider.notifier);
-    final primary = DesignSystem.primary(context);
+    final accent = state.primaryAccent;
 
-    final minutes = timeRemaining.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = timeRemaining.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final isAlmostOver = timeRemaining.inSeconds <= 60;
+    final answered = state.answeredObjectiveQuestions;
+    final total = state.totalObjectiveQuestions;
+    final isObjective = state.currentSectionIndex < 2;
 
     return Scaffold(
-      backgroundColor: DesignSystem.themeBackground(context),
+      backgroundColor: const Color(0xFF0F172A),
       body: Stack(
         children: [
-          Positioned(
-            top: -60, left: -40,
-            child: DesignSystem.buildBlurCircle(primary.withValues(alpha: 0.06), 260),
+          // Background Glow
+          Center(
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withOpacity(0.1),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withOpacity(0.05),
+                    blurRadius: 100,
+                    spreadRadius: 50,
+                  )
+                ],
+              ),
+            ),
           ),
-          SafeArea(
-            child: Center(
-              child: Padding(
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: GlassContainer(
                 padding: const EdgeInsets.all(32),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(LucideIcons.coffee, size: 40, color: primary),
-                    ),
+                    Icon(Icons.check_circle_outline, color: accent, size: 64),
                     const SizedBox(height: 24),
-
                     Text(
-                      '10-Minute Break',
-                      style: DesignSystem.headingStyle(buildContext: context, fontSize: 26),
+                      "Section Complete!",
+                      style: DesignSystem.headingStyle(buildContext: context, fontSize: 24),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isObjective)
+                      Text(
+                        "$answered of $total questions answered.",
+                        style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                      ),
+                    const SizedBox(height: 40),
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: 40),
+                    Text(
+                      "Next section starts in:",
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Stand up, hydrate. The clock pauses during this break only.',
-                      textAlign: TextAlign.center,
-                      style: DesignSystem.labelStyle(buildContext: context, fontSize: 13)
-                          .copyWith(height: 1.5),
+                      _formatDuration(state.timeRemaining),
+                      style: GoogleFonts.jetBrainsMono(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 32),
                     ),
-                    const SizedBox(height: 40),
-
-                    // Big countdown
-                    GlassContainer(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
-                      child: Column(
-                        children: [
-                          Text(
-                            '$minutes:$seconds',
-                            style: GoogleFonts.inter(
-                              color: isAlmostOver ? const Color(0xFFF87171) : primary,
-                              fontSize: 56,
-                              fontWeight: FontWeight.w900,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'remaining',
-                            style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Tips
-                    GlassContainer(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _TipRow(icon: LucideIcons.droplets, text: 'Drink some water'),
-                          const SizedBox(height: 10),
-                          _TipRow(icon: LucideIcons.activity, text: 'Stretch your neck and shoulders'),
-                          const SizedBox(height: 10),
-                          _TipRow(icon: LucideIcons.eye, text: 'Rest your eyes — look at something distant'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Skip break button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: notifier.endBreak,
-                        icon: const Icon(LucideIcons.skipForward, size: 16),
-                        label: const Text('End Break Early — Begin Speaking'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: primary,
-                          side: BorderSide(color: primary.withValues(alpha: 0.5)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Next section: Speaking (16 min)',
-                      style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
+                    const SizedBox(height: 48),
+                    _PulseButton(
+                      onTap: () => notifier.endBreak(),
+                      label: "PROCEED NOW",
+                      accent: accent,
                     ),
                   ],
                 ),
@@ -126,21 +87,64 @@ class MockExamBreak extends ConsumerWidget {
       ),
     );
   }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$m:$s";
+  }
 }
 
-class _TipRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _TipRow({required this.icon, required this.text});
+class _PulseButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final String label;
+  final Color accent;
+
+  const _PulseButton({required this.onTap, required this.label, required this.accent});
+
+  @override
+  State<_PulseButton> createState() => _PulseButtonState();
+}
+
+class _PulseButtonState extends State<_PulseButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.05).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 15, color: DesignSystem.primary(context)),
-        const SizedBox(width: 10),
-        Text(text, style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13)),
-      ],
+    return ScaleTransition(
+      scale: _scale,
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: widget.onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.accent,
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            elevation: 0,
+            shadowColor: widget.accent.withOpacity(0.5),
+          ),
+          child: Text(
+            widget.label,
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 1),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -14,9 +14,9 @@ class MockExamOverview extends ConsumerStatefulWidget {
 }
 
 class _MockExamOverviewState extends ConsumerState<MockExamOverview> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _idController = TextEditingController();
-  bool _isConfirmed = false;
+  final _nameController = TextEditingController();
+  final _idController = TextEditingController();
+  bool _consent = false;
 
   @override
   void dispose() {
@@ -29,225 +29,300 @@ class _MockExamOverviewState extends ConsumerState<MockExamOverview> {
   Widget build(BuildContext context) {
     final state = ref.watch(mockExamProvider);
     final notifier = ref.read(mockExamProvider.notifier);
-    final primary = DesignSystem.primary(context);
+    final accent = state.primaryAccent;
 
     return Scaffold(
-      backgroundColor: DesignSystem.themeBackground(context),
-      body: Stack(
-        children: [
-          Positioned(
-            top: -80, right: -60,
-            child: DesignSystem.buildBlurCircle(primary.withValues(alpha: 0.07), 280),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context, notifier),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle(context, "Test overview"),
-                        const SizedBox(height: 16),
-                        _buildTestOverviewGrid(context),
-                        const SizedBox(height: 32),
-                        _buildSectionTitle(context, "Candidate details"),
-                        const SizedBox(height: 16),
-                        _buildCandidateFields(context),
-                        const SizedBox(height: 32),
-                        _buildSectionTitle(context, "Test rules"),
-                        const SizedBox(height: 16),
-                        _buildTestRules(context),
-                        const SizedBox(height: 40),
-                        _buildConfirmation(context),
-                        const SizedBox(height: 24),
-                        _buildStartButton(context, notifier),
-                        const SizedBox(height: 40),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      backgroundColor: const Color(0xFF0F172A),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 60),
+            _buildHeader(),
+            const SizedBox(height: 40),
+            _buildTestTypeSelector(state, notifier, accent),
+            const SizedBox(height: 24),
+            _buildCandidateForm(accent),
+            const SizedBox(height: 32),
+            _buildRulesAccordion(accent),
+            const SizedBox(height: 32),
+            _buildConsentCheckbox(accent),
+            const SizedBox(height: 40),
+            _buildBeginButton(notifier, accent),
+            const SizedBox(height: 60),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, MockExamNotifier notifier) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: notifier.backToDashboard,
-            icon: Icon(LucideIcons.arrowLeft, color: DesignSystem.mainText(context)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Full Mastery IELTS Academic Mock Exam',
-              style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: DesignSystem.headingStyle(buildContext: context, fontSize: 16),
-    );
-  }
-
-  Widget _buildTestOverviewGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
-      children: [
-        _buildOverviewCard(context, LucideIcons.headphones, "Listening", "30 min", "4 sections", Colors.teal),
-        _buildOverviewCard(context, LucideIcons.bookOpen, "Reading", "60 min", "3 passages", Colors.blue),
-        _buildOverviewCard(context, LucideIcons.edit3, "Writing", "60 min", "Task 1 + Task 2", Colors.pink),
-        _buildOverviewCard(context, LucideIcons.mic, "Speaking", "14 min", "3 parts", Colors.orange),
-      ],
-    );
-  }
-
-  Widget _buildOverviewCard(BuildContext context, IconData icon, String title, String time, String sub, Color color) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: 6),
-              Text(title, style: DesignSystem.labelStyle(buildContext: context, fontSize: 13)),
-            ],
-          ),
-          const Spacer(),
-          Text(time, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
-          Text(sub, style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCandidateFields(BuildContext context) {
-    return Column(
-      children: [
-        _buildTextField(context, "Full Name", _nameController, "e.g. John Doe"),
-        const SizedBox(height: 16),
-        _buildTextField(context, "Candidate ID", _idController, "e.g. 123456"),
-      ],
-    );
-  }
-
-  Widget _buildTextField(BuildContext context, String label, TextEditingController controller, String hint) {
+  Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: DesignSystem.inputFill(context),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: DesignSystem.glassBorder(context)),
-          ),
-          child: TextField(
-            controller: controller,
-            style: DesignSystem.bodyStyle(buildContext: context),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: DesignSystem.labelStyle(buildContext: context).copyWith(color: Colors.white24),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: InputBorder.none,
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => ref.read(mockExamProvider.notifier).backToDashboard(),
+              icon: const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 20),
+              style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.05)),
             ),
-          ),
+            const SizedBox(width: 16),
+            Text("Test Overview", style: DesignSystem.headingStyle(buildContext: context, fontSize: 24)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          "Verify your details and review the rules before beginning your assessment attempt.",
+          style: GoogleFonts.inter(color: Colors.white54, fontSize: 14, height: 1.5),
         ),
       ],
     );
   }
 
-  Widget _buildTestRules(BuildContext context) {
-    final rules = [
-      "Ensure a stable internet connection.",
-      "No breaks are allowed once the test starts.",
-      "AI evaluation will be provided within 3-5 minutes of completion.",
-    ];
-
+  Widget _buildTestTypeSelector(MockExamState state, MockExamNotifier notifier, Color accent) {
     return Column(
-      children: rules.map((rule) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("SELECT TEST TYPE", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 12),
+        Row(
           children: [
-            const Icon(LucideIcons.dot, size: 20, color: Colors.teal),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                rule,
-                style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13),
-              ),
+            _TypeTab(
+              label: "Academic",
+              isSelected: state.testType == "Academic",
+              onTap: () => notifier.setTestType("Academic"),
+              accent: accent,
+            ),
+            const SizedBox(width: 12),
+            _TypeTab(
+              label: "General Training",
+              isSelected: state.testType == "General",
+              onTap: () => notifier.setTestType("General"),
+              accent: accent,
             ),
           ],
         ),
-      )).toList(),
+      ],
     );
   }
 
-  Widget _buildConfirmation(BuildContext context) {
-    return Row(
+  Widget _buildCandidateForm(Color accent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(
-          value: _isConfirmed,
-          onChanged: (val) => setState(() => _isConfirmed = val ?? false),
-          activeColor: Colors.teal,
-          side: const BorderSide(color: Colors.white24),
-        ),
-        Expanded(
-          child: Text(
-            "I confirm that I am ready to begin the assessment.",
-            style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+        Text("CANDIDATE DETAILS", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 12),
+        GlassContainer(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _InputField(
+                controller: _nameController,
+                label: "Full Name",
+                hint: "Enter your legal name",
+                icon: LucideIcons.user,
+                accent: accent,
+              ),
+              const SizedBox(height: 16),
+              _InputField(
+                controller: _idController,
+                label: "Candidate ID",
+                hint: "e.g. TOEFL-882901",
+                icon: LucideIcons.contact,
+                accent: accent,
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStartButton(BuildContext context, MockExamNotifier notifier) {
-    final primary = DesignSystem.primary(context);
-    final canStart = _isConfirmed && _nameController.text.isNotEmpty && _idController.text.isNotEmpty;
+  Widget _buildRulesAccordion(Color accent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("EXAM RULES", style: DesignSystem.labelStyle(buildContext: context)),
+        const SizedBox(height: 12),
+        _RuleTile(
+          icon: LucideIcons.timer,
+          title: "Continuous Attempt",
+          desc: "The timer does not pause. Ensure you have enough uninterrupted time.",
+          accent: accent,
+        ),
+        _RuleTile(
+          icon: LucideIcons.shieldCheck,
+          title: "Strict Navigation",
+          desc: "In listening and integrated sections, navigation is locked until completion.",
+          accent: accent,
+        ),
+        _RuleTile(
+          icon: LucideIcons.mic,
+          title: "Audio Requirements",
+          desc: "Ensure your microphone is calibrated for the AI analysis.",
+          accent: accent,
+        ),
+        _RuleTile(
+          icon: LucideIcons.save,
+          title: "Auto-Save Enabled",
+          desc: "Progress is saved every 30s. You can resume if the app closes unexpectedly.",
+          accent: accent,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConsentCheckbox(Color accent) {
+    return InkWell(
+      onTap: () => setState(() => _consent = !_consent),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _consent ? accent : Colors.white24),
+              color: _consent ? accent : Colors.transparent,
+            ),
+            child: _consent ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              "I am ready for the attempt and agree to the rules.",
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBeginButton(MockExamNotifier notifier, Color accent) {
+    final isValid = _nameController.text.isNotEmpty && _idController.text.isNotEmpty && _consent;
 
     return SizedBox(
       width: double.infinity,
-      height: 56,
       child: ElevatedButton(
-        onPressed: canStart ? () {
+        onPressed: isValid ? () {
           notifier.updateAnswer('candidateName', _nameController.text);
           notifier.updateAnswer('candidateID', _idController.text);
           notifier.startExam();
         } : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: canStart ? Colors.teal : Colors.grey.withValues(alpha: 0.2),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
+          backgroundColor: accent,
+          foregroundColor: Colors.black,
+          disabledBackgroundColor: Colors.white.withOpacity(0.05),
+          disabledForegroundColor: Colors.white24,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(vertical: 20),
         ),
-        child: Text(
-          'Begin Listening Section',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+        child: Text("BEGIN FULL ASSESSMENT", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 15)),
+      ),
+    );
+  }
+}
+
+class _TypeTab extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color accent;
+
+  const _TypeTab({required this.label, required this.isSelected, required this.onTap, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? accent : Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? accent : Colors.white10),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: isSelected ? Colors.black : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InputField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label, hint;
+  final IconData icon;
+  final Color accent;
+
+  const _InputField({required this.controller, required this.label, required this.hint, required this.icon, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: accent, size: 18),
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white24),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RuleTile extends StatelessWidget {
+  final IconData icon;
+  final String title, desc;
+  final Color accent;
+
+  const _RuleTile({required this.icon, required this.title, required this.desc, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: accent, size: 20),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text(desc, style: GoogleFonts.inter(color: Colors.white54, fontSize: 12, height: 1.4)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

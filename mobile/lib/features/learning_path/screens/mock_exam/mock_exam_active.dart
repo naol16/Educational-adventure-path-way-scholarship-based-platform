@@ -3,28 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
-import 'package:mobile/features/learning_path/screens/mock_exam/sections/reading_section.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/listening_section.dart';
+import 'package:mobile/features/learning_path/screens/mock_exam/sections/reading_section.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/writing_section.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/speaking_section.dart';
-
-const _kSections = ['Listening', 'Reading', 'Writing', 'Speaking'];
-const _kSectionIcons = [
-  LucideIcons.headphones,
-  LucideIcons.bookOpen,
-  LucideIcons.edit3,
-  LucideIcons.mic,
-];
-
-// TOEFL section order is Reading → Listening → Speaking → Writing
-const _kToeflSections = ['Reading', 'Listening', 'Speaking', 'Writing'];
-const _kToeflSectionIcons = [
-  LucideIcons.bookOpen,
-  LucideIcons.headphones,
-  LucideIcons.mic,
-  LucideIcons.edit3,
-];
 
 class MockExamActive extends ConsumerWidget {
   const MockExamActive({super.key});
@@ -32,425 +16,283 @@ class MockExamActive extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(mockExamProvider);
-    final notifier = ref.read(mockExamProvider.notifier);
-    final primary = DesignSystem.primary(context);
-    final isTimeLow = state.timeRemaining.inSeconds <= 120;
-    final timerColor = isTimeLow ? const Color(0xFFF87171) : primary;
+    final accent = state.primaryAccent;
+    final isToefl = state.examType == 'TOEFL';
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmExit(context, notifier);
-      },
-      child: Scaffold(
-        backgroundColor: DesignSystem.themeBackground(context),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _ExamHeader(state: state, timerColor: timerColor, notifier: notifier),
-              _TimerBar(state: state, timerColor: timerColor),
-              _SectionTabs(state: state, notifier: notifier, primary: primary),
-              Expanded(child: _SectionBody(state: state)),
-              _BottomNav(state: state, notifier: notifier, primary: primary),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context, state, accent),
+            Expanded(
+              child: _buildSectionContent(state),
+            ),
+            _buildFooter(context, ref, state, accent),
+          ],
         ),
       ),
     );
   }
 
-  void _confirmExit(BuildContext context, MockExamNotifier notifier) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DesignSystem.overlayBackground(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Exit Exam?',
-            style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
-        content: Text(
-          'Your progress will be lost. Are you sure you want to exit?',
-          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Stay', style: TextStyle(color: DesignSystem.primary(context))),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              notifier.backToDashboard();
-            },
-            child: const Text('Exit', style: TextStyle(color: Color(0xFFF87171))),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Header ───────────────────────────────────────────────────────────────────
-
-class _ExamHeader extends StatelessWidget {
-  final MockExamState state;
-  final Color timerColor;
-  final MockExamNotifier notifier;
-  const _ExamHeader({required this.state, required this.timerColor, required this.notifier});
-
-  @override
-  Widget build(BuildContext context) {
-    final bp = state.blueprint;
-    final examLabel = bp?.examType ?? state.examType;
-    final diffLabel = bp?.difficulty ?? state.difficulty;
-    final isToefl = state.examType == 'TOEFL';
-    final sections = isToefl ? _kToeflSections : _kSections;
-    final sectionLabel = sections[state.currentSectionIndex];
-    final isTimeLow = state.timeRemaining.inSeconds <= 120;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          // Left: exam info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Mock Exam in Progress',
-                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 15)),
-                Text('$examLabel · $diffLabel · $sectionLabel',
-                    style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)),
-              ],
-            ),
-          ),
-          // Timer
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: timerColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: timerColor.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(LucideIcons.clock, size: 14, color: timerColor),
-                const SizedBox(width: 6),
-                Text(
-                  _fmt(state.timeRemaining),
-                  style: GoogleFonts.inter(
-                    color: timerColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Submit button
-          ElevatedButton(
-            onPressed: state.isSubmitting ? null : notifier.submitExam,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DesignSystem.primary(context),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 14, height: 14,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(LucideIcons.checkCircle, size: 14),
-                      const SizedBox(width: 4),
-                      Text('Submit',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-}
-
-// ─── Timer Bar ────────────────────────────────────────────────────────────────
-
-class _TimerBar extends StatelessWidget {
-  final MockExamState state;
-  final Color timerColor;
-  const _TimerBar({required this.state, required this.timerColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final isToefl = state.examType == 'TOEFL';
-    final sectionMinutes = isToefl ? [35, 36, 16, 29] : [30, 60, 60, 14];
-    final total = sectionMinutes[state.currentSectionIndex] * 60;
-    final pct = total > 0 ? state.timeRemaining.inSeconds / total : 0.0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: LinearProgressIndicator(
-          value: pct.clamp(0.0, 1.0),
-          minHeight: 3,
-          backgroundColor: DesignSystem.surface(context),
-          valueColor: AlwaysStoppedAnimation(timerColor),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Section Tabs ─────────────────────────────────────────────────────────────
-
-class _SectionTabs extends StatelessWidget {
-  final MockExamState state;
-  final MockExamNotifier notifier;
-  final Color primary;
-  const _SectionTabs({required this.state, required this.notifier, required this.primary});
-
-  @override
-  Widget build(BuildContext context) {
-    final isToefl = state.examType == 'TOEFL';
-    final sections = isToefl ? _kToeflSections : _kSections;
-    final icons = isToefl ? _kToeflSectionIcons : _kSectionIcons;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(sections.length, (i) {
-            final isActive = state.currentSectionIndex == i;
-            final isDone = state.completedSections.contains(sections[i].toLowerCase());
-            return GestureDetector(
-              onTap: () => notifier.goToSection(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? primary
-                      : isDone
-                          ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                          : DesignSystem.surface(context),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isActive
-                        ? primary
-                        : isDone
-                            ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                            : Colors.transparent,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isDone ? LucideIcons.checkCircle : icons[i],
-                      size: 13,
-                      color: isActive
-                          ? Colors.white
-                          : isDone
-                              ? const Color(0xFF10B981)
-                              : DesignSystem.labelText(context),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      sections[i],
-                      style: GoogleFonts.inter(
-                        color: isActive
-                            ? Colors.white
-                            : isDone
-                                ? const Color(0xFF10B981)
-                                : DesignSystem.labelText(context),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Section Body ─────────────────────────────────────────────────────────────
-
-class _SectionBody extends StatelessWidget {
-  final MockExamState state;
-  const _SectionBody({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final isToefl = state.examType == 'TOEFL';
-    // IELTS: 0=Reading, 1=Listening, 2=Writing, 3=Speaking
-    // TOEFL: 0=Reading, 1=Listening, 2=Speaking, 3=Writing
-    final idx = state.currentSectionIndex;
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child: switch (idx) {
-        0 => isToefl 
-            ? const ReadingSectionWidget(key: ValueKey('reading'))
-            : const ListeningSectionWidget(key: ValueKey('listening')),
-        1 => isToefl
-            ? const ListeningSectionWidget(key: ValueKey('listening'))
-            : const ReadingSectionWidget(key: ValueKey('reading')),
-        2 => isToefl
-            ? const SpeakingSectionWidget(key: ValueKey('speaking'))
-            : const WritingSectionWidget(key: ValueKey('writing')),
-        3 => isToefl
-            ? const WritingSectionWidget(key: ValueKey('writing'))
-            : const SpeakingSectionWidget(key: ValueKey('speaking')),
-        _ => const SizedBox.shrink(),
-      },
-    );
-  }
-}
-
-// ─── Bottom Nav ───────────────────────────────────────────────────────────────
-
-class _BottomNav extends StatelessWidget {
-  final MockExamState state;
-  final MockExamNotifier notifier;
-  final Color primary;
-  const _BottomNav({required this.state, required this.notifier, required this.primary});
-
-  @override
-  Widget build(BuildContext context) {
-    final idx = state.currentSectionIndex;
-    final isLast = idx == 3;
-    final isToefl = state.examType == 'TOEFL';
-    // TOEFL Listening: no going back
-    final canGoPrev = idx > 0 && !(isToefl && idx == 1);
-    final sections = isToefl ? _kToeflSections : _kSections;
+  Widget _buildHeader(BuildContext context, MockExamState state, Color accent) {
+    final name = state.answers['candidateName'] ?? 'Candidate';
+    final initials = name.split(' ').take(2).map((e) => e[0]).join().toUpperCase();
+    final isUrgent = state.timeRemaining.inMinutes < 5;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: DesignSystem.themeBackground(context),
-        border: Border(top: BorderSide(color: DesignSystem.glassBorder(context))),
+        color: const Color(0xFF0F172A),
+        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
       child: Row(
         children: [
-          // Previous
-          OutlinedButton.icon(
-            onPressed: canGoPrev ? notifier.previousSection : null,
-            icon: const Icon(LucideIcons.arrowLeft, size: 14),
-            label: const Text('Prev'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: DesignSystem.subText(context),
-              side: BorderSide(color: DesignSystem.glassBorder(context)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: accent.withOpacity(0.1),
+            child: Text(initials, style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.bold, fontSize: 14)),
           ),
-          // Progress dots
+          const SizedBox(width: 12),
           Expanded(
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (i) {
-                final isActive = i == idx;
-                final isDone = state.completedSections.contains(sections[i].toLowerCase());
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: isActive ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? primary
-                        : isDone
-                            ? const Color(0xFF10B981)
-                            : DesignSystem.surface(context),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  state.attemptId,
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                ),
+                Text(
+                  state.examType == 'TOEFL' 
+                      ? state.toeflSubStage.name.toUpperCase()
+                      : state.sectionLabels[state.currentSectionIndex].toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+              ],
             ),
           ),
-          // Next / Submit
-          if (!isLast)
-            ElevatedButton.icon(
-              onPressed: notifier.nextSection,
-              icon: const Icon(LucideIcons.arrowRight, size: 14),
-              label: Text(isToefl && idx == 1 ? 'Break' : 'Next'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                elevation: 0,
-              ),
-            )
-          else
-            ElevatedButton.icon(
-              onPressed: state.isSubmitting ? null : () => _confirmSubmit(context, notifier),
-              icon: const Icon(LucideIcons.checkCircle, size: 14),
-              label: const Text('Submit Exam'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                elevation: 0,
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isUrgent ? const Color(0xFFF87171).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isUrgent ? const Color(0xFFF87171).withOpacity(0.3) : Colors.white10),
             ),
+            child: Row(
+              children: [
+                Icon(LucideIcons.timer, color: isUrgent ? const Color(0xFFF87171) : accent, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  _formatDuration(state.timeRemaining),
+                  style: GoogleFonts.jetBrainsMono(
+                    color: isUrgent ? const Color(0xFFF87171) : Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  void _confirmSubmit(BuildContext context, MockExamNotifier notifier) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DesignSystem.overlayBackground(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Submit Exam?',
-            style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
-        content: Text(
-          'Are you sure you want to submit your exam for AI scoring? This cannot be undone.',
-          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: DesignSystem.labelText(context))),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              notifier.submitExam();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DesignSystem.primary(context),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  Widget _buildSectionContent(MockExamState state) {
+    // TOEFL Section Order: Reading(0), Listening(1), Speaking(2), Writing(3)
+    // IELTS Section Order: Listening(0), Reading(1), Writing(2), Speaking(3)
+    final sectionIdx = state.currentSectionIndex;
+    final isToefl = state.examType == 'TOEFL';
+
+    if (isToefl) {
+      return switch (sectionIdx) {
+        0 => const ReadingSectionWidget(),
+        1 => const ListeningSectionWidget(),
+        2 => const SpeakingSectionWidget(),
+        3 => const WritingSectionWidget(),
+        _ => const SizedBox.shrink(),
+      };
+    } else {
+      return switch (sectionIdx) {
+        0 => const ListeningSectionWidget(),
+        1 => const ReadingSectionWidget(),
+        2 => const WritingSectionWidget(),
+        3 => const SpeakingSectionWidget(),
+        _ => const SizedBox.shrink(),
+      };
+    }
+  }
+
+  Widget _buildFooter(BuildContext context, WidgetRef ref, MockExamState state, Color accent) {
+    final notifier = ref.read(mockExamProvider.notifier);
+    final isToefl = state.examType == 'TOEFL';
+    final isListeningOrIntegrated = state.isListening || (isToefl && state.isSpeaking);
+
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Question Pill Bar
+          if (state.totalObjectiveQuestions > 0)
+            SizedBox(
+              height: 30,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: state.totalObjectiveQuestions,
+                itemBuilder: (context, index) {
+                  final isCurrent = state.currentQuestionIndex == index;
+                  final isAnswered = state.answers.containsKey(state.isListening ? 'L_$index' : 'R_$index');
+                  final isFlagged = state.flaggedQuestions[index] ?? false;
+
+                  return GestureDetector(
+                    onTap: () => notifier.jumpToQuestion(index),
+                    child: Container(
+                      width: 30,
+                      margin: const EdgeInsets.only(right: 6),
+                      decoration: BoxDecoration(
+                        color: isCurrent ? accent : (isAnswered ? accent.withOpacity(0.2) : Colors.white.withOpacity(0.05)),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: isCurrent ? accent : (isFlagged ? Colors.amber : Colors.white10)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "${index + 1}",
+                          style: TextStyle(
+                            color: isCurrent ? Colors.black : Colors.white54,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-            child: const Text('Submit'),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _NavButton(
+                icon: LucideIcons.chevronLeft,
+                label: "PREV",
+                onTap: (isListeningOrIntegrated) ? null : () => notifier.prevQuestion(),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: () => notifier.flagQuestion(state.currentQuestionIndex),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: (state.flaggedQuestions[state.currentQuestionIndex] ?? false) 
+                          ? Colors.amber.withOpacity(0.1) 
+                          : Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (state.flaggedQuestions[state.currentQuestionIndex] ?? false) 
+                            ? Colors.amber 
+                            : Colors.white10
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.flag, 
+                          size: 16, 
+                          color: (state.flaggedQuestions[state.currentQuestionIndex] ?? false) ? Colors.amber : Colors.white38
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "FLAG", 
+                          style: GoogleFonts.plusJakartaSans(
+                            color: (state.flaggedQuestions[state.currentQuestionIndex] ?? false) ? Colors.amber : Colors.white38,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12
+                          )
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _NavButton(
+                icon: LucideIcons.chevronRight,
+                label: "NEXT",
+                isPrimary: true,
+                accent: accent,
+                onTap: () => notifier.nextQuestion(),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$m:$s";
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isPrimary;
+  final Color accent;
+
+  const _NavButton({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isPrimary = false,
+    this.accent = const Color(0xFF10B981),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isPrimary ? accent : Colors.white.withOpacity(0.05);
+    final textColor = isPrimary ? Colors.black : Colors.white;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: onTap == null ? Colors.white.withOpacity(0.02) : color,
+          borderRadius: BorderRadius.circular(12),
+          border: isPrimary ? null : Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            if (!isPrimary) Icon(icon, size: 18, color: onTap == null ? Colors.white10 : textColor),
+            if (!isPrimary) const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: onTap == null ? Colors.white10 : textColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+            if (isPrimary) const SizedBox(width: 8),
+            if (isPrimary) Icon(icon, size: 18, color: onTap == null ? Colors.white10 : textColor),
+          ],
+        ),
       ),
     );
   }
