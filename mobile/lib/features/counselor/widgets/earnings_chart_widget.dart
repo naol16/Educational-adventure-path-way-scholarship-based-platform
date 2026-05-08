@@ -128,7 +128,7 @@ class EarningsChartWidget extends StatelessWidget {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => DesignSystem.surfaceColor(context),
+                    getTooltipColor: (touchedSpot) => DesignSystem.overlayBackground(context),
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((LineBarSpot touchedSpot) {
                         return LineTooltipItem(
