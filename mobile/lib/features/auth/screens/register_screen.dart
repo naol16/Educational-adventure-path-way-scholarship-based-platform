@@ -27,6 +27,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _submitting = false;
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -47,17 +50,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return 'student';
   }
 
-  Future<void> _createAccount() async {
-    FocusScope.of(context).unfocus();
+  bool _validateInputs() {
+    bool isValid = true;
+    setState(() {
+      _nameError = null;
+      _emailError = null;
+      _passwordError = null;
+    });
+
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
-      return;
+
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Full name is required');
+      isValid = false;
+    } else if (name.split(' ').length < 2) {
+      setState(() => _nameError = 'Please enter your first and last name');
+      isValid = false;
     }
+
+    if (email.isEmpty) {
+      setState(() => _emailError = 'Email address is required');
+      isValid = false;
+    } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() => _emailError = 'Please enter a valid email address');
+      isValid = false;
+    }
+
+    if (password.isEmpty) {
+      setState(() => _passwordError = 'Password is required');
+      isValid = false;
+    } else if (password.length < 6) {
+      setState(() => _passwordError = 'Password must be at least 6 characters');
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  Future<void> _createAccount() async {
+    FocusScope.of(context).unfocus();
+    
+    if (!_validateInputs()) return;
+
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() => _submitting = true);
     try {
@@ -68,11 +107,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             role: _roleForApi,
           );
       if (!mounted) return;
-      final next = ref.read(authProvider);
-      if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_messageForError(next.error))),
-        );
+      
+      final authState = ref.read(authProvider);
+      if (authState.hasError) {
+        final errorMsg = _messageForError(authState.error);
+        if (errorMsg.toLowerCase().contains('email')) {
+          setState(() => _emailError = errorMsg);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -152,6 +201,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             prefixIcon: LucideIcons.user,
                             controller: _nameController,
                             autofillHints: const [AutofillHints.name],
+                            hasError: _nameError != null,
+                            errorText: _nameError,
                           ),
                           
                           const SizedBox(height: 8),
@@ -163,6 +214,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             autofillHints: const [AutofillHints.email],
+                            hasError: _emailError != null,
+                            errorText: _emailError,
                           ),
                           
                           const SizedBox(height: 8),
@@ -174,6 +227,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             prefixIcon: LucideIcons.lock,
                             controller: _passwordController,
                             autofillHints: const [AutofillHints.newPassword],
+                            hasError: _passwordError != null,
+                            errorText: _passwordError,
                           ),
                           
                           const SizedBox(height: 32),
@@ -202,7 +257,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               onPressed: _submitting ? null : () async {
                                 setState(() => _submitting = true);
                                 try {
-                                  await ref.read(authProvider.notifier).loginWithGoogle();
+                                  await ref.read(authProvider.notifier).loginWithGoogle(role: _roleForApi);
                                 } catch (e) {
                                   if (mounted) {
                                     // ignore: use_build_context_synchronously

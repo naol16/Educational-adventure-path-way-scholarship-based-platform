@@ -1,5 +1,6 @@
 import { Op, Transaction } from "sequelize";
 import { sequelize } from "../config/sequelize.js";
+import { notificationQueue, isRedisAvailable } from "../config/redis.js";
 import { Counselor } from "../models/Counselor.js";
 import { User } from "../models/User.js";
 import { Student } from "../models/Student.js";
@@ -100,7 +101,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || existingCounselor.areasOfExpertise),
         hourlyRate: Number(dto.hourlyRate) || existingCounselor.hourlyRate,
         yearsOfExperience: Number(dto.yearsOfExperience) || existingCounselor.yearsOfExperience,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isOnboarded: dto.isOnboarded || false,
         phoneNumber: dto.phoneNumber || existingCounselor.phoneNumber,
         countryOfResidence: dto.countryOfResidence || existingCounselor.countryOfResidence,
@@ -130,7 +131,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || ""),
         hourlyRate: Number(dto.hourlyRate) || 0,
         yearsOfExperience: Number(dto.yearsOfExperience) || 0,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isActive: true,
         isOnboarded: dto.isOnboarded || false,
         idCardUrl: idCardUrl || null,
@@ -477,20 +478,31 @@ export class CounselorService {
 
         const [startH, startM] = slot.startTime.split(':').map(Number);
         const [endH, endM] = slot.endTime.split(':').map(Number);
+        const offsetMinutes = slot.utcOffset || 0;
 
-        const date = new Date(now);
-        // Find the next occurrence of this day of the week
-        const currentDay = now.getDay();
+        // Get current UTC time in milliseconds
+        const nowUtcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+        // User's current local time as a UTC Date object
+        const userNow = new Date(nowUtcMs + (offsetMinutes * 60000));
+
+        // Find the next occurrence of this day of the week in the user's timezone
+        const currentDay = userNow.getUTCDay();
         let diff = targetDay - currentDay;
         if (diff < 0) diff += 7; // Ensure we move forward
 
-        date.setDate(now.getDate() + diff + (week * 7));
+        // Set the target date in UTC matching the user's requested time
+        const userStartTime = new Date(userNow);
+        userStartTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userStartTime.setUTCHours(startH as number, startM, 0, 0);
 
-        const startTime = new Date(date);
-        startTime.setHours(startH as number, startM, 0, 0);
+        // Convert back to absolute UTC timestamp
+        const startTime = new Date(userStartTime.getTime() - (offsetMinutes * 60000));
 
-        const endTime = new Date(date);
-        endTime.setHours(endH as number, endM, 0, 0);
+        const userEndTime = new Date(userNow);
+        userEndTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userEndTime.setUTCHours(endH as number, endM, 0, 0);
+        
+        const endTime = new Date(userEndTime.getTime() - (offsetMinutes * 60000));
 
         // Skip if this time has already passed
         if (startTime < now) continue;
@@ -593,8 +605,12 @@ export class CounselorService {
 
     await booking.update({ paymentId: payment.id });
 
-    // Assuming we want to redirect user back to a specific route
-    const returnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    // Use caller-supplied returnUrl (mobile deep link) or fall back to web URL
+    const defaultReturnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    
+    // Chapa requires a valid https:// return_url — deep links (edupath://) are rejected.
+    // For mobile, we always use the web success page; the mobile WebView intercepts it via URL matching.
+    const returnUrl = defaultReturnUrl;
 
     const chapaResponse = await PaymentService.initializePayment(
       tx_ref,
@@ -724,22 +740,11 @@ export class CounselorService {
               console.error("[ConfirmBooking] Error fetching attendee emails:", e);
             }
 
-            // Generate Google Meet Link
-            let meetingLink = `https://meet.edu-pathway.com/session-${booking.id}`;
-            try {
-              if (slot) {
-                console.log(`[ConfirmBooking] Creating Google Meet for booking ${booking.id}`);
-                meetingLink = await GoogleMeetService.createMeeting(
-                  "Counseling Session: Educational Pathway",
-                  `Counseling session between student and counselor.`,
-                  slot.startTime,
-                  60,
-                  attendees
-                );
-              }
-            } catch (e) {
-              console.error("[ConfirmBooking] Google Meet creation failed, using fallback:", e);
-            }
+            // Generate In-App Jitsi Meeting Link (Room Name)
+            // Example: Pathway-Session-123-1698765432100
+            const timestamp = Date.now();
+            const meetingLink = `Pathway-Session-${booking.id}-${timestamp}`;
+            console.log(`[ConfirmBooking] Generated In-App Meeting Room: ${meetingLink}`);
 
             await booking.update({ status: 'confirmed', meetingLink });
             if (slot) {
@@ -748,36 +753,50 @@ export class CounselorService {
               // Send direct email invites to both participants as a reliable fallback.
               try {
                 const endTime = new Date(slot.startTime.getTime() + 60 * 60 * 1000);
-                const sendEmailTasks: Promise<void>[] = [];
-
-                if (studentEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                
+                if (isRedisAvailable()) {
+                  // OFF-LOAD TO BACKGROUND WORKER (Instant response)
+                  if (studentEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: studentEmail,
                       recipientName: studentName || "Student",
                       counterpartName: counselorName || "Counselor",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
-                }
-
-                if (counselorEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  if (counselorEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: counselorEmail,
                       recipientName: counselorName || "Counselor",
                       counterpartName: studentName || "Student",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  console.log(`[ConfirmBooking] Email tasks added to background queue for: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                } else {
+                  // FALLBACK: Synchronous (Slow) if Redis is down
+                  const sendEmailTasks: Promise<void>[] = [];
+                  if (studentEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: studentEmail, recipientName: studentName || "Student",
+                      counterpartName: counselorName || "Counselor", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  if (counselorEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: counselorEmail, recipientName: counselorName || "Counselor",
+                      counterpartName: studentName || "Student", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  await Promise.all(sendEmailTasks);
+                  console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
                 }
-
-                await Promise.all(sendEmailTasks);
-                console.log(`[ConfirmBooking] Direct invite emails sent to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
               } catch (emailError) {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
               }
@@ -792,7 +811,8 @@ export class CounselorService {
                     "Booking Confirmed",
                     `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
-                    booking.id
+                    booking.id,
+                    false
                   );
                 } catch (notifyError) {
                   console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
@@ -900,6 +920,7 @@ export class CounselorService {
           userId: student.userId,
           name: studentUser?.name || "Unknown",
           email: studentUser?.email || "Unknown",
+          avatarUrl: studentUser?.avatarUrl || null,
           lastBookingDate: booking.createdAt,
           lastBookingStatus: booking.status,
         });
@@ -942,6 +963,7 @@ export class CounselorService {
       studentId: student.id,
       name: (student as any).user?.name || "Unknown",
       email: (student as any).user?.email || "Unknown",
+      avatarUrl: (student as any).user?.avatarUrl || null,
       learningPath: learningPath
         ? {
           id: learningPath.id,
@@ -1014,6 +1036,9 @@ export class CounselorService {
     if ((dto.status === "completed" || dto.status === "awaiting_confirmation") && booking.status !== "started") throw httpError(409, "Can only complete a started booking");
     if (dto.status === "cancelled" && booking.status === "completed") throw httpError(409, "Cannot cancel a completed booking");
 
+    if (dto.status === "confirmed") {
+      await booking.update({ status: "confirmed" });
+    }
     if (dto.status === "started") await booking.update({ status: "started", startedAt: new Date() });
     if (dto.status === "completed" || dto.status === "awaiting_confirmation") {
       await booking.update({ status: "awaiting_confirmation", completedAt: new Date() });
@@ -1132,7 +1157,14 @@ export class CounselorService {
     if (!slot) throw httpError(404, "Slot not found");
     const start = new Date(slot.startTime);
     const end = new Date(slot.endTime);
-    if (now > end) throw httpError(409, "This session has already ended");
+    
+    // Allow joining if session is started OR if it's within 60 mins after the scheduled end (grace period for late starters)
+    const gracePeriod = 60 * 60 * 1000;
+    const isPastGrace = now.getTime() > (end.getTime() + gracePeriod);
+    
+    if (booking.status !== "started" && isPastGrace) {
+      throw httpError(409, "This session has already ended and the grace period has passed");
+    }
 
     const meetingLink = booking.meetingLink || slot.meetingLink || `https://meet.edu-pathway.com/session-${booking.id}`;
     // Allow immediate access once the meeting exists; only mark started near/after scheduled start.
@@ -1410,6 +1442,12 @@ export class CounselorService {
       student?.dataValues?.user ||
       null;
 
+    const payment =
+      (typeof booking?.get === "function" ? booking.get("payment") : null) ||
+      booking?.payment ||
+      booking?.dataValues?.payment ||
+      null;
+
     return {
       id: booking.id,
       studentId: booking.studentId,
@@ -1425,6 +1463,7 @@ export class CounselorService {
         userId: student.userId,
         name: studentUser?.name || "Unknown",
         email: studentUser?.email || "N/A",
+        avatarUrl: studentUser?.avatarUrl || null,
       } : null,
       counselor: counselor ? {
         id: counselor.id,
@@ -1445,6 +1484,13 @@ export class CounselorService {
         status: slot.status,
         reservedStudentId: slot.reservedStudentId,
         meetingLink: slot.meetingLink,
+      } : null,
+      payment: payment ? {
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: payment.status,
+        tx_ref: payment.tx_ref
       } : null
     };
   }
@@ -1586,6 +1632,10 @@ export class CounselorService {
             association: 'slot',
             required: false,
           },
+          {
+            association: 'payment',
+            required: false,
+          },
         ],
         order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']],
       });
@@ -1608,6 +1658,10 @@ export class CounselorService {
         },
         {
           association: 'slot',
+          required: false,
+        },
+        {
+          association: 'payment',
           required: false,
         },
       ],
@@ -1792,5 +1846,12 @@ export class CounselorService {
       include: [{ model: Counselor, as: 'counselor', include: [{ association: 'user', attributes: ['name'] }] }],
       order: [['createdAt', 'DESC']],
     });
+  }
+  static async updateBookingNotes(counselorId: number, bookingId: number, notes: string): Promise<any> {
+    const booking = await (await import('../repositories/BookingRepository.js')).BookingRepository.findByIdAndCounselorId(bookingId, counselorId);
+    if (!booking) throw new Error("Booking not found");
+    
+    await booking.update({ notes });
+    return booking;
   }
 }

@@ -115,13 +115,16 @@ class AuthApiService {
     return session;
   }
 
-  Future<AuthSession> googleLogin({required String idToken}) async {
+  Future<AuthSession> googleLogin({required String idToken, String? role}) async {
     final uri = Uri.parse(ApiConfig.apiPath('/api/auth/google-login'));
     final headers = const {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    final body = {'credential': idToken};
+    final body = {
+      'credential': idToken,
+      if (role != null) 'role': role,
+    };
     logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
       uri,
@@ -217,6 +220,26 @@ class AuthApiService {
     // The backend might return the user in a 'data' field (onboarding complete), 'user' field (auth endpoints), or as the root
     final userMap = asJsonMap(map['data']) ?? asJsonMap(map['user']) ?? map;
     return User.fromJson(userMap);
+  }
+
+  Future<void> forgotPassword(String email) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/auth/forgot-password'));
+    final headers = const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {'email': email};
+    logRequest('POST', uri, headers: headers, body: body);
+    final response = await _http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    logResponse(response);
+    
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throwForResponse(response, fallback: 'Failed to send password reset email');
+    }
   }
 
   void close() => _http.close();

@@ -26,8 +26,10 @@ class MasteryHubScreen extends ConsumerStatefulWidget {
 }
 
 class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with TickerProviderStateMixin {
+  final List<String> _tabs = ['Reading', 'Listening', 'Writing', 'Speaking'];
   String _selectedTab = 'Reading';
   late AnimationController _staggerController;
+  late PageController _pageController;
   bool _hasTriggeredIntro = false;
 
   @override
@@ -37,19 +39,25 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
+    _pageController = PageController(initialPage: _tabs.indexOf(_selectedTab));
   }
 
   @override
   void dispose() {
     _staggerController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   void _startAssessment({bool force = false}) async {
+    final activeExam = ref.read(learningPathProvider).activeExam;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DiagnosticAssessmentScreen(force: force),
+        builder: (context) => DiagnosticAssessmentScreen(
+          force: force,
+          initialExam: activeExam,
+        ),
       ),
     );
   }
@@ -182,9 +190,53 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   Widget _buildHubContent(BuildContext context, FormattedLearningPath path, Color primaryColor) {
-    final sectionData = path.skills[_selectedTab.toLowerCase()];
-    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder score
-    final missions = AdaptivePathGenerator.filterMissions(sectionData?.missions ?? [], _selectedTab, adaptiveLevel);
+    return NestedScrollView(
+      physics: const BouncingScrollPhysics(),
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 30),
+                _buildSkillOverview(context, path, primaryColor),
+                const SizedBox(height: 35),
+                _buildModuleSelector(context),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ),
+      ],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedTab = _tabs[index];
+          });
+        },
+        children: _tabs.map((tab) => _buildMissionsForTab(context, path, tab)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMissionsForTab(BuildContext context, FormattedLearningPath path, String tabName) {
+    final sectionData = path.skills[tabName.toLowerCase()];
+    
+    // Map backend string level to UI enum
+    final levelStr = path.proficiencyLevel.toLowerCase();
+    final adaptiveLevel = levelStr == 'hard' 
+        ? AdaptiveLevel.hard 
+        : (levelStr == 'medium' ? AdaptiveLevel.medium : AdaptiveLevel.easy);
+
+    final missions = AdaptivePathGenerator.filterMissions(
+      sectionData?.missions ?? [],
+      tabName,
+      adaptiveLevel,
+      examType: path.examType,
+    );
     final videos = sectionData?.videos ?? [];
 
     return SingleChildScrollView(
@@ -193,12 +245,6 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
-          const SizedBox(height: 30),
-          _buildSkillOverview(context, path, primaryColor),
-          const SizedBox(height: 35),
-          _buildModuleSelector(context),
-          const SizedBox(height: 30),
           if (missions.isEmpty && videos.isEmpty)
             Center(
               child: Padding(
@@ -209,94 +255,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                 ),
               ),
             ),
-          if (path.proficiencyLevel.toLowerCase() == 'easy') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "You missed a few vocabulary questions in your assessment. This phase will help you master word-matching secrets!",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Master word-matching secrets...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "You missed a few detail-oriented audio cues. This phase will sharpen your ear for precision and distractors!",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Sharpen your ear for precision...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your grammar and sentence structures need a solid foundation. Let's build your writing engine step-by-step!",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Build your writing engine...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "Let's build your speaking confidence from safe topics to full interactions. Prepare for the final AI mock interview!",
-                icon: LucideIcons.mic,
-                color: DesignSystem.easyPhaseGradient.colors.first,
-                previewText: "Build speaking confidence...",
-              ),
-          ] else if (path.proficiencyLevel.toLowerCase() == 'medium') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "You're reading well, but complex logic traps like TFNG are slowing you down. Let's master advanced inference.",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Master advanced inference...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "Multi-speaker flows and fast lectures are tricky. Time to practice spatial navigation and note-taking.",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Practice note-taking...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your coherence is improving, but try using more advanced cohesive devices to link these academic points.",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Use cohesive devices...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "Your fluency is good, but you need to transition from safe topics to abstract reasoning and conditionals for a Band 7+.",
-                icon: LucideIcons.mic,
-                color: DesignSystem.mediumPhaseGradient.colors.first,
-                previewText: "Transition to abstract reasoning...",
-              ),
-          ] else if (path.proficiencyLevel.toLowerCase() == 'hard') ...[
-            if (_selectedTab.toLowerCase() == 'reading')
-              _InteractivePathfinderTip(
-                tip: "Your comprehension is excellent, but abstract meaning and speed are the final hurdles. Let's master rapid inference.",
-                icon: LucideIcons.sparkles,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Master rapid inference...",
-              ),
-            if (_selectedTab.toLowerCase() == 'listening')
-              _InteractivePathfinderTip(
-                tip: "Your ear is sharp. Now we introduce high-speed synthesis and complex global accents. Focus on subtle distractors.",
-                icon: LucideIcons.headphones,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Focus on subtle distractors...",
-              ),
-            if (_selectedTab.toLowerCase() == 'writing')
-              _InteractivePathfinderTip(
-                tip: "Your grammar is perfect, but stylistic choices matter. Try using a more active structure to sound authoritative.",
-                icon: LucideIcons.penTool,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Refine stylistic choices...",
-              ),
-            if (_selectedTab.toLowerCase() == 'speaking')
-              _InteractivePathfinderTip(
-                tip: "It's time for the panel pressure. Focus on idiomatic naturalness and deep abstract reasoning.",
-                icon: LucideIcons.mic,
-                color: DesignSystem.hardPhaseGradient.colors.first,
-                previewText: "Focus on idiomatic naturalness...",
-              ),
-          ],
+
           ...(missions.isNotEmpty ? missions : videos).asMap().entries.expand((entry) {
             int index = entry.key;
             var item = entry.value;
@@ -310,7 +269,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             } else {
               isLocked = index > 0 && !(videos[index - 1].isCompleted);
               bool isPracticeCompleted = false;
-              final skillKey = _selectedTab.toLowerCase();
+              final skillKey = tabName.toLowerCase();
               final learningMode = path.learningMode;
               if (learningMode is Map) {
                 final skillLm = learningMode[skillKey];
@@ -391,7 +350,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                                 video: item is Mission ? _getMissionVideo(item, path) : item as PathVideo,
                                 index: index,
                                 phase: missionPhase,
-                                section: _selectedTab,
+                                section: tabName,
                                 sectionData: sectionData ?? SkillPathSection(videos: [], pdfs: [], notes: '', isNoteCompleted: false, missions: []),
                                 learningMode: path.learningMode,
                                 mission: item is Mission ? item : null,
@@ -423,7 +382,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     
     return Container(
       width: double.infinity,
-      height: 220,
+      height: 300,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
@@ -444,9 +403,9 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                 File("C:\\Users\\hp\\.gemini\\antigravity\\brain\\3d9cdb31-2c9e-4646-b2a1-ce007a9bfd5a\\ultimate_mastery_adventure_banner_1776986514992.png"),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) => Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                      colors: [DesignSystem.themeBackground(context), DesignSystem.overlayBackground(context)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -473,7 +432,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             
             // Content
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -530,7 +489,11 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                       onPressed: () {
                          Navigator.push(
                            context,
-                           MaterialPageRoute(builder: (context) => const MockExamScreen()),
+                           MaterialPageRoute(
+                             builder: (context) => MockExamScreen(
+                               initialExamType: ref.read(learningPathProvider).activeExam,
+                             ),
+                           ),
                          );
                       },
                     ),
@@ -832,23 +795,22 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: [
-          _buildTab(context, "Reading", _selectedTab == 'Reading'),
-          _buildTab(context, "Listening", _selectedTab == 'Listening'),
-          _buildTab(context, "Writing", _selectedTab == 'Writing'),
-          _buildTab(context, "Speaking", _selectedTab == 'Speaking'),
-        ],
+        children: _tabs.asMap().entries.map((entry) {
+          return _buildTab(context, entry.value, _selectedTab == entry.value, entry.key);
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildTab(BuildContext context, String label, bool active) {
+  Widget _buildTab(BuildContext context, String label, bool active, int index) {
     final primaryColor = DesignSystem.primary(context);
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedTab = label;
-        });
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(right: 12),
@@ -1157,7 +1119,10 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   Widget _buildAdaptiveLevelBadge(BuildContext context, FormattedLearningPath path) {
-    final adaptiveLevel = AdaptivePathGenerator.calculateLevel(path.examType, 6.5); // Placeholder
+    final levelStr = path.proficiencyLevel.toLowerCase();
+    final adaptiveLevel = levelStr == 'hard' 
+        ? AdaptiveLevel.hard 
+        : (levelStr == 'medium' ? AdaptiveLevel.medium : AdaptiveLevel.easy);
     final label = AdaptivePathGenerator.getBadgeLabel(adaptiveLevel);
     Color badgeColor;
     

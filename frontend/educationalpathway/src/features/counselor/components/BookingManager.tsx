@@ -20,8 +20,10 @@ import {
 import { Button, Card, CardBody } from '@/components/ui';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export const BookingManager = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<any[]>([]);
 
@@ -196,26 +198,20 @@ export const BookingManager = () => {
                           Start Session
                         </Button>
                         <div className="flex gap-2">
-                          <a
-                            href={booking.meetingLink || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1"
-                            onClick={(e) => {
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 font-bold h-10"
+                            onClick={() => {
                               if (!booking.meetingLink) {
-                                e.preventDefault();
                                 toast.success('Meeting link will be available soon.');
+                              } else {
+                                router.push(`/dashboard/meeting/${booking.meetingLink}`);
                               }
                             }}
                           >
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full font-bold h-10"
-                            >
-                              Join Meeting
-                            </Button>
-                          </a>
+                            Join Meeting
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="destructive"
@@ -238,26 +234,20 @@ export const BookingManager = () => {
                           <CheckCircle2 size={16} className="mr-2" />
                           Mark Completed
                         </Button>
-                        <a
-                          href={booking.meetingLink || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                          onClick={(e) => {
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full font-bold h-10"
+                          onClick={() => {
                             if (!booking.meetingLink) {
-                              e.preventDefault();
                               toast.success('Meeting link will be available soon.');
+                            } else {
+                              router.push(`/dashboard/meeting/${booking.meetingLink}`);
                             }
                           }}
                         >
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full font-bold h-10"
-                          >
-                            Re-join Session
-                          </Button>
-                        </a>
+                          Re-join Session
+                        </Button>
                       </div>
                     )}
 

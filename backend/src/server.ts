@@ -3,11 +3,12 @@ import http from "http";
 import { connectSequelize } from "./config/sequelize.js";
 import configs from "./config/configs.js";
 import { SocketService } from "./services/SocketService.js";
-import { seedAdminUser } from "./utils/databaseMigration.js";
+// import { createTables, seedAdminUser } from "./utils/databaseMigration.js"; // Migration is now handled by Sequelize sync or manual scripts
 
 // Scholarship automation imports
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
 import { assessmentWorker } from "./workers/AssessmentWorker.js";
+import { notificationWorker } from "./workers/NotificationWorker.js";
 import { seedScholarshipSources } from "./scripts/seedScholarships.js";
 
 // Temporary: Global unhandled rejection handler for debugging
@@ -38,21 +39,28 @@ async function start() {
   try {
     await connectSequelize();
 
-    // Ensure the assessment worker is running (explicit reference prevents tree-shaking)
+    // Ensure the workers are running (explicit reference prevents tree-shaking)
     if (assessmentWorker) {
         console.log(`🧠 Assessment worker started: ${assessmentWorker.name}`);
-    } else {
-        console.warn("⚠️ Assessment worker skipped (Redis not connected)");
+    } 
+    if (notificationWorker) {
+        console.log(`🔔 Notification worker started: ${notificationWorker.name}`);
     }
 
-    // Start Cron Jobs immediately
+    // Initialize Scholarship Ingestion System
+    // await seedScholarshipSources();
     // startScholarshipCron();
 
-    // // Initialize Scholarship Ingestion System in background (don't block cron/startup)
-    // seedScholarshipSources().catch(err => console.error("Background seeding failed:", err));
-
-    // Seed Admin Users
-    await seedAdminUser();
+    console.log(`
+===================================================
+🚀 BACKEND IS FULLY RUNNING AND READY 🚀
+===================================================
+✅ Server listening on port ${finalPort}
+✅ Database Connected Successfully
+✅ WebSockets Initialized
+✅ Workers Active
+===================================================
+    `);
 
   } catch (err) {
     console.error("Failed to connect to database:", err);

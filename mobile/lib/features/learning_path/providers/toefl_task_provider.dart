@@ -110,9 +110,9 @@ class ToeflTaskNotifier extends StateNotifier<ToeflTaskState> {
         listeningQuestions: blueprint.sections.listening?.questions ?? [],
         currentStage: ToeflStage.reading,
         stageTimeRemaining: const Duration(minutes: 3),
-        responses: {
-          'reading': {},
-          'listening': {},
+        responses: <String, dynamic>{
+          'reading': <String, dynamic>{},
+          'listening': <String, dynamic>{},
           'writing': '',
         },
       );
@@ -180,7 +180,10 @@ class ToeflTaskNotifier extends StateNotifier<ToeflTaskState> {
     if (state.testId == null) return;
     state = state.copyWith(isSubmitting: true, error: null);
     try {
-      final skillResponse = state.responses[skill] ?? {};
+      final dynamic rawSkillResponse = state.responses[skill] ?? <String, dynamic>{};
+      final Map<String, dynamic> skillResponse = rawSkillResponse is Map 
+          ? Map<String, dynamic>.from(rawSkillResponse) 
+          : <String, dynamic>{'text': rawSkillResponse.toString()};
       
       Map<String, dynamic>? audioData;
       if (skill == 'speaking' && state.recordedAudioPath != null) {
@@ -195,7 +198,7 @@ class ToeflTaskNotifier extends StateNotifier<ToeflTaskState> {
       final response = await _api.submitSection(
         testId: state.testId!,
         skill: skill,
-        responses: skillResponse is String ? {'text': skillResponse} : skillResponse,
+        responses: skillResponse,
         audioData: audioData,
       );
       
