@@ -2,7 +2,6 @@ import { Op } from 'sequelize';
 import { Booking } from '../models/Booking.js';
 import { Payment } from '../models/Payment.js';
 import { Student } from '../models/Student.js';
-import { Payment } from '../models/Payment.js';
 import { CounselorService } from '../services/CounselorService.js';
 import { sequelize } from '../config/sequelize.js';
 import { Transaction } from 'sequelize';
