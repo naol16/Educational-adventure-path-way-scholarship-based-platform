@@ -35,22 +35,22 @@ class _LandingScreenState extends State<LandingScreen> {
     CarouselSlide(
       title: 'Precision Discovery',
       description: 'Unlock your academic potential with our hyper-accurate AI-driven scholarship matching engine.',
-      imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=800',
+      imageUrl: 'assets/images/landing/scholarship_ui.png',
     ),
     CarouselSlide(
       title: 'Verified Mentorship',
       description: 'Unlock expert guidance with total peace of mind. Every transaction is protected by secure escrow.',
-      imageUrl: 'https://images.unsplash.com/photo-1521791136364-798a7bc0d262?q=80&w=800',
+      imageUrl: 'assets/images/landing/mentorship_ui.png',
     ),
     CarouselSlide(
       title: 'Academic Mastery',
       description: 'Master your exams with personalized IELTS & TOEFL training built to bridge your skill gaps.',
-      imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=800',
+      imageUrl: 'assets/images/landing/exam_ui.png',
     ),
     CarouselSlide(
       title: 'AI Speaking Lab',
       description: 'Speak with confidence. Practice with our real-time mock interview simulator and get instant AI feedback.',
-      imageUrl: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=800',
+      imageUrl: 'assets/images/landing/ai_speaking_ui.png',
     ),
   ];
 
@@ -207,18 +207,9 @@ class _LandingScreenState extends State<LandingScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
+                  Image.asset(
                     slide.imageUrl,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.white.withOpacity(0.05),
-                        child: const Center(
-                          child: CircularProgressIndicator(color: Color(0xFF10B981)),
-                        ),
-                      );
-                    },
                   ),
                   // Subtle gradient overlay for better text contrast if needed
                   // but we place text below, so this is for depth
