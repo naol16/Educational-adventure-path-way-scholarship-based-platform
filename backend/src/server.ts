@@ -3,7 +3,7 @@ import http from "http";
 import { connectSequelize } from "./config/sequelize.js";
 import configs from "./config/configs.js";
 import { SocketService } from "./services/SocketService.js";
-// import { createTables, seedAdminUser } from "./utils/databaseMigration.js"; // Migration is now handled by Sequelize sync or manual scripts
+import { seedAdminUser } from "./utils/databaseMigration.js";
 
 // Scholarship automation imports
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
@@ -46,10 +46,13 @@ async function start() {
     }
 
     // Start Cron Jobs immediately
-    startScholarshipCron();
+    // startScholarshipCron();
 
-    // Initialize Scholarship Ingestion System in background (don't block cron/startup)
-    seedScholarshipSources().catch(err => console.error("Background seeding failed:", err));
+    // // Initialize Scholarship Ingestion System in background (don't block cron/startup)
+    // seedScholarshipSources().catch(err => console.error("Background seeding failed:", err));
+
+    // Seed Admin Users
+    await seedAdminUser();
 
   } catch (err) {
     console.error("Failed to connect to database:", err);
