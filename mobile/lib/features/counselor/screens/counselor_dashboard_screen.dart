@@ -58,7 +58,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 24),
                         _buildUpcomingSessions(context, ref, bookingsAsync),
                         const SizedBox(height: 24),
-                        _buildProInsight(context),
+                        _buildGoalsSection(context, ref),
                       ],
                     ),
                   ),
@@ -384,39 +384,196 @@ class CounselorDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProInsight(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: DesignSystem.primary(context).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: DesignSystem.primary(context), borderRadius: BorderRadius.circular(10)),
-            child: const Icon(LucideIcons.trendingUp, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildGoalsSection(BuildContext context, WidgetRef ref) {
+    final goals = ref.watch(counselorGoalsProvider);
+    final primary = DesignSystem.primary(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Professional Milestones',
+              style: GoogleFonts.plusJakartaSans(
+                color: DesignSystem.mainText(context),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _showAddGoalDialog(context, ref),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(LucideIcons.plus, color: primary, size: 16),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (goals.isEmpty)
+          GlassContainer(
+            padding: const EdgeInsets.all(20),
+            borderRadius: 20,
+            child: Row(
               children: [
-                Text('Pro Insight', style: GoogleFonts.plusJakartaSans(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
-                Text(
-                  'Reviewing student drafts 48h before deadlines increases successful matching by 72%.',
-                  style: GoogleFonts.inter(color: DesignSystem.subText(context), fontSize: 12, height: 1.5),
+                Icon(LucideIcons.target, color: DesignSystem.labelText(context), size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('No active milestones', style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text('Set your first goal to track your success.', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12)),
+                    ],
+                  ),
                 ),
               ],
             ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: goals.length > 3 ? 3 : goals.length,
+            itemBuilder: (context, index) {
+              final goal = goals[index];
+              return _buildGoalItem(context, ref, goal);
+            },
+          ),
+        if (goals.length > 3)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Center(
+              child: TextButton(
+                onPressed: () => _showAllGoals(context, ref),
+                child: Text('View All Goals', style: GoogleFonts.inter(color: primary, fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGoalItem(BuildContext context, WidgetRef ref, CounselorGoal goal) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GlassContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        borderRadius: 16,
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () => ref.read(counselorGoalsProvider.notifier).toggleGoal(goal.id),
+              child: Icon(
+                goal.isCompleted ? LucideIcons.checkCircle : LucideIcons.circle,
+                color: goal.isCompleted ? const Color(0xFF10B981) : DesignSystem.labelText(context),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                goal.text,
+                style: GoogleFonts.inter(
+                  color: goal.isCompleted ? DesignSystem.labelText(context) : DesignSystem.mainText(context),
+                  fontSize: 13,
+                  fontWeight: goal.isCompleted ? FontWeight.w400 : FontWeight.w600,
+                  decoration: goal.isCompleted ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => ref.read(counselorGoalsProvider.notifier).removeGoal(goal.id),
+              child: Icon(LucideIcons.trash2, color: Colors.red.withValues(alpha: 0.5), size: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddGoalDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignSystem.overlayBackground(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('New Milestone', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: GoogleFonts.inter(color: DesignSystem.mainText(context)),
+          decoration: InputDecoration(
+            hintText: 'e.g., Review 5 student SOPs...',
+            hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context).withValues(alpha: 0.5)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: DesignSystem.labelText(context)))),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                ref.read(counselorGoalsProvider.notifier).addGoal(controller.text);
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: DesignSystem.primary(context), foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('Add Goal'),
           ),
         ],
       ),
     );
   }
+
+  void _showAllGoals(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: DesignSystem.themeBackground(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 24),
+              Text('Professional Milestones', style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: DesignSystem.mainText(context))),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final goals = ref.watch(counselorGoalsProvider);
+                    return ListView.builder(
+                      controller: scrollController,
+                      itemCount: goals.length,
+                      itemBuilder: (context, index) => _buildGoalItem(context, ref, goals[index]),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildPendingScreen(BuildContext context, WidgetRef ref) {
     return Scaffold(

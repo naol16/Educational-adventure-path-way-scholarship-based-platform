@@ -11,6 +11,7 @@ import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/counselor/widgets/document_preview_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 class CounselorOnboardingScreen extends ConsumerStatefulWidget {
@@ -51,6 +52,9 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
   File? _profileImage;
   File? _cvFile;
   File? _certFile;
+  String? _profileImageUrl;
+  String? _cvUrl;
+  String? _certUrl;
 
   @override
   void initState() {
@@ -77,6 +81,9 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         _hourlyRate = profile.hourlyRate;
         _sessionDuration = profile.sessionDuration;
         _consultationModes = profile.consultationModes;
+        _profileImageUrl = profile.profileImageUrl;
+        _cvUrl = profile.cvUrl;
+        _certUrl = profile.certificateUrls;
       });
     }
   }
@@ -283,11 +290,11 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
       children: [
         _buildSectionTitle('Verification Documents', LucideIcons.shieldCheck),
         const SizedBox(height: 24),
-        _buildFilePicker('Profile Photo', _profileImage, () => _pickImage(), isImage: true),
+        _buildFilePicker('Profile Photo', _profileImage, () => _pickImage(), isImage: true, networkUrl: _profileImageUrl),
         const SizedBox(height: 20),
-        _buildFilePicker('Curriculum Vitae (CV)', _cvFile, () => _pickFile('cv')),
+        _buildFilePicker('Curriculum Vitae (CV)', _cvFile, () => _pickFile('cv'), networkUrl: _cvUrl),
         const SizedBox(height: 20),
-        _buildFilePicker('Academic Certificates', _certFile, () => _pickFile('cert')),
+        _buildFilePicker('Academic Certificates', _certFile, () => _pickFile('cert'), networkUrl: _certUrl),
       ],
     );
   }
@@ -355,7 +362,8 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
     );
   }
 
-  Widget _buildFilePicker(String label, File? file, VoidCallback onTap, {bool isImage = false}) {
+  Widget _buildFilePicker(String label, File? file, VoidCallback onTap, {bool isImage = false, String? networkUrl}) {
+    final hasFile = file != null || networkUrl != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -367,19 +375,49 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
             borderRadius: 20,
             child: Row(
               children: [
-                if (isImage && file != null) ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(file, width: 50, height: 50, fit: BoxFit.cover))
-                else Icon(isImage ? LucideIcons.image : LucideIcons.fileText, color: file != null ? const Color(0xFF10B981) : DesignSystem.primary(context), size: 32),
+                if (isImage && (file != null || networkUrl != null))
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: file != null 
+                      ? Image.file(file, width: 50, height: 50, fit: BoxFit.cover)
+                      : Image.network(networkUrl!, width: 50, height: 50, fit: BoxFit.cover),
+                  )
+                else
+                  Icon(
+                    isImage ? LucideIcons.image : LucideIcons.fileText,
+                    color: hasFile ? const Color(0xFF10B981) : DesignSystem.primary(context),
+                    size: 32,
+                  ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(file != null ? 'File selected' : 'Upload file', style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontWeight: FontWeight.w700, fontSize: 14)),
-                      Text(file != null ? file.path.split('/').last : 'PDF, JPG or PNG (max 5MB)', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11)),
+                      Text(
+                        hasFile ? 'File selected' : 'Upload file',
+                        style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      Text(
+                        file != null 
+                          ? file.path.split('/').last 
+                          : (networkUrl != null ? 'Existing document' : 'PDF, JPG or PNG (max 5MB)'),
+                        style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
-                if (file != null) const Icon(LucideIcons.checkCircle, color: Color(0xFF10B981), size: 20),
+                if (hasFile) ...[
+                  IconButton(
+                    icon: Icon(LucideIcons.eye, color: DesignSystem.primary(context), size: 20),
+                    onPressed: () => DocumentPreviewDialog.show(
+                      context,
+                      file: file,
+                      url: networkUrl,
+                      title: 'Preview $label',
+                    ),
+                  ),
+                  const Icon(LucideIcons.checkCircle, color: Color(0xFF10B981), size: 20),
+                ],
               ],
             ),
           ),
