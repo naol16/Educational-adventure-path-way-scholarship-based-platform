@@ -26,6 +26,43 @@ class CounselorDashboardOverview {
   }
 }
 
+class CounselorGoal {
+  final String id;
+  final String text;
+  final bool isCompleted;
+  final DateTime createdAt;
+
+  CounselorGoal({
+    required this.id,
+    required this.text,
+    this.isCompleted = false,
+    required this.createdAt,
+  });
+
+  CounselorGoal copyWith({String? id, String? text, bool? isCompleted, DateTime? createdAt}) {
+    return CounselorGoal(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      isCompleted: isCompleted ?? this.isCompleted,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'text': text,
+    'isCompleted': isCompleted,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory CounselorGoal.fromJson(Map<String, dynamic> json) => CounselorGoal(
+    id: json['id'],
+    text: json['text'],
+    isCompleted: json['isCompleted'],
+    createdAt: DateTime.parse(json['createdAt']),
+  );
+}
+
 // ─── Counselor Profile ─────────────────────────────────────────────────────
 
 class CounselorProfile {
