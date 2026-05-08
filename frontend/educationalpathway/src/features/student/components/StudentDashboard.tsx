@@ -129,7 +129,7 @@ export const StudentDashboard = () => {
       variants={container}
       initial="hidden"
       animate="show"
-      className="min-h-screen bg-[#f8fafc] text-slate-900 space-y-10 pb-20 px-4 md:px-10 lg:px-16 max-w-7xl mx-auto"
+      className="min-h-screen bg-background text-foreground space-y-10 pb-20 px-4 md:px-10 lg:px-16 max-w-7xl mx-auto"
     >
       
       {/* Header Section */}
@@ -160,7 +160,7 @@ export const StudentDashboard = () => {
         </div>
 
         {/* Profile Strength Circle */}
-        <Card className="rounded-xl border-none shadow-sm p-8 bg-card w-full md:w-80">
+        <Card className="rounded-xl shadow-sm p-8 bg-card w-full md:w-80 border border-border">
           <div className="flex flex-col items-center">
              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-6">Profile Strength</p>
              <div className="relative h-40 w-40 flex items-center justify-center">

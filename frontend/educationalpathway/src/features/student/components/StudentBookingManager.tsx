@@ -188,7 +188,7 @@ export const StudentBookingManager = () => {
                     {awaitingConfirmation.length > 0 && (
                         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-3">
                             <CheckCircle2 className="text-amber-500" size={20} />
-                            <p className="text-sm font-bold text-amber-700">You have {awaitingConfirmation.length} sessions ready for review and milestone confirmation.</p>
+                            <p className="text-sm font-bold text-amber-700 dark:text-amber-500">You have {awaitingConfirmation.length} sessions ready for review and milestone confirmation.</p>
                         </div>
                     )}
 
@@ -223,7 +223,7 @@ export const StudentBookingManager = () => {
 
                                             {/* Show meeting link for reference */}
                                             <div className={`mb-6 p-3 rounded-xl border ${
-                                                needsReview ? 'bg-white/50 border-amber-500/10' : 'bg-muted/30 border-border/50'
+                                                needsReview ? 'bg-card/50 border-amber-500/10' : 'bg-muted/30 border-border/50'
                                             }`}>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Session Link Reference</p>
                                                 <p className="text-xs font-mono truncate opacity-60">

@@ -7,6 +7,7 @@ import { NotificationBell } from '@/features/notifications/components/Notificati
 import { useAuth } from '@/providers/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User } from 'lucide-react';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
 export function DashboardHeader() {
   const { user, logout } = useAuth();
@@ -34,6 +35,9 @@ export function DashboardHeader() {
 
       {/* Actions */}
       <div className="flex items-center gap-4">
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
         <NotificationBell />
         
         {/* User Profile */}

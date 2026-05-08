@@ -286,6 +286,7 @@ export const ChatWindow = ({
                             return (
                               <div 
                                 key={m.id} 
+                                id={`msg-${m.id}`}
                                 className="group relative flex items-end gap-2"
                               >
                                 <div 
@@ -299,78 +300,121 @@ export const ChatWindow = ({
                                     ${!isFirst && !isMe ? 'rounded-tl-2xl' : ''}
                                   `}
                                 >
-                                  {/* Reply Preview in Bubble */}
-                                  {parentMsg && (
-                                    <div className="mb-2 p-2 bg-black/20 rounded-lg border-l-2 border-white/40 opacity-80 cursor-pointer hover:bg-black/30 transition-colors">
-                                      <p className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                        {(parentMsg as any).sender?.name || 'User'}
-                                      </p>
-                                      <p className="text-xs truncate">{parentMsg.content}</p>
-                                    </div>
-                                  )}
-
-                                  {m.content.startsWith('[Message Removed:') ? (
-                                    <span className="italic opacity-40 text-xs">{m.content}</span>
-                                  ) : m.content.startsWith('[Attached File]') ? (() => {
-                                    const match = m.content.match(/^\[Attached File\]\((.*?)\)$/);
-                                    if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
-                                    const rawUrl = match[1];
-                                    return (
-                                      <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-3 p-2 rounded-xl bg-black/20 border border-white/5">
-                                          <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold truncate">Attachment</p>
-                                            <p className="text-[10px] opacity-60">Encrypted Cloud Storage</p>
-                                          </div>
+                                    {/* Quick Actions on Hover */}
+                                    <div className={`
+                                      absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 z-20
+                                      ${isMe ? 'right-full mr-2' : 'left-full ml-2'}
+                                    `}>
+                                      <button 
+                                        onClick={() => onReplyMessage?.(m)}
+                                        className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/5 transition-all shadow-lg"
+                                        title="Reply"
+                                      >
+                                        <Reply size={14} />
+                                      </button>
+                                      {isMe && (
+                                        <>
                                           <button 
-                                            onClick={async (e) => {
-                                              e.preventDefault();
-                                              const toastId = toast.loading('Syncing...');
-                                              try {
-                                                const res = await api.get(`/chat/download?url=${encodeURIComponent(rawUrl)}`, { responseType: 'blob' });
-                                                const url = window.URL.createObjectURL(new Blob([res.data]));
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = rawUrl.split('/').pop() || 'file';
-                                                a.click();
-                                                toast.success('Downloaded', { id: toastId });
-                                              } catch {
-                                                toast.error('Failed', { id: toastId });
-                                              }
-                                            }}
-                                            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                            onClick={() => onEditMessage?.(m.id, m.content)}
+                                            className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/5 transition-all shadow-lg"
+                                            title="Edit"
                                           >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                            <Edit2 size={14} />
                                           </button>
+                                          <button 
+                                            onClick={() => onDeleteMessage?.(m.id)}
+                                            className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-400/5 transition-all shadow-lg"
+                                            title="Delete"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+
+                                    {/* Reply Preview in Bubble */}
+                                    {parentMsg && (
+                                      <div 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const parentEl = document.getElementById(`msg-${parentMsg.id}`);
+                                          if (parentEl) {
+                                            parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            parentEl.classList.add('bg-primary/20');
+                                            setTimeout(() => parentEl.classList.remove('bg-primary/20'), 1500);
+                                          }
+                                        }}
+                                        className="mb-2 p-2 bg-black/20 rounded-lg border-l-2 border-white/40 opacity-80 cursor-pointer hover:bg-black/30 transition-colors"
+                                      >
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                                          {(parentMsg as any).sender?.name || 'User'}
+                                        </p>
+                                        <p className="text-xs truncate">{parentMsg.content}</p>
+                                      </div>
+                                    )}
+
+                                    {m.content.startsWith('[Message Removed:') ? (
+                                      <span className="italic opacity-40 text-xs">{m.content}</span>
+                                    ) : m.content.startsWith('[Attached File]') ? (() => {
+                                      const match = m.content.match(/^\[Attached File\]\((.*?)\)$/);
+                                      if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
+                                      const rawUrl = match[1];
+                                      return (
+                                        <div className="flex flex-col gap-2">
+                                          <div className="flex items-center gap-3 p-2 rounded-xl bg-black/20 border border-white/5">
+                                            <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-bold truncate">Attachment</p>
+                                              <p className="text-[10px] opacity-60">Encrypted Cloud Storage</p>
+                                            </div>
+                                            <button 
+                                              onClick={async (e) => {
+                                                e.preventDefault();
+                                                const toastId = toast.loading('Syncing...');
+                                                try {
+                                                  const res = await api.get(`/chat/download?url=${encodeURIComponent(rawUrl)}`, { responseType: 'blob' });
+                                                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                                                  const a = document.createElement('a');
+                                                  a.href = url;
+                                                  a.download = rawUrl.split('/').pop() || 'file';
+                                                  a.click();
+                                                  toast.success('Downloaded', { id: toastId });
+                                                } catch {
+                                                  toast.error('Failed', { id: toastId });
+                                                }
+                                              }}
+                                              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })() : (
+                                      <div className="flex flex-col gap-1">
+                                        <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
+                                        <div className={`flex items-center gap-1 self-end -mb-1 ml-4 ${isMe ? 'text-white/60' : 'text-white/40'}`}>
+                                          <span className="text-[9px] font-bold uppercase tracking-tighter">
+                                            {format(new Date(m.createdAt), "HH:mm")}
+                                          </span>
+                                          {isMe && (
+                                            <div className="flex">
+                                              {m.isRead ? (
+                                                <CheckCheck size={12} className="text-white" />
+                                              ) : m.isDelivered ? (
+                                                <CheckCheck size={12} className="opacity-40" />
+                                              ) : (
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="20 6 9 17 4 12"/></svg>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
-                                    );
-                                  })() : (
-                                    <div className="flex flex-col gap-1">
-                                      <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
-                                      <div className={`flex items-center gap-1 self-end -mb-1 ml-4 ${isMe ? 'text-white/60' : 'text-white/40'}`}>
-                                        <span className="text-[9px] font-bold uppercase tracking-tighter">
-                                          {format(new Date(m.createdAt), "HH:mm")}
-                                        </span>
-                                        {isMe && (
-                                          <div className="flex">
-                                            {m.isRead ? (
-                                              <CheckCheck size={12} className="text-white" />
-                                            ) : m.isDelivered ? (
-                                              <CheckCheck size={12} className="opacity-40" />
-                                            ) : (
-                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="20 6 9 17 4 12"/></svg>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
                             );
                           })}
                         </div>

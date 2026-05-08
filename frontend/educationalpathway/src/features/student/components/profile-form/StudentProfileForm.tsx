@@ -1224,7 +1224,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           ) : (
                             <div className="text-center animate-in fade-in duration-300">
                               <Upload className="mx-auto h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
-                              <p className="mt-2 text-sm font-bold text-gray-600">
+                              <p className="mt-2 text-sm font-bold text-foreground/70">
                                 {doc.label}
                               </p>
                               <p className="text-[10px] text-muted-foreground mt-1">Click to upload</p>

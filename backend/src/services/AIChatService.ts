@@ -49,7 +49,7 @@ export class AIChatService {
                 assistantMessage = result.response.text();
             } catch (geminiErr) {
                 console.error("Gemini fallback failed:", geminiErr);
-                assistantMessage = "I'm sorry, I couldn't process that right now.";
+                assistantMessage = "I'm sorry, I'm having trouble connecting to my brain right now. Please check if your API keys are valid or try again in a few minutes.";
             }
         }
 
@@ -118,7 +118,7 @@ Answer the student's questions specifically regarding this scholarship. Be conci
                 assistantMessage = result.response.text();
             } catch (geminiErr) {
                 console.error("Gemini fallback failed:", geminiErr);
-                assistantMessage = "I'm sorry, I couldn't process that right now.";
+                assistantMessage = "I'm sorry, I'm having trouble retrieving specific details for this scholarship right now. Please check the 'Description' section below or try again later.";
             }
         }
 

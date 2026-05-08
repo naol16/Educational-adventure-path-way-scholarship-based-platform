@@ -23,7 +23,7 @@ export const ChatList = ({ conversations, activeConversationId, onSelect, curren
     const isGroup = !!conv.isGroup;
     const participants = conv.members || conv.users || [];
     const otherUser = participants.find(u => u.id !== currentUserId);
-    const title = isGroup ? conv.name : (otherUser?.name || 'Unknown User');
+    const title = isGroup ? (conv.name || 'Unnamed Group') : (otherUser?.name || 'Unknown User');
     return title.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -34,7 +34,7 @@ export const ChatList = ({ conversations, activeConversationId, onSelect, curren
     const lastMessage = conv.chatMessages?.[0] || conv.messages?.[0] || conv.ChatMessages?.[0];
     const isActive = activeConversationId === conv.id;
 
-    const chatTitle = isGroup ? conv.name : (otherUser?.name || 'Unknown User');
+    const chatTitle = isGroup ? (conv.name || 'Unnamed Group') : (otherUser?.name || 'Unknown User');
     const chatSubtitle = isGroup ? (conv.country || 'Group') : otherUser?.role;
 
     const formatTime = (dateStr: string) => {

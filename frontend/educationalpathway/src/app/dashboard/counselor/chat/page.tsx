@@ -18,12 +18,7 @@ export default function CounselorChatPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-1">
-        <h1 className="h2">Student Communications</h1>
-        <p className="text-body text-muted-foreground">
-          Real-time updates and support for your assigned students.
-        </p>
-      </div>
+
 
       <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin" /></div>}>
         <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />

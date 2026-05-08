@@ -123,7 +123,7 @@ export const LandingPageContent = () => {
   const currentFaqs = landingData?.faqs || [];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#050505] selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden" ref={containerRef}>
+    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden" ref={containerRef}>
       
       {/* ─── DYNAMIC BACKGROUND ─── */}
       <div className="fixed inset-0 z-0 pointer-events-none mesh-gradient opacity-60">
@@ -138,7 +138,7 @@ export const LandingPageContent = () => {
          initial={{ y: -20, opacity: 0 }}
          animate={{ y: 0, opacity: 1 }}
          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-         className="px-6 lg:px-12 h-20 flex items-center border-b border-white/5 sticky top-0 z-50 bg-[#050505]/60 backdrop-blur-2xl"
+         className="px-6 lg:px-12 h-20 flex items-center border-b border-border sticky top-0 z-50 bg-background/60 backdrop-blur-2xl"
       >
         <Link className="flex items-center gap-3 group" href="/">
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-linear-to-br from-emerald-400/20 to-teal-900/40 border border-emerald-500/20 group-hover:border-emerald-400/50 transition-colors">
@@ -150,7 +150,7 @@ export const LandingPageContent = () => {
               className="object-contain"
             />
           </div>
-          <span className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight font-serif">
+           <span className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-foreground to-foreground/70 tracking-tight font-serif">
             አድማስ
           </span>
         </Link>
@@ -164,7 +164,7 @@ export const LandingPageContent = () => {
           </Link>
           <div className="h-6 w-px bg-white/10 hidden md:block" />
           <Link href="/login">
-            <button className="text-sm font-bold text-white/80 hover:text-white transition-colors px-4 py-2">
+            <button className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2">
               Sign In
             </button>
           </Link>
@@ -199,7 +199,7 @@ export const LandingPageContent = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter leading-[0.95] font-serif"
+              className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-foreground tracking-tighter leading-[0.95] font-serif"
             >
               Unlock Your <br className="hidden md:block" />
               <span className="relative inline-block mt-2">
@@ -214,7 +214,7 @@ export const LandingPageContent = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="mx-auto max-w-2xl text-xl md:text-2xl text-white/50 leading-relaxed font-medium"
+              className="mx-auto max-w-2xl text-xl md:text-2xl text-muted-foreground leading-relaxed font-medium"
             >
               The best platform for students. Find great scholarships, pass your exams, and get into the world's top universities.
             </motion.p>
@@ -264,11 +264,11 @@ export const LandingPageContent = () => {
         <section id="features" className="py-32 relative">
           <div className="container mx-auto max-w-7xl px-6">
             <div className="mb-20 text-center md:text-left">
-              <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6 font-serif">
+              <h2 className="text-5xl md:text-6xl font-black text-foreground tracking-tighter mb-6 font-serif">
                 Smarter tools. <br />
-                <span className="text-white/40">Get better results.</span>
+                <span className="text-muted-foreground/60">Get better results.</span>
               </h2>
-              <p className="text-white/50 text-lg max-w-2xl font-medium">
+              <p className="text-muted-foreground text-lg max-w-2xl font-medium">
                 We have the best tools for international education, made for the next generation of leaders.
               </p>
             </div>
@@ -284,17 +284,17 @@ export const LandingPageContent = () => {
                   className="group relative p-1 rounded-2xl overflow-hidden bg-linear-to-b from-white/10 to-transparent hover:from-white/20 transition-all duration-500"
                 >
                   <div className={`absolute inset-0 bg-linear-to-br ${f.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                  <div className="relative h-full bg-[#0a0a0a]/80 backdrop-blur-xl rounded-[calc(1rem-1px)] p-10 md:p-12 flex flex-col gap-8">
+                  <div className="relative h-full bg-card/80 backdrop-blur-xl rounded-[calc(1rem-1px)] p-10 md:p-12 flex flex-col gap-8 border border-border">
                     <div className={`w-16 h-16 rounded-2xl bg-linear-to-br ${f.color} p-px shadow-2xl ${f.shadow} group-hover:scale-110 transition-transform duration-500`}>
-                      <div className="w-full h-full bg-[#111] rounded-[15px] flex items-center justify-center">
+                      <div className="w-full h-full bg-card rounded-[15px] flex items-center justify-center">
                         <f.icon className="text-white" size={28} />
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-3xl font-bold text-white mb-4 tracking-tight font-serif">{f.title}</h3>
-                      <p className="text-white/50 text-lg leading-relaxed font-medium">{f.description}</p>
+                      <h3 className="text-3xl font-bold text-foreground mb-4 tracking-tight font-serif">{f.title}</h3>
+                      <p className="text-muted-foreground text-lg leading-relaxed font-medium">{f.description}</p>
                     </div>
-                    <div className="mt-auto flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase tracking-widest group-hover:gap-4 transition-all">
+                    <div className="mt-auto flex items-center gap-2 text-emerald-500 font-bold text-sm uppercase tracking-widest group-hover:gap-4 transition-all">
                       Learn More <ChevronRight size={16} />
                     </div>
                   </div>
@@ -319,7 +319,7 @@ export const LandingPageContent = () => {
                         transition={{ delay: i * 0.1 }}
                         className="text-center space-y-2"
                       >
-                         <div className="text-5xl md:text-7xl font-black text-white font-serif tracking-tighter">{stat.value}</div>
+                         <div className="text-5xl md:text-7xl font-black text-foreground font-serif tracking-tighter">{stat.value}</div>
                          <div className="text-emerald-400 font-bold uppercase tracking-widest text-xs">{stat.label}</div>
                       </motion.div>
                    ))}
@@ -332,10 +332,10 @@ export const LandingPageContent = () => {
         <section id="how" className="py-32 relative border-t border-white/5">
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-24 max-w-3xl mx-auto">
-              <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6 font-serif">
+              <h2 className="text-5xl md:text-6xl font-black text-foreground tracking-tighter mb-6 font-serif">
                 Your journey, <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-teal-400">mastered.</span>
               </h2>
-              <p className="text-white/50 text-lg font-medium">An easy, data-driven way to help you reach your goals.</p>
+              <p className="text-muted-foreground text-lg font-medium">An easy, data-driven way to help you reach your goals.</p>
             </div>
 
             <div className="grid md:grid-cols-4 gap-12 relative">
@@ -350,16 +350,16 @@ export const LandingPageContent = () => {
                   transition={{ duration: 0.6, delay: i * 0.15, type: "spring" }}
                   className="relative z-10 flex flex-col items-center text-center group"
                 >
-                  <div className="w-32 h-32 rounded-2xl bg-[#0a0a0a] border border-white/10 flex items-center justify-center mb-10 relative group-hover:border-emerald-500/50 transition-all duration-500 shadow-2xl group-hover:-translate-y-2">
-                    <div className="absolute inset-4 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                       <s.icon size={36} className="text-white group-hover:text-emerald-400 transition-colors" />
+                  <div className="w-32 h-32 rounded-2xl bg-card border border-border flex items-center justify-center mb-10 relative group-hover:border-emerald-500/50 transition-all duration-500 shadow-2xl group-hover:-translate-y-2">
+                    <div className="absolute inset-4 rounded-xl bg-muted/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
+                       <s.icon size={36} className="text-foreground group-hover:text-emerald-400 transition-colors" />
                     </div>
                     <div className="absolute -top-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xl">
                       {s.step}
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4 font-serif">{s.title}</h3>
-                  <p className="text-white/50 leading-relaxed font-medium px-4">{s.description}</p>
+                  <h3 className="text-2xl font-bold text-foreground mb-4 font-serif">{s.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed font-medium px-4">{s.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -371,29 +371,29 @@ export const LandingPageContent = () => {
           <section className="py-32 relative overflow-hidden">
              <div className="container mx-auto max-w-7xl px-6">
                 <div className="text-center mb-20">
-                   <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-6 font-serif">Success Stories</h2>
-                   <p className="text-white/50 text-lg">Join thousands of students who have already started their global journey.</p>
+                   <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter mb-6 font-serif">Success Stories</h2>
+                   <p className="text-muted-foreground text-lg">Join thousands of students who have already started their global journey.</p>
                 </div>
   
                 <div className="grid md:grid-cols-3 gap-8">
                    {currentTestimonials.map((t, i) => (
-                      <motion.div 
+                  <motion.div 
                         key={i}
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.1 }}
-                        className="p-8 rounded-2xl bg-white/5 border border-white/10 relative group"
+                        className="p-8 rounded-2xl bg-card border border-border relative group shadow-sm hover:shadow-md transition-all"
                       >
                          <Quote className="absolute top-8 right-8 text-emerald-500/20 w-12 h-12" />
                          <div className="flex items-center gap-4 mb-8">
                             <img src={t.avatar} alt={t.name} className="w-14 h-14 rounded-full border-2 border-emerald-500/20" />
                             <div>
-                               <h4 className="text-white font-bold">{t.name}</h4>
+                               <h4 className="text-foreground font-bold">{t.name}</h4>
                                <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest">{t.role}</p>
                             </div>
                          </div>
-                         <p className="text-white/70 leading-relaxed font-medium italic">"{t.text}"</p>
+                         <p className="text-muted-foreground leading-relaxed font-medium italic">"{t.text}"</p>
                       </motion.div>
                    ))}
                 </div>
@@ -403,31 +403,31 @@ export const LandingPageContent = () => {
 
         {/* ─── FAQ SECTION ─── */}
         {currentFaqs.length > 0 && (
-          <section className="py-32 relative bg-[#080808]">
+          <section className="py-32 relative bg-background/50 border-y border-border">
              <div className="container mx-auto max-w-4xl px-6">
                 <div className="text-center mb-20">
-                   <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-6 font-serif">Common Questions</h2>
-                   <p className="text-white/50 text-lg">Everything you need to know about the Admas platform.</p>
+                   <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter mb-6 font-serif">Common Questions</h2>
+                   <p className="text-muted-foreground text-lg">Everything you need to know about the Admas platform.</p>
                 </div>
                 
                 <div className="space-y-4">
                    {currentFaqs.map((faq, i) => (
                       <motion.div 
                         key={i}
-                        className={`rounded-2xl border transition-all duration-300 ${activeFaq === i ? 'border-emerald-500/50 bg-white/5' : 'border-white/5 bg-transparent'}`}
+                        className={`rounded-2xl border transition-all duration-300 ${activeFaq === i ? 'border-emerald-500/50 bg-card/50' : 'border-border/50 bg-transparent'}`}
                       >
                          <button 
                            onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                            className="w-full px-8 py-6 flex items-center justify-between text-left"
                          >
-                            <span className="text-xl font-bold text-white font-serif">{faq.question}</span>
+                            <span className="text-xl font-bold text-foreground font-serif">{faq.question}</span>
                             <ChevronRight className={`text-emerald-500 transition-transform duration-300 ${activeFaq === i ? 'rotate-90' : ''}`} />
                          </button>
                          {activeFaq === i && (
                             <motion.div 
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
-                              className="px-8 pb-8 text-white/50 leading-relaxed font-medium"
+                              className="px-8 pb-8 text-muted-foreground leading-relaxed font-medium"
                             >
                                {faq.answer}
                             </motion.div>
@@ -451,26 +451,26 @@ export const LandingPageContent = () => {
             transition={{ duration: 0.8 }}
             className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center"
           >
-            <div className="p-px rounded-2xl bg-linear-to-b from-white/20 to-white/0 shadow-2xl">
-              <div className="bg-[#0a0a0a]/90 backdrop-blur-3xl rounded-[calc(1rem-1px)] p-16 md:p-24 border border-white/5">
+            <div className="p-px rounded-2xl bg-linear-to-b from-border/50 to-transparent shadow-2xl">
+              <div className="bg-card/90 backdrop-blur-3xl rounded-[calc(1rem-1px)] p-16 md:p-24 border border-border">
                 <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-10 border border-emerald-500/20">
                   <Globe className="h-10 w-10 text-emerald-400" strokeWidth={1.5} />
                 </div>
-                <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-8 font-serif">
+                <h2 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter mb-8 font-serif">
                   Ready to go global?
                 </h2>
-                <p className="text-white/50 text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-muted-foreground text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
                   Join 10,000+ students getting ready for their future. Start your journey today.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-6 justify-center">
                   <Link href="/role-selection">
-                    <button className="h-18 px-12 rounded-2xl bg-white text-black font-black tracking-widest text-sm flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shadow-2xl shadow-white/10 uppercase">
+                    <button className="h-18 px-12 rounded-2xl bg-foreground text-background font-black tracking-widest text-sm flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shadow-2xl shadow-foreground/10 uppercase">
                       START NOW
                       <ArrowRight size={20} />
                     </button>
                   </Link>
                   <Link href="/contact">
-                    <button className="h-18 px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black tracking-widest text-sm hover:bg-white/10 transition-all backdrop-blur-md uppercase">
+                    <button className="h-18 px-12 rounded-2xl bg-muted/50 border border-border text-foreground font-black tracking-widest text-sm hover:bg-muted transition-all backdrop-blur-md uppercase">
                       TALK TO COUNSELOR
                     </button>
                   </Link>

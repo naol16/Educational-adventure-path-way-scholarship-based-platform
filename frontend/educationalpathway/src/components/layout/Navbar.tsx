@@ -21,7 +21,10 @@ import {
   HelpCircle,
   Moon,
   Sun,
+  Monitor,
 } from "lucide-react";
+import { useTheme } from "@/providers/theme-context";
+import { ThemeToggle } from "./ThemeToggle";
 import { Input, Button } from "@/components/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -44,7 +47,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { mode, setMode } = useTheme();
 
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -202,7 +205,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
   };
 
   return (
-    <nav className={`sticky top-0 z-40 w-full bg-white border-b border-gray-200  ${simplified ? 'h-16' : ''}`}>
+    <nav className={`sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md border-b border-border transition-colors duration-300 ${simplified ? 'h-16' : ''}`}>
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
@@ -310,18 +313,9 @@ export function Navbar({ simplified = false }: NavbarProps) {
 
             {/* Theme Toggle */}
             {!simplified && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="h-9 w-9 p-0 rounded-full hover:bg-gray-100 hidden sm:inline-flex"
-              >
-                {isDarkMode ? (
-                  <Sun className="h-4 w-4 text-gray-600" />
-                ) : (
-                  <Moon className="h-4 w-4 text-gray-600" />
-                )}
-              </Button>
+              <div className="hidden sm:flex">
+                <ThemeToggle />
+              </div>
             )}
 
             {/* Divider */}
@@ -525,6 +519,37 @@ export function Navbar({ simplified = false }: NavbarProps) {
                     </Link>
                   );
                 })}
+
+                {/* Mobile Divider */}
+                <div className="my-3 border-t border-gray-100" />
+
+                {/* Mobile Theme Switcher */}
+                <div className="px-4 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Appearance</p>
+                  <div className="flex gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                    <button 
+                      onClick={() => setMode('light')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${mode === 'light' ? 'bg-white text-orange-500 shadow-sm border border-gray-100' : 'text-gray-500'}`}
+                    >
+                      <Sun size={16} />
+                      <span className="text-xs font-medium">Light</span>
+                    </button>
+                    <button 
+                      onClick={() => setMode('dark')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${mode === 'dark' ? 'bg-white text-indigo-500 shadow-sm border border-gray-100' : 'text-gray-500'}`}
+                    >
+                      <Moon size={16} />
+                      <span className="text-xs font-medium">Dark</span>
+                    </button>
+                    <button 
+                      onClick={() => setMode('system')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${mode === 'system' ? 'bg-white text-gray-700 shadow-sm border border-gray-100' : 'text-gray-500'}`}
+                    >
+                      <Monitor size={16} />
+                      <span className="text-xs font-medium">System</span>
+                    </button>
+                  </div>
+                </div>
 
                 {/* Mobile Divider */}
                 <div className="my-3 border-t border-gray-100" />

@@ -12,17 +12,23 @@ import {
   Bell,
   Search,
   BookOpen,
-  GraduationCap
+  GraduationCap,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
+import { useTheme } from '@/providers/theme-context';
+import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 export function CounselorNavbar() {
   const { user, logout } = useAuth();
+  const { mode, setMode } = useTheme();
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
+    <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
        {/* Logo */}
        <div className="flex items-center gap-4 group cursor-pointer">
@@ -65,6 +71,10 @@ export function CounselorNavbar() {
           <Button variant="ghost" size="icon" className="rounded-lg h-11 w-11 hover:bg-slate-50 text-slate-500">
             <Bell className="h-5 w-5" />
           </Button>
+
+          <div className="hidden sm:flex">
+            <ThemeToggle />
+          </div>
           
           <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
 

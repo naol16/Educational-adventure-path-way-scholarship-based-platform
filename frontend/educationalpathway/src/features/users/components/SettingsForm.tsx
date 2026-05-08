@@ -74,32 +74,8 @@ export const SettingsForm = () => {
                 </div>
 
                 <div className="bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
-                  <div className="flex items-center justify-between p-6 border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-foreground">Theme Mode</span>
-                      <span className="text-xs text-muted-foreground font-medium mt-0.5">Switch between light, dark, or system mode</span>
-                    </div>
-
-                    <div className="flex gap-1 p-1 bg-muted rounded-2xl">
-                       <button 
-                         onClick={() => setMode('light')}
-                         className={`p-2 rounded-xl transition-all ${mode === 'light' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                       >
-                         <Sun size={20} />
-                       </button>
-                       <button 
-                         onClick={() => setMode('dark')}
-                         className={`p-2 rounded-xl transition-all ${mode === 'dark' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                       >
-                         <Moon size={20} />
-                       </button>
-                       <button 
-                         onClick={() => setMode('system')}
-                         className={`p-2 rounded-xl transition-all ${mode === 'system' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                       >
-                         <Monitor size={20} />
-                       </button>
-                    </div>
+                  <div className="p-12 text-center">
+                    <p className="text-muted-foreground">General settings will appear here. Theme settings have been moved to the top navigation bar.</p>
                   </div>
                 </div>
               </motion.div>
