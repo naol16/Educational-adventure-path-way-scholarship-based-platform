@@ -7,11 +7,29 @@ export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await AuthService.register(req.body);
+      return ResponseHelper.success(res, result, "Registration successful. Please verify OTP.", 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async sendRegistrationOTP(req: Request, res: Response, next: NextFunction) {
+    try {
+      await AuthService.sendRegistrationOTP(req.body);
+      return ResponseHelper.success(res, null, "OTP sent successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyRegistrationOTP(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.verifyRegistrationOTP(req.body);
       res.cookie("refreshToken", result.refreshToken, AuthController.getCookieOptions());
       return ResponseHelper.success(res, {
         user: result.user,
         accessToken: result.accessToken
-      }, "Registration successful", 201);
+      }, "Registration verified and successful", 201);
     } catch (error) {
       next(error);
     }

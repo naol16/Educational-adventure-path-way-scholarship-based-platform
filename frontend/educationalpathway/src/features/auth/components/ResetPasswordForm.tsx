@@ -43,7 +43,11 @@ export function ResetPasswordForm() {
     setIsLoading(true)
 
     try {
-      await resetPassword({ token, password })
+      await resetPassword({ 
+        token, 
+        newPassword: password, 
+        confirmPassword: confirmPassword 
+      })
       setIsSuccess(true)
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Failed to reset password'))

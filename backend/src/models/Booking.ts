@@ -8,10 +8,10 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Counselor } from "./Counselor.js";
-import { AvailabilitySlot } from "./AvailabilitySlot.js";
-import { Payment } from "./Payment.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
+import { AvailabilitySlot, type AvailabilitySlot as AvailabilitySlotType } from "./AvailabilitySlot.js";
+import { Payment, type Payment as PaymentType } from "./Payment.js";
 
 @Table({
     tableName: "bookings",
@@ -110,14 +110,14 @@ export class Booking extends Model {
 
     // Associations with explicit aliases to match service queries
     @BelongsTo(() => Student, { as: 'student' })
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Counselor, { as: 'counselor' })
-    counselor!: Counselor;
+    counselor!: CounselorType;
 
     @BelongsTo(() => AvailabilitySlot, { as: 'slot' })
-    slot!: AvailabilitySlot;
+    slot!: AvailabilitySlotType;
 
     @BelongsTo(() => Payment, { as: 'payment' })
-    payment!: Payment;
+    payment!: PaymentType;
 }

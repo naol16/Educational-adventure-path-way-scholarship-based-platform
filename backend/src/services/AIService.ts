@@ -240,26 +240,34 @@ export class AIService {
    */
   static async generateJSON(prompt: string) {
     try {
+      console.log("[AIService] Sending prompt to Groq (llama-3.3-70b-versatile):", prompt.substring(0, 200) + "...");
       const completion = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
         model: "llama-3.3-70b-versatile",
         response_format: { type: "json_object" },
       });
       const content = completion.choices[0]?.message?.content;
-      if (!content) throw new Error("AI returned empty response");
+      console.log("[AIService] Groq Response received.");
+      if (!content) {
+        console.error("[AIService] Groq returned empty content.");
+        throw new Error("AI returned empty response");
+      }
       return JSON.parse(content);
     } catch (error: any) {
       console.error("[AIService] Groq JSON Error, falling back to Gemini:", error.message);
       
       try {
+        console.log("[AIService] Attempting fallback to Gemini...");
         const model = genAI.getGenerativeModel({
           model: geminiModelName,
           generationConfig: { responseMimeType: "application/json" },
         });
         const result = await model.generateContent(prompt);
-        return JSON.parse(result.response.text());
+        const text = result.response.text();
+        console.log("[AIService] Gemini fallback response received.");
+        return JSON.parse(text);
       } catch (geminiError: any) {
-        console.error("[AIService] Primary Gemini Error:", geminiError.message);
+        console.error("[AIService] Primary Gemini Fallback Error:", geminiError.message);
         
         // Try a secondary Gemini model if the primary one is rate-limited
         try {

@@ -32,6 +32,7 @@ export class AIChatService {
 
         let assistantMessage = "";
         try {
+            console.log(`[AIChatService] Requesting Groq for General Assistant (Session: ${sessionId})...`);
             const completion = await groq.chat.completions.create({
                 messages: messages as any[],
                 model: "llama-3.3-70b-versatile",
@@ -39,17 +40,20 @@ export class AIChatService {
                 max_tokens: 1024,
             });
             assistantMessage = completion.choices[0]?.message?.content || "";
-        } catch (err) {
-            console.warn("AI service failed, falling back to Gemini...", err);
+            console.log(`[AIChatService] Groq Response received (Length: ${assistantMessage.length})`);
+        } catch (err: any) {
+            console.warn(`[AIChatService] Groq failed for General Assistant: ${err.message}. Falling back to Gemini...`);
             try {
                 const model = genAI.getGenerativeModel({ model: configs.GEMINI_MODEL || "gemini-1.5-flash" });
                 const result = await model.generateContent({
                     contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
                 });
                 assistantMessage = result.response.text();
-            } catch (geminiErr) {
-                console.error("Gemini fallback failed:", geminiErr);
+                console.log("[AIChatService] Gemini fallback successful.");
+            } catch (geminiErr: any) {
+                console.error(`[AIChatService] Gemini fallback failed: ${geminiErr.message}`);
                 assistantMessage = "I'm sorry, I'm having trouble connecting to my brain right now. Please check if your API keys are valid or try again in a few minutes.";
+
             }
         }
 
@@ -101,6 +105,7 @@ Answer the student's questions specifically regarding this scholarship. Be conci
 
         let assistantMessage = "";
         try {
+            console.log(`[AIChatService] Requesting Groq for Scholarship Assistant (Scholarship: ${scholarshipId}, Session: ${sessionId})...`);
             const completion = await groq.chat.completions.create({
                 messages: messages as any[],
                 model: "llama-3.3-70b-versatile",
@@ -108,17 +113,20 @@ Answer the student's questions specifically regarding this scholarship. Be conci
                 max_tokens: 1024,
             });
             assistantMessage = completion.choices[0]?.message?.content || "";
-        } catch (err) {
-            console.warn("AI service failed, falling back to Gemini...", err);
+            console.log(`[AIChatService] Groq Response received (Length: ${assistantMessage.length})`);
+        } catch (err: any) {
+            console.warn(`[AIChatService] Groq failed for Scholarship Assistant: ${err.message}. Falling back to Gemini...`);
             try {
                 const model = genAI.getGenerativeModel({ model: configs.GEMINI_MODEL || "gemini-1.5-flash" });
                 const result = await model.generateContent({
                     contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
                 });
                 assistantMessage = result.response.text();
-            } catch (geminiErr) {
-                console.error("Gemini fallback failed:", geminiErr);
+                console.log("[AIChatService] Gemini fallback successful.");
+            } catch (geminiErr: any) {
+                console.error(`[AIChatService] Gemini fallback failed: ${geminiErr.message}`);
                 assistantMessage = "I'm sorry, I'm having trouble retrieving specific details for this scholarship right now. Please check the 'Description' section below or try again later.";
+
             }
         }
 

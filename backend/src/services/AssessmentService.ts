@@ -242,17 +242,20 @@ export class AssessmentService {
     const chain = groq70b.pipe(new StringOutputParser());
     let response: string;
     try {
+      console.log(`[AssessmentService] Requesting Groq 70B for exam generation (Type: ${examType}, Difficulty: ${difficulty}, TestID: ${testId})...`);
       response = await chain.invoke(
         await prompt.format({ examType, difficulty, testId, examInstructions }),
         { response_format: { type: "json_object" } } as any
       );
-    } catch (err) {
-      console.warn("Groq 70B failed for generation, falling back to Gemini...");
+      console.log(`[AssessmentService] Groq generation successful (Response length: ${response.length})`);
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq 70B failed for generation: ${err.message}. Falling back to Gemini...`);
       try {
         const fallbackChain = geminiModel.pipe(new StringOutputParser());
         response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
+        console.log("[AssessmentService] Gemini fallback successful.");
       } catch (geminiErr: any) {
-        console.error("Gemini fallback also failed. Using safety mock exam.");
+        console.error(`[AssessmentService] Gemini fallback also failed: ${geminiErr.message}. Using safety mock exam.`);
         response = JSON.stringify({
           status: "success",
           data: {
@@ -813,13 +816,14 @@ export class AssessmentService {
       const options: any = {};
       options.response_format = { type: "json_object" };
       
+      console.log(`[AssessmentService] Requesting ${selectedModel.model || "selected model"} for ${skill} evaluation...`);
       responseText = await chain.invoke(
         [systemInstruction, new HumanMessage({ content: evaluationContent })],
         options
       );
-    } catch (err) {
-      console.warn(`Groq failed for ${skill}, attempting recovery...`);
-      // Since Gemini is 404, we don't fallback to it here, just throw or retry
+      console.log(`[AssessmentService] ${skill} evaluation response received.`);
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq failed for ${skill} evaluation: ${err.message}.`);
       throw err;
     }
 
@@ -915,19 +919,22 @@ export class AssessmentService {
     const chain = groq70b.pipe(new StringOutputParser());
     let response: string;
     try {
+      console.log("[AssessmentService] Requesting Groq 70B for final synthesis...");
       response = await chain.invoke(await prompt.format({
         scores: JSON.stringify(scores),
         notes: JSON.stringify(notes),
         examType
       }));
-    } catch (err) {
-      console.warn("Groq 70B failed for synthesis, falling back to Gemini...");
+      console.log("[AssessmentService] Synthesis successful.");
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq 70B failed for synthesis: ${err.message}. Falling back to Gemini...`);
       const fallbackChain = geminiModel.pipe(new StringOutputParser());
       response = await fallbackChain.invoke(await prompt.format({
         scores: JSON.stringify(scores),
         notes: JSON.stringify(notes),
         examType
       }));
+      console.log("[AssessmentService] Gemini synthesis fallback successful.");
     }
 
     const sanitized = this.sanitizeJSONString(response);

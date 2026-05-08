@@ -13,9 +13,9 @@ import {
     ForeignKey,
     BelongsTo,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { ConversationParticipant } from "./ConversationParticipant.js";
-import { ChatMessage } from "./ChatMessage.js";
+import { User, type User as UserType } from "./User.js";
+import { ConversationParticipant, type ConversationParticipant as ConversationParticipantType } from "./ConversationParticipant.js";
+import { ChatMessage, type ChatMessage as ChatMessageType } from "./ChatMessage.js";
 
 @Table({
     tableName: "conversations",
@@ -76,21 +76,21 @@ export class Conversation extends Model {
     declare updatedAt: Date;
 
     @HasMany(() => ChatMessage)
-    declare messages: ChatMessage[];
+    declare messages: ChatMessageType[];
 
     @HasMany(() => ConversationParticipant)
-    declare participants: ConversationParticipant[];
+    declare participants: ConversationParticipantType[];
 
     @BelongsToMany(() => User, {
         through: () => ConversationParticipant,
         as: 'members'
     })
-    declare members: User[];
+    declare members: UserType[];
 
     @BelongsTo(() => User, {
         foreignKey: 'created_by',
         as: 'creator'
     })
-    creator?: User;
+    creator?: UserType;
 }
 

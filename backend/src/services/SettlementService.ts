@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { Booking } from '../models/Booking.js';
+import { Payment } from '../models/Payment.js';
 import { Student } from '../models/Student.js';
 import { Payment } from '../models/Payment.js';
 import { CounselorService } from '../services/CounselorService.js';
@@ -18,12 +19,11 @@ export class SettlementService {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         try {
-            // Find bookings that are 'completed' (session happened) 
-            // but still 'held' (funds not released)
-            // and the session date is older than 7 days
+            // Find bookings that are 'awaiting_confirmation' (counselor finished, student hasn't confirmed)
+            // and the completion date is older than 7 days
             const stagnantBookings = await Booking.findAll({
                 where: {
-                    status: 'completed',
+                    status: 'awaiting_confirmation',
                     completedAt: {
                         [Op.lt]: sevenDaysAgo
                     }

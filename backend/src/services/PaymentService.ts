@@ -29,6 +29,8 @@ export class PaymentService {
             }
         };
 
+        console.log(`[PaymentService] Initializing Chapa with Callback: ${payload.callback_url}`);
+
         try {
             const response = await axios.post('https://api.chapa.co/v1/transaction/initialize', payload, {
                 headers: {

@@ -8,8 +8,8 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Counselor } from "./Counselor.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
 
 @Table({
     tableName: "counselor_reviews",
@@ -73,8 +73,8 @@ export class CounselorReview extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student, { as: 'student' })
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Counselor, { as: 'counselor' })
-    counselor!: Counselor;
+    counselor!: CounselorType;
 }
