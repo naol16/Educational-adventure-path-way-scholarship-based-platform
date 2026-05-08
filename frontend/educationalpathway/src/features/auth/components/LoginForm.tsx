@@ -50,7 +50,7 @@ export function LoginForm() {
         transition={{ duration: 0.35 }}
         className="w-full max-w-md"
       >
-        <Card className="bg-card border border-border rounded-lg">
+        <Card className="bg-card border border-border rounded-2xl">
 
           <CardHeader className="text-center pt-10 pb-4">
 

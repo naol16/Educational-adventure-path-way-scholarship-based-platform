@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/Input";
 import { ProfileFormValues } from "../../lib/profile-schema";
 import { FIELDS_OF_STUDY, FIELDS_OF_STUDY_GROUPED } from "../../constants/fields-of-study";
 import { useGeoData, CountryData, UniversityData } from "../../hooks/useGeoData";
+import { RequiredDocumentsSection } from "./RequiredDocumentsSection";
 
 const formatCountryOption = (option: any) => (
   <div className="flex items-center gap-2">
@@ -339,7 +340,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
         {/* Form */}
         <form
           onSubmit={handleSubmit(handleFormSubmit)}
-          className="bg-card rounded-2xl border border-border p-6"
+          className="bg-card rounded-2xl border border-border shadow-sm p-6"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -1140,100 +1141,8 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                     </div>
                   </div>
 
-                  {/* Document Upload */}
-                  <div className="space-y-4">
-                    <h3 className="text-md font-semibold text-foreground">
-                      Required Documents
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {[
-                        {
-                          label: "CV / Resume",
-                          name: "cv",
-                          accept: ".pdf,.doc,.docx",
-                        },
-                        {
-                          label: "Transcript",
-                          name: "transcript",
-                          accept: ".pdf",
-                        },
-                        {
-                          label: "Degree Certificate",
-                          name: "degreeCertificate",
-                          accept: ".pdf",
-                        },
-                      ].map((doc) => (
-                        <div
-                          key={doc.name}
-                          className="relative border-2 border-dashed border-input rounded-lg p-4 hover:border-primary transition-colors group bg-muted/20 min-h-[140px] flex flex-col items-center justify-center overflow-hidden"
-                        >
-                          <input
-                            type="file"
-                            id={doc.name}
-                            aria-label={doc.label}
-                            accept={doc.accept + ",image/*"}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                setValue(`documents.${doc.name}` as any, file);
-                              }
-                            }}
-                          />
-                          
-                          {watch(`documents.${doc.name}` as any) ? (
-                            <div className="text-center animate-in fade-in zoom-in-95 duration-300">
-                              {/* Standardized Circular Preview */}
-                              <div className="w-14 h-14 rounded-full border-4 border-primary/20 bg-primary/5 flex items-center justify-center mx-auto mb-3 overflow-hidden">
-                                {((watch(`documents.${doc.name}` as any) instanceof File && (watch(`documents.${doc.name}` as any) as File).type.startsWith("image/")) ||
-                                 (typeof watch(`documents.${doc.name}` as any) === 'string' && (watch(`documents.${doc.name}` as any) as string).match(/\.(jpg|jpeg|png|gif|webp)$|^data:image/i))) ? (
-                                  <img 
-                                    src={watch(`documents.${doc.name}` as any) instanceof File 
-                                      ? URL.createObjectURL(watch(`documents.${doc.name}` as any) as File) 
-                                      : watch(`documents.${doc.name}` as any) as string
-                                    } 
-                                    alt="Thumbnail" 
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <FileText className="w-7 h-7 text-primary" />
-                                )}
-                              </div>
-                              
-                              <p className="text-xs font-bold text-foreground truncate max-w-[150px] mx-auto">
-                                {watch(`documents.${doc.name}` as any) instanceof File 
-                                  ? (watch(`documents.${doc.name}` as any) as File).name 
-                                  : doc.label}
-                              </p>
-                              
-                              <div className="mt-1 flex items-center justify-center gap-2">
-                                <span className="text-[10px] text-muted-foreground">Click to replace</span>
-                                {typeof watch(`documents.${doc.name}` as any) === 'string' && (
-                                  <a 
-                                    href={watch(`documents.${doc.name}` as any) as string} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    View
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center animate-in fade-in duration-300">
-                              <Upload className="mx-auto h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
-                              <p className="mt-2 text-sm font-bold text-foreground/70">
-                                {doc.label}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground mt-1">Click to upload</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Dynamic Document Upload Section */}
+                  <RequiredDocumentsSection degreeSeeking={watch("degreeSeeking")} />
 
                   {/* Notification Preferences */}
                   <div className="space-y-4">

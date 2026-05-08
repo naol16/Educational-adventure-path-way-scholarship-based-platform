@@ -120,7 +120,7 @@ export function SignupForm({
         className="w-full max-w-md"
       >
 
-        <Card className="bg-card border border-border rounded-lg">
+        <Card className="bg-card border border-border shadow-sm rounded-2xl">
 
           <CardHeader className="text-center pt-10 pb-4">
             <h1 className="text-3xl font-semibold text-foreground">

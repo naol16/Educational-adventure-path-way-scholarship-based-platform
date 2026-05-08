@@ -78,12 +78,12 @@
   --muted-foreground: #64748b;
 
   /* Borders */
-  --border: #e2e8f0;
-  --input: #ffffff;
-  --input-bg: #f8fafc;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --input-bg: #ffffff;
   --ring: #059669;
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
 
 /* ---------------- DARK MODE ---------------- */
