@@ -112,6 +112,12 @@ class AuthNotifier extends AsyncNotifier<User?> {
     });
   }
 
+  Future<void> forgotPassword(String email) async {
+    // We don't set global loading state here to avoid blocking the whole app UI, 
+    // the screen will handle its own local loading state.
+    await _authService.forgotPassword(email);
+  }
+
   Future<void> refreshProfile() async {
     if (state.valueOrNull == null) return;
     state = await AsyncValue.guard(() async {

@@ -223,6 +223,26 @@ class AuthApiService {
     return User.fromJson(userMap);
   }
 
+  Future<void> forgotPassword(String email) async {
+    final uri = Uri.parse(ApiConfig.apiPath('/api/auth/forgot-password'));
+    final headers = const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {'email': email};
+    logRequest('POST', uri, headers: headers, body: body);
+    final response = await _http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    logResponse(response);
+    
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throwForResponse(response, fallback: 'Failed to send password reset email');
+    }
+  }
+
   void close() => _http.close();
 }
 

@@ -7,6 +7,7 @@ import 'package:mobile/features/auth/screens/landing_screen.dart';
 import 'package:mobile/features/auth/screens/login_screen.dart';
 import 'package:mobile/features/auth/screens/register_screen.dart';
 import 'package:mobile/features/auth/screens/role_selection_screen.dart';
+import 'package:mobile/features/auth/screens/forgot_password_screen.dart';
 import 'package:mobile/features/onboarding/screens/student_onboarding_screen.dart';
 import 'package:mobile/features/core/screens/main_layout_screen.dart';
 import 'package:mobile/features/core/screens/settings_screen.dart';
@@ -34,7 +35,7 @@ class AuthRouterRefresh extends ChangeNotifier {
   }
 }
 
-const _publicPaths = {'/', '/login', '/register', '/role-selection'};
+const _publicPaths = {'/', '/login', '/register', '/role-selection', '/forgot-password'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(authRouterRefreshProvider);
@@ -77,6 +78,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/role-selection',
         builder: (context, state) => const RoleSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/register',
