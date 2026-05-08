@@ -62,6 +62,8 @@ dependencies:
   firebase_messaging: ^15.0.3
   flutter_local_notifications: ^17.2.1
   jitsi_meet_flutter_sdk: ^12.1.1
+  smooth_page_indicator: ^2.0.1
+  fl_chart: ^0.70.0
 
 dev_dependencies:
   flutter_test:

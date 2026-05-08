@@ -8,6 +8,7 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/counselor/widgets/payout_request_bottom_sheet.dart';
+import 'package:mobile/features/counselor/widgets/earnings_chart_widget.dart';
 
 class CounselorWalletScreen extends ConsumerStatefulWidget {
   const CounselorWalletScreen({super.key});
@@ -45,6 +46,12 @@ class _CounselorWalletScreenState extends ConsumerState<CounselorWalletScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildBalanceCard(context, profileAsync),
+                      const SizedBox(height: 24),
+                      ledgerAsync.when(
+                        data: (transactions) => EarningsChartWidget(transactions: transactions),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
                       const SizedBox(height: 24),
                       _buildSectionHeader('Recent Transactions', LucideIcons.list),
                       const SizedBox(height: 12),
