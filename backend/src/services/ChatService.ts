@@ -55,9 +55,8 @@ export class ChatService {
             content
         });
         
-        // Include sender info for real-time delivery
         return ChatMessage.findByPk(message.id, {
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }]
+            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role', 'avatarUrl'] }]
         });
     }
 
@@ -86,7 +85,7 @@ export class ChatService {
                 {
                     model: User,
                     through: { attributes: [] }, // Get other participants
-                    attributes: ['id', 'name', 'role', 'email']
+                    attributes: ['id', 'name', 'role', 'email', 'avatarUrl']
                 },
                 {
                     model: ChatMessage,
@@ -104,14 +103,14 @@ export class ChatService {
             where: {
                 id: { [Op.ne]: userId }
             },
-            attributes: ['id', 'name', 'role', 'email']
+            attributes: ['id', 'name', 'role', 'email', 'avatarUrl']
         });
     }
 
     static async getMessages(conversationId: number, limit = 50, offset = 0) {
         return ChatMessage.findAll({
             where: { conversationId },
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }],
+            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role', 'avatarUrl'] }],
             limit,
             offset,
             order: [['created_at', 'DESC']]

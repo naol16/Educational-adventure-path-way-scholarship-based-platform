@@ -925,6 +925,7 @@ export class CounselorService {
           userId: student.userId,
           name: studentUser?.name || "Unknown",
           email: studentUser?.email || "Unknown",
+          avatarUrl: studentUser?.avatarUrl || null,
           lastBookingDate: booking.createdAt,
           lastBookingStatus: booking.status,
         });
@@ -967,6 +968,7 @@ export class CounselorService {
       studentId: student.id,
       name: (student as any).user?.name || "Unknown",
       email: (student as any).user?.email || "Unknown",
+      avatarUrl: (student as any).user?.avatarUrl || null,
       learningPath: learningPath
         ? {
           id: learningPath.id,
@@ -1466,6 +1468,7 @@ export class CounselorService {
         userId: student.userId,
         name: studentUser?.name || "Unknown",
         email: studentUser?.email || "N/A",
+        avatarUrl: studentUser?.avatarUrl || null,
       } : null,
       counselor: counselor ? {
         id: counselor.id,
