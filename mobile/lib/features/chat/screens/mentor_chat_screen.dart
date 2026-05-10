@@ -17,11 +17,15 @@ import 'package:file_picker/file_picker.dart';
 class MentorChatScreen extends ConsumerStatefulWidget {
   final int conversationId;
   final User otherUser;
+  final bool isGroup;
+  final String? groupName;
 
   const MentorChatScreen({
     super.key,
     required this.conversationId,
     required this.otherUser,
+    this.isGroup = false,
+    this.groupName,
   });
 
   @override
@@ -89,8 +93,12 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     ref.read(chatStateProvider(widget.conversationId).notifier).sendTyping(false);
     ref
         .read(chatStateProvider(widget.conversationId).notifier)
-        .sendMessage(widget.otherUser.id, text);
-    Future.delayed(const Duration(milliseconds: 50), _scrollToBottom);
+        .sendMessage(
+          widget.isGroup ? 0 : widget.otherUser.id, 
+          text,
+          conversationId: widget.isGroup ? widget.conversationId : null,
+        );
+    Future.microtask(() => _scrollToBottom());
   }
 
   void _attachFile() async {
@@ -185,26 +193,27 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
               CircleAvatar(
                 radius: 20,
                 backgroundColor: DesignSystem.surfaceMediumColor(context),
-                backgroundImage: widget.otherUser.avatarUrl != null
+                backgroundImage: (!widget.isGroup && widget.otherUser.avatarUrl != null)
                     ? NetworkImage(widget.otherUser.avatarUrl!)
                     : null,
-                child: widget.otherUser.avatarUrl == null
-                    ? Icon(LucideIcons.user, size: 18, color: DesignSystem.labelText(context))
+                child: (widget.isGroup || widget.otherUser.avatarUrl == null)
+                    ? Icon(widget.isGroup ? LucideIcons.users : LucideIcons.user, size: 18, color: DesignSystem.labelText(context))
                     : null,
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: DesignSystem.themeBackground(context), width: 2),
+              if (!widget.isGroup)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: DesignSystem.themeBackground(context), width: 2),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(width: 10),
@@ -213,7 +222,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.otherUser.name,
+                  widget.isGroup ? (widget.groupName ?? 'Community Group') : widget.otherUser.name,
                   style: GoogleFonts.plusJakartaSans(
                     color: DesignSystem.mainText(context),
                     fontWeight: FontWeight.bold,
@@ -221,32 +230,44 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Text(
-                    isTyping ? 'typing...' : 'Online',
-                    key: ValueKey(isTyping),
+                if (!widget.isGroup)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      isTyping ? 'typing...' : 'Online',
+                      key: ValueKey(isTyping),
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF10B981),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    'Community',
                     style: GoogleFonts.inter(
-                      color: const Color(0xFF10B981),
+                      color: DesignSystem.primary(context),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
               ],
             ),
           ),
         ],
       ),
       actions: [
-        IconButton(
-          icon: Icon(LucideIcons.video, color: DesignSystem.labelText(context), size: 20),
-          onPressed: () {},
-        ),
-        IconButton(
-          icon: Icon(LucideIcons.phone, color: DesignSystem.labelText(context), size: 20),
-          onPressed: () {},
-        ),
+        if (!widget.isGroup) ...[
+          IconButton(
+            icon: Icon(LucideIcons.video, color: DesignSystem.labelText(context), size: 20),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(LucideIcons.phone, color: DesignSystem.labelText(context), size: 20),
+            onPressed: () {},
+          ),
+        ],
         const SizedBox(width: 4),
       ],
     );
@@ -327,7 +348,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
         return Column(
           children: [
             if (showDate) _buildDateSeparator(msg.createdAt),
-            _buildMessageBubble(msg, isMe, isFirstInGroup, isLastInGroup),
+            _buildMessageBubble(msg, isMe, isFirstInGroup, isLastInGroup, chatState),
           ],
         );
       },
@@ -364,7 +385,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
   }
 
   Widget _buildMessageBubble(
-      ChatMessage msg, bool isMe, bool isFirstInGroup, bool isLastInGroup) {
+      ChatMessage msg, bool isMe, bool isFirstInGroup, bool isLastInGroup, ChatState state) {
     final primaryColor = DesignSystem.primary(context);
     final timeStr = DateFormat('h:mm a').format(msg.createdAt);
     final isFile = msg.content.startsWith('Shared a file: ');
@@ -405,6 +426,18 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                 crossAxisAlignment:
                     isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
+                  if (widget.isGroup && !isMe && isFirstInGroup)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 4),
+                      child: Text(
+                        msg.senderName ?? 'Member',
+                        style: GoogleFonts.inter(
+                          color: DesignSystem.primary(context),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   Container(
                     constraints:
                         BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
