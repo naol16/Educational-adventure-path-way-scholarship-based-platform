@@ -669,7 +669,7 @@ export class CounselorService {
     return { booking, message: "Session invitation sent to student. They need to pay to confirm." };
   }
 
-  static async confirmBooking(tx_ref: string): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
+  static async confirmBooking(tx_ref: string, chapaVerifyResult?: any): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
     const payment = await Payment.findOne({ where: { tx_ref } });
 
     if (!payment) {
@@ -683,8 +683,11 @@ export class CounselorService {
     }
 
     try {
-      console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
-      const chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      let chapaVerify = chapaVerifyResult;
+      if (!chapaVerify) {
+        console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
+        chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      }
 
       // Chapa's response structure: { status: "success", message: "...", data: { status: "success", ... } }
       const apiSuccess = chapaVerify.status === 'success';
@@ -778,7 +781,7 @@ export class CounselorService {
                   }
                   console.log(`[ConfirmBooking] Email tasks added to background queue for: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
                 } else {
-                  // FALLBACK: Synchronous (Slow) if Redis is down
+                  // FALLBACK: Synchronous (Parallelized) if Redis is down
                   const sendEmailTasks: Promise<void>[] = [];
                   if (studentEmail) {
                     sendEmailTasks.push(EmailService.sendSessionInviteEmail({
@@ -794,8 +797,11 @@ export class CounselorService {
                       startTime: slot.startTime, endTime,
                     }));
                   }
-                  await Promise.all(sendEmailTasks);
-                  console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                  
+                  // Start emails in parallel and continue
+                  Promise.all(sendEmailTasks).then(() => {
+                    console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                  }).catch(e => console.error("[ConfirmBooking] Parallel email fallback error:", e));
                 }
               } catch (emailError) {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
@@ -803,21 +809,19 @@ export class CounselorService {
 
               // Funds remain held in escrow until student milestone confirmation.
               const counselor = await CounselorRepository.findById(booking.counselorId);
-              if (counselor) {
-                // Notify counselor about confirmed booking
-                try {
-                  await NotificationService.createNotification(
+                if (counselor) {
+                  // Notify counselor about confirmed booking (Fire and forget to speed up response)
+                  NotificationService.createNotification(
                     counselor.userId,
                     "Booking Confirmed",
                     `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
                     booking.id,
                     false
-                  );
-                } catch (notifyError) {
-                  console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                  ).catch(notifyError => {
+                    console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                  });
                 }
-              }
 
               this.queueSessionReminder(booking.id, slot.startTime);
             }
