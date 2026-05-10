@@ -44,11 +44,14 @@ function setConfigs() {
       process.env.JWT_REFRESH_EXPIRATION ||
       process.env.JWT_REFRESH_EXPIRES_IN ||
       "7d",
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
+    GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
     GOOGLE_AUTH_AUDIENCES: [
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_ANDROID_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
+      process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
+      // Bulletproof IDs as requested by Senior Architect
+      "57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com",
+      "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com"
     ].filter((id): id is string => !!id),
     
     // Google Calendar / Meet Configs
