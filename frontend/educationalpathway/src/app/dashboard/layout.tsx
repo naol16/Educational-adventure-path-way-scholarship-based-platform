@@ -50,9 +50,9 @@ export default function DashboardLayout({
 
         <div className="flex-1 flex flex-col min-w-0">
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar px-6 py-8 lg:px-10">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-6 py-8 lg:px-10">
 
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-[1600px] mx-auto h-full">
               {children}
             </div>
 
@@ -76,9 +76,9 @@ export default function DashboardLayout({
 
           {!isCounselorOnboarding && <DashboardHeader />}
 
-          <main className={`flex-1 overflow-y-auto custom-scrollbar ${isCounselorOnboarding ? '' : 'px-6 py-8'}`}>
+          <main className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${isCounselorOnboarding ? '' : 'px-6 py-8'}`}>
 
-            <div className="max-w-7xl mx-auto h-full">
+            <div className="max-w-[1600px] mx-auto h-full">
               {children}
             </div>
 
@@ -102,12 +102,12 @@ export default function DashboardLayout({
         {!isStudentOnboarding && <DashboardHeader />}
 
         <main
-          className={`flex-1 overflow-y-auto custom-scrollbar ${
+          className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${
             isStudentOnboarding ? '' : 'px-6 py-8'
           }`}
         >
 
-          <div className="max-w-7xl mx-auto h-full">
+          <div className="max-w-[1600px] mx-auto h-full">
             {children}
           </div>
 

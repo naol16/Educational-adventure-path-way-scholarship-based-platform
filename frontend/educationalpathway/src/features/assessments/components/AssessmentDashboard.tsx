@@ -38,6 +38,7 @@ interface ProgressItem {
   difficulty: string;
   overallBand: number | string;
   evaluation?: any;
+  isDiagnostic?: boolean;
   createdAt: string;
 }
 
@@ -176,7 +177,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
             
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">
-                Assessment <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Matrix</span>
+                {progressData.some(p => !p.isDiagnostic) ? "Mock Exam" : "Assessment"} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Matrix</span>
               </h1>
               <p className="text-lg text-muted-foreground font-medium max-w-2xl leading-relaxed">
                 Validate your {envMode} proficiency through high-stakes AI evaluations designed to replicate real-world proctoring environments.
@@ -187,7 +188,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
           <Button
             onClick={fetchStats}
             variant="outline"
-            className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted/50 transition-all shadow-sm bg-card"
+            className="h-14 px-8 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted/50 transition-all shadow-sm bg-card"
           >
             <Loader2 className={`mr-2 size-4 ${loadingStats ? 'animate-spin' : ''}`} />
             Refresh Data Stream
@@ -196,7 +197,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
 
         {/* Intelligence Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Card className="border border-border/40 rounded-[40px] bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-700">
+          <Card className="border border-border/40 rounded-2xl bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-700">
             <CardBody className="p-10 flex flex-col gap-8">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
@@ -216,7 +217,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
             </CardBody>
           </Card>
 
-          <Card className="border border-border/40 rounded-[40px] bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-700">
+          <Card className="border border-border/40 rounded-2xl bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-700">
             <CardBody className="p-10 flex flex-col gap-8">
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
@@ -236,7 +237,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
             </CardBody>
           </Card>
 
-          <Card className={`border ${theme.border} rounded-[40px] overflow-hidden shadow-xl bg-card/30 backdrop-blur-md relative`}>
+          <Card className={`border ${theme.border} rounded-2xl overflow-hidden shadow-xl bg-card/30 backdrop-blur-md relative`}>
             <div className={`absolute inset-0 bg-linear-to-br ${envMode === "IELTS" ? 'from-emerald-500/5 to-transparent' : 'from-blue-500/5 to-transparent'}`} />
             <CardBody className="p-10 flex flex-col justify-between h-full gap-10 relative z-10">
               <div className="space-y-2">
@@ -276,20 +277,24 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Action Module */}
           <div className="lg:col-span-5 space-y-8">
-            <Card className="border border-primary/20 bg-card rounded-[40px] shadow-sm">
+            <Card className="border border-primary/20 bg-card rounded-2xl shadow-sm">
               <CardBody className="p-10 flex flex-col gap-10">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <PlayCircle className="text-primary" size={20} />
-                    <h3 className="text-xl font-black uppercase tracking-tight">Initiate Diagnostic</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tight">
+                      {progressData.length === 0 ? "Initiate Diagnostic" : "Execute Mock Exam"}
+                    </h3>
                   </div>
                   <p className="text-sm text-muted-foreground font-medium">
-                    Deploy AI-driven synthesis for a full-spectrum {envMode} simulation.
+                    {progressData.length === 0 
+                      ? "Deploy AI-driven synthesis for a full-spectrum diagnostic simulation." 
+                      : "Perform a high-fidelity mock exam to verify your current proficiency level."}
                   </p>
                 </div>
 
                 {learningPathError && (
-                  <div className="flex items-start gap-4 p-6 rounded-3xl border border-destructive/20 bg-destructive/5">
+                  <div className="flex items-start gap-4 p-6 rounded-2xl border border-destructive/20 bg-destructive/5">
                     <AlertCircle className="text-destructive shrink-0 mt-1" size={20} />
                     <div className="space-y-3">
                       <p className="font-black text-xs uppercase tracking-widest text-destructive">Protocol Restricted</p>
@@ -307,7 +312,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 <Button
                   onClick={handleStartExam}
                   disabled={loading}
-                  className={`w-full h-16 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:shadow-primary/20 transition-all duration-500 primary-gradient text-white hover:scale-[1.02] active:scale-95`}
+                  className={`w-full h-16 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:shadow-primary/20 transition-all duration-500 primary-gradient text-white hover:scale-[1.02] active:scale-95`}
                 >
                   {loading ? (
                     <><Loader2 className="animate-spin mr-3 size-5" /> Synthesis in Progress...</>
@@ -320,7 +325,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
 
             {/* Visual Analytics */}
             {chartData.length > 1 && (
-              <Card className="border border-border/40 rounded-[40px] bg-card overflow-hidden">
+              <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden">
                 <CardBody className="p-10 space-y-10">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
@@ -360,7 +365,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
 
           {/* Records Module */}
           <div className="lg:col-span-7">
-            <Card className="border border-border/40 rounded-[40px] bg-card min-h-[600px] shadow-sm">
+            <Card className="border border-border/40 rounded-2xl bg-card min-h-[600px] shadow-sm">
               <CardBody className="p-10 space-y-8">
                 <div className="flex items-center justify-between border-b border-border/10 pb-6">
                   <h3 className="text-2xl font-black uppercase tracking-tight">Assessment History</h3>
@@ -394,11 +399,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.05 * index }}
-                        className="flex flex-col sm:flex-row items-center justify-between p-6 rounded-[32px] border border-border/40 hover:bg-muted/30 transition-all duration-500 group relative overflow-hidden"
+                        className="flex flex-col sm:flex-row items-center justify-between p-6 rounded-2xl border border-border/40 hover:bg-muted/30 transition-all duration-500 group relative overflow-hidden"
                       >
                         <div className="flex items-center gap-8 flex-1 w-full sm:w-auto">
                           {/* Performance Indicator */}
-                          <div className={`w-20 h-20 rounded-3xl ${parseFloat(String(item.overallBand)) >= thresholdBand ? 'bg-emerald-500/10 text-emerald-600' : 'bg-primary/10 text-primary'} flex flex-col items-center justify-center shrink-0 border border-current/10 shadow-sm relative group-hover:scale-105 transition-transform duration-500`}>
+                          <div className={`w-20 h-20 rounded-2xl ${parseFloat(String(item.overallBand)) >= thresholdBand ? 'bg-emerald-500/10 text-emerald-600' : 'bg-primary/10 text-primary'} flex flex-col items-center justify-center shrink-0 border border-current/10 shadow-sm relative group-hover:scale-105 transition-transform duration-500`}>
                             <span className="text-3xl font-black tracking-tighter leading-none">
                               {parseFloat(String(item.overallBand)).toFixed(1)}
                             </span>
@@ -408,8 +413,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-3">
                               <span className="font-black text-sm tracking-widest uppercase">
-                                {item.examType} PROCTOR
+                                {item.examType} {item.isDiagnostic ? "DIAGNOSTIC" : "MOCK EXAM"}
                               </span>
+                              <Badge className={`text-[8px] font-black uppercase tracking-widest border-none ${item.isDiagnostic ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                {item.isDiagnostic ? "INITIAL" : "GRADUATION"}
+                              </Badge>
                               <Badge className="text-[8px] font-black uppercase tracking-widest bg-muted text-muted-foreground border-none">
                                 {item.difficulty || "Standard"}
                               </Badge>
@@ -433,7 +441,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                             };
                             onViewResult(normalizedItem);
                           }}
-                          className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all bg-foreground text-background hover:bg-foreground/90 mt-4 sm:mt-0 w-full sm:w-auto shadow-lg"
+                          className="h-14 px-8 rounded-lg font-black uppercase tracking-widest text-[9px] transition-all bg-foreground text-background hover:bg-foreground/90 mt-4 sm:mt-0 w-full sm:w-auto shadow-lg"
                         >
                           View Diagnostic Matrix
                           <ChevronRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />

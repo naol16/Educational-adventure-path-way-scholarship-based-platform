@@ -31,14 +31,21 @@ export class AssessmentController {
         return;
       }
 
+      let studentId: number | undefined;
+      let isDiagnostic = false;
+
       // Gate: only block if the student already has an active learning path with < 100% progress
       // AND this is not a forced retake. First-time diagnostics (no path yet) are always allowed.
       // The check is scoped to the requested examType so IELTS progress never blocks TOEFL.
-      if (req.user?.id && !req.body?.force) {
+      if (req.user?.id) {
         const student = await StudentRepository.findByUserId(req.user.id);
         if (student) {
+          studentId = student.id as number;
           const path = await LearningPathRepository.findByStudentId(student.id, examTypeUpper);
-          if (path && path.currentProgressPercentage !== null && path.currentProgressPercentage < 100) {
+          
+          if (!path) {
+            isDiagnostic = true;
+          } else if (path.currentProgressPercentage !== null && path.currentProgressPercentage < 100 && !req.body?.force) {
             res.status(403).json({
               error: "Learning path completion required.",
               message: "You must complete 100% of your learning path before generating a mock exam.",
@@ -49,7 +56,13 @@ export class AssessmentController {
         }
       }
 
-      const result = await AssessmentService.generateExam(examType, difficulty);
+      const result = await AssessmentService.generateExam(
+        examType as "IELTS" | "TOEFL", 
+        difficulty as "Easy" | "Medium" | "Hard", 
+        undefined, 
+        studentId, 
+        isDiagnostic
+      );
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -99,12 +112,7 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
-      const { isRedisAvailable } = await import("../config/redis.js");
-      if (!isRedisAvailable()) {
-        console.error("[AssessmentController] ❌ Redis is unavailable. Cannot submit job.");
-        res.status(503).json({ error: "Assessment service is temporarily unavailable (Redis down)." });
-        return;
-      }
+
 
       const result = await AssessmentService.submitAssessment(
         test_id,

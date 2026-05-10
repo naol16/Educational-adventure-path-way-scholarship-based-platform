@@ -33,20 +33,20 @@ export const UnitTestOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            className="bg-card rounded-[40px] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-border/50"
+            className="bg-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col border border-border/50"
           >
             {/* Header */}
             <div className="px-10 py-8 border-b border-border/40 flex items-center justify-between bg-muted/20">
               <div className="space-y-1">
                 <h2 className="text-3xl font-black tracking-tighter uppercase leading-none">Unit Test: {activeTab}</h2>
-                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted-foreground">Verification Protocol Active</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted-foreground">Quiz in Progress</p>
               </div>
-              <Button variant="ghost" onClick={onClose} className="rounded-full h-12 w-12 p-0 hover:bg-muted">
+              <Button variant="ghost" onClick={onClose} className="rounded-lg h-11 w-11 p-0 hover:bg-muted">
                 <X size={24} className="text-muted-foreground" />
               </Button>
             </div>
@@ -63,24 +63,24 @@ export const UnitTestOverlay = ({
                   </motion.div>
                   <div className="space-y-4">
                     <h3 className="text-6xl font-black tracking-tighter">{unitTestResults.score}%</h3>
-                    <p className="text-xl font-bold uppercase tracking-widest">{unitTestResults.passed ? 'Mastery Verified' : 'Standard Not Met'}</p>
+                    <p className="text-xl font-bold uppercase tracking-widest">{unitTestResults.passed ? 'Passed' : 'Needs Review'}</p>
                     <p className="text-muted-foreground font-medium max-w-md mx-auto leading-relaxed italic">"{unitTestResults.feedback}"</p>
                   </div>
-                  <Button onClick={onClose} className="h-16 px-16 rounded-full primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all">
-                    Acknowledge & Close
+                  <Button onClick={onClose} className="h-11 px-10 rounded-lg primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all">
+                    Close
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-16">
                   {(unitTestContent?.passage || unitTestContent?.script) && (
-                    <div className="bg-muted/30 rounded-[40px] border border-border/40 overflow-hidden shadow-sm">
+                    <div className="bg-muted/30 rounded-2xl border border-border/40 overflow-hidden shadow-sm">
                       <button 
                         onClick={() => setShowSource(!showSource)}
                         className="w-full p-8 flex items-center justify-between hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-3 opacity-60">
                           <BookOpen size={16} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Source Material Matrix</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">Reading Material</span>
                         </div>
                         <ChevronDown size={18} className={`text-muted-foreground transition-transform duration-500 ${showSource ? 'rotate-180' : ''}`} />
                       </button>
@@ -117,7 +117,7 @@ export const UnitTestOverlay = ({
                                 newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
                                 setUnitTestContent({ ...unitTestContent, userResponses: newR });
                               }}
-                              className={`text-left p-8 rounded-[32px] border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
+                              className={`text-left p-8 rounded-2xl border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
                             >
                               {opt}
                             </button>
@@ -131,9 +131,9 @@ export const UnitTestOverlay = ({
                     <Button 
                       onClick={() => onSubmit(unitTestContent.userResponses || [])}
                       disabled={isSubmitting || (unitTestContent?.questions?.length !== unitTestContent?.userResponses?.filter(Boolean).length)}
-                      className="h-20 px-20 rounded-full primary-gradient text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                      className="h-11 px-10 rounded-lg primary-gradient text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-110 active:scale-95 transition-all"
                     >
-                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Authorize Protocol Execution'}
+                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Submit Answers'}
                     </Button>
                   </div>
                 </div>
@@ -159,12 +159,12 @@ export const DynamicMissionOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            className="bg-card rounded-[48px] w-full max-w-xl p-12 space-y-12 shadow-2xl border border-border/50 relative overflow-hidden"
+            className="bg-card rounded-2xl w-full max-w-xl p-12 space-y-12 border border-border/50 relative overflow-hidden"
           >
             {/* Background Ambience inside modal */}
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-blue-500" />
@@ -173,22 +173,22 @@ export const DynamicMissionOverlay = ({
               <Button 
                 variant="ghost" 
                 onClick={onClose} 
-                className="absolute -top-6 -right-6 rounded-full h-12 w-12 p-0 hover:bg-muted"
+                className="absolute -top-6 -right-6 rounded-lg h-11 w-11 p-0 hover:bg-muted"
               >
                 <X size={24} className="text-muted-foreground" />
               </Button>
-              <div className="size-20 bg-primary/10 rounded-[28px] flex items-center justify-center text-primary mx-auto border border-primary/20 shadow-inner">
+              <div className="size-20 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto border border-primary/20 shadow-inner">
                 <Sparkles size={32} />
               </div>
               <div className="space-y-2">
-                <h2 className="text-3xl font-black uppercase tracking-tighter">AI Content Synthesis</h2>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em]">Personalized Curricula Protocol</p>
+                <h2 className="text-3xl font-black uppercase tracking-tighter">Generate Lesson</h2>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em]">AI Learning Assistant</p>
               </div>
             </div>
 
             <div className="space-y-8">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 px-4">Focus Domain Vector</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 px-4">Topic of Interest</label>
                 <input 
                   type="text" 
                   placeholder="e.g. Cognitive Psychology, Quantum Ethics..."
@@ -199,16 +199,16 @@ export const DynamicMissionOverlay = ({
             </div>
 
             <div className="flex gap-4">
-              <Button variant="ghost" onClick={onClose} className="flex-1 rounded-full h-16 font-black uppercase tracking-widest text-[10px] text-muted-foreground hover:text-foreground">Abort</Button>
+              <Button variant="ghost" onClick={onClose} className="flex-1 rounded-lg h-11 font-black uppercase tracking-widest text-[10px] text-muted-foreground hover:text-foreground">Cancel</Button>
               <Button 
                 onClick={() => {
                   const topic = (document.getElementById('missionTopicInput') as HTMLInputElement).value;
                   if (topic) onGenerate(topic);
                 }}
                 disabled={isGenerating}
-                className="flex-1 primary-gradient text-white rounded-full h-16 font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all"
+                className="flex-1 primary-gradient text-white rounded-lg h-11 font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all"
               >
-                {isGenerating ? <Loader2 className="animate-spin" /> : 'Synthesize'}
+                {isGenerating ? <Loader2 className="animate-spin" /> : 'Generate'}
               </Button>
             </div>
           </motion.div>

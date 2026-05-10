@@ -330,7 +330,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-10 relative z-10">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-10 relative z-10">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="space-y-6">
@@ -353,7 +353,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
           </div>
 
           <div className="space-y-4">
-            <div className={`flex items-center gap-4 px-8 h-20 rounded-[32px] border-2 font-mono text-2xl font-black shadow-xl transition-all duration-500 ${isTimeLow ? "bg-destructive/10 text-destructive border-destructive/20 animate-pulse" : "bg-card border-border/40"}`}>
+            <div className={`flex items-center gap-4 px-8 h-20 rounded-2xl border-2 font-mono text-2xl font-black shadow-xl transition-all duration-500 ${isTimeLow ? "bg-destructive/10 text-destructive border-destructive/20 animate-pulse" : "bg-card border-border/40"}`}>
               <Clock className={isTimeLow ? "animate-spin-slow" : "opacity-40"} size={28} />
               {formatTime(timeLeft)}
             </div>
@@ -387,14 +387,14 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 </p>
               </div>
               
-              <div className="p-10 bg-card rounded-[40px] border border-border/40 shadow-sm space-y-2">
+              <div className="p-10 bg-card rounded-2xl border border-border/40 shadow-sm space-y-2">
                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Next Objective</p>
                  <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Analysis</h3>
               </div>
 
               <Button 
                 onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
-                className={`rounded-[32px] px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
+                className={`rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
               >
                 Execute {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} Protocol <ArrowRight className="ml-4" />
               </Button>
@@ -406,50 +406,41 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               animate={{ opacity: 1, x: 0 }} 
               exit={{ opacity: 0, x: -20 }} 
               transition={{ duration: 0.4, ease: "circOut" }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-10"
+              className="space-y-8"
             >
-              {/* Sidebar Info */}
-              <div className="lg:col-span-3 space-y-6">
-                <Card className="border border-border/40 rounded-[32px] bg-card overflow-hidden shadow-sm">
-                  <CardBody className="p-8 space-y-8">
-                    <div className="space-y-2">
+              {/* Top Horizontal Skills Info */}
+              <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden shadow-sm">
+                <CardBody className="p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="space-y-1">
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Active Phase</p>
                       <h4 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
                         <span className={theme.text}>{SECTION_META[currentSection].icon}</span>
                         {SECTION_META[currentSection].label}
                       </h4>
                     </div>
-                    
-                    <div className="space-y-4">
-                      {SECTION_ORDER.map((sec, idx) => (
-                        <div key={sec} className="flex items-center gap-4 group">
-                          <div className={`size-10 rounded-xl flex items-center justify-center font-black text-xs border transition-all ${currentSection === sec ? theme.bg + " " + theme.text + " " + theme.border : completedSections.has(sec) ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/30 border-transparent text-muted-foreground"}`}>
-                            {idx + 1}
-                          </div>
-                          <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${currentSection === sec ? "text-foreground" : "text-muted-foreground opacity-40"}`}>
-                            {sec}
-                          </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4 md:gap-8">
+                    {SECTION_ORDER.map((sec, idx) => (
+                      <div key={sec} className="flex items-center gap-3 group">
+                        <div className={`size-8 rounded-lg flex items-center justify-center font-black text-xs border transition-all ${currentSection === sec ? theme.bg + " " + theme.text + " " + theme.border : completedSections.has(sec) ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/30 border-transparent text-muted-foreground"}`}>
+                          {idx + 1}
                         </div>
-                      ))}
-                    </div>
-                  </CardBody>
-                </Card>
-                
-                <div className="p-8 bg-primary/5 rounded-[32px] border border-primary/10">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
-                    <Sparkles size={10} /> Proctored Session
-                  </p>
-                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                    Artificial Intelligence is monitoring response patterns for biometric validation.
-                  </p>
-                </div>
-              </div>
+                        <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${currentSection === sec ? "text-foreground" : "text-muted-foreground opacity-40"}`}>
+                          {sec}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
 
               {/* Main Content Area */}
-              <div className="lg:col-span-9 space-y-8">
+              <div className="space-y-8">
                 {currentSection === "reading" && (
                   <div className="space-y-10">
-                    <Card className="border border-border/40 rounded-[40px] bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm">
+                    <Card className="border border-border/40 rounded-2xl bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm">
                       <CardBody className="p-10 max-h-[400px] overflow-y-auto custom-scrollbar">
                         <div className="prose prose-zinc dark:prose-invert max-w-none">
                           <p className="text-lg leading-[1.8] text-foreground/80 font-medium whitespace-pre-wrap">
@@ -466,22 +457,25 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                           <div key={qId} className="space-y-8 p-2">
                             <div className="flex items-start gap-6">
                               <span className="size-10 rounded-2xl bg-muted/30 border border-border/40 flex items-center justify-center font-black text-sm shrink-0">{i + 1}</span>
-                              <h4 className="text-2xl font-black uppercase tracking-tight leading-tight">{q.question}</h4>
+                              <h4 className="text-xl font-bold tracking-tight leading-relaxed first-letter:uppercase">{q.question}</h4>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-16">
+                            <div className="grid grid-cols-1 gap-3 ml-0 md:ml-16">
                               {q.options?.map((opt: string, j: number) => {
                                 const isSelected = responses.reading[qId] === opt;
                                 return (
-                                  <button 
+                                  <label 
                                     key={j} 
-                                    onClick={() => handleOptionSelect("reading", qId, opt)} 
-                                    className={`text-left p-6 rounded-[28px] border-2 transition-all duration-300 flex items-center group shadow-sm hover:shadow-xl ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card hover:bg-muted/10"}`}
+                                    className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
                                   >
-                                     <div className={`size-10 shrink-0 flex items-center justify-center rounded-2xl mr-4 text-xs font-black border-2 transition-all duration-500 ${isSelected ? "bg-white text-primary border-transparent shadow-sm" : "border-border text-muted-foreground/40 group-hover:border-primary/30"}`}>
-                                         {String.fromCharCode(65 + j)}
-                                     </div>
-                                     <span className="flex-1 text-base font-bold leading-relaxed">{opt}</span>
-                                  </button>
+                                     <input 
+                                       type="radio" 
+                                       name={`reading-q-${qId}`} 
+                                       checked={isSelected} 
+                                       onChange={() => handleOptionSelect("reading", qId, opt)} 
+                                       className="size-5 accent-primary cursor-pointer"
+                                     />
+                                     <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
+                                  </label>
                                 );
                               })}
                             </div>
@@ -494,7 +488,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
 
                 {currentSection === "listening" && (
                   <div className="space-y-10">
-                    <Card className="border border-border/40 rounded-[40px] bg-card overflow-hidden shadow-sm">
+                    <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden shadow-sm">
                       <CardBody className="p-10 text-center space-y-6">
                         <div className="size-20 rounded-[32px] bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-inner">
                           <Headphones size={32} />
@@ -503,7 +497,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                           <h3 className="text-xl font-black uppercase tracking-tight">Audio Diagnostic</h3>
                           <p className="text-sm text-muted-foreground font-medium">Verify audio fidelity before proceeding to synthesis.</p>
                         </div>
-                        <div className="max-w-md mx-auto p-4 bg-muted/20 rounded-[28px] border border-border/10">
+                        <div className="max-w-md mx-auto p-4 bg-muted/20 rounded-2xl border border-border/10">
                           <audio controls className="w-full h-10" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
                         </div>
                       </CardBody>
@@ -516,22 +510,25 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                           <div key={qId} className="space-y-8 p-2">
                             <div className="flex items-start gap-6">
                               <span className="size-10 rounded-2xl bg-muted/30 border border-border/40 flex items-center justify-center font-black text-sm shrink-0">{i + 1}</span>
-                              <h4 className="text-2xl font-black uppercase tracking-tight leading-tight">{q.question}</h4>
+                              <h4 className="text-xl font-bold tracking-tight leading-relaxed first-letter:uppercase">{q.question}</h4>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-16">
+                            <div className="grid grid-cols-1 gap-3 ml-0 md:ml-16">
                               {q.options?.map((opt: string, j: number) => {
                                 const isSelected = responses.listening[qId] === opt;
                                 return (
-                                  <button 
+                                  <label 
                                     key={j} 
-                                    onClick={() => handleOptionSelect("listening", qId, opt)} 
-                                    className={`text-left p-6 rounded-[28px] border-2 transition-all duration-300 flex items-center group shadow-sm hover:shadow-xl ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card hover:bg-muted/10"}`}
+                                    className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
                                   >
-                                     <div className={`size-10 shrink-0 flex items-center justify-center rounded-2xl mr-4 text-xs font-black border-2 transition-all duration-500 ${isSelected ? "bg-white text-primary border-transparent shadow-sm" : "border-border text-muted-foreground/40 group-hover:border-primary/30"}`}>
-                                         {String.fromCharCode(65 + j)}
-                                     </div>
-                                     <span className="flex-1 text-base font-bold leading-relaxed">{opt}</span>
-                                  </button>
+                                     <input 
+                                       type="radio" 
+                                       name={`listening-q-${qId}`} 
+                                       checked={isSelected} 
+                                       onChange={() => handleOptionSelect("listening", qId, opt)} 
+                                       className="size-5 accent-primary cursor-pointer"
+                                     />
+                                     <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
+                                  </label>
                                 );
                               })}
                             </div>
@@ -550,7 +547,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                         <PenLine size={12} /> Live Composition
                       </div>
                     </div>
-                    <Card className="border border-border/40 rounded-[40px] bg-muted/10 shadow-inner">
+                    <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner">
                       <CardBody className="p-10 italic text-lg text-foreground/70 font-medium leading-relaxed">
                         {sections.writing?.questions?.[0]?.prompt || sections.writing?.prompt}
                       </CardBody>
@@ -559,7 +556,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                       value={responses.writing} 
                       onChange={(e) => setResponses({ ...responses, writing: e.target.value })} 
                       placeholder="Begin composition synthesis here..." 
-                      className="w-full h-[500px] p-12 rounded-[48px] border-2 border-border/40 bg-card text-lg font-medium text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none shadow-xl custom-scrollbar" 
+                      className="w-full h-[500px] p-12 rounded-2xl border-2 border-border/40 bg-card text-lg font-medium text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none shadow-xl custom-scrollbar"
                     />
                   </div>
                 )}
@@ -571,7 +568,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                       <h3 className="text-3xl font-black uppercase tracking-tight">Vocal Analysis</h3>
                     </div>
                     
-                    <Card className="border border-border/40 rounded-[40px] bg-muted/10 shadow-inner max-w-2xl w-full">
+                    <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner max-w-2xl w-full">
                       <CardBody className="p-10 text-xl font-black uppercase tracking-tight text-center leading-relaxed">
                         {sections.speaking?.questions?.[0]?.prompt || sections.speaking?.prompt}
                       </CardBody>
@@ -632,7 +629,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 if (currentIdx > 0) handleSectionChange(SECTION_ORDER[currentIdx - 1]);
               }}
               disabled={currentIdx === 0}
-              className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted transition-all shadow-sm bg-card disabled:opacity-20"
+              className="h-16 px-10 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted transition-all shadow-sm bg-card disabled:opacity-20"
             >
               <ArrowLeft className="mr-3 size-4" /> Previous Module
             </Button>
@@ -649,14 +646,14 @@ export function AssessmentTest({ examData, onComplete }: Props) {
             {currentIdx < 3 ? (
               <Button 
                 onClick={() => setShowSectionSummary(true)} 
-                className={`h-16 px-16 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 ${theme.btn} text-white`}
+                className={`h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl hover:shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 ${theme.btn} text-white`}
               >
                 Proceed <ArrowRight className="ml-3 size-4" />
               </Button>
             ) : (
               <Button 
                 onClick={handleSubmit} 
-                className="h-16 px-16 rounded-2xl font-black uppercase tracking-widest text-[10px] bg-foreground text-background shadow-xl hover:scale-[1.05] active:scale-95 transition-all"
+                className="h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] bg-foreground text-background shadow-xl hover:scale-[1.05] active:scale-95 transition-all"
               >
                 Finalize Diagnostic <CheckCircle2 className="ml-3 size-4" />
               </Button>

@@ -9,17 +9,17 @@ interface EnvironmentSwitcherProps {
 
 export function EnvironmentSwitcher({ mode, onChange }: EnvironmentSwitcherProps) {
   return (
-    <div className="flex p-1 bg-muted/30 backdrop-blur-md rounded-2xl border border-border/40 w-full max-w-[300px] shadow-sm">
+    <div className="flex p-1 bg-muted/30 backdrop-blur-md rounded-xl border border-border/40 w-full max-w-[300px] shadow-sm">
       <button
         onClick={() => onChange("IELTS")}
-        className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${
+        className={`relative flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${
           mode === "IELTS" ? "text-white" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         {mode === "IELTS" && (
           <motion.div
             layoutId="activeEnv"
-            className="absolute inset-0 bg-emerald-600 rounded-xl shadow-sm z-[-1]"
+            className="absolute inset-0 bg-emerald-600 rounded-lg shadow-sm z-[-1]"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}
@@ -28,14 +28,14 @@ export function EnvironmentSwitcher({ mode, onChange }: EnvironmentSwitcherProps
       </button>
       <button
         onClick={() => onChange("TOEFL")}
-        className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${
+        className={`relative flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${
           mode === "TOEFL" ? "text-white" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         {mode === "TOEFL" && (
           <motion.div
             layoutId="activeEnv"
-            className="absolute inset-0 bg-blue-600 rounded-xl shadow-sm z-[-1]"
+            className="absolute inset-0 bg-blue-600 rounded-lg shadow-sm z-[-1]"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}

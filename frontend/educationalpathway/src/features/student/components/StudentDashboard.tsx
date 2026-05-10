@@ -74,6 +74,13 @@ export const StudentDashboard = () => {
     revalidateOnMount: true
   });
 
+  const { data: pathData, isLoading: loadingPath } = useSWR<any>(user?.isOnboarded ? "/learning-path" : null, {
+    revalidateOnMount: true
+  });
+
+  const learningPathProgress = pathData?.current_progress_percentage ?? 0;
+  const examType = pathData?.examType || "IELTS";
+
 
   useEffect(() => {
     if (user && !user.isOnboarded) {
@@ -269,6 +276,86 @@ export const StudentDashboard = () => {
               )}
             </section>
 
+            {/* Learning Path Progress - NEW SECTION */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                    <Compass className="text-primary" size={24} /> Learning Path Status
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Your journey towards {examType} mastery</p>
+                </div>
+                <Link href="/dashboard/learning-path">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    Open Path <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
+
+              <Card className="rounded-xl border border-border/40 bg-card p-8 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Zap size={100} className="text-primary" />
+                </div>
+                <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
+                   <div className="size-32 rounded-full border-8 border-muted flex items-center justify-center relative">
+                      <svg className="size-full -rotate-90">
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          className="text-primary/20"
+                        />
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeDasharray={351.8}
+                          strokeDashoffset={351.8 * (1 - (learningPathProgress || 0) / 100)}
+                          strokeLinecap="round"
+                          className="text-primary transition-all duration-1000"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-black">{learningPathProgress || 0}%</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Mastery</span>
+                      </div>
+                   </div>
+
+                   <div className="flex-1 space-y-6">
+                      <div className="space-y-2">
+                        <h4 className="text-xl font-bold">Next Milestone</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {learningPathProgress && learningPathProgress >= 100 
+                            ? "Congratulations! You've mastered the curriculum. You are now eligible for the Final Mock Exam."
+                            : "Complete your daily missions in Reading and Listening to unlock the next proficiency level."}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-4">
+                        <Link href="/dashboard/learning-path">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg">
+                            Resume Training
+                          </Button>
+                        </Link>
+                        {learningPathProgress >= 100 && (
+                          <Link href="/dashboard/learning-path/final/assessment">
+                            <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/5 font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg">
+                              Take Mock Exam
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                   </div>
+                </div>
+              </Card>
+            </section>
+
             {/* Recommended Counselors Section */}
             <section className="space-y-4">
               <div className="flex justify-between items-center">
@@ -391,6 +478,13 @@ export const StudentDashboard = () => {
                   <Button variant="outline" className="w-full justify-start gap-2">
                     <Calendar size={16} />
                     My Bookings
+                  </Button>
+                </Link>
+                <Link href="/dashboard/learning-path/final/assessment" className="block">
+                  <Button variant="outline" className={`w-full justify-start gap-2 ${learningPathProgress === 100 ? 'border-primary/40 text-primary' : ''}`}>
+                    <ClipboardList size={16} />
+                    Final Mock Exam
+                    {learningPathProgress === 100 && <Badge className="ml-auto bg-primary/10 text-primary border-none text-[8px] px-1.5">UNLOCKED</Badge>}
                   </Button>
                 </Link>
               </div>

@@ -177,7 +177,7 @@ export function AssessmentResultView({
               <Button 
                 onClick={onBack} 
                 variant="outline" 
-                className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-[9px] border-border/60 hover:bg-muted shadow-sm bg-card transition-all active:scale-95"
+                className="h-12 px-6 rounded-lg font-black uppercase tracking-widest text-[9px] border-border/60 hover:bg-muted shadow-sm bg-card transition-all active:scale-95"
               >
                 <ArrowLeft size={14} className="mr-2" /> Back to Matrix
               </Button>
@@ -190,11 +190,16 @@ export function AssessmentResultView({
             
             <div className="space-y-4">
               <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
-                {examType} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Diagnostic</span>
+                {examType} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">{evaluation.isDiagnostic ? "Diagnostic" : "Mock Exam"}</span>
               </h1>
-              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-60">
-                Protocol ID: {testId.slice(0, 12).toUpperCase()}
-              </p>
+              <div className="flex items-center gap-4">
+                 <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-60">
+                   Protocol ID: {testId.slice(0, 12).toUpperCase()}
+                 </p>
+                 <Badge className={`text-[10px] font-black uppercase tracking-widest border-none ${evaluation.isDiagnostic ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                    {evaluation.isDiagnostic ? "Initial Calibration" : "Final Graduation"}
+                 </Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -206,7 +211,7 @@ export function AssessmentResultView({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: "circOut" }}
           >
-            <Card className="border border-border/40 rounded-[40px] bg-card/50 backdrop-blur-md overflow-hidden shadow-xl h-full relative group">
+            <Card className="border border-border/40 rounded-2xl bg-card/50 backdrop-blur-md overflow-hidden shadow-xl h-full relative group">
               <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <CardBody className="p-12 flex flex-col items-center justify-center text-center relative z-10">
                 <div className={`size-24 rounded-3xl flex items-center justify-center mb-8 shadow-inner transition-all duration-700 group-hover:scale-110 ${band >= threshold ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'}`}>
@@ -242,7 +247,7 @@ export function AssessmentResultView({
           </motion.div>
 
           {/* Sectional Analysis */}
-          <Card className="border border-border/40 rounded-[40px] bg-card overflow-hidden shadow-sm">
+          <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden shadow-sm">
             <CardBody className="p-12 space-y-10">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
@@ -297,7 +302,7 @@ export function AssessmentResultView({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <Card className="border border-emerald-500/20 bg-emerald-500/5 rounded-[32px] overflow-hidden relative">
+            <Card className="border border-emerald-500/20 bg-emerald-500/5 rounded-2xl overflow-hidden relative">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Trophy size={80} className="text-emerald-500" />
               </div>
@@ -311,7 +316,7 @@ export function AssessmentResultView({
                     Your {isTOEFL ? "score" : "band score"} of {evaluation.overall_band} exceeds the high-tier scholarship threshold ({threshold}+). Your profile is now being prioritized in the matching engine.
                   </p>
                 </div>
-                <Button className="ml-auto bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-[9px] h-12 px-8 rounded-xl shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 hidden lg:flex">
+                <Button className="ml-auto bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-[9px] h-12 px-8 rounded-lg shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 hidden lg:flex">
                   View Eligible Matches
                 </Button>
               </CardBody>
@@ -322,13 +327,13 @@ export function AssessmentResultView({
         {/* Intelligence Feedback & Gaps */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <Card className="border border-border/40 rounded-[40px] bg-card shadow-sm">
+            <Card className="border border-border/40 rounded-2xl bg-card shadow-sm">
               <CardBody className="p-10 space-y-8">
                 <div className="flex items-center gap-3">
                   <Sparkles className="text-primary" size={20} />
                   <h3 className="text-xl font-black uppercase tracking-tight">AI Diagnostic Synthesis</h3>
                 </div>
-                <div className="p-8 bg-muted/20 rounded-[32px] border border-border/30 relative">
+                <div className="p-8 bg-muted/20 rounded-2xl border border-border/30 relative">
                   <div className="absolute top-4 right-6 text-[8px] font-black text-muted-foreground/30 uppercase tracking-[0.3em]">Neural Evaluation</div>
                   <p className="text-sm text-foreground font-medium leading-[1.8] italic">
                     "{evaluation.feedback_report || "Comprehensive analysis pending further data points."}"
@@ -354,7 +359,7 @@ export function AssessmentResultView({
 
             {/* Competency Analysis */}
             {evaluation.competency_gap_analysis && (
-              <Card className="border border-primary/20 bg-card rounded-[40px] overflow-hidden">
+              <Card className="border border-primary/20 bg-card rounded-2xl overflow-hidden">
                 <CardBody className="p-10 space-y-10">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-primary/10 rounded-2xl text-primary shadow-inner">
@@ -368,7 +373,7 @@ export function AssessmentResultView({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {evaluation.competency_gap_analysis.section_analysis && Object.entries(evaluation.competency_gap_analysis.section_analysis).map(([skill, analysis]: [any, any]) => (
-                      <div key={skill} className="p-8 rounded-[32px] border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all group">
+                      <div key={skill} className="p-8 rounded-2xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all group">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="size-8 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
                             {sectionIcons[skill.charAt(0).toUpperCase() + skill.slice(1)] || <List size={14} />}
@@ -387,7 +392,7 @@ export function AssessmentResultView({
           {/* Actionable Notes & Roadmap */}
           <div className="space-y-8">
             {evaluation.section_notes && (
-              <Card className="border border-border/40 rounded-[40px] bg-card shadow-sm">
+              <Card className="border border-border/40 rounded-2xl bg-card shadow-sm">
                 <CardBody className="p-10 space-y-8">
                   <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
                     <BookMarked className="text-primary" size={20} /> Tactical Notes
@@ -407,14 +412,14 @@ export function AssessmentResultView({
               </Card>
             )}
 
-            <Card className="primary-gradient rounded-[40px] p-1 shadow-xl">
-              <div className="bg-card rounded-[38px] p-10 space-y-6 h-full flex flex-col justify-between">
+            <Card className="primary-gradient rounded-2xl p-1 shadow-xl">
+              <div className="bg-card rounded-2xl p-10 space-y-6 h-full flex flex-col justify-between">
                 <div className="space-y-2">
                   <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary">Strategic Evolution</p>
                   <h4 className="text-2xl font-black uppercase tracking-tight">Ready for Peak?</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed font-medium">Your current trajectory suggests an optimal window for high-stakes preparation. Optimize your learning path now.</p>
                 </div>
-                <Button className="w-full h-14 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-[9px] hover:bg-foreground/90 transition-all">
+                <Button className="w-full h-14 rounded-lg bg-foreground text-background font-black uppercase tracking-widest text-[9px] hover:bg-foreground/90 transition-all">
                   Optimize Roadmap
                 </Button>
               </div>
@@ -444,7 +449,7 @@ export function AssessmentResultView({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * i }}
                   >
-                    <Card className={`border border-border/40 rounded-[32px] overflow-hidden group hover:border-primary/30 transition-all duration-500 ${sprint.is_remedial ? 'bg-destructive/5' : 'bg-card'}`}>
+                    <Card className={`border border-border/40 rounded-2xl overflow-hidden group hover:border-primary/30 transition-all duration-500 ${sprint.is_remedial ? 'bg-destructive/5' : 'bg-card'}`}>
                       <CardBody className="p-8 flex items-start gap-8">
                         <div className="flex flex-col items-center gap-3">
                           <div className={`size-16 rounded-2xl flex items-center justify-center font-black text-xl shadow-inner group-hover:scale-110 transition-transform duration-500 ${sprint.is_remedial ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
@@ -477,7 +482,7 @@ export function AssessmentResultView({
                 </div>
                 
                 {evaluation.adaptive_curriculum_map.vocabulary_packs?.map((pack: any, i: number) => (
-                  <Card key={i} className="border border-border/40 rounded-[32px] bg-card shadow-sm group overflow-hidden">
+                  <Card key={i} className="border border-border/40 rounded-2xl bg-card shadow-sm group overflow-hidden">
                     <CardBody className="p-8 space-y-6">
                       <div className="flex items-center gap-3">
                         <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">

@@ -5,7 +5,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/core/providers/theme_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -25,7 +24,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).valueOrNull;
 
     return Scaffold(
       body: Stack(
