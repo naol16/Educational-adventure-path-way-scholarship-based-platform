@@ -3,3 +3,4 @@ import { LandingPageContent } from '@/features/marketing/components/LandingPageC
 export default function LandingPage() {
   return <LandingPageContent />;
 }
+

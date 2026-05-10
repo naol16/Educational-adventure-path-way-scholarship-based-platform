@@ -9,7 +9,7 @@ import { redisConnection } from "../config/redis.js";
 
 export class MatchingService {
 
-  static async getTopMatches(userId: number): Promise<MatchedScholarship[]> {
+  static async getTopMatches(userId: number, limit: number = 5, offset: number = 0): Promise<{ rows: MatchedScholarship[]; count: number }> {
     const student = await StudentRepository.findByUserId(userId);
 
     if (!student) {
@@ -28,12 +28,11 @@ export class MatchingService {
     }
 
     // Prepare the vector as a SQL-friendly string: '[0.1, 0.2, ...]'
-    // Our model now handles formatting via setter, but we explicitly format here for the raw SQL query
     const vectorStr = Array.isArray(student.embedding)
       ? `[${student.embedding.join(",")}]`
       : student.embedding;
 
-    return MatchingRepository.findTopMatches(student, vectorStr);
+    return MatchingRepository.findTopMatches(student, vectorStr, limit, offset);
   }
 
 

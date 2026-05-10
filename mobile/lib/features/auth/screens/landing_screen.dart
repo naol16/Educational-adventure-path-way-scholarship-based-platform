@@ -2,10 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 
 class CarouselSlide {
   final String title;

@@ -54,7 +54,7 @@ export const CommunityGroups: React.FC = () => {
     return (
         <div className="p-6">
             <h1 className="text-3xl font-bold mb-6">Community Groups</h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-muted-foreground mb-8">
                 Connect with other students interested in the same study destinations. 
                 Share ideas, ask questions, and build your network.
             </p>
@@ -69,7 +69,7 @@ export const CommunityGroups: React.FC = () => {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-gray-600 mb-4 line-clamp-3">
+                            <p className="text-muted-foreground mb-4 line-clamp-3">
                                 {group.description || 'No description available for this group.'}
                             </p>
                             <Button 
@@ -86,9 +86,10 @@ export const CommunityGroups: React.FC = () => {
 
             {groups.length === 0 && (
                 <div className="text-center py-12">
-                    <p className="text-gray-500 italic">No community groups found. Check back later!</p>
+                    <p className="text-muted-foreground italic">No community groups found. Check back later!</p>
                 </div>
             )}
         </div>
     );
 };
+

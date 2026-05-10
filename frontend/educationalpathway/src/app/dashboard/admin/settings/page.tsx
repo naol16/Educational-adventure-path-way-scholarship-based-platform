@@ -189,7 +189,7 @@ export default function AdminSettingsPage() {
                            <p className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-wide">{setting.desc}</p>
                         </div>
                         <button className={`h-8 w-14 rounded-full p-1 transition-all duration-500 ${setting.enabled ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-muted border border-border'}`}>
-                           <div className={`h-6 w-6 rounded-full bg-white transition-all duration-500 ${setting.enabled ? 'ml-6' : 'ml-0'}`} />
+                           <div className={`h-6 w-6 rounded-full bg-card transition-all duration-500 ${setting.enabled ? 'ml-6' : 'ml-0'}`} />
                         </button>
                      </div>
                   ))}
@@ -221,3 +221,4 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+

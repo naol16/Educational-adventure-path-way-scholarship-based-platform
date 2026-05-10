@@ -1,10 +1,13 @@
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { Scholarship } from "../models/Scholarship.js";
 
 export class ScholarshipRepository {
-    static async findAll(filters: any): Promise<Scholarship[]> {
-        const { query, country, degree_level, fund_type } = filters;
+    static async findAll(filters: any): Promise<{ rows: Scholarship[]; count: number }> {
+        const { query, country, degree_level, fund_type, page = 1, pageSize = 12 } = filters;
         const where: any = {};
+
+        const limit = parseInt(pageSize as string);
+        const offset = (parseInt(page as string) - 1) * limit;
 
         if (query) {
             where[Op.or] = [
@@ -22,15 +25,15 @@ export class ScholarshipRepository {
         }
 
         if (degree_level) {
-            // Check if any element in the degree_levels JSONB array matches
             where.degreeLevels = {
                 [Op.contains]: [degree_level]
             };
         }
 
-        return Scholarship.findAll({
+        return Scholarship.findAndCountAll({
             where,
-            limit: 50,
+            limit,
+            offset,
             order: [['created_at', 'DESC']]
         });
     }
@@ -46,5 +49,18 @@ export class ScholarshipRepository {
 
     static async upsert(data: Partial<Scholarship>): Promise<[Scholarship, boolean | null]> {
         return Scholarship.upsert(data);
+    }
+
+    static async getCountries(): Promise<string[]> {
+        const scholarships = await Scholarship.findAll({
+            attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('country')), 'country']],
+            where: {
+                country: { [Op.ne]: null }
+            },
+            order: [['country', 'ASC']],
+            raw: true
+        });
+
+        return scholarships.map((s: any) => s.country);
     }
 }

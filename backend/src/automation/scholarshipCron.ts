@@ -21,8 +21,8 @@ export const startScholarshipCron = () => {
     }
   });
 
-  // Schedule deadline reminders to run every hour
-  cron.schedule("0 * * * *", async () => {
+  // Schedule deadline reminders to run every 5 minutes
+  cron.schedule("*/5 * * * *", async () => {
       console.log("Running scheduled deadline reminder check...");
       await DeadlineReminderService.checkAndSendReminders();
   });

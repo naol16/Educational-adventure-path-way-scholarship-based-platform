@@ -3,3 +3,4 @@ import { AvailabilityManager } from '@/features/counselor/components/Availabilit
 export default function CalendarPage() {
   return <AvailabilityManager />;
 }
+

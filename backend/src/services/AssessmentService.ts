@@ -197,6 +197,8 @@ export class AssessmentService {
       ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) + 5 Multiple Choice Questions. 3. WRITING: 5 Integrated Task Prompts/Questions. 4. SPEAKING: 5 Integrated Speaking Prompts/Questions based on the topic."
       : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 5 Task Prompts/Questions. 4. SPEAKING: 5 Long-form Prompts/Questions (Part 1 style).";
 
+    examInstructions += " CRITICAL FOR WRITING: Ensure all writing prompts are strictly TEXT-BASED essay questions (like IELTS Task 2). DO NOT include prompts that require viewing a chart, graph, map, diagram, or image.";
+
     if (skill) {
       examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Generate exactly 5 questions/prompts for this section. Leave other sections empty or null.`;
     } else if (isDiagnostic) {

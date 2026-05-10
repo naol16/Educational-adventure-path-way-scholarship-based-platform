@@ -236,4 +236,44 @@ export class EmailService {
 
     await this.transporter.sendMail(mailOptions);
   }
+
+  static async sendContactEmail(params: {
+    fromEmail: string;
+    fromName: string;
+    subject: string;
+    message: string;
+    phone?: string;
+  }): Promise<void> {
+    const { fromEmail, fromName, subject, message, phone } = params;
+
+    const mailOptions = {
+      from: configs.SMTP_FROM,
+      to: "josefdagne5@gmail.com", // Sent to the support email specified by user
+      replyTo: fromEmail,
+      subject: `[Contact Form] ${subject}: from ${fromName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #064e3b; padding: 24px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 20px;">New Contact Inquiry</h1>
+          </div>
+          <div style="padding: 24px; background-color: white;">
+            <p><strong>Name:</strong> ${fromName}</p>
+            <p><strong>Email:</strong> ${fromEmail}</p>
+            <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p><strong>Message:</strong></p>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; white-space: pre-wrap;">
+              ${message}
+            </div>
+          </div>
+          <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #64748b;">
+            This email was sent via the Admas Platform contact form.
+          </div>
+        </div>
+      `,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
 }

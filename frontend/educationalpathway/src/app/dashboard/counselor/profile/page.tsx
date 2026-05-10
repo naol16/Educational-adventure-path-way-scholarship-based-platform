@@ -3,3 +3,4 @@ import { CounselorProfile } from '@/features/counselor/components/CounselorProfi
 export default function CounselorProfilePage() {
   return <CounselorProfile />;
 }
+

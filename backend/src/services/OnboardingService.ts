@@ -159,9 +159,9 @@ export class OnboardingService {
                 // Trigger background notification for matches
                 setTimeout(async () => {
                     try {
-                        const matches = await MatchingService.getTopMatches(userId);
-                        if (matches.length > 0) {
-                            await ScholarshipNotificationService.notifyMultipleMatches(user, updatedStudent, matches);
+                        const matchesData = await MatchingService.getTopMatches(userId);
+                        if (matchesData.rows.length > 0) {
+                            await ScholarshipNotificationService.notifyMultipleMatches(user, updatedStudent, matchesData.rows);
                         }
                     } catch (err) {
                         console.error("Background match notification failed:", err);

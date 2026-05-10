@@ -2,6 +2,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Browser, BrowserContext, Page, chromium } from 'playwright';
 import { AntiDetectionService } from '../common/AntiDetectionService.js';
+import iconv from 'iconv-lite';
+import https from 'https';
 
 export type StrategyType = 'STATIC' | 'API' | 'BROWSER' | 'BROWSER_PROXY';
 
@@ -55,10 +57,32 @@ export class StaticStrategy implements ScrapingStrategy {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
             },
-            timeout: 30000
+            timeout: 30000,
+            responseType: 'arraybuffer',
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
 
-        const html = response.data;
+        // Detect encoding
+        let encoding = 'utf-8';
+        const contentType = response.headers['content-type'];
+        if (contentType) {
+            const match = contentType.match(/charset=([\w-]+)/i);
+            if (match && match[1]) {
+                encoding = match[1].toLowerCase();
+            }
+        }
+
+        let html = iconv.decode(Buffer.from(response.data), encoding);
+
+        // Fallback: If still seeing garbled characters or if charset in meta tag differs
+        if (html.includes('charset=') || html.includes('CHARSET=')) {
+            const metaMatch = html.match(/<meta[^>]+charset=["']?([\w-]+)["']?/i);
+            if (metaMatch && metaMatch[1] && metaMatch[1].toLowerCase() !== encoding) {
+                encoding = metaMatch[1].toLowerCase();
+                html = iconv.decode(Buffer.from(response.data), encoding);
+            }
+        }
+
         const $ = cheerio.load(html);
         
         // Remove noisy elements before extracting text

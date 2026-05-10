@@ -30,3 +30,4 @@ export const Badge = ({ className, variant = 'default', ...props }: BadgeProps) 
     />
   );
 };
+

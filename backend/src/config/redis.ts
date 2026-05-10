@@ -30,7 +30,7 @@ export const redisOptions: ConnectionOptions = {
 
 redisConnection.on("connect", () => {
   redisAvailable = true;
-  console.log("✅ Redis connected successfully");
+
 });
 
 redisConnection.on("error", (err) => {

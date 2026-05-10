@@ -90,7 +90,7 @@ export default function AdminTransactionsPage() {
          <Card className="bg-slate-900 border-none rounded-3xl overflow-hidden text-white group">
             <CardBody className="p-8 space-y-4">
                <div className="flex items-center justify-between">
-                  <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-all">
+                  <div className="h-10 w-10 rounded-xl bg-card/10 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-all">
                      <Wallet size={20} />
                   </div>
                   <Badge className="bg-emerald-400/10 text-emerald-400 border-emerald-400/20 font-black">+18%</Badge>
@@ -236,3 +236,4 @@ export default function AdminTransactionsPage() {
     </div>
   );
 }
+
