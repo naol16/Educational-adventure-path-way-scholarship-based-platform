@@ -1,4 +1,5 @@
 import { Op, Transaction } from "sequelize";
+import crypto from "crypto";
 import { sequelize } from "../config/sequelize.js";
 import { notificationQueue, isRedisAvailable } from "../config/redis.js";
 import { Counselor } from "../models/Counselor.js";
@@ -28,7 +29,6 @@ import { GoogleMeetService } from "./GoogleMeetService.js";
 import { EmailService } from "./EmailService.js";
 import { FileService } from "./FileService.js";
 import { VectorService } from "./VectorService.js";
-import crypto from "crypto";
 import configs from "../config/configs.js";
 import {
   AdminVerificationDto,
@@ -640,9 +640,22 @@ export class CounselorService {
       console.error("[CounselorService] Failed to send initial booking notification:", notifyError);
     }
 
+    if (chapaResponse.status !== 'success') {
+      console.error(`[CounselorService] Chapa initialization failed:`, chapaResponse);
+      throw httpError(400, chapaResponse.message || "Failed to initialize payment with Chapa");
+    }
+
+    const checkoutUrl = chapaResponse.data?.checkout_url;
+    if (!checkoutUrl) {
+      console.error(`[CounselorService] Chapa response missing checkout_url:`, chapaResponse);
+      throw httpError(500, "Payment gateway did not provide a checkout URL");
+    }
+
+    console.log(`[CounselorService] Payment initialized successfully. Redirect URL: ${checkoutUrl}`);
+
     return {
       booking: this.formatBookingResponse(booking),
-      checkoutUrl: chapaResponse.data.checkout_url
+      checkoutUrl: checkoutUrl
     };
   }
 
