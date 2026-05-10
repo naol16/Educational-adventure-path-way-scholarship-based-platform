@@ -97,3 +97,4 @@ export function TabsContent({ value, children, className }: { value: string; chi
     </motion.div>
   );
 }
+

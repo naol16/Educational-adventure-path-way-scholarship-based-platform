@@ -173,12 +173,12 @@ export const ChatWindow = ({
       <div className="z-20 px-4 py-2 bg-[#17212b]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 shadow-lg">
         <div className="flex items-center gap-2">
           {onBack && (
-            <button onClick={onBack} className="md:hidden p-2 -ml-2 text-primary hover:bg-white/5 rounded-full transition-colors">
+            <button onClick={onBack} className="md:hidden p-2 -ml-2 text-primary hover:bg-card/5 rounded-full transition-colors">
               <ChevronLeft size={24} />
             </button>
           )}
           <div 
-            className={`flex items-center gap-3 py-1 px-2 rounded-xl transition-colors ${isGroup ? 'hover:bg-white/5 cursor-pointer' : ''}`}
+            className={`flex items-center gap-3 py-1 px-2 rounded-xl transition-colors ${isGroup ? 'hover:bg-card/5 cursor-pointer' : ''}`}
             onClick={isGroup ? onShowMembers : undefined}
           >
             <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
@@ -193,7 +193,7 @@ export const ChatWindow = ({
                 {isGroup ? (groupName || 'Community Group') : (otherUser?.name || 'Select a conversation')}
               </h3>
               <div className="flex items-center gap-1.5">
-                <div className={`h-1.5 w-1.5 rounded-full ${otherUser && onlineUsers.has(otherUser.id) ? 'bg-emerald-500' : 'bg-white/20'}`} />
+                <div className={`h-1.5 w-1.5 rounded-full ${otherUser && onlineUsers.has(otherUser.id) ? 'bg-emerald-500' : 'bg-card/20'}`} />
                 <span className="text-[10px] font-bold text-primary tracking-wide uppercase">
                   {otherUser && onlineUsers.has(otherUser.id) ? 'Online' : 'Offline'}
                 </span>
@@ -213,8 +213,8 @@ export const ChatWindow = ({
           <div className="flex flex-col gap-4">
              {[1, 2, 3].map(i => (
                <div key={i} className={`flex ${i % 2 === 0 ? 'flex-row-reverse' : 'flex-row'} gap-3 animate-pulse`}>
-                  <div className="h-9 w-9 rounded-full bg-white/5 shrink-0 self-end" />
-                  <div className={`h-12 w-48 rounded-2xl bg-white/5 ${i % 2 === 0 ? 'rounded-tr-none' : 'rounded-tl-none'}`} />
+                  <div className="h-9 w-9 rounded-full bg-card/5 shrink-0 self-end" />
+                  <div className={`h-12 w-48 rounded-2xl bg-card/5 ${i % 2 === 0 ? 'rounded-tr-none' : 'rounded-tl-none'}`} />
                </div>
              ))}
           </div>
@@ -230,7 +230,7 @@ export const ChatWindow = ({
 
         {messages.length === 0 && !loading ? (
           <div className="flex-1 flex flex-col items-center justify-center opacity-40">
-             <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-4 rotate-12">
+             <div className="w-20 h-20 rounded-3xl bg-card/5 flex items-center justify-center mb-4 rotate-12">
                <MessageCircle size={40} className="text-white" />
              </div>
              <p className="text-sm font-bold text-white">No messages here yet...</p>
@@ -307,7 +307,7 @@ export const ChatWindow = ({
                                     `}>
                                       <button 
                                         onClick={() => onReplyMessage?.(m)}
-                                        className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/5 transition-all shadow-lg"
+                                        className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-card/5 transition-all shadow-lg"
                                         title="Reply"
                                       >
                                         <Reply size={14} />
@@ -316,7 +316,7 @@ export const ChatWindow = ({
                                         <>
                                           <button 
                                             onClick={() => onEditMessage?.(m.id, m.content)}
-                                            className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-white/5 transition-all shadow-lg"
+                                            className="h-7 w-7 rounded-full bg-[#17212b] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:bg-card/5 transition-all shadow-lg"
                                             title="Edit"
                                           >
                                             <Edit2 size={14} />
@@ -385,7 +385,7 @@ export const ChatWindow = ({
                                                   toast.error('Failed', { id: toastId });
                                                 }
                                               }}
-                                              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                              className="p-2 rounded-full hover:bg-card/10 transition-colors"
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                                             </button>
@@ -478,14 +478,14 @@ export const ChatWindow = ({
             >
               <button 
                 onClick={() => { onReplyMessage?.(contextMenu.message); setContextMenu(null); }}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white/5 text-[13px] text-white/90 transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-card/5 text-[13px] text-white/90 transition-colors"
               >
                 <Reply size={16} className="text-primary" />
                 Reply
               </button>
               <button 
                 onClick={() => handleCopy(contextMenu.message.content)}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white/5 text-[13px] text-white/90 transition-colors"
+                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-card/5 text-[13px] text-white/90 transition-colors"
               >
                 <Copy size={16} className="text-primary" />
                 Copy Text
@@ -494,14 +494,14 @@ export const ChatWindow = ({
                 <>
                   <button 
                     onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }}
-                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white/5 text-[13px] text-white/90 transition-colors"
+                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-card/5 text-[13px] text-white/90 transition-colors"
                   >
                     <Edit2 size={16} className="text-primary" />
                     Edit
                   </button>
                   <button 
                     onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }}
-                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-white/5 text-[13px] text-red-400 transition-colors"
+                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-card/5 text-[13px] text-red-400 transition-colors"
                   >
                     <Trash2 size={16} className="text-red-400" />
                     Delete
@@ -515,5 +515,6 @@ export const ChatWindow = ({
     </div>
   );
 };
+
 
 

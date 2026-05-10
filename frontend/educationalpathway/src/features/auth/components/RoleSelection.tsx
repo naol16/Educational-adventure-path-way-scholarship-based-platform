@@ -5,7 +5,7 @@ import { GraduationCap, Briefcase, Check } from "lucide-react";
 
 export function RoleSelection() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 flex items-center justify-center px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-muted dark:bg-zinc-950 flex items-center justify-center px-4 py-12 relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
@@ -28,7 +28,7 @@ export function RoleSelection() {
 
           {/* STUDENT */}
           <Link href="/register?role=student" className="group">
-            <div className="h-full bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2 relative overflow-hidden">
+            <div className="h-full bg-card dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               
               {/* Icon */}
@@ -64,7 +64,7 @@ export function RoleSelection() {
               </ul>
 
               {/* Action */}
-              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-primary group-hover:text-white">
+              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-card text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-primary group-hover:text-white">
                 Enter as Student
               </div>
             </div>
@@ -72,7 +72,7 @@ export function RoleSelection() {
 
           {/* COUNSELOR */}
           <Link href="/register?role=counselor" className="group">
-            <div className="h-full bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5 hover:-translate-y-2 relative overflow-hidden">
+            <div className="h-full bg-card dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5 hover:-translate-y-2 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               
               {/* Icon */}
@@ -110,7 +110,7 @@ export function RoleSelection() {
               </div>
 
               {/* Action */}
-              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-indigo-500 group-hover:text-white">
+              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-card text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-indigo-500 group-hover:text-white">
                 Enter as Counselor
               </div>
             </div>
@@ -133,3 +133,4 @@ export function RoleSelection() {
     </div>
   );
 }
+

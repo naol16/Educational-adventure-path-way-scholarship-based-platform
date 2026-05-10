@@ -3,3 +3,4 @@ import { StudentBookingManager } from '@/features/student/components/StudentBook
 export default function StudentBookingsPage() {
   return <StudentBookingManager />;
 }
+

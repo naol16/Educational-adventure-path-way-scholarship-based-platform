@@ -11,6 +11,7 @@ router.get("/", authenticate, ScholarshipController.list);
 router.get("/sources", ScholarshipController.getSources);
 router.get("/match", authenticate, ScholarshipController.getMatches);
 router.get("/recommendations", authenticate, ScholarshipController.getRecommendations);
+router.get("/countries", ScholarshipController.getCountries);
 
 // Static paths must be registered before `/:id` so they are not parsed as IDs.
 

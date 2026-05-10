@@ -197,11 +197,11 @@ export const AvailabilityManager = () => {
               <div className="pt-4 border-t border-white/20">
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2 text-xs">
-                    <div className="h-1.5 w-1.5 rounded-full bg-white mt-1 shrink-0" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-card mt-1 shrink-0" />
                     Recurring weekly slots
                   </li>
                   <li className="flex items-start gap-2 text-xs">
-                    <div className="h-1.5 w-1.5 rounded-full bg-white mt-1 shrink-0" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-card mt-1 shrink-0" />
                     Automatic session links
                   </li>
                 </ul>
@@ -222,3 +222,4 @@ export const AvailabilityManager = () => {
     </div>
   );
 };
+

@@ -529,3 +529,4 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     </div>
   );
 };
+

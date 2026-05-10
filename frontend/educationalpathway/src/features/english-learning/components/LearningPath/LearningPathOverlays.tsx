@@ -1,7 +1,6 @@
-"use client";
-
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles, X, ChevronDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface UnitTestOverlayProps {
@@ -25,6 +24,8 @@ export const UnitTestOverlay = ({
   isSubmitting,
   activeTab
 }: UnitTestOverlayProps) => {
+  const [showSource, setShowSource] = useState(true);
+
   return (
     <AnimatePresence>
       {show && (
@@ -32,84 +33,107 @@ export const UnitTestOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl border"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-card rounded-[40px] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-border/50"
           >
-            <div className="p-8 border-b border-border/40 flex items-center justify-between">
+            {/* Header */}
+            <div className="px-10 py-8 border-b border-border/40 flex items-center justify-between bg-muted/20">
               <div className="space-y-1">
-                <h2 className="text-2xl font-semibold tracking-tight uppercase">Unit Test: {activeTab} Mastery</h2>
-                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground opacity-40">Verification Protocol Active</p>
+                <h2 className="text-3xl font-black tracking-tighter uppercase leading-none">Unit Test: {activeTab}</h2>
+                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted-foreground">Verification Protocol Active</p>
               </div>
-                <Button variant="ghost" onClick={onClose} className="rounded-full h-10 w-10 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                  <X size={20} className="text-muted-foreground" />
-                </Button>
+              <Button variant="ghost" onClick={onClose} className="rounded-full h-12 w-12 p-0 hover:bg-muted">
+                <X size={24} className="text-muted-foreground" />
+              </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-12 space-y-12">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-10 md:p-16 space-y-12 custom-scrollbar">
               {unitTestResults ? (
-                <div className="text-center space-y-8 py-12">
-                  <div className={`mx-auto size-24 rounded-full flex items-center justify-center ${unitTestResults.passed ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                    {unitTestResults.passed ? <CheckCircle2 size={48} /> : <AlertCircle size={48} />}
-                  </div>
+                <div className="text-center space-y-10 py-20">
+                  <motion.div 
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    className={`mx-auto size-32 rounded-full flex items-center justify-center ${unitTestResults.passed ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
+                  >
+                    {unitTestResults.passed ? <CheckCircle2 size={64} strokeWidth={1} /> : <AlertCircle size={64} strokeWidth={1} />}
+                  </motion.div>
                   <div className="space-y-4">
-                    <h3 className="text-4xl font-bold">{unitTestResults.score}%</h3>
-                    <p className="text-xl font-medium">{unitTestResults.passed ? 'Mastery Verified' : 'Standard Not Met'}</p>
-                    <p className="text-muted-foreground max-w-md mx-auto">{unitTestResults.feedback}</p>
+                    <h3 className="text-6xl font-black tracking-tighter">{unitTestResults.score}%</h3>
+                    <p className="text-xl font-bold uppercase tracking-widest">{unitTestResults.passed ? 'Mastery Verified' : 'Standard Not Met'}</p>
+                    <p className="text-muted-foreground font-medium max-w-md mx-auto leading-relaxed italic">"{unitTestResults.feedback}"</p>
                   </div>
-                  <Button onClick={onClose} className="px-12 rounded-2xl primary-gradient text-white">
-                    Close Protocol
+                  <Button onClick={onClose} className="h-16 px-16 rounded-full primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all">
+                    Acknowledge & Close
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-12">
-                  {unitTestContent?.passage && (
-                    <div className="p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-border/40 text-zinc-800 dark:text-zinc-200 text-lg leading-relaxed shadow-sm">
-                      {unitTestContent.passage}
-                    </div>
-                  )}
-                  {unitTestContent?.script && (
-                    <div className="p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-border/40 text-zinc-800 dark:text-zinc-200 text-sm font-medium leading-relaxed whitespace-pre-wrap shadow-sm">
-                      {unitTestContent.script}
+                <div className="space-y-16">
+                  {(unitTestContent?.passage || unitTestContent?.script) && (
+                    <div className="bg-muted/30 rounded-[40px] border border-border/40 overflow-hidden shadow-sm">
+                      <button 
+                        onClick={() => setShowSource(!showSource)}
+                        className="w-full p-8 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 opacity-60">
+                          <BookOpen size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Source Material Matrix</span>
+                        </div>
+                        <ChevronDown size={18} className={`text-muted-foreground transition-transform duration-500 ${showSource ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {showSource && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="px-10 pb-10"
+                          >
+                            <div className="text-foreground text-lg leading-relaxed font-medium italic">
+                              {unitTestContent.passage || unitTestContent.script}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )}
                   
-                    <div className="space-y-12">
-                      {unitTestContent?.questions?.map((q: any, qi: number) => (
-                        <div key={qi} className="space-y-6">
-                          <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex gap-3">
-                            <span className="opacity-20">{qi + 1}.</span>
-                            <span>{q.question}</span>
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {q.options?.map((opt: string, oi: number) => (
-                              <button 
-                                key={oi}
-                                onClick={() => {
-                                  const newR = [...(unitTestContent.userResponses || [])];
-                                  newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
-                                  setUnitTestContent({ ...unitTestContent, userResponses: newR });
-                                }}
-                                className={`text-left p-6 rounded-2xl border transition-all text-sm font-medium ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/5 text-primary' : 'border-border/60 hover:border-primary/40 text-muted-foreground hover:text-foreground'}`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
+                  <div className="space-y-16">
+                    {unitTestContent?.questions?.map((q: any, qi: number) => (
+                      <div key={qi} className="space-y-10 relative">
+                        <div className="absolute -left-4 top-0 text-6xl font-black text-muted-foreground/5 leading-none select-none">0{qi + 1}</div>
+                        <h4 className="text-2xl font-black text-foreground tracking-tighter max-w-3xl relative z-10">
+                          {q.question}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {q.options?.map((opt: string, oi: number) => (
+                            <button 
+                              key={oi}
+                              onClick={() => {
+                                const newR = [...(unitTestContent.userResponses || [])];
+                                newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
+                                setUnitTestContent({ ...unitTestContent, userResponses: newR });
+                              }}
+                              className={`text-left p-8 rounded-[32px] border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
+                  </div>
 
-                  <div className="flex justify-center pt-12 pb-8">
+                  <div className="flex justify-center pt-12">
                     <Button 
                       onClick={() => onSubmit(unitTestContent.userResponses || [])}
                       disabled={isSubmitting || (unitTestContent?.questions?.length !== unitTestContent?.userResponses?.filter(Boolean).length)}
-                      className="px-20 h-16 rounded-[25px] primary-gradient text-white font-black uppercase tracking-[0.3em] text-[12px] shadow-2xl shadow-primary/40 hover:scale-105 transition-all"
+                      className="h-20 px-20 rounded-full primary-gradient text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-110 active:scale-95 transition-all"
                     >
-                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Authorize Verification'}
+                      {isSubmitting ? <Loader2 className="animate-spin" /> : 'Authorize Protocol Execution'}
                     </Button>
                   </div>
                 </div>
@@ -121,13 +145,6 @@ export const UnitTestOverlay = ({
     </AnimatePresence>
   );
 };
-
-interface DynamicMissionOverlayProps {
-  show: boolean;
-  onClose: () => void;
-  onGenerate: (topic: string) => void;
-  isGenerating: boolean;
-}
 
 export const DynamicMissionOverlay = ({
   show,
@@ -142,51 +159,54 @@ export const DynamicMissionOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-xl p-10 space-y-8 shadow-xl border overflow-hidden relative"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-card rounded-[48px] w-full max-w-xl p-12 space-y-12 shadow-2xl border border-border/50 relative overflow-hidden"
           >
-            <div className="text-center space-y-4 relative">
+            {/* Background Ambience inside modal */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-blue-500" />
+            
+            <div className="text-center space-y-6 relative">
               <Button 
                 variant="ghost" 
                 onClick={onClose} 
-                className="absolute -top-4 -right-4 rounded-full h-10 w-10 p-0 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="absolute -top-6 -right-6 rounded-full h-12 w-12 p-0 hover:bg-muted"
               >
-                <X size={20} className="text-muted-foreground" />
+                <X size={24} className="text-muted-foreground" />
               </Button>
-              <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto">
+              <div className="size-20 bg-primary/10 rounded-[28px] flex items-center justify-center text-primary mx-auto border border-primary/20 shadow-inner">
                 <Sparkles size={32} />
               </div>
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold uppercase tracking-tight">AI Content Protocol</h2>
-                <p className="text-xs text-muted-foreground uppercase tracking-[0.2em]">Personalized Curricula Synthesis</p>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black uppercase tracking-tighter">AI Content Synthesis</h2>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em]">Personalized Curricula Protocol</p>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-40 px-2">Focus Topic</label>
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 px-4">Focus Domain Vector</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Climate Change, Academic Research..."
-                  className="w-full p-5 rounded-2xl border border-border/60 bg-slate-50/50 focus:outline-none focus:border-primary/40 transition-all text-sm font-medium"
+                  placeholder="e.g. Cognitive Psychology, Quantum Ethics..."
+                  className="w-full h-16 px-8 rounded-full border border-border/60 bg-muted/30 focus:outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold"
                   id="missionTopicInput"
                 />
               </div>
             </div>
 
             <div className="flex gap-4">
-              <Button variant="ghost" onClick={onClose} className="flex-1 rounded-2xl h-14 font-medium">Cancel</Button>
+              <Button variant="ghost" onClick={onClose} className="flex-1 rounded-full h-16 font-black uppercase tracking-widest text-[10px] text-muted-foreground hover:text-foreground">Abort</Button>
               <Button 
                 onClick={() => {
                   const topic = (document.getElementById('missionTopicInput') as HTMLInputElement).value;
                   if (topic) onGenerate(topic);
                 }}
                 disabled={isGenerating}
-                className="flex-1 primary-gradient text-white rounded-2xl h-14 font-bold uppercase tracking-widest"
+                className="flex-1 primary-gradient text-white rounded-full h-16 font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all"
               >
                 {isGenerating ? <Loader2 className="animate-spin" /> : 'Synthesize'}
               </Button>
@@ -197,3 +217,10 @@ export const DynamicMissionOverlay = ({
     </AnimatePresence>
   );
 };
+
+interface DynamicMissionOverlayProps {
+  show: boolean;
+  onClose: () => void;
+  onGenerate: (topic: string) => void;
+  isGenerating: boolean;
+}

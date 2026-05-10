@@ -68,7 +68,7 @@ export function CounselorNavbar() {
 
        {/* Actions */}
        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="rounded-lg h-11 w-11 hover:bg-slate-50 text-slate-500">
+          <Button variant="ghost" size="icon" className="rounded-lg h-11 w-11 hover:bg-muted text-slate-500">
             <Bell className="h-5 w-5" />
           </Button>
 
@@ -79,7 +79,7 @@ export function CounselorNavbar() {
           <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
 
           {/* User Profile */}
-          <button className="flex items-center gap-3 p-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-white hover: transition-all group">
+          <button className="flex items-center gap-3 p-1.5 rounded-lg bg-muted border border-slate-100 hover:bg-card hover: transition-all group">
             <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm font-black shadow-indigo-500/20 group-hover:-rotate-3 transition-transform">
               {user?.name?.charAt(0) || 'C'}
             </div>
@@ -97,3 +97,4 @@ export function CounselorNavbar() {
     </nav>
   );
 }
+

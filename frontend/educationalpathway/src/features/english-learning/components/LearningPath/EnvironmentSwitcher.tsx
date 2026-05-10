@@ -45,3 +45,4 @@ export function EnvironmentSwitcher({ mode, onChange }: EnvironmentSwitcherProps
     </div>
   );
 }
+

@@ -45,8 +45,12 @@ api.interceptors.request.use(
 // Add a response interceptor to handle token refresh and data unwrapping
 api.interceptors.response.use(
   (response) => {
-    // Automatically unwrap the standard JSend-like { status: 'success', data: ... } or { success: true, data: ... } format
+    // Automatically unwrap the standard JSend-like { status: 'success', data: ... } format
+    // If pagination exists, we preserve the whole structure to avoid losing metadata
     if (response.data && (response.data.status === 'success' || response.data.success === true) && response.data.data !== undefined) {
+      if (response.data.pagination) {
+        return response; // Return the whole thing if pagination exists
+      }
       return { ...response, data: response.data.data };
     }
     return response;

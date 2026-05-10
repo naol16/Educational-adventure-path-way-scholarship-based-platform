@@ -90,7 +90,7 @@ export const GroupMembers = ({ conversationId, currentUserId, currentUserRole, o
     >
       <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#17212b]/50 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 -ml-2 text-primary hover:bg-white/5 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 -ml-2 text-primary hover:bg-card/5 rounded-full transition-colors">
             <ChevronLeft size={20} />
           </button>
           <div className="flex flex-col">
@@ -106,7 +106,7 @@ export const GroupMembers = ({ conversationId, currentUserId, currentUserRole, o
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
         {loading ? (
           <div className="flex flex-col gap-3 p-4">
-             {[1,2,3].map(i => <div key={i} className="h-12 w-full rounded-xl bg-white/5 animate-pulse" />)}
+             {[1,2,3].map(i => <div key={i} className="h-12 w-full rounded-xl bg-card/5 animate-pulse" />)}
           </div>
         ) : (
           <div className="flex flex-col gap-1">
@@ -114,7 +114,7 @@ export const GroupMembers = ({ conversationId, currentUserId, currentUserRole, o
               <div 
                 key={member.id} 
                 onClick={() => member.id !== currentUserId && onStartPrivateChat(member.id)}
-                className={`p-3 rounded-xl flex items-center gap-3 hover:bg-white/5 transition-all group ${member.id !== currentUserId ? 'cursor-pointer' : ''}`}
+                className={`p-3 rounded-xl flex items-center gap-3 hover:bg-card/5 transition-all group ${member.id !== currentUserId ? 'cursor-pointer' : ''}`}
               >
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black border border-primary/20 shadow-inner">
                   {member.name.charAt(0)}
@@ -189,7 +189,7 @@ export const GroupMembers = ({ conversationId, currentUserId, currentUserRole, o
                     <div 
                       key={user.id} 
                       onClick={() => handleAddMember(user.id)}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-all border border-transparent hover:border-white/5"
+                      className="flex items-center justify-between p-3 rounded-xl hover:bg-card/5 cursor-pointer transition-all border border-transparent hover:border-white/5"
                     >
                       <div>
                         <div className="font-bold text-xs text-white leading-tight">{user.name}</div>
@@ -213,3 +213,4 @@ export const GroupMembers = ({ conversationId, currentUserId, currentUserRole, o
     </motion.div>
   );
 };
+

@@ -33,12 +33,11 @@ import {
   AvatarFallback 
 } from "@/components/ui";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getScholarships, getDashboardStats } from "@/features/scholarships/api/get-scholarships";
-import { Scholarship } from "@/features/scholarships/types";
+import useSWR from "swr";
 import { ScholarshipCard } from "@/features/scholarships/components/ScholarshipCard";
-import { getRecommendedCounselors } from "@/features/counselor/api/counselor-api";
+import { Scholarship } from "@/features/scholarships/types";
 
 const container = {
   hidden: { opacity: 0 },
@@ -58,12 +57,23 @@ const item = {
 export const StudentDashboard = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const [matches, setMatches] = useState<Scholarship[]>([]);
-  const [recommendedCounselors, setRecommendedCounselors] = useState<any[]>([]);
-  const [statsData, setStatsData] = useState({ savedCount: 0, appliedCount: 0, deadlineCount: 0 });
-  const [loadingMatches, setLoadingMatches] = useState(true);
-  const [loadingCounselors, setLoadingCounselors] = useState(true);
-  const [loadingStats, setLoadingStats] = useState(true);
+
+  const { data: matchesResponse, isLoading: loadingMatches } = useSWR<any>(user?.isOnboarded ? "/scholarships/match" : null, {
+    revalidateOnMount: true
+  });
+
+  const matches: Scholarship[] = Array.isArray(matchesResponse) ? matchesResponse : (matchesResponse?.data || []);
+
+  const { data: recommendedCounselors = [], isLoading: loadingCounselors } = useSWR<any[]>(user?.isOnboarded ? "/counselors/recommended" : null, {
+    fallbackData: [],
+    revalidateOnMount: true
+  });
+
+  const { data: statsData = { savedCount: 0, appliedCount: 0, deadlineCount: 0 }, isLoading: loadingStats } = useSWR<{savedCount: number, appliedCount: number, deadlineCount: number}>(user?.isOnboarded ? "/scholarships/dashboard/stats" : null, {
+    fallbackData: { savedCount: 0, appliedCount: 0, deadlineCount: 0 },
+    revalidateOnMount: true
+  });
+
 
   useEffect(() => {
     if (user && !user.isOnboarded) {
@@ -71,358 +81,348 @@ export const StudentDashboard = () => {
     }
   }, [user, user?.isOnboarded, router]);
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const data = await getScholarships();
-        setMatches(data);
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-      } finally {
-        setLoadingMatches(false);
-      }
-    };
-
-    const fetchCounselors = async () => {
-      try {
-        const data = await getRecommendedCounselors();
-        setRecommendedCounselors(data);
-      } catch (error) {
-        console.error("Failed to fetch recommended counselors:", error);
-      } finally {
-        setLoadingCounselors(false);
-      }
-    };
-
-    const fetchStats = async () => {
-      try {
-        const data = await getDashboardStats();
-        setStatsData(data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats:", error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    if (user?.isOnboarded) {
-      fetchMatches();
-      fetchCounselors();
-      fetchStats();
-    } else {
-      setLoadingMatches(false);
-      setLoadingCounselors(false);
-      setLoadingStats(false);
-    }
-  }, [user?.isOnboarded]);
-
   const calculateCompletion = () => {
     if (!user) return 0;
-    // Logic from previous version... (simplified for now to 89 to match image if needed, or dynamic)
     return user.profileCompletion || 89;
   };
 
   const completionRate = calculateCompletion();
 
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="min-h-screen bg-background text-foreground space-y-10 pb-20 px-4 md:px-10 lg:px-16 max-w-7xl mx-auto"
-    >
-      
-      {/* Header Section */}
-      <header className="pt-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-10 relative">
-        <div className="space-y-4 max-w-2xl">
-          <p className="text-primary font-bold text-sm tracking-tight flex items-center gap-2">
-            Good morning, {user?.name || 'User'} 👋
-          </p>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-foreground font-serif leading-[1.1]">
-            Master Your <br/> Academic Journey
-          </h1>
-          <p className="text-muted-foreground text-lg font-medium">
-            Unlock <span className="text-foreground font-bold">{matches.length || 5} curated scholarships</span> specifically analyzed for your profile.
-          </p>
-          <div className="flex gap-4 pt-4">
-             <Link href="/dashboard/scholarships">
-                <Button size="lg" className="rounded-lg px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm h-14 shadow-lg shadow-primary/20 transition-all">
-                  Explore Matches
-                  <ArrowRight size={18} className="ml-2" />
-                </Button>
-              </Link>
-              <Link href="/dashboard/student/profile">
-                <Button variant="outline" size="lg" className="rounded-lg px-8 border-border text-foreground hover:bg-muted font-bold text-sm h-14 transition-all bg-card">
-                  Profile Tactical
-                </Button>
-              </Link>
-          </div>
-        </div>
-
-        {/* Profile Strength Circle */}
-        <Card className="rounded-xl shadow-sm p-8 bg-card w-full md:w-80 border border-border">
-          <div className="flex flex-col items-center">
-             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-6">Profile Strength</p>
-             <div className="relative h-40 w-40 flex items-center justify-center">
-                <svg className="h-full w-full transform -rotate-90">
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                    fill="transparent"
-                    className="text-muted/50"
-                  />
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                    strokeDasharray={440}
-                    strokeDashoffset={440 - (440 * completionRate) / 100}
-                    strokeLinecap="round"
-                    fill="transparent"
-                    className="text-emerald-500"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-foreground">{completionRate}%</span>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Strong</span>
-                </div>
-             </div>
-             <div className="mt-8 flex items-center gap-2 text-emerald-600 dark:text-emerald-500 font-bold text-xs bg-emerald-500/10 px-3 py-1.5 rounded-full">
-                <TrendingUp size={14} />
-                <span>12% vs last week</span>
-             </div>
-          </div>
-        </Card>
-      </header>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "Saved", value: statsData.savedCount || 0, icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10", desc: "Bookmark opportunities" },
-          { label: "Applications", value: statsData.appliedCount || 0, icon: FileText, color: "text-emerald-500", bgColor: "bg-emerald-500/10", desc: "Scholarships applied" },
-          { label: "Deadlines", value: statsData.deadlineCount || 0, icon: Clock, color: "text-rose-500", bgColor: "bg-rose-500/10", desc: "Approaching in 30 days" },
-          { label: "Profile Strength", value: `${completionRate}%`, icon: TrendingUp, color: "text-sky-500", bgColor: "bg-sky-500/10", desc: "Profile completion" },
-        ].map((stat, i) => (
-          <Card key={i} className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-all duration-500 p-8 group">
-            <div className={`h-10 w-10 rounded-xl ${stat.bgColor} ${stat.color} flex items-center justify-center mb-6 shadow-sm`}>
-              <stat.icon size={20} />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</span>
-              <p className="text-4xl font-black text-foreground">{stat.value}</p>
-              <p className="text-[11px] text-muted-foreground font-medium pt-2">{stat.desc}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8"
+      >
         
-        {/* Left Column (2/3) */}
-        <div className="lg:col-span-2 space-y-10">
-          
-          {/* Top Recommendations */}
-          <section className="space-y-8">
-            <div className="flex justify-between items-end">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-3 font-serif">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <Zap size={18} />
-                  </div>
-                  Top Recommendations
-                </h2>
-                <p className="text-muted-foreground text-sm font-medium mt-2">Hand-picked opportunities based on your skills and goals.</p>
-              </div>
-              <Link href="/dashboard/scholarships" className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-                View all <Plus size={16} />
-              </Link>
+        {/* Header Section - Clean & Professional */}
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+              {user?.name ? `Hi, ${user.name}!` : 'Student Dashboard'}
+            </h1>
+            <p className="text-base text-muted-foreground max-w-2xl mt-2">
+              {matches.length > 0 
+                ? `You have ${matches.length} recommended scholarships waiting for you. Check your opportunities and get started on your applications.`
+                : 'Complete your profile to discover personalized scholarship opportunities.'}
+            </p>
+          </div>
+
+          {/* Quick Stats Badge */}
+          <div className="flex flex-col gap-3 lg:items-end">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <div className="size-2 rounded-full bg-emerald-500" />
+              <span className="text-sm font-semibold">Profile {completionRate}% Complete</span>
             </div>
+          </div>
+        </header>
 
-            {loadingMatches ? (
-              <div className="space-y-4">
-                <div className="h-64 bg-card rounded-xl animate-pulse border border-border/50" />
-                <div className="h-24 bg-card rounded-xl animate-pulse border border-border/50" />
-                <div className="h-24 bg-card rounded-xl animate-pulse border border-border/50" />
+        {/* Stats Cards - Clean Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Saved", value: statsData.savedCount || 0, icon: Star, color: "bg-blue-50 dark:bg-blue-950", textColor: "text-blue-600 dark:text-blue-400" },
+            { label: "Applied", value: statsData.appliedCount || 0, icon: FileText, color: "bg-green-50 dark:bg-green-950", textColor: "text-green-600 dark:text-green-400" },
+            { label: "Deadlines", value: statsData.deadlineCount || 0, icon: Clock, color: "bg-orange-50 dark:bg-orange-950", textColor: "text-orange-600 dark:text-orange-400" },
+            { label: "Profile", value: `${completionRate}%`, icon: Target, color: "bg-purple-50 dark:bg-purple-950", textColor: "text-purple-600 dark:text-purple-400" },
+          ].map((stat, i) => (
+            <Card key={i} className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-border/60 transition-all p-6">
+              <div className={`size-10 rounded-lg ${stat.color} ${stat.textColor} flex items-center justify-center mb-4`}>
+                <stat.icon size={20} />
               </div>
-            ) : matches.length > 0 ? (
-              <div className="space-y-4">
-                {/* Featured Card */}
-                <ScholarshipCard scholarship={matches[0]} variant="featured" />
-                
-                {/* List Cards */}
-                {matches.slice(1, 5).map(match => (
-                  <ScholarshipCard key={match.id} scholarship={match} variant="list" />
-                ))}
-
-                <div className="pt-6 text-center">
-                   <Link 
-                      href="/dashboard/scholarships"
-                      className="inline-flex items-center justify-center rounded-lg border border-border text-foreground bg-card hover:bg-muted font-bold px-10 h-12 text-xs shadow-sm transition-all"
-                    >
-                      View all matches
-                   </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="py-20 bg-card rounded-xl border border-dashed border-border text-center">
-                 <p className="text-muted-foreground font-bold uppercase tracking-widest">No matches found yet.</p>
-              </div>
-            )}
-          </section>
-
-          {/* Elite Advisors */}
-          <section className="space-y-8">
-            <div className="flex justify-between items-end">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-3 font-serif">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <Users size={18} />
-                  </div>
-                  Elite Advisors
-                </h2>
-                <p className="text-muted-foreground text-sm font-medium mt-2">Top-rated global consultants analyzed for your academic field.</p>
-              </div>
-              <Link href="/dashboard/counselors" className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-                Directory <ChevronRight size={16} />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {loadingCounselors ? (
-                [1,2,3].map(i => <div key={i} className="h-64 bg-card rounded-xl animate-pulse border border-border/50" />)
-              ) : recommendedCounselors.length > 0 ? (
-                recommendedCounselors.slice(0, 3).map(counselor => (
-                  <Card key={counselor.id} className="rounded-xl shadow-sm border-border/50 bg-card hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 transition-all p-6 text-center group">
-                    <Avatar className="h-20 w-20 mx-auto mb-4 border-4 border-background group-hover:border-primary/20 transition-colors shadow-sm">
-                       <AvatarImage src={counselor.profileImageUrl} />
-                       <AvatarFallback className="bg-primary/10 text-primary font-bold">{counselor.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">{counselor.name}</h4>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 truncate">{counselor.areasOfExpertise || 'Counselor'}</p>
-                    <div className="flex items-center justify-center gap-1.5 text-amber-500 mt-4">
-                       <Star size={12} fill="currentColor" />
-                       <span className="text-[11px] font-bold text-foreground">{counselor.rating || 4.9} <span className="text-muted-foreground/60 font-medium">({counselor.reviewCount || 120})</span></span>
-                    </div>
-                    <div className="h-px bg-border/40 my-6" />
-                    <Link href={`/dashboard/counselors/${counselor.id}`} className="text-primary text-[10px] font-bold uppercase tracking-widest hover:underline">
-                       View Profile
-                    </Link>
-                  </Card>
-                ))
-              ) : null}
-            </div>
-
-            <div className="bg-primary/5 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6 border border-primary/10">
-               <div className="flex items-center gap-4 text-primary">
-                  <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/50">
-                    <FileText size={20} />
-                  </div>
-                  <p className="text-sm font-bold text-foreground">Complete your research preferences to see elite advisor matches.</p>
-               </div>
-               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-6 font-bold text-xs h-10 transition-all shadow-sm">
-                  Complete Preferences
-               </Button>
-            </div>
-          </section>
+              <p className="text-xs font-medium text-muted-foreground mb-1">{stat.label}</p>
+              <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+            </Card>
+          ))}
         </div>
 
-        {/* Right Column (1/3) */}
-        <aside className="space-y-10">
+        {/* Main Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Profile Tactical */}
-          <Card className="rounded-xl border border-border bg-card shadow-sm p-8">
-             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-lg font-bold text-foreground">Profile Tactical</h3>
-                <span className="text-primary font-bold text-sm">{completionRate}%</span>
-             </div>
-             
-             <div className="space-y-8">
-                <div className="space-y-2">
-                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Optimization status</p>
-                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full" style={{ width: `${completionRate}%` }} />
-                   </div>
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Scholarship Matches Section */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Top Recommended Scholarships</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Best matches curated for your profile</p>
                 </div>
+                <Link href="/dashboard/scholarships">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    View All <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
 
-                <div className="bg-amber-500/10 rounded-xl p-5 border border-amber-500/20 flex gap-4">
-                   <div className="h-10 w-10 rounded-xl bg-card flex items-center justify-center text-amber-500 shadow-sm shrink-0">
-                      <Star size={18} className="fill-amber-500" />
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Recommendation</p>
-                      <p className="text-xs font-bold text-foreground leading-snug">Add academic awards to reach 100% Strength.</p>
-                   </div>
+              {loadingMatches ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-28 bg-card/40 rounded-lg animate-pulse border border-border/20" />
+                  ))}
                 </div>
+              ) : matches.length > 0 ? (
+                <div className="space-y-4">
+                  {matches.slice(0, 5).map(match => (
+                    <Card key={match.id} className="rounded-lg border border-border/40 bg-card hover:bg-card/80 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all overflow-hidden cursor-pointer">
+                      <div className="p-6 space-y-4" onClick={() => router.push(`/dashboard/student/scholarships/${match.id}`)}>
+                        {/* Scholarship Name - Top */}
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-bold text-foreground hover:text-primary transition-colors line-clamp-2">
+                            {match.title}
+                          </h3>
+                          {match.country && (
+                            <p className="text-sm text-muted-foreground">{match.country}</p>
+                          )}
+                        </div>
 
-                <Button className="w-full bg-foreground hover:bg-foreground/90 text-background rounded-lg h-14 font-bold text-sm">
-                   Optimize Profile
-                </Button>
-             </div>
-          </Card>
+                        {/* Description */}
+                        {match.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {match.description}
+                          </p>
+                        )}
 
-          {/* Activity Feed */}
-          <Card className="rounded-xl border border-border bg-card shadow-sm p-8">
-             <h3 className="text-lg font-bold text-foreground mb-8">Activity Feed</h3>
-             <div className="space-y-10 relative before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-border/50">
-                <div className="flex gap-6 relative z-10">
-                   <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm shrink-0">
-                      <Award size={20} />
-                   </div>
-                   <div className="pt-1">
-                      <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">New Matches</p>
-                      <p className="text-xs font-medium text-muted-foreground leading-snug">
-                        Found scholarships matching your research in "Business Administration", "Human Resource Management".
-                      </p>
-                      <p className="text-[10px] font-bold text-muted-foreground/60 mt-2">Just now</p>
-                   </div>
+                        {/* Key Details */}
+                        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border/40">
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Amount</p>
+                            <p className="font-bold text-primary truncate">
+                              {match.amount || 'Varies'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Deadline</p>
+                            <p className="font-semibold text-foreground text-sm">
+                              {match.deadline 
+                                ? new Date(match.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Match</p>
+                            <div className="flex items-center gap-1">
+                              <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                              <p className="font-bold text-foreground text-sm">{match.matchScore !== undefined ? `${Math.round(match.matchScore)}%` : '85%'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tags */}
+                        {(match.requirements || (match.degreeLevels && match.degreeLevels.length > 0)) && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {match.degreeLevels && match.degreeLevels.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {match.degreeLevels[0]}
+                              </Badge>
+                            )}
+                            {match.requirements && (
+                              <Badge variant="outline" className="text-xs truncate max-w-[200px]">
+                                {match.requirements}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer - Buttons Divided */}
+                      <div className="flex items-center border-t border-border/40">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex-1 gap-2 rounded-none border-r border-border/40 hover:bg-muted"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/student/scholarships/${match.id}`);
+                          }}
+                        >
+                          View Details <ArrowRight size={14} />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 gap-2 rounded-none bg-primary hover:bg-primary/90 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add apply functionality here
+                          }}
+                        >
+                          Apply <ArrowRight size={14} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-
-                <div className="flex gap-6 relative z-10">
-                   <div className="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                      <TrendingUp size={20} />
-                   </div>
-                   <div className="pt-1">
-                      <p className="text-xs font-bold text-sky-500 uppercase tracking-widest mb-1">System Status</p>
-                      <p className="text-xs font-medium text-muted-foreground leading-snug">AI analysis engine is operating at full capacity.</p>
-                      <p className="text-[10px] font-bold text-muted-foreground/60 mt-2">Active</p>
-                   </div>
-                </div>
-             </div>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="rounded-xl border border-border bg-card shadow-sm p-8">
-             <h3 className="text-lg font-bold text-foreground mb-8">Quick Actions</h3>
-             <div className="space-y-4">
-                {[
-                  { label: "Browse Scholarships", icon: Search, href: "/dashboard/scholarships" },
-                  { label: "Take Assessment", icon: ClipboardList, href: "/dashboard/learning-path/diagnostic/assessment" },
-                  { label: "Book a Session", icon: Calendar, href: "/dashboard/counselors" },
-                  { label: "Explore Learning Path", icon: Compass, href: "/dashboard/learning-path" },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href} className="flex items-center justify-between p-4 rounded-xl hover:bg-muted transition-all border border-transparent hover:border-border group">
-                    <div className="flex items-center gap-4">
-                       <action.icon size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                       <span className="text-sm font-bold text-muted-foreground group-hover:text-foreground transition-colors">{action.label}</span>
-                    </div>
-                    <ChevronRight size={16} className="text-muted-foreground/50 group-hover:text-foreground transition-all" />
+              ) : (
+                <div className="py-12 bg-card/20 rounded-lg border border-dashed border-border/40 text-center">
+                  <Search className="mx-auto size-12 text-muted-foreground/40 mb-4" />
+                  <p className="text-sm font-medium text-foreground mb-2">No matches yet</p>
+                  <p className="text-xs text-muted-foreground mb-4">Complete your profile to see personalized opportunities</p>
+                  <Link href="/dashboard/student/profile">
+                    <Button size="sm" className="gap-2">
+                      Complete Profile <ArrowRight size={14} />
+                    </Button>
                   </Link>
-                ))}
-             </div>
-          </Card>
+                </div>
+              )}
+            </section>
 
-        </aside>
+            {/* Recommended Counselors Section */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Recommended Counselors</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Expert guidance for your journey</p>
+                </div>
+                <Link href="/dashboard/counselors">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    All Counselors <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
 
-      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {loadingCounselors ? (
+                  [1, 2].map(i => <div key={i} className="h-64 bg-card/40 rounded-lg animate-pulse border border-border/20" />)
+                ) : recommendedCounselors.length > 0 ? (
+                  recommendedCounselors.slice(0, 2).map(counselor => (
+                    <Card key={counselor.id} className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all p-6 group">
+                      <div className="flex gap-4 mb-4">
+                        <Avatar className="size-16 border-2 border-border group-hover:border-primary transition-all">
+                          <AvatarImage src={counselor.profileImageUrl} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">{counselor.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">{counselor.name}</h4>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-semibold text-foreground">{counselor.rating || 4.9}</span>
+                            <span className="text-xs text-muted-foreground">({counselor.reviewCount || 120} reviews)</span>
+                          </div>
+                        </div>
+                      </div>
+                      {counselor.areasOfExpertise && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {counselor.areasOfExpertise.split(',').slice(0, 2).map((area: string) => (
+                            <Badge key={area} variant="secondary" className="text-xs">{area.trim()}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      <Link href={`/dashboard/counselors/${counselor.id}`}>
+                        <Button size="sm" className="w-full gap-2">
+                          View Profile <ArrowRight size={14} />
+                        </Button>
+                      </Link>
+                    </Card>
+                  ))
+                ) : null}
+              </div>
+            </section>
+          </div>
 
-    </motion.div>
+          {/* Right Column - Sidebar */}
+          <aside className="space-y-6">
+            
+            {/* Profile Completion Card */}
+            <Card className="rounded-lg border border-border/40 bg-linear-to-br from-primary/10 to-primary/5 p-6">
+              <h3 className="font-bold text-foreground mb-4">Profile Completion</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
+                    <span className="text-lg font-bold text-primary">{completionRate}%</span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-linear-to-r from-primary to-primary/70 rounded-full" 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${completionRate}%` }} 
+                      transition={{ duration: 1.5, ease: "circOut" }}
+                    />
+                  </div>
+                </div>
+
+                {completionRate < 100 && (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-xs text-foreground font-medium mb-3">Next steps:</p>
+                    <ul className="text-xs text-muted-foreground space-y-2">
+                      {completionRate < 50 && <li>• Add your academic achievements</li>}
+                      {completionRate < 75 && <li>• Upload your documents</li>}
+                      {completionRate < 100 && <li>• Review and verify information</li>}
+                    </ul>
+                  </div>
+                )}
+
+                <Link href="/dashboard/student/profile" className="block w-full">
+                  <Button className="w-full gap-2" variant={completionRate === 100 ? "outline" : "primary"}>
+                    {completionRate === 100 ? "View Profile" : "Complete Profile"}
+                    <ArrowRight size={14} />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="rounded-lg border border-border/40 bg-card p-6">
+              <h3 className="font-bold text-foreground mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <Link href="/dashboard/scholarships" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Search size={16} />
+                    Browse Scholarships
+                  </Button>
+                </Link>
+                <Link href="/dashboard/counselors" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Users size={16} />
+                    Find Counselors
+                  </Button>
+                </Link>
+                <Link href="/dashboard/student/profile" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <FileText size={16} />
+                    My Documents
+                  </Button>
+                </Link>
+                <Link href="/dashboard/student/bookings" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Calendar size={16} />
+                    My Bookings
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            {/* Statistics Card */}
+            <Card className="rounded-lg border border-border/40 bg-card p-6">
+              <h3 className="font-bold text-foreground mb-4">Your Stats</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-border/40">
+                  <span className="text-sm text-muted-foreground">Applications</span>
+                  <span className="font-bold text-lg">{statsData.appliedCount}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-border/40">
+                  <span className="text-sm text-muted-foreground">Saved</span>
+                  <span className="font-bold text-lg">{statsData.savedCount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Active Deadlines</span>
+                  <span className="font-bold text-lg text-orange-600">{statsData.deadlineCount}</span>
+                </div>
+              </div>
+            </Card>
+
+          </aside>
+
+        </div>
+
+      </motion.div>
+    </div>
   );
 };
 
 export default StudentDashboard;
+

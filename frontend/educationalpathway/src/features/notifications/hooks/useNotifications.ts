@@ -22,7 +22,9 @@ export function useNotifications() {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch notifications";
       console.error("Failed to fetch notifications:", err);
-      setError(errorMessage);
+      // Don't crash on error - just log it and clear notifications
+      setError(null);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

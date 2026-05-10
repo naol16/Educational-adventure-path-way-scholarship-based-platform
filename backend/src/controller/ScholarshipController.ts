@@ -40,8 +40,23 @@ export class ScholarshipController {
         }
 
         try {
-            const matches = await MatchingService.getTopMatches(req.user.id);
-            res.status(200).json(matches);
+            const page = parseInt(req.query.page as string) || 1;
+            const pageSize = parseInt(req.query.pageSize as string) || 12;
+            const limit = pageSize;
+            const offset = (page - 1) * limit;
+
+            const { rows, count } = await MatchingService.getTopMatches(req.user.id, limit, offset);
+            
+            res.status(200).json({
+                status: "success",
+                data: rows,
+                pagination: {
+                    total: count,
+                    page,
+                    pageSize,
+                    totalPages: Math.ceil(count / pageSize)
+                }
+            });
         } catch (error: any) {
             if (error.message.includes("onboarded")) {
                 throw new AppError(error.message, 403);
@@ -62,8 +77,21 @@ export class ScholarshipController {
         }
 
         // For now, recommendations use the same matching logic
-        const recommendations = await MatchingService.getTopMatches(req.user.id);
-        res.status(200).json(recommendations);
+        const page = parseInt(req.query.page as string) || 1;
+        const pageSize = parseInt(req.query.pageSize as string) || 5; // Smaller default for recommendations
+
+        const { rows, count } = await MatchingService.getTopMatches(req.user.id, pageSize, (page - 1) * pageSize);
+        
+        res.status(200).json({
+            status: "success",
+            data: rows,
+            pagination: {
+                total: count,
+                page,
+                pageSize,
+                totalPages: Math.ceil(count / pageSize)
+            }
+        });
     });
 
     /**
@@ -92,11 +120,31 @@ export class ScholarshipController {
      */
     static list = catchAsync(async (req: Request, res: Response) => {
         const filters = req.query;
-        const scholarships = await ScholarshipRepository.findAll(filters);
+        const { rows, count } = await ScholarshipRepository.findAll(filters);
         
+        const page = parseInt(filters.page as string) || 1;
+        const pageSize = parseInt(filters.pageSize as string) || 12;
+
         res.status(200).json({
             status: "success",
-            data: scholarships
+            data: rows,
+            pagination: {
+                total: count,
+                page,
+                pageSize,
+                totalPages: Math.ceil(count / pageSize)
+            }
+        });
+    });
+
+    /**
+     * Gets all unique countries present in the scholarship database.
+     */
+    static getCountries = catchAsync(async (req: Request, res: Response) => {
+        const countries = await ScholarshipRepository.getCountries();
+        res.status(200).json({
+            status: "success",
+            data: countries
         });
     });
 }

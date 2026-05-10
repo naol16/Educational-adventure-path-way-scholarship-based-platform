@@ -25,6 +25,7 @@ import Image from "next/image";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import api from "@/lib/api";
+import useSWR from "swr";
 import { AIChatBot } from "@/components/AIChatBot";
 
 interface LandingPageData {
@@ -101,22 +102,8 @@ export const LandingPageContent = () => {
   const opacity = useTransform(springScroll, [0, 0.2], [1, 0]);
 
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [landingData, setLandingData] = useState<LandingPageData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: landingData, isLoading } = useSWR<LandingPageData>('/marketing/landing-page');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await api.get('/marketing/landing-page');
-        setLandingData(response.data);
-      } catch (error) {
-        console.error("Failed to fetch landing page data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
 
   const currentStats = landingData?.stats || [];
   const currentTestimonials = landingData?.testimonials || [];
@@ -162,14 +149,14 @@ export const LandingPageContent = () => {
           <Link className="text-sm font-bold text-white/60 hover:text-white transition-colors hidden md:block" href="/#how">
             Methodology
           </Link>
-          <div className="h-6 w-px bg-white/10 hidden md:block" />
+          <div className="h-6 w-px bg-card/10 hidden md:block" />
           <Link href="/login">
             <button className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2">
               Sign In
             </button>
           </Link>
           <Link href="/role-selection">
-            <button className="relative overflow-hidden group px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-white/5 border border-white/10 hover:border-emerald-500/50 transition-all shadow-lg hover:shadow-emerald-500/20">
+            <button className="relative overflow-hidden group px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-card/5 border border-white/10 hover:border-emerald-500/50 transition-all shadow-lg hover:shadow-emerald-500/20">
               <span className="absolute inset-0 w-full h-full bg-linear-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-10 transition-opacity" />
               Get Started
             </button>
@@ -187,7 +174,7 @@ export const LandingPageContent = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, type: "spring" }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-emerald-300 text-xs font-bold tracking-widest uppercase mx-auto backdrop-blur-md"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/5 border border-white/10 text-emerald-300 text-xs font-bold tracking-widest uppercase mx-auto backdrop-blur-md"
             >
               <Sparkles size={14} className="text-emerald-400 animate-pulse" />
               <span className="bg-clip-text text-transparent bg-linear-to-r from-emerald-300 to-teal-200">
@@ -232,7 +219,7 @@ export const LandingPageContent = () => {
                 </button>
               </Link>
               <Link href="/#how">
-                <button className="h-16 px-10 rounded-2xl bg-white/5 border border-white/10 text-white font-bold tracking-wide flex items-center gap-3 hover:bg-white/10 transition-all backdrop-blur-md">
+                <button className="h-16 px-10 rounded-2xl bg-card/5 border border-white/10 text-white font-bold tracking-wide flex items-center gap-3 hover:bg-card/10 transition-all backdrop-blur-md">
                   <PlayCircle size={20} className="text-white/60" />
                   EXPLORE PLATFORM
                 </button>
@@ -487,3 +474,4 @@ export const LandingPageContent = () => {
     </div>
   );
 };
+

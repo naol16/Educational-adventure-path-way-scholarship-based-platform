@@ -250,19 +250,19 @@ export const GeneralAnalysis = () => {
                            <span>API Performance</span>
                            <span className="text-emerald-400">99.9%</span>
                         </div>
-                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1 w-full bg-card/5 rounded-full overflow-hidden">
                            <motion.div initial={{ width: 0 }} animate={{ width: '99%' }} className="h-full bg-emerald-400" />
                         </div>
                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
                            <span>Server Load</span>
                            <span className="text-amber-400">24%</span>
                         </div>
-                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1 w-full bg-card/5 rounded-full overflow-hidden">
                            <motion.div initial={{ width: 0 }} animate={{ width: '24%' }} className="h-full bg-amber-400" />
                         </div>
                      </div>
 
-                     <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-none h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                     <Button className="w-full bg-card/10 hover:bg-card/20 text-white border-none h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                         Launch System Diagnostics
                      </Button>
                   </CardBody>
@@ -303,3 +303,4 @@ export const GeneralAnalysis = () => {
 const Loader2 = ({ className, size }: { className?: string, size?: number }) => (
   <Activity className={className} size={size} />
 );
+

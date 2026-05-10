@@ -49,7 +49,7 @@ export const TaskManager = () => {
             <motion.div 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit border border-white/10"
+              className="flex items-center gap-2 px-3 py-1 bg-card/10 backdrop-blur-md rounded-full w-fit border border-white/10"
             >
               <Zap size={14} className="text-amber-400 fill-amber-400" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">Productivity Dashboard</span>
@@ -62,7 +62,7 @@ export const TaskManager = () => {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 w-full md:w-auto min-w-[240px]">
+          <div className="bg-card/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 w-full md:w-auto min-w-[240px]">
              <div className="flex justify-between items-end mb-4">
                <div>
                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Overall Progress</p>
@@ -70,7 +70,7 @@ export const TaskManager = () => {
                </div>
                <TrendingUp size={32} className="text-emerald-400 opacity-50" />
              </div>
-             <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+             <div className="h-2 w-full bg-card/10 rounded-full overflow-hidden">
                <motion.div 
                  initial={{ width: 0 }}
                  animate={{ width: `${completionRate}%` }}
@@ -208,3 +208,4 @@ export const TaskManager = () => {
     </div>
   );
 };
+

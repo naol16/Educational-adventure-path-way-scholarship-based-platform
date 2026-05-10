@@ -137,3 +137,4 @@ export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> =
     </div>
   );
 };
+

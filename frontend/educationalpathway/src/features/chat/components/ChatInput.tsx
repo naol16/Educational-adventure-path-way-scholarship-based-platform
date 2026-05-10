@@ -176,7 +176,7 @@ export const ChatInput = ({
                   <span className="text-xs text-white/60 truncate max-w-[300px]">{editingMessage.content}</span>
                 </div>
               </div>
-              <button onClick={onCancelEdit} className="p-1 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+              <button onClick={onCancelEdit} className="p-1 hover:bg-card/5 rounded-full text-white/40 hover:text-white transition-colors">
                 <X size={16} />
               </button>
             </motion.div>
@@ -186,7 +186,7 @@ export const ChatInput = ({
               initial={{ height: 0, opacity: 0, y: 10 }}
               animate={{ height: 'auto', opacity: 1, y: 0 }}
               exit={{ height: 0, opacity: 0, y: 10 }}
-              className="mb-2 flex items-center justify-between px-4 py-2 bg-white/5 rounded-xl border border-white/5 overflow-hidden"
+              className="mb-2 flex items-center justify-between px-4 py-2 bg-card/5 rounded-xl border border-white/5 overflow-hidden"
             >
               <div className="flex items-center gap-3">
                 <div className="text-primary border-l-2 border-primary pl-3">
@@ -196,7 +196,7 @@ export const ChatInput = ({
                   </div>
                 </div>
               </div>
-              <button onClick={onCancelReply} className="p-1 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+              <button onClick={onCancelReply} className="p-1 hover:bg-card/5 rounded-full text-white/40 hover:text-white transition-colors">
                 <X size={16} />
               </button>
             </motion.div>
@@ -269,4 +269,5 @@ export const ChatInput = ({
     </div>
   );
 };
+
 

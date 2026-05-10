@@ -50,72 +50,36 @@
   --font-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
 }
 
-/* ---------------- LIGHT MODE ---------------- */
+/* ---------------- LIGHT MODE (Default) ---------------- */
 
 :root {
-
   /* Base */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #ffffff;
+  --foreground: #09090b;
 
   /* Surfaces */
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #09090b;
 
+  /* Popover */
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #09090b;
 
-  /* Primary — High-end Emerald */
-  --primary: #059669;
-  --primary-foreground: #ffffff;
-
-  /* Secondary UI */
-  --secondary: #f1f5f9;
-  --secondary-foreground: #475569;
-
-  /* Muted Surfaces */
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-
-  /* Borders */
-  --border: #cbd5e1;
-  --input: #cbd5e1;
-  --input-bg: #ffffff;
-  --ring: #059669;
-
-  --radius: 0.5rem;
-}
-
-/* ---------------- DARK MODE ---------------- */
-
-.dark {
-
-  /* Base - True dark */
-  --background: #09090b;
-  --foreground: #fafafa;
-
-  /* Surfaces */
-  --card: #18181b;
-  --card-foreground: #fafafa;
-
-  --popover: #18181b;
-  --popover-foreground: #fafafa;
-
-  /* Primary - Keep brand colors */
+  /* Primary - High-end Emerald */
   --primary: #10b981;
   --primary-foreground: #ffffff;
 
-  /* Sidebar / panels */
-  --secondary: #18181b;
-  --secondary-foreground: #fafafa;
+  /* Secondary UI */
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
 
-  /* Muted surfaces */
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
+  /* Muted Surfaces */
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
 
-  /* Hover surfaces */
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
+  /* Accent / Hover */
+  --accent: #f4f4f5;
+  --accent-foreground: #09090b;
 
   /* Semantics */
   --destructive: #ef4444;
@@ -126,8 +90,32 @@
   --info: #0ea5e9;
 
   /* Borders */
-  --border: #27272a;
+  --border: #e4e4e7;
   --input: transparent;
+  --input-bg: #f4f4f5;
+  --ring: #10b981;
+
+  --radius: 0.5rem;
+}
+
+/* ---------------- DARK MODE ---------------- */
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #10b981;
+  --primary-foreground: #ffffff;
+  --secondary: #18181b;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --border: #27272a;
   --input-bg: #27272a;
   --ring: #10b981;
 }
@@ -143,7 +131,6 @@ body {
 
 * {
   font-family: var(--font-serif) !important;
-  font-weight: normal !important;
 }
 
 /* Unified form control styling — same look in light and dark */
@@ -247,7 +234,7 @@ button {
 }
 
 .premium-card {
-  @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl;
+  @apply bg-card/70 dark:bg-black/70 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl;
 }
 
 .neon-glow-emerald {
@@ -399,3 +386,17 @@ button {
 }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---------------- NPROGRESS ---------------- */
+
+#nprogress .bar {
+  background: var(--primary) !important;
+  height: 3px !important;
+  box-shadow: 0 0 10px var(--primary), 0 0 5px var(--primary) !important;
+  z-index: 9999 !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--primary), 0 0 5px var(--primary) !important;
+}
+

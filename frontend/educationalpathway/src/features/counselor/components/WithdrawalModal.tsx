@@ -239,3 +239,4 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance, onSuccess }
         </Modal>
     );
 };
+

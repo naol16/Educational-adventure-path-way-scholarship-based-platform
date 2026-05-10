@@ -10,7 +10,7 @@ export default function AssignedStudentsPage() {
         <div className="absolute inset-0 bg-linear-to-r from-black/40 to-transparent z-0" />
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit border border-white/10">
+            <div className="flex items-center gap-2 px-3 py-1 bg-card/10 backdrop-blur-md rounded-full w-fit border border-white/10">
               <Zap size={14} className="text-amber-400 fill-amber-400" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">Mentorship Roster</span>
             </div>
@@ -22,7 +22,7 @@ export default function AssignedStudentsPage() {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 w-full md:w-auto min-w-[240px]">
+          <div className="bg-card/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 w-full md:w-auto min-w-[240px]">
              <div className="flex justify-between items-end mb-4">
                <div>
                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Active Mentorships</p>
@@ -51,3 +51,4 @@ export default function AssignedStudentsPage() {
     </div>
   );
 }
+

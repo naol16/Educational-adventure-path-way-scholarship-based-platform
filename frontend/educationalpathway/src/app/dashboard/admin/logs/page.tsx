@@ -162,7 +162,7 @@ export default function AdminLogsPage() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="flex items-start gap-6 group hover:bg-white/5 p-2 rounded-lg transition-colors"
+                      className="flex items-start gap-6 group hover:bg-card/5 p-2 rounded-lg transition-colors"
                     >
                        <span className="text-[10px] text-white/20 shrink-0 font-bold">{new Date(log.timestamp).toLocaleTimeString()}</span>
                        <Badge className={`text-[9px] font-black uppercase tracking-tighter shrink-0 border ${getLevelColor(log.level)}`}>
@@ -186,3 +186,4 @@ export default function AdminLogsPage() {
     </div>
   );
 }
+
