@@ -105,17 +105,17 @@ class StudentProgressDetailScreen extends ConsumerWidget {
           child: Column(
             children: [
               _infoRow(context, LucideIcons.graduationCap, "Current Degree", student.currentDegree ?? "Not specified"),
-              _divider(),
+              _divider(context),
               _infoRow(context, LucideIcons.bookOpen, "Field of Study", student.fieldOfStudy ?? "Not specified"),
-              _divider(),
+              _divider(context),
               _infoRow(context, LucideIcons.award, "Proficiency Score", student.proficiencyScore ?? "Pending/None"),
-              _divider(),
+              _divider(context),
               if (isMastersOrPhD) ...[
                 _infoRow(context, LucideIcons.microscope, "Research Area", student.researchArea ?? "To be defined"),
-                _divider(),
+                _divider(context),
               ],
               _infoRow(context, LucideIcons.banknote, "Desired Funding", student.desiredFunding ?? "Open to all"),
-              _divider(),
+              _divider(context),
               _infoRow(context, LucideIcons.mapPin, "Target Country", student.targetCountry ?? "International"),
             ],
           ),
@@ -144,9 +144,9 @@ class StudentProgressDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(
                 children: [
-                  Icon(LucideIcons.calendarX2, color: Colors.white10, size: 48),
+                  Icon(LucideIcons.calendarX2, color: DesignSystem.glassBorder(context), size: 48),
                   const SizedBox(height: 12),
-                  Text("No sessions recorded with you yet.", style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+                  Text("No sessions recorded with you yet.", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
                 ],
               ),
             ),
@@ -181,11 +181,11 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                 children: [
                   Text(
                     date != null ? DateFormat('MMMM d, yyyy').format(date) : "Recent Session",
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   Text(
                     session['topic'] ?? "General Counseling",
-                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                    style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12),
                   ),
                 ],
               ),
@@ -232,7 +232,7 @@ class StudentProgressDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _divider() {
-    return Divider(color: Colors.white.withOpacity(0.05), height: 24);
+  Widget _divider(BuildContext context) {
+    return Divider(color: DesignSystem.glassBorder(context), height: 24);
   }
 }

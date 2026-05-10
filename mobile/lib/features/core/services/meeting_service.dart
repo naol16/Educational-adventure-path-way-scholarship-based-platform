@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 import 'package:mobile/models/models.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MeetingService {
   static final _jitsiMeet = JitsiMeet();
@@ -10,16 +12,36 @@ class MeetingService {
     required String counselorName,
     Function()? onClosed,
   }) async {
-    final displayName = user.name ?? (user.role == 'student' ? 'Student' : 'Counselor');
+    // ── Web platform ─────────────────────────────────────────────────────────
+    // jitsi_meet_flutter_sdk has NO web support (native SDK wrapper only).
+    // On web we open the Jitsi room URL directly in the browser tab.
+    if (kIsWeb) {
+      final displayName = Uri.encodeComponent(
+        user.name ?? (user.role == 'student' ? 'Student' : 'Counselor'),
+      );
+      final uri = Uri.parse(
+        'https://meet.jit.si/$roomName#userInfo.displayName="$displayName"',
+      );
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      // No native listener on web – fire onClosed immediately
+      if (onClosed != null) onClosed();
+      return;
+    }
+
+    // ── Native (Android / iOS) path ──────────────────────────────────────────
+    final displayName =
+        user.name ?? (user.role == 'student' ? 'Student' : 'Counselor');
     final avatarUrl = user.avatarUrl;
 
-    var options = JitsiMeetConferenceOptions(
+    final options = JitsiMeetConferenceOptions(
       serverURL: "https://meet.jit.si",
       room: roomName,
       configOverrides: {
         "startWithAudioMuted": false,
         "startWithVideoMuted": false,
-        "subject" : "Counseling Session: $counselorName",
+        "subject": "Counseling Session: $counselorName",
       },
       featureFlags: {
         "invite.enabled": false,
@@ -33,16 +55,12 @@ class MeetingService {
       ),
     );
 
-    var listener = JitsiMeetEventListener(
+    final listener = JitsiMeetEventListener(
       readyToClose: () {
-        if (onClosed != null) {
-          onClosed();
-        }
+        if (onClosed != null) onClosed();
       },
       conferenceTerminated: (url, error) {
-        if (onClosed != null) {
-          onClosed();
-        }
+        if (onClosed != null) onClosed();
       },
     );
 

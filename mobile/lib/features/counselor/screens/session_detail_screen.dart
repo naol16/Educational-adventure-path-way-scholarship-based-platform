@@ -154,7 +154,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       child: Column(
         children: [
           _timeRow(context, LucideIcons.calendar, 'Date', DateFormat('EEEE, MMM d, yyyy').format(slot.startTime)),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: Colors.white10)),
+          Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: DesignSystem.glassBorder(context))),
           _timeRow(context, LucideIcons.clock, 'Time', '${DateFormat('h:mm a').format(slot.startTime)} - ${DateFormat('h:mm a').format(slot.endTime)}'),
         ],
       ),
