@@ -262,6 +262,7 @@ export interface StudentProgressResponse {
     studentId: number;
     name: string;
     email: string;
+    avatarUrl?: string | null;
     learningPath?: {
         id: number;
         currentProgress: number;
