@@ -37,11 +37,17 @@ export class FirebaseService {
         if (!this.isInitialized) return;
 
         try {
-            const message = {
+            const message: any = {
                 notification: { title, body },
                 token: token,
-                data: data ? Object.entries(data).reduce((acc, [key, value]) => ({ ...acc, [key]: String(value) }), {}) : undefined
             };
+
+            if (data) {
+                message.data = Object.entries(data).reduce((acc, [key, value]) => ({ 
+                    ...acc, 
+                    [key]: String(value) 
+                }), {});
+            }
 
             const response = await admin.messaging().send(message);
             console.log("[FirebaseService] Successfully sent push:", response);
