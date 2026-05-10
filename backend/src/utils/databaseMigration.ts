@@ -30,17 +30,27 @@ export const createTables = async () => {
 
 export const seedAdminUser = async () => {
   try {
-    const hashedPassword = await bcrypt.hash("Admin@123", 10);
+    const admin1Password = await bcrypt.hash("Admin@123", 10);
+    const admin2Password = await bcrypt.hash("Naol123@", 10);
 
-    // Use UserRepository to perform the query
+    // Seed Yoseph
     await UserRepository.createIfNotExists({
       name: "Yoseph",
       email: "josefdagne5@gmail.com",
-      password: hashedPassword,
+      password: admin1Password,
+      role: UserRole.ADMIN,
+      is_active: true
+    });
+
+    // Seed Naol
+    await UserRepository.createIfNotExists({
+      name: "Naol",
+      email: "lemesanaol16@gmail.com",
+      password: admin2Password,
       role: UserRole.ADMIN,
       is_active: true
     });
   } catch (error) {
-    console.error("Error seeding admin user:", error);
+    console.error("Error seeding admin users:", error);
   }
 };

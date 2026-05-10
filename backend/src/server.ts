@@ -8,6 +8,7 @@ import { SocketService } from "./services/SocketService.js";
 // Scholarship automation imports
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
 import { assessmentWorker } from "./workers/AssessmentWorker.js";
+import { notificationWorker } from "./workers/NotificationWorker.js";
 import { seedScholarshipSources } from "./scripts/seedScholarships.js";
 
 // Temporary: Global unhandled rejection handler for debugging
@@ -34,18 +35,30 @@ async function start() {
   try {
     await connectSequelize();
 
-    // Ensure the assessment worker is running (explicit reference prevents tree-shaking)
+    // Ensure the workers are running (explicit reference prevents tree-shaking)
     if (assessmentWorker) {
-
+        console.log(`🧠 Assessment worker started: ${assessmentWorker.name}`);
     } else {
         console.warn("⚠️ Assessment worker skipped (Redis not connected)");
     }
+    if (notificationWorker) {
+        console.log(`🔔 Notification worker started: ${notificationWorker.name}`);
+    }
 
-    // Start Cron Jobs immediately
-    startScholarshipCron();
+    // Initialize Scholarship Ingestion System
+    // await seedScholarshipSources();
+    // startScholarshipCron();
 
-    // Initialize Scholarship Ingestion System in background (don't block cron/startup)
-    seedScholarshipSources().catch(err => console.error("Background seeding failed:", err));
+    console.log(`
+===================================================
+🚀 BACKEND IS FULLY RUNNING AND READY 🚀
+===================================================
+✅ Server listening on port ${finalPort}
+✅ Database Connected Successfully
+✅ WebSockets Initialized
+✅ Workers Active
+===================================================
+    `);
 
   } catch (err) {
     console.error("Failed to connect to database:", err);

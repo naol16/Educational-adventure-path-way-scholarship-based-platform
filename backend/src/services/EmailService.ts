@@ -174,7 +174,61 @@ export class EmailService {
         <p>Your session with <strong>${counterpartName || "your session partner"}</strong> has been confirmed.</p>
         <p><strong>Start:</strong> ${startText}</p>
         <p><strong>End:</strong> ${endText}</p>
-        <p><strong>Meeting link:</strong> <a href="${meetingLink}">${meetingLink}</a></p>
+        <p><strong>Meeting link:</strong> <a href="https://meet.jit.si/${meetingLink}">https://meet.jit.si/${meetingLink}</a></p>
+        <p>Alternatively, you can join directly from the <strong>Pathway App</strong> or Web Dashboard for a native experience.</p>
+      `,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  static async sendGenericNotificationEmail(
+    to: string,
+    name: string,
+    title: string,
+    message: string
+  ): Promise<void> {
+    const dashboardLink = `${configs.FRONTEND_URL}/dashboard`;
+
+    const mailOptions = {
+      from: configs.SMTP_FROM,
+      to,
+      subject: title,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #0f172a; padding: 24px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 20px;">New Notification from Pathway</h1>
+          </div>
+          <div style="padding: 24px;">
+            <p>Dear <strong>${name || 'User'}</strong>,</p>
+            <p>You have a new update:</p>
+            
+            <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #0f172a;">${title}</h3>
+              <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.5;">${message}</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardLink}" style="
+                display: inline-block;
+                padding: 12px 30px;
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                text-decoration: none;
+                font-weight: bold;
+                border-radius: 6px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              ">
+                View in Dashboard
+              </a>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+            <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+              You received this email because of your notification preferences on Pathway.
+            </p>
+          </div>
+        </div>
       `,
     };
 

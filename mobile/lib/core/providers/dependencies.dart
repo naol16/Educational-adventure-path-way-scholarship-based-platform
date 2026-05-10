@@ -12,7 +12,15 @@ import 'package:mobile/features/learning_path/services/writing_lab_api_service.d
 
 import 'package:mobile/features/learning_path/services/speaking_lab_api_service.dart';
 
+import 'package:mobile/core/services/socket_service.dart';
+
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
+
+final socketServiceProvider = Provider<SocketService>((ref) {
+  final service = SocketService(ref.watch(tokenStorageProvider));
+  // We can initiate connection here or manually later
+  return service;
+});
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(tokenStorage: ref.watch(tokenStorageProvider));

@@ -7,12 +7,18 @@ import 'package:mobile/features/auth/screens/landing_screen.dart';
 import 'package:mobile/features/auth/screens/login_screen.dart';
 import 'package:mobile/features/auth/screens/register_screen.dart';
 import 'package:mobile/features/auth/screens/role_selection_screen.dart';
+import 'package:mobile/features/auth/screens/forgot_password_screen.dart';
 import 'package:mobile/features/onboarding/screens/student_onboarding_screen.dart';
 import 'package:mobile/features/core/screens/main_layout_screen.dart';
 import 'package:mobile/features/core/screens/settings_screen.dart';
-import 'package:mobile/features/core/screens/notification_screen.dart';
+import 'package:mobile/features/notifications/screens/notification_list_screen.dart';
 import 'package:mobile/features/core/screens/edit_profile_screen.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_layout_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
+import 'package:mobile/features/mentors/screens/student_payment_history_screen.dart';
 
 /// Notifies [GoRouter] when [authProvider] changes so top-level [redirect] runs again.
 final authRouterRefreshProvider = Provider<AuthRouterRefresh>((ref) {
@@ -29,7 +35,7 @@ class AuthRouterRefresh extends ChangeNotifier {
   }
 }
 
-const _publicPaths = {'/', '/login', '/register', '/role-selection'};
+const _publicPaths = {'/', '/login', '/register', '/role-selection', '/forgot-password'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(authRouterRefreshProvider);
@@ -74,6 +80,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RoleSelectionScreen(),
       ),
       GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
         path: '/register',
         builder: (context, state) {
           final role = state.extra as String? ?? 'student';
@@ -82,11 +92,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const StudentOnboardingScreen(),
+        builder: (context, state) {
+          final auth = ref.watch(authProvider).valueOrNull;
+          if (auth?.isCounselor ?? false) {
+            return const CounselorOnboardingScreen();
+          }
+          return const StudentOnboardingScreen();
+        },
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const MainLayoutScreen(),
+        builder: (context, state) {
+          final auth = ref.watch(authProvider).valueOrNull;
+          if (auth?.isCounselor ?? false) {
+            return const CounselorLayoutScreen();
+          }
+          return const MainLayoutScreen();
+        },
+      ),
+      GoRoute(
+        path: '/counselor-profile',
+        builder: (context, state) => const CounselorProfileScreen(),
+      ),
+      GoRoute(
+        path: '/counselor-wallet',
+        builder: (context, state) => const CounselorWalletScreen(),
       ),
       GoRoute(
         path: '/settings',
@@ -94,11 +124,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationScreen(),
+        builder: (context, state) => const NotificationListScreen(),
       ),
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/student-payment-history',
+        builder: (context, state) => const StudentPaymentHistoryScreen(),
       ),
     ],
   );

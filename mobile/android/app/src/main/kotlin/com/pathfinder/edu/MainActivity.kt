@@ -1,4 +1,4 @@
-package com.example.mobile
+package com.pathfinder.edu
 
 import io.flutter.embedding.android.FlutterActivity
 

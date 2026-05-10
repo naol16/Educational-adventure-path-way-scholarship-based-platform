@@ -1,5 +1,5 @@
-import 'package:mobile/features/core/theme/design_system.dart';
 import 'dart:ui';
+import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:flutter/material.dart';
 
 class GlassContainer extends StatelessWidget {
@@ -28,11 +28,17 @@ class GlassContainer extends StatelessWidget {
           padding: padding,
           decoration: BoxDecoration(
             color: DesignSystem.glassBackground(context),
-            borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
               color: borderColor ?? DesignSystem.glassBorder(context),
               width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: child,
         ),

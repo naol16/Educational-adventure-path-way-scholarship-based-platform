@@ -21,7 +21,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final List<Map<String, dynamic>> _tabs = [
     {'title': 'Security', 'icon': LucideIcons.shield},
     {'title': 'Appearance', 'icon': LucideIcons.palette},
-    {'title': 'Billing', 'icon': LucideIcons.creditCard},
   ];
 
   @override
@@ -57,7 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        _buildActiveContent(user),
+                        _buildActiveContent(),
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -150,14 +149,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildActiveContent(dynamic user) {
+  Widget _buildActiveContent() {
     switch (_activeTab) {
       case 'Appearance':
         return _buildAppearanceSection();
       case 'Security':
         return _buildSecuritySection();
-      case 'Billing':
-        return _buildBillingSection();
       default:
         return Container();
     }
@@ -294,27 +291,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildBillingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle("Billing", "Manage your subscription plan"),
-        const SizedBox(height: 20),
-        _buildSettingsItem(
-          icon: LucideIcons.star,
-          title: "Current Plan",
-          value: "Free Tier",
-          valueColor: DesignSystem.primary(context),
-        ),
-        _buildSettingsItem(
-          icon: LucideIcons.history,
-          title: "Payment History",
-          value: "No transactions",
-          onTap: () {},
-        ),
-      ],
-    );
-  }
 
   Widget _buildSectionTitle(String title, String subtitle) {
     return Column(
@@ -390,6 +366,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
-
 
 }
