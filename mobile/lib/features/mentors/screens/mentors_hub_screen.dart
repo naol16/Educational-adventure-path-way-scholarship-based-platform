@@ -9,6 +9,8 @@ import 'package:mobile/features/mentors/providers/mentors_providers.dart';
 import 'package:mobile/features/chat/providers/chat_providers.dart';
 import 'package:mobile/features/mentors/models/counselor.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
+import 'package:mobile/features/chat/providers/group_chat_providers.dart';
+import 'package:mobile/features/chat/widgets/community_group_card.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/features/mentors/screens/mentor_profile_screen.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
@@ -22,7 +24,7 @@ class MentorsHubScreen extends ConsumerStatefulWidget {
 }
 
 class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
-  int _activeSubTab = 0; // 0 for Experts, 1 for Messages
+  int _activeSubTab = 0; // 0 for Experts, 1 for Community, 2 for Messages
   String _searchQuery = '';
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -68,6 +70,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                     },
                     children: [
                       _buildExpertsList(),
+                      _buildCommunityList(),
                       _buildMessagesList(),
                     ],
                   ),
@@ -165,7 +168,8 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
         child: Row(
           children: [
             _buildSubTab("Experts", 0),
-            _buildSubTab("Messages", 1),
+            _buildSubTab("Community", 1),
+            _buildSubTab("Messages", 2),
           ],
         ),
       ),
@@ -328,7 +332,48 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
     );
   }
 
-  // --- VIEW 2: MESSAGES / INBOX ---
+  // --- VIEW 2: COMMUNITY GROUPS ---
+  Widget _buildCommunityList() {
+    final groupsAsync = ref.watch(availableGroupsProvider);
+
+    return groupsAsync.when(
+      data: (groups) {
+        if (groups.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(LucideIcons.globe, color: DesignSystem.labelText(context), size: 64),
+                const SizedBox(height: 16),
+                Text("No communities found", style: GoogleFonts.plusJakartaSans(color: DesignSystem.labelText(context), fontSize: 18, fontWeight: FontWeight.bold)),
+                Text("Check back later for new groups", style: GoogleFonts.inter(color: DesignSystem.labelText(context).withValues(alpha: 0.6))),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: groups.length,
+          itemBuilder: (context, index) => CommunityGroupCard(
+            group: groups[index],
+            onJoinSuccess: () {
+              // Switch to Messages tab
+              _pageController.animateToPage(
+                2,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
+        );
+      },
+      loading: () => _buildShimmerList(),
+      error: (err, stack) => Center(child: Text("Error loading communities", style: TextStyle(color: Colors.red))),
+    );
+  }
+
+  // --- VIEW 3: MESSAGES / INBOX ---
   Widget _buildMessagesList() {
     final conversationsAsync = ref.watch(conversationsProvider);
 
@@ -369,17 +414,19 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MentorChatScreen(
-                conversationId: conversation.id,
-                otherUser: otherUser,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MentorChatScreen(
+                  conversationId: conversation.id,
+                  otherUser: otherUser,
+                  isGroup: conversation.isGroup,
+                  groupName: conversation.name,
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
         child: GlassContainer(
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
           borderRadius: 20,
@@ -388,8 +435,10 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
               CircleAvatar(
                 radius: 26, 
                 backgroundColor: DesignSystem.surfaceMediumColor(context),
-                backgroundImage: otherUser.avatarUrl != null ? NetworkImage(otherUser.avatarUrl!) : null,
-                child: otherUser.avatarUrl == null ? Icon(LucideIcons.user, color: DesignSystem.labelText(context)) : null,
+                backgroundImage: (!conversation.isGroup && otherUser.avatarUrl != null) ? NetworkImage(otherUser.avatarUrl!) : null,
+                child: (conversation.isGroup || otherUser.avatarUrl == null) 
+                    ? Icon(conversation.isGroup ? LucideIcons.users : LucideIcons.user, color: DesignSystem.labelText(context)) 
+                    : null,
               ),
               const SizedBox(width: 15),
               Expanded(
@@ -399,7 +448,10 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(otherUser.name, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text(
+                          conversation.isGroup ? (conversation.name ?? 'Community Group') : otherUser.name, 
+                          style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 15)
+                        ),
                         Text(timeStr, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11)),
                       ],
                     ),

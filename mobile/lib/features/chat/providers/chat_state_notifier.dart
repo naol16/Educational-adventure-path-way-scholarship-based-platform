@@ -127,14 +127,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   /// Send with optimistic UI — shows message instantly, persists via HTTP.
-  Future<void> sendMessage(int receiverId, String content) async {
+  Future<void> sendMessage(int receiverId, String content, {int? conversationId}) async {
     if (content.trim().isEmpty) return;
 
     // 1. Show optimistic message immediately (instant feel)
     final tempId = -DateTime.now().millisecondsSinceEpoch;
     final optimistic = ChatMessage(
       id: tempId,
-      conversationId: conversationId,
+      conversationId: this.conversationId,
       senderId: currentUserId,
       content: content.trim(),
       isRead: false,
@@ -143,14 +143,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
     state = state.copyWith(messages: [...state.messages, optimistic]);
 
-    // 2. Persist via HTTP — the server will broadcast to the other user via socket.
-    //    Do NOT also emit via socket: that causes the message to appear twice.
-    final saved = await _chatService.sendMessage(receiverId, content.trim());
+    // 2. Persist via HTTP
+    final ChatMessage? saved;
+    if (conversationId != null) {
+      saved = await _chatService.sendMessageToConversation(conversationId, content.trim());
+    } else {
+      saved = await _chatService.sendMessage(receiverId, content.trim());
+    }
 
     if (saved != null) {
       // Replace optimistic bubble with the confirmed server message
       final updated = state.messages
-          .map((m) => m.id == tempId ? saved : m)
+          .map((m) => m.id == tempId ? saved! : m)
           .toList();
       state = state.copyWith(messages: updated);
     } else {

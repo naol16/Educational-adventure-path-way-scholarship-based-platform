@@ -118,4 +118,67 @@ class ChatService {
       await _apiClient.patch('/api/chat/read/$conversationId');
     } catch (_) {}
   }
+
+  // --- Group Chat Methods ---
+
+  Future<List<Conversation>> getGroupConversations() async {
+    try {
+      final response = await _apiClient.get('/api/groups');
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List raw = body is List ? body : (body['data'] ?? []);
+        return raw
+            .map((json) {
+              try {
+                return Conversation.fromJson(Map<String, dynamic>.from(json));
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<Conversation>()
+            .toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> joinGroup(int groupId) async {
+    try {
+      final response = await _apiClient.post('/api/groups/$groupId/join');
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> leaveGroup(int groupId) async {
+    try {
+      final response = await _apiClient.post('/api/groups/$groupId/leave');
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sends a message to a specific conversation ID (required for groups).
+  Future<ChatMessage?> sendMessageToConversation(int conversationId, String content) async {
+    try {
+      final response = await _apiClient.post('/api/chat/send', body: {
+        'conversationId': conversationId,
+        'content': content,
+      });
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final msgJson = body['data']?['message'];
+        if (msgJson != null) {
+          return ChatMessage.fromJson(Map<String, dynamic>.from(msgJson));
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
