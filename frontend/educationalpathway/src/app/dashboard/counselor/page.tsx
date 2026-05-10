@@ -3,3 +3,4 @@ import { CounselorDashboard } from '@/features/counselor/components/CounselorDas
 export default function CounselorDashboardPage() {
   return <CounselorDashboard />;
 }
+

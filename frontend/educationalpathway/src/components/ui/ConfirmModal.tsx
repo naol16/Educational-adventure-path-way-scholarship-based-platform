@@ -1,6 +1,6 @@
 "use client";
 
-import { Modal } from "./Model";
+import { Modal } from "./Modal";
 import { Button } from "./Button";
 import { AlertTriangle } from "lucide-react";
 
@@ -54,3 +54,4 @@ export const ConfirmModal = ({
     </Modal>
   );
 };
+

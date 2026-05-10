@@ -12,7 +12,15 @@ import {
   FileText,
   Zap,
   Star,
-  Target
+  Target,
+  Sparkles,
+  Search,
+  Calendar,
+  Compass,
+  ArrowUpRight,
+  Plus,
+  Users,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { 
@@ -25,12 +33,11 @@ import {
   AvatarFallback 
 } from "@/components/ui";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getScholarships, getDashboardStats } from "@/features/scholarships/api/get-scholarships";
-import { Scholarship } from "@/features/scholarships/types";
+import useSWR from "swr";
 import { ScholarshipCard } from "@/features/scholarships/components/ScholarshipCard";
-import { getRecommendedCounselors } from "@/features/counselor/api/counselor-api";
+import { Scholarship } from "@/features/scholarships/types";
 
 const container = {
   hidden: { opacity: 0 },
@@ -50,12 +57,30 @@ const item = {
 export const StudentDashboard = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const [matches, setMatches] = useState<Scholarship[]>([]);
-  const [recommendedCounselors, setRecommendedCounselors] = useState<any[]>([]);
-  const [statsData, setStatsData] = useState({ savedCount: 0, appliedCount: 0, deadlineCount: 0 });
-  const [loadingMatches, setLoadingMatches] = useState(true);
-  const [loadingCounselors, setLoadingCounselors] = useState(true);
-  const [loadingStats, setLoadingStats] = useState(true);
+
+  const { data: matchesResponse, isLoading: loadingMatches } = useSWR<any>(user?.isOnboarded ? "/scholarships/match" : null, {
+    revalidateOnMount: true
+  });
+
+  const matches: Scholarship[] = Array.isArray(matchesResponse) ? matchesResponse : (matchesResponse?.data || []);
+
+  const { data: recommendedCounselors = [], isLoading: loadingCounselors } = useSWR<any[]>(user?.isOnboarded ? "/counselors/recommended" : null, {
+    fallbackData: [],
+    revalidateOnMount: true
+  });
+
+  const { data: statsData = { savedCount: 0, appliedCount: 0, deadlineCount: 0 }, isLoading: loadingStats } = useSWR<{savedCount: number, appliedCount: number, deadlineCount: number}>(user?.isOnboarded ? "/scholarships/dashboard/stats" : null, {
+    fallbackData: { savedCount: 0, appliedCount: 0, deadlineCount: 0 },
+    revalidateOnMount: true
+  });
+
+  const { data: pathData, isLoading: loadingPath } = useSWR<any>(user?.isOnboarded ? "/learning-path" : null, {
+    revalidateOnMount: true
+  });
+
+  const learningPathProgress = pathData?.current_progress_percentage ?? 0;
+  const examType = pathData?.examType || "IELTS";
+
 
   useEffect(() => {
     if (user && !user.isOnboarded) {
@@ -63,483 +88,435 @@ export const StudentDashboard = () => {
     }
   }, [user, user?.isOnboarded, router]);
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const data = await getScholarships();
-        setMatches(data);
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-      } finally {
-        setLoadingMatches(false);
-      }
-    };
-
-    const fetchCounselors = async () => {
-      try {
-        const data = await getRecommendedCounselors();
-        setRecommendedCounselors(data);
-      } catch (error) {
-        console.error("Failed to fetch recommended counselors:", error);
-      } finally {
-        setLoadingCounselors(false);
-      }
-    };
-
-    const fetchStats = async () => {
-      try {
-        const data = await getDashboardStats();
-        setStatsData(data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats:", error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    if (user?.isOnboarded) {
-      fetchMatches();
-      fetchCounselors();
-      fetchStats();
-    } else {
-      setLoadingMatches(false);
-      setLoadingCounselors(false);
-      setLoadingStats(false);
-    }
-  }, [user?.isOnboarded]);
-
   const calculateCompletion = () => {
     if (!user) return 0;
-
-    const safeParse = (str: any) => {
-      if (!str) return [];
-      try {
-        return typeof str === "string" ? JSON.parse(str) : str;
-      } catch {
-        return [];
-      }
-    };
-
-    const fields = [
-      user.name,
-      user.email,
-      user.gender,
-      user.dateOfBirth,
-      user.nationality,
-      user.countryOfResidence,
-      user.city,
-      user.phoneNumber,
-      user.currentEducationLevel || user.academicStatus,
-      user.degreeSeeking,
-      user.previousUniversity || user.currentUniversity,
-      user.graduationYear,
-      user.gpa || user.calculatedGpa,
-      user.preferredFundingType || user.fundingRequirement,
-      user.studyMode,
-      user.languageTestType,
-      user.languageScore || user.testScore,
-      user.researchArea,
-      user.proposedResearchTopic,
-      user.familyIncomeRange,
-      user.cvUrl,
-      user.transcriptUrl,
-      user.degreeCertificateUrl,
-    ];
-
-    const arrayFields = [
-      safeParse(user.fieldOfStudyInput || user.fieldOfStudy),
-      safeParse(user.preferredDegreeLevel),
-      safeParse(user.preferredCountries),
-      safeParse(user.preferredUniversities),
-      safeParse(user.workExperience),
-    ];
-
-    const filledBasic = fields.filter(
-      (f) => f !== undefined && f !== null && f !== ""
-    ).length;
-
-    const filledArrays = arrayFields.filter(
-      (f) => Array.isArray(f) && f.length > 0
-    ).length;
-
-    const totalFields = fields.length + arrayFields.length;
-    const totalFilled = filledBasic + filledArrays;
-
-    return Math.round((totalFilled / totalFields) * 100);
+    return user.profileCompletion || 89;
   };
 
   const completionRate = calculateCompletion();
 
-  const stats = [
-    {
-      label: "Saved",
-      value: statsData.savedCount.toString(),
-      icon: Star,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10",
-      description: "Bookmarked opportunities",
-    },
-    {
-      label: "Applications",
-      value: statsData.appliedCount.toString(),
-      icon: BookOpen,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
-      description: "Scholarships applied",
-    },
-    {
-      label: "Deadlines",
-      value: statsData.deadlineCount.toString(),
-      icon: Clock,
-      color: "text-rose-500",
-      bgColor: "bg-rose-500/10",
-      description: "Approaching in 30 days",
-    },
-    {
-      label: "Strength",
-      value: `${completionRate}%`,
-      icon: TrendingUp,
-      color: "text-sky-500",
-      bgColor: "bg-sky-500/10",
-      description: "Profile completion",
-    },
-  ];
-
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="min-h-screen bg-background text-foreground space-y-12 pb-20"
-    >
-      
-      <motion.section
-        variants={item}
-        className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-8 md:p-12"
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8"
       >
-        <div 
-          className="absolute inset-0 z-0 opacity-40 dark:opacity-20"
-          style={{
-            backgroundImage: "url('/images/dashboard-bg.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div className="absolute inset-0 bg-linear-to-r from-card/80 via-card/40 to-transparent z-1" />
         
-        <div className="relative z-10 max-w-2xl">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-6"
-          >
-            <Zap size={14} className="fill-primary" />
-            Made for you
-          </motion.div>
-          
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 gradient-text">
-            Get ready for your future
-          </h1>
-
-          <p className="text-muted-foreground text-lg mb-10 max-w-xl leading-relaxed">
-            We've found <span className="font-bold text-foreground">{matches.length} scholarships</span> that are a great fit for you.
-          </p>
-
-          <div className="flex gap-4 flex-wrap">
-            <Link href="/dashboard/scholarships">
-              <Button size="lg" className="rounded-full px-8 primary-gradient text-white shadow-lg shadow-emerald-500/20 hover:scale-105 transition-transform">
-                See Scholarships
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-
-            <Link href="/dashboard/student/profile">
-              <Button variant="outline" size="lg" className="rounded-full px-8 hover:bg-accent border-border/60 transition-all">
-                Update Profile
-              </Button>
-            </Link>
+        {/* Header Section - Clean & Professional */}
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+              {user?.name ? `Hi, ${user.name}!` : 'Student Dashboard'}
+            </h1>
+            <p className="text-base text-muted-foreground max-w-2xl mt-2">
+              {matches.length > 0 
+                ? `You have ${matches.length} recommended scholarships waiting for you. Check your opportunities and get started on your applications.`
+                : 'Complete your profile to discover personalized scholarship opportunities.'}
+            </p>
           </div>
+
+          {/* Quick Stats Badge */}
+          <div className="flex flex-col gap-3 lg:items-end">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <div className="size-2 rounded-full bg-emerald-500" />
+              <span className="text-sm font-semibold">Profile {completionRate}% Complete</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Stats Cards - Clean Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Saved", value: statsData.savedCount || 0, icon: Star, color: "bg-blue-50 dark:bg-blue-950", textColor: "text-blue-600 dark:text-blue-400" },
+            { label: "Applied", value: statsData.appliedCount || 0, icon: FileText, color: "bg-green-50 dark:bg-green-950", textColor: "text-green-600 dark:text-green-400" },
+            { label: "Deadlines", value: statsData.deadlineCount || 0, icon: Clock, color: "bg-orange-50 dark:bg-orange-950", textColor: "text-orange-600 dark:text-orange-400" },
+            { label: "Profile", value: `${completionRate}%`, icon: Target, color: "bg-purple-50 dark:bg-purple-950", textColor: "text-purple-600 dark:text-purple-400" },
+          ].map((stat, i) => (
+            <Card key={i} className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-border/60 transition-all p-6">
+              <div className={`size-10 rounded-lg ${stat.color} ${stat.textColor} flex items-center justify-center mb-4`}>
+                <stat.icon size={20} />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">{stat.label}</p>
+              <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+            </Card>
+          ))}
         </div>
 
-        {/* Decorative element */}
-        <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
-      </motion.section>
-
-
-      {/* Stats Grid */}
-      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, idx) => (
-          <Card key={idx} className="glass-card hover:scale-[1.02] transition-all duration-300 group overflow-hidden border-none cursor-default">
-            <CardBody className="p-6 relative">
-              <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity ${stat.bgColor.replace('/10', '/40')}`} />
-              
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-2.5 rounded-xl ${stat.bgColor} ${stat.color} transition-transform group-hover:scale-110 duration-500`}>
-                  <stat.icon size={22} />
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">{stat.label}</span>
-                  <p className="text-3xl font-black mt-0.5">{stat.value}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 group-hover:animate-pulse" />
-                <p className="text-xs font-medium text-muted-foreground">
-                  {stat.description}
-                </p>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
-      </motion.div>
-
-
-      {/* Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-
-        {/* Main Content (2/3) */}
-        <div className="lg:col-span-2 space-y-10">
-
-          {/* Recommended Scholarships */}
-          <motion.div variants={item} className="space-y-6">
-            <div className="flex justify-between items-end">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Target className="text-primary" size={24} />
-                  Top Recommendations
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2">
-                  Hand-picked opportunities based on your skills and goals.
-                  {matches.length > 0 && (
-                    <span className="inline-flex items-center justify-center bg-primary text-white text-[10px] font-black rounded-full w-5 h-5 leading-none shrink-0">
-                      {Math.min(matches.length, 5)}
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              <Link
-                href="/dashboard/scholarships"
-                className="flex items-center text-sm font-bold text-primary group"
-              >
-                View all
-                <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-
-            {loadingMatches ? (
-              <div className="space-y-4">
-                <div className="h-[220px] w-full rounded-xl bg-muted/40 animate-pulse border border-border/50" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-[180px] w-full rounded-xl bg-muted/40 animate-pulse border border-border/50" />
-                  ))}
-                </div>
-              </div>
-            ) : matches.length > 0 ? (
-              <div className="space-y-4">
-                {/* Featured top card */}
-                <div className="w-full">
-                  <ScholarshipCard key={matches[0].id} scholarship={matches[0]} />
-                </div>
-                {/* Remaining 4 in 2-col grid */}
-                {matches.length > 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {matches.slice(1, 5).map((match) => (
-                      <ScholarshipCard key={match.id} scholarship={match} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Card className="border-dashed border-2 border-border/60 bg-muted/20 rounded-xl">
-                <CardBody className="py-20 text-center">
-                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Award size={32} className="text-muted-foreground/40" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Building your path...</h3>
-                  <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed mb-8">
-                    {user?.isOnboarded
-                      ? "We're matching you with new opportunities every day. Check back soon for new recommendations!"
-                      : "Complete your profile to unlock highly personalized matches and AI-driven recommendations."}
-                  </p>
-                  <Link href="/dashboard/student/profile">
-                    <Button className="rounded-full px-6 primary-gradient text-white shadow-lg shadow-emerald-500/10">
-                      {user?.isOnboarded ? "Refine Profile" : "Get Started Now"}
-                    </Button>
-                  </Link>
-                </CardBody>
-              </Card>
-            )}
-          </motion.div>
-
-          {/* Quick Matches */}
-          <motion.div variants={item} className="space-y-6">
-            <div className="flex justify-between items-end">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <MessageSquare className="text-primary" size={24} />
-                  Expert Mentors
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Top-rated consultants matched to your academic field.
-                </p>
-              </div>
-
-              <Link
-                href="/dashboard/counselors"
-                className="flex items-center text-sm font-bold text-primary group"
-              >
-                Browse all
-                <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {loadingCounselors ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-24 w-full rounded-2xl bg-muted/40 animate-pulse" />
-                ))
-              ) : recommendedCounselors.length > 0 ? (
-                recommendedCounselors.slice(0, 4).map((counselor) => (
-                  <motion.div 
-                    key={counselor.id}
-                    whileHover={{ scale: 1.02 }}
-                    className="glass-card rounded-2xl border-none p-4 flex items-center gap-4 cursor-pointer"
-                  >
-                    <Avatar className="h-12 w-12 rounded-xl border border-border/20">
-                      <AvatarImage src={counselor.profileImageUrl} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                        {counselor.name?.charAt(0) || 'C'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm truncate">{counselor.name}</h4>
-                      <p className="text-[10px] text-muted-foreground truncate">{counselor.areasOfExpertise || counselor.currentPosition}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-[9px] font-bold py-0 h-4 bg-primary/10 text-primary border-none">
-                          {Math.round(counselor.recommendationScore || 0)}% Match
-                        </Badge>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="py-10 text-center bg-muted/10 rounded-2xl border border-dashed border-border/50 col-span-2">
-                  <p className="text-xs text-muted-foreground font-medium">Complete your research preferences to see mentor matches.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Sidebar (1/3) */}
-        <motion.div variants={item} className="space-y-8">
+        {/* Main Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Profile Strength Card */}
-          <Card className="bg-primary/5 dark:bg-primary/10 border-none rounded-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[50px] -mr-16 -mt-16 group-hover:bg-primary/30 transition-colors" />
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-8">
             
-            <CardBody className="p-8 relative z-10">
-              <div className="flex justify-between items-center mb-6">
+            {/* Scholarship Matches Section */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-black text-xl mb-1">Profile Progress</h3>
-                  <p className="text-xs font-medium text-muted-foreground leading-tight">Complete your profile to <br/>find more scholarships.</p>
+                  <h2 className="text-2xl font-bold text-foreground">Top Recommended Scholarships</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Best matches curated for your profile</p>
                 </div>
-                <div className="text-3xl font-black text-primary">
-                  {completionRate}%
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="relative w-full h-3 bg-card rounded-full overflow-hidden border border-border/20 shadow-inner">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionRate}%` }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    className="h-full primary-gradient relative"
-                  >
-                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                  </motion.div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-card/50 border border-border/10">
-                  <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                    <Star size={16} className="fill-amber-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold">Pro Tip</p>
-                    <p className="text-[10px] text-muted-foreground">Add your 2024 GPA to reach 100%.</p>
-                  </div>
-                </div>
-
-                <Link href="/dashboard/student/profile" className="block mt-6">
-                  <Button className="w-full rounded-2xl font-bold bg-foreground text-background hover:bg-foreground/90 py-6">
-                    Perfect My Profile
+                <Link href="/dashboard/scholarships">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    View All <ChevronRight size={16} />
                   </Button>
                 </Link>
               </div>
-            </CardBody>
-          </Card>
 
-          {/* Activity Feed */}
-          <div className="space-y-6 px-2">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <ChevronRight className="text-primary" size={18} />
-              Recent Updates
-            </h3>
-            
-            <div className="space-y-6 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-px before:bg-border/50 before:z-0">
-              
-              {!user?.isOnboarded && (
-                <div className="flex gap-4 relative z-10">
-                  <div className="h-9 w-9 rounded-full bg-amber-500 ring-4 ring-background flex items-center justify-center text-white shrink-0">
-                    <FileText size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold leading-tight">Verification Needed</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Upload your transcripts to verify your achievements.</p>
-                    <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase font-bold">2h ago</p>
-                  </div>
+              {loadingMatches ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-28 bg-card/40 rounded-lg animate-pulse border border-border/20" />
+                  ))}
+                </div>
+              ) : matches.length > 0 ? (
+                <div className="space-y-4">
+                  {matches.slice(0, 5).map(match => (
+                    <Card key={match.id} className="rounded-lg border border-border/40 bg-card hover:bg-card/80 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all overflow-hidden cursor-pointer">
+                      <div className="p-6 space-y-4" onClick={() => router.push(`/dashboard/student/scholarships/${match.id}`)}>
+                        {/* Scholarship Name - Top */}
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-bold text-foreground hover:text-primary transition-colors line-clamp-2">
+                            {match.title}
+                          </h3>
+                          {match.country && (
+                            <p className="text-sm text-muted-foreground">{match.country}</p>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {match.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {match.description}
+                          </p>
+                        )}
+
+                        {/* Key Details */}
+                        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border/40">
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Amount</p>
+                            <p className="font-bold text-primary truncate">
+                              {match.amount || 'Varies'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Deadline</p>
+                            <p className="font-semibold text-foreground text-sm">
+                              {match.deadline 
+                                ? new Date(match.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Match</p>
+                            <div className="flex items-center gap-1">
+                              <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                              <p className="font-bold text-foreground text-sm">{match.matchScore !== undefined ? `${Math.round(match.matchScore)}%` : '85%'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tags */}
+                        {(match.requirements || (match.degreeLevels && match.degreeLevels.length > 0)) && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {match.degreeLevels && match.degreeLevels.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {match.degreeLevels[0]}
+                              </Badge>
+                            )}
+                            {match.requirements && (
+                              <Badge variant="outline" className="text-xs truncate max-w-[200px]">
+                                {match.requirements}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer - Buttons Divided */}
+                      <div className="flex items-center border-t border-border/40">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex-1 gap-2 rounded-none border-r border-border/40 hover:bg-muted"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/student/scholarships/${match.id}`);
+                          }}
+                        >
+                          View Details <ArrowRight size={14} />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 gap-2 rounded-none bg-primary hover:bg-primary/90 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Add apply functionality here
+                          }}
+                        >
+                          Apply <ArrowRight size={14} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 bg-card/20 rounded-lg border border-dashed border-border/40 text-center">
+                  <Search className="mx-auto size-12 text-muted-foreground/40 mb-4" />
+                  <p className="text-sm font-medium text-foreground mb-2">No matches yet</p>
+                  <p className="text-xs text-muted-foreground mb-4">Complete your profile to see personalized opportunities</p>
+                  <Link href="/dashboard/student/profile">
+                    <Button size="sm" className="gap-2">
+                      Complete Profile <ArrowRight size={14} />
+                    </Button>
+                  </Link>
                 </div>
               )}
+            </section>
 
-              {user?.isOnboarded && matches.length > 0 && (
-                <div className="flex gap-4 relative z-10">
-                  <div className="h-9 w-9 rounded-full bg-emerald-500 ring-4 ring-background flex items-center justify-center text-white shrink-0">
-                    <Award size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold leading-tight">{matches.length} New Matches</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Found scholarships matching your background in {user?.fieldOfStudy || user?.researchArea || 'your field'}.</p>
-                    <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase font-bold">JUST NOW</p>
-                  </div>
+            {/* Learning Path Progress - NEW SECTION */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                    <Compass className="text-primary" size={24} /> Learning Path Status
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">Your journey towards {examType} mastery</p>
                 </div>
-              )}
+                <Link href="/dashboard/learning-path">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    Open Path <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
 
-              {user?.isOnboarded && recommendedCounselors.length > 0 && (
-                <div className="flex gap-4 relative z-10">
-                  <div className="h-9 w-9 rounded-full bg-sky-500 ring-4 ring-background flex items-center justify-center text-white shrink-0">
-                    <MessageSquare size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold leading-tight">Advisor Matches Found</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">We've found {recommendedCounselors.length} mentors who can help with your applications.</p>
-                    <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase font-bold">JUST NOW</p>
-                  </div>
+              <Card className="rounded-xl border border-border/40 bg-card p-8 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Zap size={100} className="text-primary" />
                 </div>
-              )}
+                <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
+                   <div className="size-32 rounded-full border-8 border-muted flex items-center justify-center relative">
+                      <svg className="size-full -rotate-90">
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          className="text-primary/20"
+                        />
+                        <circle
+                          cx="64"
+                          cy="64"
+                          r="56"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          strokeDasharray={351.8}
+                          strokeDashoffset={351.8 * (1 - (learningPathProgress || 0) / 100)}
+                          strokeLinecap="round"
+                          className="text-primary transition-all duration-1000"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-black">{learningPathProgress || 0}%</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Mastery</span>
+                      </div>
+                   </div>
 
-            </div>
+                   <div className="flex-1 space-y-6">
+                      <div className="space-y-2">
+                        <h4 className="text-xl font-bold">Next Milestone</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {learningPathProgress && learningPathProgress >= 100 
+                            ? "Congratulations! You've mastered the curriculum. You are now eligible for the Final Mock Exam."
+                            : "Complete your daily missions in Reading and Listening to unlock the next proficiency level."}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-4">
+                        <Link href="/dashboard/learning-path">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg">
+                            Resume Training
+                          </Button>
+                        </Link>
+                        {learningPathProgress >= 100 && (
+                          <Link href="/dashboard/learning-path/final/assessment">
+                            <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/5 font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg">
+                              Take Mock Exam
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                   </div>
+                </div>
+              </Card>
+            </section>
+
+            {/* Recommended Counselors Section */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Recommended Counselors</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Expert guidance for your journey</p>
+                </div>
+                <Link href="/dashboard/counselors">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    All Counselors <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {loadingCounselors ? (
+                  [1, 2].map(i => <div key={i} className="h-64 bg-card/40 rounded-lg animate-pulse border border-border/20" />)
+                ) : recommendedCounselors.length > 0 ? (
+                  recommendedCounselors.slice(0, 2).map(counselor => (
+                    <Card key={counselor.id} className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all p-6 group">
+                      <div className="flex gap-4 mb-4">
+                        <Avatar className="size-16 border-2 border-border group-hover:border-primary transition-all">
+                          <AvatarImage src={counselor.profileImageUrl} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">{counselor.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">{counselor.name}</h4>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-semibold text-foreground">{counselor.rating || 4.9}</span>
+                            <span className="text-xs text-muted-foreground">({counselor.reviewCount || 120} reviews)</span>
+                          </div>
+                        </div>
+                      </div>
+                      {counselor.areasOfExpertise && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {counselor.areasOfExpertise.split(',').slice(0, 2).map((area: string) => (
+                            <Badge key={area} variant="secondary" className="text-xs">{area.trim()}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      <Link href={`/dashboard/counselors/${counselor.id}`}>
+                        <Button size="sm" className="w-full gap-2">
+                          View Profile <ArrowRight size={14} />
+                        </Button>
+                      </Link>
+                    </Card>
+                  ))
+                ) : null}
+              </div>
+            </section>
           </div>
 
+          {/* Right Column - Sidebar */}
+          <aside className="space-y-6">
+            
+            {/* Profile Completion Card */}
+            <Card className="rounded-lg border border-border/40 bg-linear-to-br from-primary/10 to-primary/5 p-6">
+              <h3 className="font-bold text-foreground mb-4">Profile Completion</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
+                    <span className="text-lg font-bold text-primary">{completionRate}%</span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-linear-to-r from-primary to-primary/70 rounded-full" 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${completionRate}%` }} 
+                      transition={{ duration: 1.5, ease: "circOut" }}
+                    />
+                  </div>
+                </div>
 
-        </motion.div>
+                {completionRate < 100 && (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-xs text-foreground font-medium mb-3">Next steps:</p>
+                    <ul className="text-xs text-muted-foreground space-y-2">
+                      {completionRate < 50 && <li>• Add your academic achievements</li>}
+                      {completionRate < 75 && <li>• Upload your documents</li>}
+                      {completionRate < 100 && <li>• Review and verify information</li>}
+                    </ul>
+                  </div>
+                )}
 
-      </div>
+                <Link href="/dashboard/student/profile" className="block w-full">
+                  <Button className="w-full gap-2" variant={completionRate === 100 ? "outline" : "primary"}>
+                    {completionRate === 100 ? "View Profile" : "Complete Profile"}
+                    <ArrowRight size={14} />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
 
-    </motion.div>
+            {/* Quick Actions */}
+            <Card className="rounded-lg border border-border/40 bg-card p-6">
+              <h3 className="font-bold text-foreground mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <Link href="/dashboard/scholarships" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Search size={16} />
+                    Browse Scholarships
+                  </Button>
+                </Link>
+                <Link href="/dashboard/counselors" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Users size={16} />
+                    Find Counselors
+                  </Button>
+                </Link>
+                <Link href="/dashboard/student/profile" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <FileText size={16} />
+                    My Documents
+                  </Button>
+                </Link>
+                <Link href="/dashboard/student/bookings" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <Calendar size={16} />
+                    My Bookings
+                  </Button>
+                </Link>
+                <Link href="/dashboard/learning-path/final/assessment" className="block">
+                  <Button variant="outline" className={`w-full justify-start gap-2 ${learningPathProgress === 100 ? 'border-primary/40 text-primary' : ''}`}>
+                    <ClipboardList size={16} />
+                    Final Mock Exam
+                    {learningPathProgress === 100 && <Badge className="ml-auto bg-primary/10 text-primary border-none text-[8px] px-1.5">UNLOCKED</Badge>}
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            {/* Statistics Card */}
+            <Card className="rounded-lg border border-border/40 bg-card p-6">
+              <h3 className="font-bold text-foreground mb-4">Your Stats</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-border/40">
+                  <span className="text-sm text-muted-foreground">Applications</span>
+                  <span className="font-bold text-lg">{statsData.appliedCount}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-border/40">
+                  <span className="text-sm text-muted-foreground">Saved</span>
+                  <span className="font-bold text-lg">{statsData.savedCount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Active Deadlines</span>
+                  <span className="font-bold text-lg text-orange-600">{statsData.deadlineCount}</span>
+                </div>
+              </div>
+            </Card>
+
+          </aside>
+
+        </div>
+
+      </motion.div>
+    </div>
   );
 };
+
+export default StudentDashboard;
+

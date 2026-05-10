@@ -23,6 +23,7 @@ export class AntiDetectionService {
             deviceScaleFactor: 1,
             hasTouch: false,
             isMobile: false,
+            ignoreHTTPSErrors: true,
         };
     }
 }

@@ -28,7 +28,7 @@ export function Footer() {
           <div className="flex flex-col items-center md:items-end gap-4">
             <div className="flex gap-4">
               {[Twitter, Github, Linkedin, Mail].map((Icon, i) => (
-                <Link key={i} href="#" className="w-10 h-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/50 hover:text-emerald-400 hover:border-emerald-500/50 transition-all">
+                <Link key={i} href="#" className="w-10 h-10 rounded-full border border-white/5 bg-card/5 flex items-center justify-center text-white/50 hover:text-emerald-400 hover:border-emerald-500/50 transition-all">
                   <Icon size={18} />
                 </Link>
               ))}
@@ -42,3 +42,4 @@ export function Footer() {
     </footer>
   );
 }
+

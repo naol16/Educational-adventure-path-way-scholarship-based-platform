@@ -13,25 +13,13 @@ export class MatchingRepository {
   /**
    * Executes the optimized pgvector SQL search with hard filters.
    */
-  static async findTopMatches(student: Student, vectorStr: string): Promise<MatchedScholarship[]> {
+  static async findTopMatches(student: Student, vectorStr: string, limit: number = 5, offset: number = 0): Promise<{ rows: MatchedScholarship[]; count: number }> {
     const whereConditions: any[] = [];
 
-    // Log for debugging
-    const totalWithEmbeds = await Scholarship.count({ where: Sequelize.literal('embedding IS NOT NULL') as any });
-    console.log(`[Matching] Debug: Total scholarships in DB with embeddings: ${totalWithEmbeds}`);
-    console.log(`[Matching] Finding matches for Student ${student.id} using vector length: ${vectorStr?.length || 0}`);
-
-    // if (student.countryInterest) {
-    //   whereConditions.push(
-    //     Sequelize.literal(`(country = '${student.countryInterest.replace(/'/g, "''")}' OR country IS NULL)`)
-    //   );
-    // }
-
-    // if (student.academicStatus) {
-    //   whereConditions.push(
-    //     Sequelize.literal(`(degree_levels @> '["${student.academicStatus.replace(/"/g, "")}"]'::jsonb OR degree_levels IS NULL)`)
-    //   );
-    // }
+    // First get the total count of potential matches
+    const count = await Scholarship.count({
+      where: whereConditions.length > 0 ? { [Op.and]: whereConditions } as any : {}
+    });
 
     const matches = await Scholarship.findAll({
       where: whereConditions.length > 0
@@ -48,21 +36,20 @@ export class MatchingRepository {
       order: [
         Sequelize.literal(`embedding <=> '${vectorStr}' ASC`)
       ],
-      limit: 5,
+      limit,
+      offset,
       raw: true
     });
 
-    console.log(`[Matching] Found ${matches.length} candidates in database.`);
-
-    // Cast to MatchedScholarship interface
-    return matches.map(m => {
+    const mappedRows = matches.map(m => {
       const score = parseFloat((m as any).match_score?.toString() || "0");
-      console.log(`[Matching] Scholarship: ${m.title} | Score: ${score}%`);
       return {
         ...m,
         match_score: score
       };
     }) as unknown as MatchedScholarship[];
+
+    return { rows: mappedRows, count };
   }
 
   /**
@@ -170,9 +157,6 @@ export class MatchingRepository {
           attributes: ["name", "email", "fcmToken"],
         },
       ],
-      having: Sequelize.literal(
-        `(1 - (embedding <=> '${scholarshipEmbedding}'::vector)) * 100 > ${threshold}`,
-      ),
       raw: true,
       nest: true,
     });

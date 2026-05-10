@@ -26,4 +26,16 @@ export interface ScholarshipFilters {
   country?: string;
   degree_level?: string;
   fund_type?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
 }

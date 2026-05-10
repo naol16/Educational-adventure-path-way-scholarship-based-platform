@@ -113,12 +113,12 @@ export let hasVectorExtension = false;
 export const connectSequelize = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Sequelize connected successfully");
+
 
     // Enable pgvector extension
     try {
       await sequelize.query("CREATE EXTENSION IF NOT EXISTS vector;");
-      console.log("pgvector extension ensured");
+
       hasVectorExtension = true;
     } catch (extensionError) {
       console.warn(
@@ -127,10 +127,10 @@ export const connectSequelize = async () => {
       hasVectorExtension = false;
     }
 
-    // Sync models with database (creates tables if missing)
+    // Sync models with database (creates tables if missing, updates columns if alter is true)
     if (configs.DB_SYNC) {
-      await sequelize.sync();
-      console.log("Database models synchronized");
+      await sequelize.sync({ alter: true });
+      console.log("Database models synchronized (alter: true)");
     } else {
       console.log("Database sync skipped (DB_SYNC is false)");
     }

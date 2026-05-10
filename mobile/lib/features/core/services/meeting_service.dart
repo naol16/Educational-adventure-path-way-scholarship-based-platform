@@ -10,7 +10,7 @@ class MeetingService {
     required String counselorName,
     Function()? onClosed,
   }) async {
-    final displayName = user.name ?? (user.role == 'student' ? 'Student' : 'Counselor');
+    final displayName = user.name;
     final avatarUrl = user.avatarUrl;
 
     var options = JitsiMeetConferenceOptions(

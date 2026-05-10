@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import { Scholarship, ScholarshipFilters } from '../types';
+import { Scholarship, ScholarshipFilters, PaginatedResponse } from '../types';
 
 const mapScholarship = (item: any): Scholarship => ({
   ...item,
@@ -12,11 +12,13 @@ export const getScholarships = async (filters?: ScholarshipFilters): Promise<Sch
   return (response.data || []).map(mapScholarship);
 };
 
-export const exploreScholarships = async (filters?: ScholarshipFilters): Promise<Scholarship[]> => {
+export const exploreScholarships = async (filters?: ScholarshipFilters): Promise<PaginatedResponse<Scholarship>> => {
   const response = await api.get('/scholarships', { params: filters });
-  // The list response might have a different structure { status: 'success', data: [...] }
-  const data = response.data.status === 'success' ? response.data.data : response.data;
-  return (data || []).map(mapScholarship);
+  const { data, pagination } = response.data;
+  return {
+    data: (data || []).map(mapScholarship),
+    pagination
+  };
 };
 
 export const getScholarship = async (id: string | number): Promise<Scholarship> => {
@@ -27,7 +29,8 @@ export const getScholarship = async (id: string | number): Promise<Scholarship> 
 
 export const getRecommendedScholarships = async (): Promise<Scholarship[]> => {
   const response = await api.get('/scholarships/recommendations');
-  return (response.data || []).map(mapScholarship);
+  const data = response.data.status === 'success' ? response.data.data : response.data;
+  return (data || []).map(mapScholarship);
 };
 
 export const getDashboardStats = async () => {

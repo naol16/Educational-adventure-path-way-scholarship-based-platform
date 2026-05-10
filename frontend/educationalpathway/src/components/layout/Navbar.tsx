@@ -21,7 +21,10 @@ import {
   HelpCircle,
   Moon,
   Sun,
+  Monitor,
 } from "lucide-react";
+import { useTheme } from "@/providers/theme-context";
+import { ThemeToggle } from "./ThemeToggle";
 import { Input, Button } from "@/components/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -44,7 +47,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { mode, setMode } = useTheme();
 
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -202,7 +205,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
   };
 
   return (
-    <nav className={`sticky top-0 z-40 w-full bg-white border-b border-gray-200  ${simplified ? 'h-16' : ''}`}>
+    <nav className={`sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md border-b border-border transition-colors duration-300 ${simplified ? 'h-16' : ''}`}>
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
@@ -220,7 +223,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
                   />
                 </div>
               </div>
-              <span className="text-xl font-semibold bg-linear-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hidden sm:block">
+              <span className="text-xl font-semibold bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent hidden sm:block">
                 አድማስ
               </span>
             </Link>
@@ -237,14 +240,14 @@ export function Navbar({ simplified = false }: NavbarProps) {
                       className={`relative px-4 py-2 text-sm font-medium transition-colors group`}
                     >
                       <span
-                        className={`${isActive ? "text-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+                        className={`${isActive ? "text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
                       >
                         {link.name}
                       </span>
                       {isActive && (
                         <motion.div
                           layoutId="navbar-active"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400"
                           initial={false}
                           transition={{
                             type: "spring",
@@ -272,9 +275,9 @@ export function Navbar({ simplified = false }: NavbarProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchOpen(true)}
-                    className="w-64 h-9 pl-9 pr-4 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all"
+                    className="w-64 h-9 pl-9 pr-4 text-sm bg-muted/50 border-border rounded-lg focus:bg-card focus:border-blue-500 transition-all"
                   />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
               </form>
 
@@ -284,10 +287,10 @@ export function Navbar({ simplified = false }: NavbarProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 overflow-hidden"
+                    className="absolute top-full left-0 right-0 mt-2 bg-card rounded-lg border border-border overflow-hidden"
                   >
                     <div className="p-2">
-                      <div className="px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg cursor-pointer">
+                      <div className="px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-lg cursor-pointer">
                         Search results for &quot;{searchQuery}&quot;
                       </div>
                     </div>
@@ -301,54 +304,41 @@ export function Navbar({ simplified = false }: NavbarProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="relative h-9 w-9 p-0 rounded-full hover:bg-gray-100 hidden sm:inline-flex"
+                className="relative h-9 w-9 p-0 rounded-full hover:bg-muted hidden sm:inline-flex"
               >
-                <Bell className="h-4 w-4 text-gray-600" />
-                <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white" />
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full ring-2 ring-background" />
               </Button>
             )}
 
             {/* Theme Toggle */}
-            {!simplified && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="h-9 w-9 p-0 rounded-full hover:bg-gray-100 hidden sm:inline-flex"
-              >
-                {isDarkMode ? (
-                  <Sun className="h-4 w-4 text-gray-600" />
-                ) : (
-                  <Moon className="h-4 w-4 text-gray-600" />
-                )}
-              </Button>
-            )}
+            <ThemeToggle />
 
             {/* Divider */}
-            {!simplified && <div className="h-8 w-px bg-gray-200 hidden sm:block" />}
+            {!simplified && <div className="h-8 w-px bg-border hidden sm:block" />}
 
             {/* Profile Dropdown */}
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 <div className="h-9 w-9 rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold">
                   {getInitials(user?.name)}
                 </div>
                 {!simplified && (
                   <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium text-gray-700">
+                    <p className="text-sm font-medium text-foreground">
                       {user?.name || "User"}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
+                    <p className="text-xs text-muted-foreground capitalize">
                       {user?.role}
                     </p>
                   </div>
                 )}
                 {!simplified && (
                   <ChevronDown
-                    className={`hidden lg:block h-4 w-4 text-gray-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
+                    className={`hidden lg:block h-4 w-4 text-muted-foreground transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
                   />
                 )}
               </button>
@@ -363,21 +353,21 @@ export function Navbar({ simplified = false }: NavbarProps) {
                       transition={{ duration: 0.1 }}
                       className="absolute right-0 mt-2 w-72 origin-top-right"
                     >
-                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-card rounded-lg border border-border overflow-hidden">
                         {/* User Info */}
-                        <div className="p-4 bg-linear-to-br from-blue-50 to-indigo-50 border-b border-gray-200">
+                        <div className="p-4 bg-linear-to-br from-blue-500/10 to-indigo-500/10 border-b border-border">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-12 rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg font-semibold">
                               {getInitials(user?.name)}
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-semibold text-foreground">
                                 {user?.name || "User"}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {user?.email}
                               </p>
-                              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-white text-blue-700 rounded-full border border-blue-200">
+                              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full border border-blue-400/20">
                                 {user?.role}
                               </span>
                             </div>
@@ -385,42 +375,42 @@ export function Navbar({ simplified = false }: NavbarProps) {
                         </div>
 
                         {/* Quick Links */}
-                        <div className="p-2 border-b border-gray-100">
+                        <div className="p-2 border-b border-border/50">
                           <Link
                             href={user?.role === 'counselor' ? '/dashboard/counselor/profile' : '/dashboard/student/profile'}
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground/80 hover:bg-muted rounded-lg transition-colors"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <UserCircle className="h-5 w-5 text-gray-400" />
+                            <UserCircle className="h-5 w-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">My Profile</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 View and edit your profile
                               </p>
                             </div>
                           </Link>
                           <Link
                             href="/dashboard/settings"
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground/80 hover:bg-muted rounded-lg transition-colors"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <Settings className="h-5 w-5 text-gray-400" />
+                            <Settings className="h-5 w-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">Settings</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 Account preferences
                               </p>
                             </div>
                           </Link>
                           <Link
                             href="/help"
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground/80 hover:bg-muted rounded-lg transition-colors"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <HelpCircle className="h-5 w-5 text-gray-400" />
+                            <HelpCircle className="h-5 w-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">Help & Support</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 Get help with your account
                               </p>
                             </div>
@@ -434,12 +424,12 @@ export function Navbar({ simplified = false }: NavbarProps) {
                               logout();
                               setIsProfileOpen(false);
                             }}
-                            className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                           >
                             <LogOut className="h-5 w-5" />
                             <div className="text-left">
                               <p className="font-medium">Sign Out</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-red-400/60">
                                 Log out of your account
                               </p>
                             </div>
@@ -458,12 +448,12 @@ export function Navbar({ simplified = false }: NavbarProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden h-9 w-9 p-0 rounded-lg hover:bg-gray-100"
+                className="lg:hidden h-9 w-9 p-0 rounded-lg hover:bg-muted"
               >
                 {isMenuOpen ? (
-                  <X className="h-5 w-5 text-gray-600" />
+                  <X className="h-5 w-5 text-muted-foreground" />
                 ) : (
-                  <Menu className="h-5 w-5 text-gray-600" />
+                  <Menu className="h-5 w-5 text-muted-foreground" />
                 )}
               </Button>
             )}
@@ -480,7 +470,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-gray-200 bg-white overflow-hidden"
+              className="lg:hidden border-t border-border bg-card overflow-hidden"
             >
               <div className="px-4 py-3 space-y-1">
                 {/* Mobile Search */}
@@ -491,9 +481,9 @@ export function Navbar({ simplified = false }: NavbarProps) {
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 bg-gray-50 border-gray-200"
+                      className="w-full pl-9 pr-4 bg-muted/50 border-border"
                     />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
                 </form>
 
@@ -507,17 +497,17 @@ export function Navbar({ simplified = false }: NavbarProps) {
                       href={link.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                         isActive
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700 hover:bg-gray-50"
+                          ? "bg-blue-500/10 text-blue-400"
+                          : "text-foreground/80 hover:bg-muted"
                       }`}
                     >
                       <Icon
-                        className={`h-5 w-5 ${isActive ? "text-blue-600" : "text-gray-400"}`}
+                        className={`h-5 w-5 ${isActive ? "text-blue-400" : "text-muted-foreground"}`}
                       />
                       <div>
                         <p className="font-medium">{link.name}</p>
                         {link.description && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {link.description}
                           </p>
                         )}
@@ -526,15 +516,17 @@ export function Navbar({ simplified = false }: NavbarProps) {
                   );
                 })}
 
+                {/* Mobile Divider removed */}
+
                 {/* Mobile Divider */}
-                <div className="my-3 border-t border-gray-100" />
+                <div className="my-3 border-t border-border/50" />
 
                 {/* Mobile User Info */}
                 <div className="px-4 py-3">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {user?.name || "User"}
                   </p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
 
                 {/* Mobile Logout */}
@@ -543,7 +535,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
                     logout();
                     setIsMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="font-medium">Sign Out</span>
@@ -556,3 +548,4 @@ export function Navbar({ simplified = false }: NavbarProps) {
     </nav>
   );
 }
+

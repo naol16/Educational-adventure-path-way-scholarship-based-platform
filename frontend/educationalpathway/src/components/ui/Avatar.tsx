@@ -56,3 +56,4 @@ export const AvatarFallback = ({ className, children, ...props }: React.HTMLAttr
     </div>
   );
 };
+
