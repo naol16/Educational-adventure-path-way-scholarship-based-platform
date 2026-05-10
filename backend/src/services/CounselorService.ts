@@ -627,18 +627,16 @@ export class CounselorService {
       reservedStudentId: student.id,
     });
 
-    // Notify counselor about new request
-    try {
-      await NotificationService.createNotification(
-        counselor.userId,
-        "New Booking Request",
-        `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
-        "booking",
-        booking.id
-      );
-    } catch (notifyError) {
-      console.error("[CounselorService] Failed to send initial booking notification:", notifyError);
-    }
+    // Notify counselor about new request (Non-blocking to prevent frontend timeouts)
+    NotificationService.createNotification(
+      counselor.userId,
+      "New Booking Request",
+      `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
+      "booking",
+      booking.id
+    ).catch(notifyError => {
+      console.error("[CounselorService] Background notification failed:", notifyError);
+    });
 
     if (chapaResponse.status !== 'success') {
       console.error(`[CounselorService] Chapa initialization failed:`, chapaResponse);
