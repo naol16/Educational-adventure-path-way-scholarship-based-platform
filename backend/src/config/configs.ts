@@ -51,7 +51,8 @@ function setConfigs() {
       process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
       // Bulletproof IDs as requested by Senior Architect
       "57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com",
-      "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com"
+      "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com",
+      "57881811503-pphhpvffu8uhv517cj40a51f5qtrl4ue.apps.googleusercontent.com"
     ].filter((id): id is string => !!id),
     
     // Google Calendar / Meet Configs
@@ -88,8 +89,8 @@ function setConfigs() {
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY || "AIzaSyAvNCBYazIHrubYy3rXXvIxV4HDFBIEOYs",
-    GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-1.5-flash",
 
     ASSESSMENT_USE_QUEUE: process.env.ASSESSMENT_USE_QUEUE === "true",
     REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",
@@ -103,7 +104,7 @@ function setConfigs() {
     ),
     VAPI_MODEL: process.env.VAPI_MODEL || "gpt-4o-mini",
     VAPI_DEBUG: process.env.VAPI_DEBUG === "true",
-    GROQ_API_KEY: process.env.GROQ_API_KEY || "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",
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
     VAPI_ASSISTANT_ID: process.env.VAPI_ASSISTANT_ID,
   };
 }

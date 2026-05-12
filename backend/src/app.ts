@@ -26,21 +26,9 @@ const allowedOrigins = [
 if (configs.PRODUCTION_URL) {
   allowedOrigins.push(configs.PRODUCTION_URL);
 }
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.startsWith("http://localhost:") ||
-        origin.startsWith("http://127.0.0.1:")
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -51,7 +39,7 @@ app.use(
       "Cache-Control",
       "Pragma",
     ],
-  }),
+  })
 );
 
 // 2. Logging
@@ -68,7 +56,7 @@ app.use((req, res, next) => {
 app.use(helmet());
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ 
+app.use(express.json({
   limit: "1mb",
   verify: (req: any, res, buf) => {
     req.rawBody = buf;
