@@ -14,7 +14,7 @@ async function runTest() {
     console.log("Starting Visa Flow Test...");
 
     // Find a student
-    const student = await Student.findOne({ include: [User] });
+    const student = await Student.findOne({ include: [{ model: User, as: 'user' }] });
     if (!student) {
         console.error("❌ No student found in database. Cannot run test.");
         process.exit(1);

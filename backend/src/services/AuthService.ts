@@ -25,35 +25,55 @@ export class AuthService {
   static async register(userData: any) {
     const { name, email, password, role } = userData;
     const existingUser = await UserRepository.findByEmail(email);
-    
+    const bypassVerification = configs.DISABLE_EMAIL_VERIFICATION;
+
     if (existingUser) {
       if (existingUser.isVerified) {
         throw new Error("User already exists");
       }
-      // If not verified, allow "re-registration" (update info and send new OTP)
+      // If not verified, allow "re-registration" (update info)
       const hashedPassword = await bcrypt.hash(password, 10);
-      await UserRepository.update(existingUser.id, {
+      const updateData: any = {
         name,
         password: hashedPassword,
         role: role || UserRole.STUDENT
-      });
-      await this.sendRegistrationOTP({ email });
-      return { message: "Account exists but is not activated. A new activation code has been sent to your email." };
+      };
+      if (bypassVerification) {
+        updateData.isVerified = true;
+        updateData.isActive = true;
+        updateData.verificationCode = null;
+        updateData.verificationCodeExpires = null;
+      }
+      await UserRepository.update(existingUser.id, updateData);
+
+      if (bypassVerification) {
+        return { message: "Account re-registered successfully (verification bypassed)." };
+      } else {
+        await this.sendRegistrationOTP({ email });
+        return { message: "Account exists but is not activated. A new activation code has been sent to your email." };
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await UserService.createUser({
+    const newUserData: any = {
       name,
       email,
       password: hashedPassword,
-      role: role || UserRole.STUDENT,
-      isVerified: false // Explicitly set to false
-    });
+      role: role || UserRole.STUDENT
+    };
+    if (bypassVerification) {
+      newUserData.isVerified = true;
+      newUserData.isActive = true;
+    }
+    const newUser = await UserService.createUser(newUserData);
 
-    // Send OTP immediately after registration
-    await this.sendRegistrationOTP({ email });
-
-    return { message: "User registered. Please activate your account with the code sent to your email." };
+    if (!bypassVerification) {
+      // Send OTP immediately after registration
+      await this.sendRegistrationOTP({ email });
+      return { message: "User registered. Please activate your account with the code sent to your email." };
+    } else {
+      return { message: "User registered successfully (verification bypassed)." };
+    }
   }
 
   static async sendRegistrationOTP(userData: any) {
@@ -168,7 +188,7 @@ export class AuthService {
       throw new Error("Account is deactivated");
     }
 
-    if (!user.isVerified) {
+    if (!user.isVerified && !configs.DISABLE_EMAIL_VERIFICATION) {
       throw new Error("Please activate your account before logging in. An activation code has been sent to your email.");
     }
 

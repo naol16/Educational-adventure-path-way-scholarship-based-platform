@@ -125,6 +125,7 @@ export class MatchingRepository {
       include: [
         {
           model: User,
+          as: 'user',
           attributes: ["name", "email", "fcmToken"],
         },
       ],
@@ -164,13 +165,14 @@ export class MatchingRepository {
            "match_score",
          ],
        ],
-       include: [
-         {
-           model: User,
-           attributes: ["name", "email", "fcmToken"],
-         },
-       ],
-       group: ["Student.id", "User.id"],
+        include: [
+          {
+                model: User,
+                as: 'user',
+                attributes: ["name", "email", "fcmToken"],
+              },
+        ],
+        group: ["Student.id", "user.id"],
        raw: true,
        nest: true,
      });

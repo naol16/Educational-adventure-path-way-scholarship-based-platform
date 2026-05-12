@@ -62,9 +62,9 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-      <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-8 border-b border-border bg-muted/20">
+        <div className="p-8 border-b border-border bg-muted/20 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted border-2 border-primary/20">
               {counselor.profileImageUrl ? (
@@ -83,7 +83,7 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
         </div>
         
         {/* Slot Selection */}
-        <div className="p-8">
+        <div className="flex-grow overflow-y-auto p-8 custom-scrollbar">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Clock className="w-5 h-5 text-primary" />
@@ -99,8 +99,8 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
               <Loader2 className="animate-spin text-primary w-10 h-10" />
               <p className="text-sm text-muted-foreground animate-pulse">Finding best times for you...</p>
             </div>
-          ) : slots.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+           ) : slots.length > 0 ? (
+             <div className="grid grid-cols-1 gap-3">
               {slots.map((slot) => {
                 const isSelected = selectedSlot?.id === slot.id;
                 const startDate = new Date(slot.startTime);

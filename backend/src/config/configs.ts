@@ -100,6 +100,9 @@ function setConfigs() {
     VAPI_DEBUG: process.env.VAPI_DEBUG === "true",
     GROQ_API_KEY: process.env.GROQ_API_KEY || "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",
     VAPI_ASSISTANT_ID: process.env.VAPI_ASSISTANT_ID,
+
+    // Email verification bypass for development
+    DISABLE_EMAIL_VERIFICATION: process.env.DISABLE_EMAIL_VERIFICATION === "true",
   };
 }
 

@@ -43,14 +43,14 @@ export class AuthRepository {
     });
   }
 
-  static async findPasswordResetToken(
-    token: string,
-  ): Promise<PasswordResetToken | null> {
-    return PasswordResetToken.findOne({
-      where: { token },
-      include: [User],
-    });
-  }
+   static async findPasswordResetToken(
+     token: string,
+   ): Promise<PasswordResetToken | null> {
+     return PasswordResetToken.findOne({
+       where: { token },
+       include: [{ model: User, as: 'user' }],
+     });
+   }
 
   static async markPasswordResetTokenAsUsed(token: string): Promise<[number]> {
     // This updates all matching rows, returning the number of affected rows

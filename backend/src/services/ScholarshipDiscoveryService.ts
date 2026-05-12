@@ -291,8 +291,8 @@ export class ScholarshipDiscoveryService {
             );
 
             for (const res of matchingResults) {
-              // res is { id, userId, match_score, User: { name, email, fcmToken } }
-              const user = res.User as any;
+               // res is { id, userId, match_score, user: { name, email, fcmToken } }
+               const user = res.user as any;
               const student = {
                 ...res,
                 notificationPreferences: (res as any).notification_preferences,

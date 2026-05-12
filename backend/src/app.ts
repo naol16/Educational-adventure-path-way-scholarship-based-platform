@@ -23,8 +23,15 @@ const allowedOrigins = [
   "http://127.0.0.1:5000",
 ];
 
+// Add configured URLs
 if (configs.PRODUCTION_URL) {
   allowedOrigins.push(configs.PRODUCTION_URL);
+}
+if (configs.SERVER_URL) {
+  allowedOrigins.push(configs.SERVER_URL);
+}
+if (configs.BACKEND_URL && configs.BACKEND_URL !== configs.SERVER_URL) {
+  allowedOrigins.push(configs.BACKEND_URL);
 }
 
 app.use(

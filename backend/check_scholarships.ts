@@ -23,9 +23,10 @@ async function checkDB() {
       console.log("2. Create a seed script for scholarships manually");
       console.log("3. Use admin tools to add scholarships via API");
     }
-  } catch (err) {
-    console.error("Error:", err.message);
-  } finally {
+   } catch (err) {
+     const error = err instanceof Error ? err : new Error(String(err));
+     console.error("Error:", error.message);
+   } finally {
     await pool.end();
   }
 }

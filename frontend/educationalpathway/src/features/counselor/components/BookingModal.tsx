@@ -63,21 +63,22 @@ export const BookingModal = ({ counselor, mode = 'initiation', studentUserId, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-border bg-muted/30">
+      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-border bg-muted/30 flex-shrink-0">
           <h2 className="text-xl font-bold font-heading">Invite for a Session</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Build a connection with this student by proposing a time.
           </p>
         </div>
         
-        <div className="p-6">
+        {/* Slot Selection */}
+        <div className="flex-grow overflow-y-auto p-6 custom-scrollbar">
           {loadingSlots ? (
             <div className="flex justify-center p-8">
               <Loader2 className="animate-spin text-primary w-8 h-8" />
             </div>
-          ) : slots.length > 0 ? (
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+           ) : slots.length > 0 ? (
+             <div className="space-y-4">
               {slots.map((slot) => (
                 <button
                   key={slot.id}
@@ -110,7 +111,8 @@ export const BookingModal = ({ counselor, mode = 'initiation', studentUserId, on
           )}
         </div>
 
-        <div className="p-6 border-t border-border flex justify-end gap-3 bg-muted/10">
+        {/* Footer */}
+        <div className="p-6 border-t border-border flex justify-end gap-3 bg-muted/10 flex-shrink-0">
           <Button 
             variant="ghost" 
             onClick={onClose}

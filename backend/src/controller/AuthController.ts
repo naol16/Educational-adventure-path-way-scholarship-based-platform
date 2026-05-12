@@ -184,10 +184,11 @@ export class AuthController {
   }
 
   private static getCookieOptions() {
+    const isProduction = configs.NODE_ENV === "production" || (configs.SERVER_URL || '').startsWith('https://');
     return {
       httpOnly: true,
-      secure: configs.NODE_ENV === "production",
-      sameSite: (configs.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax" as "none" | "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     };
   }
