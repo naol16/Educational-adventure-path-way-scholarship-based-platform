@@ -50,9 +50,9 @@ export class SocketService {
                 socket.join(`conversation_${conversationId}`);
             });
 
-            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string }) => {
+            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string; parentId?: number }) => {
                 try {
-                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content);
+                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content, data.parentId);
                     if (!message) return;
 
                     // Broadcast to conversation room

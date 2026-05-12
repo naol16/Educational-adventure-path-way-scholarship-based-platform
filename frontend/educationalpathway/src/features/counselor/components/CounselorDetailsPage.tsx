@@ -356,6 +356,7 @@ export const CounselorDetailsPage = () => {
                     variant="outline"
                     size="lg" 
                     className="w-full h-18 rounded-xl border-2 border-border/60 hover:bg-muted text-foreground text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
+                    onClick={() => router.push(`/dashboard/student/chat?userId=${counselor.userId}`)}
                   >
                     <MessageCircle className="h-5 w-5 text-primary" strokeWidth={2.5} />
                     Secure Channel

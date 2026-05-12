@@ -56,15 +56,28 @@ export class ChatService {
         return conversation;
     }
 
-    static async sendMessage(conversationId: number, senderId: number, content: string) {
+    static async sendMessage(conversationId: number, senderId: number, content: string, parentId?: number) {
         const message = await ChatMessage.create({
             conversationId,
             senderId,
-            content
+            content,
+            parentId: parentId || null
         });
-        
+
+        // Fetch the message with sender info for real-time delivery
         return ChatMessage.findByPk(message.id, {
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role', 'avatarUrl'] }]
+            include: [
+                {
+                    model: User,
+                    as: 'sender',
+                    attributes: ['id', 'name', 'role', 'avatarUrl']
+                },
+                {
+                    model: ChatMessage,
+                    as: 'parent',
+                    include: [{ model: User, as: 'sender', attributes: ['id', 'name'] }]
+                }
+            ]
         });
     }
 
@@ -183,7 +196,18 @@ export class ChatService {
     static async getMessages(conversationId: number, limit = 50, offset = 0) {
         const messages = await ChatMessage.findAll({
             where: { conversationId },
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role', 'avatarUrl'] }],
+            include: [
+                {
+                    model: User,
+                    as: 'sender',
+                    attributes: ['id', 'name', 'role', 'avatarUrl']
+                },
+                {
+                    model: ChatMessage,
+                    as: 'parent',
+                    include: [{ model: User, as: 'sender', attributes: ['id', 'name'] }]
+                }
+            ],
             limit,
             offset,
             order: [['created_at', 'DESC']]

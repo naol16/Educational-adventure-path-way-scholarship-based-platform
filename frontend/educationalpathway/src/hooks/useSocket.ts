@@ -14,34 +14,40 @@ export const useSocket = (token: string | null) => {
 
         console.log("[Socket] Attempting connection to:", SOCKET_URL);
 
+        // Initialize socket
         socketRef.current = io(SOCKET_URL, {
-            auth: { token },
-            transports: ["websocket"],
+            // Remove explicit websocket transport to allow polling fallback for better compatibility
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             autoConnect: true,
+            auth: { token }
         });
 
-        socketRef.current.on("connect", () => {
-            console.log("[Socket] Connected to server:", socketRef.current?.id);
+        const socket = socketRef.current;
+
+        socket.on("connect", () => {
+            console.log("[Socket] Connected successfully with ID:", socket.id);
             setIsConnected(true);
         });
 
-        socketRef.current.on("disconnect", (reason) => {
-            console.log("[Socket] Disconnected from server. Reason:", reason);
+        socket.on("disconnect", (reason) => {
+            console.log("[Socket] Disconnected. Reason:", reason);
             setIsConnected(false);
         });
 
-        socketRef.current.on("connect_error", (err) => {
-            console.error("[Socket] Connection error details:", err);
+        socket.on("connect_error", (err) => {
+            console.error("[Socket] Connection error:", err.message);
+            // If it's an auth error, we might want to refresh the token or redirect
+            if (err.message === "Authentication error") {
+                console.error("[Socket] Invalid token provided");
+            }
             setIsConnected(false);
         });
 
         return () => {
-            if (socketRef.current) {
+            if (socket) {
                 console.log("[Socket] Cleaning up connection...");
-                socketRef.current.disconnect();
-                socketRef.current = null;
+                socket.disconnect();
             }
         };
     }, [token]);

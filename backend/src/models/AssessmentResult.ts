@@ -47,7 +47,7 @@ export class AssessmentResult extends Model {
     declare examType: string;
 
     @Column({
-        type: DataType.STRING(10),
+        type: DataType.STRING(20),
         allowNull: false,
         field: 'difficulty'
     })

@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
+import api from "@/lib/api";
 import { ChatList } from "./components/ChatList";
 import { ChatWindow } from "./components/ChatWindow";
 import { ChatInput } from "./components/ChatInput";
 import { Conversation, Message, ChatUser } from "./types";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import { BookingModal } from "../counselor/components/BookingModal";
 import { StudentBookingModal } from "../counselor/components/StudentBookingModal";
 import { GroupMembers } from "./components/GroupMembers";
-import { useSearchParams } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+// API and Socket URLs are handled by api client and useSocket hook
 
 export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -31,6 +32,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const MESSAGES_PER_PAGE = 20;
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const targetUserId = searchParams.get("userId");
 
   // Booking States
@@ -46,10 +48,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/chat/conversations`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const convs = res.data.data;
+        const res = await api.get("/chat/conversations");
+        const convs = res.data;
         setConversations(convs);
 
         // If targetUserId is provided, try to find or start chat
@@ -61,12 +61,9 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
           if (existing) {
             setActiveConversation(existing);
           } else {
-            // Start new chat logic (reusing internal logic if possible or just calling API)
             try {
-              const startRes = await axios.post(`${API_BASE_URL}/chat/start`, { receiverId: tid }, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              const newConv = startRes.data.data;
+              const startRes = await api.post("/chat/start", { receiverId: tid });
+              const newConv = startRes.data;
               setConversations(prev => [newConv, ...prev]);
               setActiveConversation(newConv);
             } catch (err) {
@@ -83,37 +80,43 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   // 2. Fetch Messages with Pagination
   const fetchMessages = useCallback(async (isInitial = false) => {
-    if (!activeConversation || (!hasMore && !isInitial)) return;
+    // Robust guard for activeConversation and its ID
+    if (!activeConversation?.id || (!hasMore && !isInitial) || loading) return;
 
     const currentPage = isInitial ? 0 : page;
     setLoading(true);
 
     try {
-      const res = await axios.get(`${API_BASE_URL}/chat/${activeConversation.id}?limit=${MESSAGES_PER_PAGE}&offset=${currentPage * MESSAGES_PER_PAGE}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await api.get(`/chat/${activeConversation.id}`, {
+        params: {
+          limit: MESSAGES_PER_PAGE,
+          offset: currentPage * MESSAGES_PER_PAGE
+        }
       });
       
-      const newMessages = res.data.data;
+      const newMessages = res.data;
       if (isInitial) {
         setMessages(newMessages);
         setPage(1);
         setHasMore(newMessages.length === MESSAGES_PER_PAGE);
         
-        // Mark as read
         if (socket) {
             socket.emit("mark_read", { conversationId: activeConversation.id });
         }
       } else {
-        setMessages(prev => [...prev, ...newMessages]);
-        setPage(currentPage + 1);
+        if (newMessages.length > 0) {
+          setMessages(prev => [...prev, ...newMessages]);
+          setPage(prev => prev + 1);
+        }
         setHasMore(newMessages.length === MESSAGES_PER_PAGE);
       }
     } catch (err) {
       console.error("Failed to fetch messages", err);
+      toast.error("Failed to sync messages");
     } finally {
       setLoading(false);
     }
-  }, [activeConversation, token, page, hasMore, socket]);
+  }, [activeConversation?.id, page, hasMore, socket, loading]);
 
   useEffect(() => {
     if (activeConversation) {
@@ -134,14 +137,12 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     socket.on("receive_message", (message: Message) => {
       if (activeConversation && message.conversationId === activeConversation.id) {
         setMessages((prev) => {
-          // Remove optimistic message if it exists (by matching content and senderId within a short time)
-          const filtered = prev.filter(m => !(m.senderId === message.senderId && m.content === message.content && (m.id > 1000000000000))); // Temp IDs are timestamps
+          const filtered = prev.filter(m => !(m.senderId === message.senderId && m.content === message.content && (m.id > 1000000000000))); 
           return [message, ...filtered];
         });
         socket.emit("mark_read", { conversationId: activeConversation.id });
       }
 
-      // Update conversations list for snippet
       setConversations((prev) => {
         const index = prev.findIndex((conv) => conv.id === message.conversationId);
         if (index === -1) return prev;
@@ -228,7 +229,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       socket.off("message_edited");
       socket.off("message_deleted");
     };
-  }, [socket, activeConversation, token]);
+  }, [socket, activeConversation, currentUser.id]);
 
   const participants = activeConversation?.members || activeConversation?.users || [];
   const otherUser = participants.find(u => u.id !== currentUser.id) || null;
@@ -236,7 +237,6 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const handleSendMessage = useCallback((content: string) => {
     if (!activeConversation || !socket) return;
     
-    // Optimistic UI update
     const tempId = Date.now();
     const optimisticMessage: Message = {
       id: tempId,
@@ -248,10 +248,21 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       isRead: false,
       isDelivered: false,
       parentId: replyingTo?.id || null,
-      sender: currentUser // Include sender info for immediate rendering
+      sender: currentUser 
     };
 
     setMessages(prev => [optimisticMessage, ...prev]);
+
+    setConversations(prev => {
+      const index = prev.findIndex(c => c.id === activeConversation.id);
+      if (index === -1) return prev;
+      const newConvs = [...prev];
+      newConvs[index] = {
+        ...newConvs[index],
+        chatMessages: [optimisticMessage, ...(newConvs[index].chatMessages || [])]
+      };
+      return newConvs;
+    });
 
     socket.emit("send_message", {
       conversationId: activeConversation.id,
@@ -260,7 +271,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       parentId: replyingTo?.id || null
     });
     setReplyingTo(null);
-  }, [activeConversation, socket, currentUser.id, replyingTo, otherUser]);
+  }, [activeConversation, socket, currentUser, replyingTo, otherUser]);
 
   const handleEditMessage = useCallback((messageId: number, content: string) => {
     setEditingMessage({ id: messageId, content });
@@ -286,7 +297,6 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const handleDeleteMessage = useCallback((messageId: number) => {
     if (!activeConversation || !socket) return;
     
-    // Optimistically remove from UI to prevent ghost messages from getting stuck
     setMessages(prev => prev.filter(m => m.id !== messageId));
     
     socket.emit("delete_message", {
@@ -319,10 +329,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const handleOpenNewChat = async () => {
     setIsModalOpen(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/chat/available-users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAvailableUsers(res.data.data);
+      const res = await api.get("/chat/available-users");
+      setAvailableUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch available users", err);
     }
@@ -330,10 +338,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   const handleStartChat = async (userId: number) => {
     try {
-      const res = await axios.post(`${API_BASE_URL}/chat/start`, { receiverId: userId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const newConv = res.data.data;
+      const res = await api.post("/chat/start", { receiverId: userId });
+      const newConv = res.data;
       setConversations(prev => {
         const exists = prev.find(c => c.id === newConv.id);
         if (exists) return prev;
@@ -351,20 +357,17 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     if (!otherUser) return;
     
     if (currentUser.role === 'counselor') {
-      // Counselor mode: otherUser is the student
       setActiveCounselorData({ 
-        id: -1, // Placeholder as we use /counselors/slots anyway
+        id: -1, 
         name: currentUser.name 
       });
       setIsBookingModalOpen(true);
     } else if (otherUser.role === 'counselor') {
-      // Student mode: otherUser is the counselor
       setFetchingCounselor(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/counselors/by-user/${otherUser.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setActiveCounselorData(res.data.data);
+        const res = await api.get(`/counselors/by-user/${otherUser.id}`);
+        const cData = res.data;
+        setActiveCounselorData(cData);
         setIsBookingModalOpen(true);
       } catch (err) {
         console.error("Failed to fetch counselor data", err);
@@ -376,7 +379,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden bg-background/50 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl mt-4 relative">
+    <div className="flex h-[calc(100vh-120px)] w-full overflow-hidden bg-[#0a0f18] backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] mt-4 relative font-sans text-white ring-1 ring-white/10">
       {/* Sidebar - Hidden on mobile when a chat is active */}
       <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 h-full border-r border-border/50 shrink-0 flex-col transition-all duration-300 ease-in-out`}>
         <ChatList
@@ -393,10 +396,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
             } else {
               setFetchingCounselor(true);
               try {
-                const res = await axios.get(`${API_BASE_URL}/counselors/by-user/${userId}`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                });
-                setActiveCounselorData(res.data.data);
+                const res = await api.get(`/counselors/by-user/${userId}`);
+                setActiveCounselorData(res.data);
                 setIsBookingModalOpen(true);
               } catch (err) {
                 toast.error("Could not fetch counselor details");
@@ -458,12 +459,22 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
             </>
           )
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary/40"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in duration-500">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
+              <div className="relative w-24 h-24 rounded-[2rem] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 shadow-2xl rotate-3">
+                <MessageCircle size={48} className="text-primary animate-bounce-subtle" />
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Select a chat to start messaging</h3>
-            <p className="max-w-xs text-sm opacity-60">Choose from your existing conversations or start a new one with a counselor or peer.</p>
+            <h3 className="text-2xl font-black text-white mb-3 tracking-tight">Professional Workspace</h3>
+            <p className="max-w-xs text-sm text-white/40 leading-relaxed font-medium">
+              Select a conversation to enter your secure encrypted channel.
+            </p>
+            <div className="mt-10 flex gap-4">
+              <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                End-to-End Encrypted
+              </div>
+            </div>
           </div>
         )}
       </div>
