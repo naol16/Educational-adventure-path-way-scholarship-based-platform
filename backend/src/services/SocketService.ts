@@ -58,26 +58,28 @@ export class SocketService {
                     // Broadcast to conversation room
                     this.io.to(`conversation_${data.conversationId}`).emit("receive_message", message);
                     
-                    // Mark as delivered for the receiver (if online)
-                    const receiverSockets = this.userSockets.get(data.receiverId);
-                    if (receiverSockets && receiverSockets.length > 0) {
-                        await ChatService.markAsDelivered(message.id);
-                        this.io.to(`conversation_${data.conversationId}`).emit("message_delivered", {
-                            messageId: message.id,
-                            conversationId: data.conversationId,
-                            deliveredAt: new Date()
-                        });
-                    }
-
-                    // Direct alert for mobile/outside-room notifications
-                    if (receiverSockets) {
-                        receiverSockets.forEach(sid => {
-                            this.io.to(sid).emit("new_message_alert", {
+                    // Mark as delivered for the receiver (only for DMs)
+                    if (data.receiverId) {
+                        const receiverSockets = this.userSockets.get(data.receiverId);
+                        if (receiverSockets && receiverSockets.length > 0) {
+                            await ChatService.markAsDelivered(message.id);
+                            this.io.to(`conversation_${data.conversationId}`).emit("message_delivered", {
+                                messageId: message.id,
                                 conversationId: data.conversationId,
-                                senderName: (message as any).sender?.name || "Someone",
-                                content: data.content
+                                deliveredAt: new Date()
                             });
-                        });
+                        }
+
+                        // Direct alert for mobile/outside-room notifications
+                        if (receiverSockets) {
+                            receiverSockets.forEach(sid => {
+                                this.io.to(sid).emit("new_message_alert", {
+                                    conversationId: data.conversationId,
+                                    senderName: (message as any).sender?.name || "Someone",
+                                    content: data.content
+                                });
+                            });
+                        }
                     }
                 } catch (err) {
                     console.error("[Socket] send_message error:", err);

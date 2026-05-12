@@ -287,6 +287,22 @@ export class Counselor extends Model {
     declare pendingBalance: number;
 
     @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'pending_balance_usd'
+    })
+    declare pendingBalanceUsd: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'total_earned_usd'
+    })
+    declare totalEarnedUsd: number;
+
+    @Column({
         type: 'VECTOR',
         allowNull: true,
         set(value: number[] | string | null) {

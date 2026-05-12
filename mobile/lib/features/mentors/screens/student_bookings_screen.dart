@@ -317,6 +317,7 @@ class _StudentBookingsScreenState extends ConsumerState<StudentBookingsScreen> {
 
     PreFlightDialog.show(context, () {
       MeetingService.joinMeeting(
+        context: context,
         roomName: booking.meetingLink!,
         user: user,
         counselorName: booking.counselor?.name ?? 'Counselor',

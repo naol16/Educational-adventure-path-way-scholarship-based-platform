@@ -193,13 +193,13 @@ class StudentProgressDetailScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: status == 'completed' ? const Color(0xFF10B981).withOpacity(0.1) : Colors.amber.withOpacity(0.1),
+                color: status == 'completed' ? DesignSystem.success(context).withValues(alpha: 0.1) : DesignSystem.warning(context).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 status.toUpperCase(),
                 style: GoogleFonts.inter(
-                  color: status == 'completed' ? const Color(0xFF10B981) : Colors.amber,
+                  color: status == 'completed' ? DesignSystem.success(context) : DesignSystem.warning(context),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                 ),

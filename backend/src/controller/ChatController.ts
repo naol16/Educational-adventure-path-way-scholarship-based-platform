@@ -2,21 +2,45 @@ import { Request, Response } from "express";
 import { ChatService } from "../services/ChatService.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../errors/AppError.js";
+import { SocketService } from "../services/SocketService.js";
 
 export class ChatController {
     /**
      * POST /messages - Send a message to a user (starts conversation if doesn't exist)
      */
     static sendMessage = catchAsync(async (req: Request, res: Response) => {
-        const { receiverId, content } = req.body;
+        const { receiverId, conversationId, content } = req.body;
         const senderId = (req as any).user.id;
 
-        if (!receiverId || !content) {
-            throw new AppError("Invalid request. Missing receiverId or content.", 400);
+        if (!content) {
+            throw new AppError("Message content is required.", 400);
         }
 
-        const conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
+        let conversation;
+        if (conversationId) {
+            // Direct send to known conversation (used for groups)
+            conversation = await ChatService.getConversationById(Number(conversationId));
+            if (!conversation) throw new AppError("Conversation not found.", 404);
+        } else if (receiverId) {
+            // Start or get DM conversation
+            conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
+        } else {
+            throw new AppError("Either receiverId or conversationId must be provided.", 400);
+        }
+
         const message = await ChatService.sendMessage(conversation.id, senderId, content);
+
+        // Broadcast via Socket.io for real-time updates
+        if (message) {
+            const io = SocketService.getIO();
+            io.to(`conversation_${conversation.id}`).emit("receive_message", message);
+            
+            // Also trigger alerts for participants not currently in the room (DMs)
+            if (!conversation.isGroup && receiverId) {
+                // We'll let the SocketService's existing logic handle complex alerts if needed, 
+                // but for now, the basic broadcast above covers the main chat window.
+            }
+        }
 
         res.status(201).json({
             status: "success",

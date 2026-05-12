@@ -10,6 +10,7 @@ import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/counselor/screens/counselor_documents_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_reviews_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_onboarding_screen.dart';
+import 'package:mobile/features/core/providers/theme_provider.dart';
 
 class CounselorProfileScreen extends ConsumerWidget {
   const CounselorProfileScreen({super.key});
@@ -58,6 +59,9 @@ class CounselorProfileScreen extends ConsumerWidget {
                 _buildInfoSection(context, 'Expertise', [
                   _infoTile(LucideIcons.award, 'Areas', profile.areasOfExpertise.join(', ')),
                   _infoTile(LucideIcons.languages, 'Languages', profile.languages.join(', ')),
+                ]),
+                _buildInfoSection(context, 'Appearance', [
+                  _themeSelector(context, ref),
                 ]),
                 const SizedBox(height: 24),
                 _buildInfoSection(context, 'Consultation', [
@@ -171,6 +175,51 @@ class CounselorProfileScreen extends ConsumerWidget {
       title: Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: DesignSystem.mainText(context))),
       subtitle: Text(subtitle, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: DesignSystem.labelText(context))),
       trailing: Icon(LucideIcons.chevronRight, size: 18, color: DesignSystem.labelText(context)),
+    );
+  }
+
+  Widget _themeSelector(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeProvider);
+    final isDark = themeState.themeMode == ThemeMode.dark;
+    
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: DesignSystem.surface(context),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          isDark ? LucideIcons.moon : LucideIcons.sun,
+          size: 18,
+          color: DesignSystem.primary(context),
+        ),
+      ),
+      title: Text(
+        'Dark Mode',
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: DesignSystem.mainText(context),
+        ),
+      ),
+      subtitle: Text(
+        'Switch between light and dark themes',
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: DesignSystem.labelText(context),
+        ),
+      ),
+      trailing: Switch.adaptive(
+        value: isDark,
+        activeColor: DesignSystem.primary(context),
+        onChanged: (val) {
+          ref.read(themeProvider.notifier).setThemeMode(
+            val ? ThemeMode.dark : ThemeMode.light,
+          );
+        },
+      ),
     );
   }
 

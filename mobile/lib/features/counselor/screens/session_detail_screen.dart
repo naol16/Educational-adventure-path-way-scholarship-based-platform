@@ -86,16 +86,16 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     String label = booking.status.toUpperCase();
 
     switch (booking.status) {
-      case 'confirmed': statusColor = const Color(0xFF10B981); statusIcon = LucideIcons.checkCircle; break;
+      case 'confirmed': statusColor = DesignSystem.success(context); statusIcon = LucideIcons.checkCircle; break;
       case 'started': statusColor = DesignSystem.primary(context); statusIcon = LucideIcons.video; break;
       case 'awaiting_confirmation': 
-        statusColor = const Color(0xFFF59E0B); 
+        statusColor = DesignSystem.warning(context); 
         statusIcon = LucideIcons.clock; 
         label = "WAITING FOR STUDENT";
         break;
-      case 'completed': statusColor = Colors.blue; statusIcon = LucideIcons.checkSquare; break;
-      case 'cancelled': statusColor = Colors.red; statusIcon = LucideIcons.xCircle; break;
-      default: statusColor = const Color(0xFFF59E0B); statusIcon = LucideIcons.clock;
+      case 'completed': statusColor = DesignSystem.info(context); statusIcon = LucideIcons.checkSquare; break;
+      case 'cancelled': statusColor = DesignSystem.error(context); statusIcon = LucideIcons.xCircle; break;
+      default: statusColor = DesignSystem.warning(context); statusIcon = LucideIcons.clock;
     }
 
     return Container(
@@ -214,7 +214,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), elevation: 0),
+              style: ElevatedButton.styleFrom(backgroundColor: DesignSystem.success(context), foregroundColor: Colors.white, padding: const EdgeInsets.all(20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), elevation: 0),
               onPressed: _isUpdating ? null : () => _updateStatus('awaiting_confirmation'),
               icon: const Icon(LucideIcons.checkCircle),
               label: Text('MARK AS COMPLETED', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16)),
@@ -235,12 +235,21 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         if (booking.status == 'awaiting_confirmation')
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.2))),
+            decoration: BoxDecoration(
+              color: DesignSystem.warning(context).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: DesignSystem.warning(context).withValues(alpha: 0.2)),
+            ),
             child: Row(
               children: [
-                const Icon(LucideIcons.info, color: Color(0xFFF59E0B), size: 20),
+                Icon(LucideIcons.info, color: DesignSystem.warning(context), size: 20),
                 const SizedBox(width: 12),
-                Expanded(child: Text('Waiting for student to confirm and rate the session. Funds will be released once confirmed.', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFF59E0B), fontWeight: FontWeight.w600))),
+                Expanded(
+                  child: Text(
+                    'Waiting for student to confirm and rate the session. Funds will be released once confirmed.',
+                    style: GoogleFonts.inter(fontSize: 12, color: DesignSystem.warning(context), fontWeight: FontWeight.w600),
+                  ),
+                ),
               ],
             ),
           ),
@@ -254,15 +263,28 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       children: [
         Expanded(
           child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white, padding: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DesignSystem.success(context),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
             onPressed: _isUpdating ? null : () => _updateStatus('confirmed'),
-            child: _isUpdating ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Accept', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
+            child: _isUpdating 
+              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+              : Text('Accept', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: OutlinedButton(
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red), padding: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: DesignSystem.error(context),
+              side: BorderSide(color: DesignSystem.error(context)),
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
             onPressed: _isUpdating ? null : () => _updateStatus('cancelled'),
             child: Text('Decline', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
           ),
@@ -320,6 +342,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
     PreFlightDialog.show(context, () {
       MeetingService.joinMeeting(
+        context: context,
         roomName: roomName,
         user: user,
         counselorName: user.name,

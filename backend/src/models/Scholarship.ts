@@ -96,6 +96,24 @@ export class Scholarship extends Model {
     declare originalUrl: string;
 
     @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare university: string | null;
+
+    @Column({
+        type: DataType.DECIMAL(10, 8),
+        allowNull: true,
+    })
+    declare latitude: number | null;
+
+    @Column({
+        type: DataType.DECIMAL(11, 8),
+        allowNull: true,
+    })
+    declare longitude: number | null;
+
+    @Column({
         type: DataType.STRING(512),
         allowNull: true,
         field: 'application_url'

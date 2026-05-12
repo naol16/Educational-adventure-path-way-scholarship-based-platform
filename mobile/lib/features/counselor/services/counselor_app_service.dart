@@ -133,20 +133,15 @@ class CounselorAppService {
 
   Future<bool> requestPayout({
     required double amount,
-    required String bankCode,
-    required String accountNumber,
-    required String accountName,
-    String? bankName,
+    required String currency,
+    required String payoutMethod,
+    required Map<String, dynamic> payoutDetails,
   }) async {
     final res = await _api.post('/api/counselors/me/payouts/request', body: {
       'amount': amount,
-      'payoutMethod': 'bank_transfer',
-      'payoutDetails': {
-        'accountNumber': accountNumber,
-        'bankName': bankName ?? 'Bank',
-        'accountHolderName': accountName,
-        'bankCode': bankCode,
-      },
+      'currency': currency,
+      'payoutMethod': payoutMethod,
+      'payoutDetails': payoutDetails,
     });
     return res.statusCode == 201 || res.statusCode == 200;
   }

@@ -10,14 +10,14 @@ export class TTSService {
      */
     static async generateAudioBase64(text: string): Promise<string | null> {
         try {
-            // Regex to find speaker names (e.g., "Interviewer:", "Expert A:")
-            const dialoguePattern = /([A-Za-z0-9 ]+):/g;
+            // Stricter Regex: Only match capitalized names at the start of a line (e.g., "Speaker:")
+            const dialoguePattern = /(?:\r?\n|^)([A-Z][A-Za-z0-9 ]+):/g;
             const matches = Array.from(text.matchAll(dialoguePattern));
             
             if (matches.length >= 2) {
-                // Determine unique speakers to assign different accents
+                // Determine unique speakers
                 const uniqueSpeakers = Array.from(new Set(matches.map(m => m[1]!.trim())));
-                console.log(`[TTSService] Detected conversation with ${uniqueSpeakers.length} participants.`);
+                console.log(`[TTSService] Detected dialogue with ${uniqueSpeakers.length} unique speakers.`);
 
                 // Map each speaker to the same generic English voice, as regional codes are not supported
                 const accents = ['en', 'en']; // Keep it simple to avoid errors

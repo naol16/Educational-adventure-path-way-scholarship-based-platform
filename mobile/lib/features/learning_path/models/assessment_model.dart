@@ -77,10 +77,10 @@ class ReadingSection {
 
   factory ReadingSection.fromJson(Map<String, dynamic> json) {
     final passageText = json['passage'] ?? '';
-    final rawParagraphs = (json['paragraphs'] as List?)?.cast<String>() ?? [];
+    final rawParagraphs = (json['paragraphs'] as List?)?.map((e) => e.toString()).toList() ?? [];
     final autoParagraphs = rawParagraphs.isEmpty && passageText.isNotEmpty
         ? passageText.split(RegExp(r'\n\n+'))
-            .where((p) => p.trim().isNotEmpty)
+            .where((String p) => p.trim().isNotEmpty)
             .toList()
         : rawParagraphs;
 
@@ -91,7 +91,7 @@ class ReadingSection {
               .toList() ??
           [],
       paragraphs: autoParagraphs,
-      headings: (json['headings'] as List?)?.cast<String>() ?? [],
+      headings: (json['headings'] as List?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -148,7 +148,17 @@ class WritingSection {
   });
 
   factory WritingSection.fromJson(Map<String, dynamic> json) {
-    final mainPrompt = json['prompt'] ?? '';
+    // Groq 8B returns questions array; extract the first prompt from it
+    final questionsList = json['questions'] as List?;
+    final firstQuestion = questionsList != null && questionsList.isNotEmpty
+        ? Map<String, dynamic>.from(questionsList.first as Map)
+        : null;
+
+    final mainPrompt = json['prompt'] as String? ??
+        firstQuestion?['prompt'] as String? ??
+        firstQuestion?['text'] as String? ??
+        '';
+
     final discussion = json['academic_discussion'] as Map<String, dynamic>?;
     
     return WritingSection(
@@ -158,7 +168,7 @@ class WritingSection {
       task1ImageUrl: json['task1_image_url'] ?? json['task1ImageUrl'],
       professorPost: discussion?['professor_post'],
       studentPosts: (discussion?['student_posts'] as List?)
-          ?.map((e) => Map<String, String>.from(e))
+          ?.map((dynamic e) => Map<String, String>.from(e as Map))
           .toList(),
     );
   }
@@ -196,13 +206,32 @@ class SpeakingSection {
   });
 
   factory SpeakingSection.fromJson(Map<String, dynamic> json) {
+    // Groq 8B returns questions array; extract the first prompt from it
+    final questionsList = json['questions'] as List?;
+    final firstQuestion = questionsList != null && questionsList.isNotEmpty
+        ? Map<String, dynamic>.from(questionsList.first as Map)
+        : null;
+
+    final mainPrompt = json['prompt'] as String? ??
+        firstQuestion?['prompt'] as String? ??
+        firstQuestion?['text'] as String? ??
+        '';
+
+    // Extract remaining questions as part1Questions if no dedicated field
+    final part1FromQuestions = questionsList != null && questionsList.length > 1
+        ? questionsList.skip(1).map<String>((e) {
+            final q = Map<String, dynamic>.from(e as Map);
+            return (q['prompt'] ?? q['text'] ?? '').toString();
+          }).where((String s) => s.isNotEmpty).toList()
+        : <String>[];
+
     return SpeakingSection(
-      prompt: json['prompt'] ?? '',
-      part1Questions: (json['part1_questions'] as List?)?.cast<String>() ?? [],
+      prompt: mainPrompt,
+      part1Questions: (json['part1_questions'] as List?)?.map((e) => e.toString()).toList() ?? part1FromQuestions,
       cueCardTopic: json['cue_card_topic'] ?? json['cueCardTopic'] ?? '',
-      cueCardPoints: (json['cue_card_points'] as List?)?.cast<String>() ??
-          (json['cueCardPoints'] as List?)?.cast<String>() ?? [],
-      part3Questions: (json['part3_questions'] as List?)?.cast<String>() ?? [],
+      cueCardPoints: (json['cue_card_points'] as List?)?.map((e) => e.toString()).toList() ??
+          (json['cueCardPoints'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      part3Questions: (json['part3_questions'] as List?)?.map((e) => e.toString()).toList() ?? [],
       integratedReadingText: json['integrated_reading_text'],
       integratedAudioUrl: json['integrated_audio_url'],
     );

@@ -141,7 +141,7 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
           final id = s['id'] as int;
           final active = _currentStep == id;
           final done = _currentStep > id;
-          final color = active ? DesignSystem.primary(context) : (done ? const Color(0xFF10B981) : DesignSystem.labelText(context));
+          final color = active ? DesignSystem.primary(context) : (done ? DesignSystem.success(context) : DesignSystem.labelText(context));
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -385,7 +385,7 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                 else
                   Icon(
                     isImage ? LucideIcons.image : LucideIcons.fileText,
-                    color: hasFile ? const Color(0xFF10B981) : DesignSystem.primary(context),
+                    color: hasFile ? DesignSystem.success(context) : DesignSystem.primary(context),
                     size: 32,
                   ),
                 const SizedBox(width: 16),

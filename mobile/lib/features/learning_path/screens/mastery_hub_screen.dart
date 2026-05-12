@@ -1192,7 +1192,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     String insight = "You are ready for the Test in Mission 01!";
     final gap = path.competencyGapAnalysis;
     if (gap is Map) {
-      insight = gap['proficiency_profile'] ?? gap.values.firstWhere((v) => v is String, orElse: () => insight);
+      insight = gap['proficiency_profile'] ?? gap.values.whereType<String>().firstWhere((v) => true, orElse: () => insight);
     } else if (gap is String) {
       insight = gap;
     }

@@ -8,6 +8,13 @@ import { sequelize } from "../config/sequelize.js";
 
 export class ChatService {
     /**
+     * Get conversation by ID
+     */
+    static async getConversationById(id: number) {
+        return Conversation.findByPk(id);
+    }
+
+    /**
      * Get or create a conversation between two users (Student and Counselor)
      * Validates that they have an active booking/consultation.
      */

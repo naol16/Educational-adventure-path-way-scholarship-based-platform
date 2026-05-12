@@ -20,6 +20,14 @@ const groqClient = new Groq({
 });
 
 // Providers
+const geminiFlash15 = new ChatGoogleGenerativeAI({
+  model: "gemini-1.5-flash",
+  apiKey: configs.GEMINI_API_KEY as string,
+  temperature: 0.1,
+  maxOutputTokens: 16384,
+  maxRetries: 1,
+});
+
 const geminiModel = new ChatGoogleGenerativeAI({
   model: configs.GEMINI_MODEL as string || "gemini-1.5-flash",
   apiKey: configs.GEMINI_API_KEY as string,
@@ -210,13 +218,14 @@ export class AssessmentService {
     const prompt = PromptTemplate.fromTemplate(`
             Role: Senior Assessment Architect
             Task: Generate a {examType} blueprint. ${skill ? `Focus only on the ${skill} section.` : "Generate a complete 4-section exam."}
-            Difficulty: Standardized {examType} Level
+            Difficulty: {difficulty}
             
             {examInstructions}
             
             Difficulty Constraints:
             - Content should strictly follow the official {examType} guidelines for academic and general training proficiency.
             - Vocabulary and syntax must be representative of the standard {examType} examination.
+            - The difficulty level is {difficulty}: Easy = simpler vocabulary and shorter texts, Medium = standard exam level, Hard = advanced vocabulary and complex reasoning.
             
             Return JSON in the following schema:
             {{
@@ -241,36 +250,44 @@ export class AssessmentService {
             - Do NOT add trailing commas at the end of JSON objects or arrays.
         `);
 
-    const chain = groq70b.pipe(new StringOutputParser());
+    // Primary: Groq 8B (fast, free tier, same API key as 70B)
+    const chain = groq8b.pipe(new StringOutputParser());
     let response: string;
     try {
-      console.log(`[AssessmentService] Requesting Groq 70B for exam generation (Type: ${examType}, Difficulty: ${difficulty}, TestID: ${testId})...`);
+      console.log(`[AssessmentService] Requesting Groq 8B for exam generation (Type: ${examType}, Difficulty: ${difficulty}, TestID: ${testId})...`);
       response = await chain.invoke(
         await prompt.format({ examType, difficulty, testId, examInstructions }),
         { response_format: { type: "json_object" } } as any
       );
-      console.log(`[AssessmentService] Groq generation successful (Response length: ${response.length})`);
+      console.log(`[AssessmentService] Groq 8B generation successful (Response length: ${response.length})`);
     } catch (err: any) {
-      console.warn(`[AssessmentService] Groq 70B failed for generation: ${err.message}. Falling back to Gemini...`);
+      console.warn(`[AssessmentService] Groq 8B failed: ${err.message}. Trying Gemini 1.5 Flash...`);
       try {
-        const fallbackChain = geminiModel.pipe(new StringOutputParser());
+        const fallbackChain = geminiFlash15.pipe(new StringOutputParser());
         response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
-        console.log("[AssessmentService] Gemini fallback successful.");
+        console.log("[AssessmentService] Gemini 1.5 Flash fallback successful.");
       } catch (geminiErr: any) {
-        console.error(`[AssessmentService] Gemini fallback also failed: ${geminiErr.message}. Using safety mock exam.`);
-        response = JSON.stringify({
-          status: "success",
-          data: {
-            test_id: testId,
-            exam_summary: { type: examType, difficulty: difficulty, focus_skill: skill || "all", is_fallback: true },
-            sections: {
-              reading: { passage: "Safety Mode Passage...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
-              listening: { script: "Safety Mode Script...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
-              writing: { questions: [{ id: 1, prompt: "Safety Writing Prompt" }] },
-              speaking: { questions: [{ id: 1, prompt: "Safety Speaking Prompt" }] }
+        console.warn(`[AssessmentService] Gemini 1.5 Flash also failed: ${geminiErr.message}. Trying Gemini 2.5 Flash...`);
+        try {
+          const lastResortChain = geminiModel.pipe(new StringOutputParser());
+          response = await lastResortChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
+          console.log("[AssessmentService] Gemini 2.5 Flash last-resort successful.");
+        } catch (finalErr: any) {
+          console.error(`[AssessmentService] All AI providers failed. Using safety mock exam.`);
+          response = JSON.stringify({
+            status: "success",
+            data: {
+              test_id: testId,
+              exam_summary: { type: examType, difficulty: difficulty, focus_skill: skill || "all", is_fallback: true },
+              sections: {
+                reading: { passage: "Safety Mode Passage...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+                listening: { script: "Safety Mode Script...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+                writing: { questions: [{ id: 1, prompt: "Safety Writing Prompt" }] },
+                speaking: { questions: [{ id: 1, prompt: "Safety Speaking Prompt" }] }
+              }
             }
-          }
-        });
+          });
+        }
       }
     }
 
@@ -314,11 +331,15 @@ export class AssessmentService {
 
     // Store full blueprint in Redis for 30 minutes if available
     if (isRedisAvailable()) {
+        // Optimization: Strip audio_base64 before caching to save Redis memory
+        const leanBlueprint = JSON.parse(JSON.stringify(blueprint));
+        if (leanBlueprint.data?.sections?.listening) delete leanBlueprint.data.sections.listening.audio_base64;
+        
         await redisConnection.set(
           `test_id:${testId}`,
-          JSON.stringify(blueprint),
+          JSON.stringify(leanBlueprint),
           "EX",
-          1800,
+          600, // Reduced to 10 minutes (plenty for evaluation)
         );
     } else {
         console.warn("[AssessmentService] Redis unavailable, skipping blueprint caching. Storing in DB instead.");
@@ -393,7 +414,11 @@ export class AssessmentService {
           isDiagnostic,
           audioData: audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : null,
         },
-        { jobId: testId, removeOnComplete: { age: 3600 }, removeOnFail: { age: 24 * 3600 } },
+        { 
+          jobId: testId, 
+          removeOnComplete: true, // Delete immediately on success
+          removeOnFail: { age: 3600 } // Delete after 1 hour on failure
+        },
       );
       return { status: "submitted", jobId: job.id, testId };
     } else {
@@ -511,27 +536,24 @@ export class AssessmentService {
     };
 
     const skills = ["reading", "listening", "writing", "speaking"];
+    // Parallelize skill evaluation for 4x speedup
+    await job.updateProgress({ status: "evaluating", testId });
     
-    for (const skill of skills) {
-      await job.updateProgress({
-        status: "evaluating",
-        current_skill: skill,
-        testId,
-      });
-
-      console.log(`Evaluating skill: ${skill} for test: ${testId}`);
-      
-      const skillEvaluation = await this.evaluateSingleSkill(
+    const evaluationPromises = skills.map(skill => 
+      this.evaluateSingleSkill(
         skill,
         blueprint,
         responses,
         skill === "speaking" ? audioData : undefined
-      );
+      ).then(evalResult => ({ skill, evalResult }))
+    );
 
-      // Merge scores and notes
-      finalEvaluation.score_breakdown[skill] = skillEvaluation.score;
-      finalEvaluation.section_notes[skill] = skillEvaluation.feedback;
-      finalEvaluation.learning_mode[skill] = skillEvaluation.learning_mode;
+    const results = await Promise.all(evaluationPromises);
+
+    for (const { skill, evalResult } of results) {
+      finalEvaluation.score_breakdown[skill] = evalResult.score;
+      finalEvaluation.section_notes[skill] = evalResult.feedback;
+      finalEvaluation.learning_mode[skill] = evalResult.learning_mode;
     }
 
     // Calculate Overall Band
@@ -568,8 +590,8 @@ export class AssessmentService {
       }
     }
 
-    // Final Storage
-    await redisConnection.set(`evaluation:${testId}`, JSON.stringify(finalEvaluation), "EX", 7200);
+    // Final Storage (30 mins cache)
+    await redisConnection.set(`evaluation:${testId}`, JSON.stringify(finalEvaluation), "EX", 1800);
 
     try {
       // Parallelize DB operations for speed
@@ -946,7 +968,7 @@ export class AssessmentService {
       4. NO MARKDOWN (no \`\`\`json blocks).
     `);
 
-    const chain = geminiModel.pipe(new StringOutputParser());
+    const chain = groq70b.pipe(new StringOutputParser());
     let response: string;
     try {
       console.log("[AssessmentService] Requesting Groq 70B for final synthesis...");
@@ -957,14 +979,14 @@ export class AssessmentService {
       }));
       console.log("[AssessmentService] Synthesis successful.");
     } catch (err: any) {
-      console.warn(`[AssessmentService] Groq 70B failed for synthesis: ${err.message}. Falling back to Gemini...`);
-      const fallbackChain = geminiModel.pipe(new StringOutputParser());
+      console.warn(`[AssessmentService] Groq 70B failed for synthesis: ${err.message}. Falling back to Groq 8B...`);
+      const fallbackChain = groq8b.pipe(new StringOutputParser());
       response = await fallbackChain.invoke(await prompt.format({
         scores: JSON.stringify(scores),
         notes: JSON.stringify(notes),
         examType
       }));
-      console.log("[AssessmentService] Gemini synthesis fallback successful.");
+      console.log("[AssessmentService] Groq 8B synthesis fallback successful.");
     }
 
     const sanitized = this.sanitizeJSONString(response);
@@ -1017,12 +1039,18 @@ export class AssessmentService {
     }
 
     if (state === "failed") {
+      const reason = job.failedReason || "";
+      // If it's a known AI restriction error, allow the UI to try again by not returning 'failed' permanently
+      if (reason.includes("403") || reason.includes("Access denied")) {
+        await job.remove(); // Remove failed job to allow retry
+        return { status: "not_found", message: "AI service was temporarily unavailable. Please click Retry to start again." };
+      }
       return { status: "failed", error: job.failedReason || "Assessment evaluation failed" };
     }
 
     return { 
-      status: state, // 'active' or 'waiting'
-      progress: progress // This will contain { status: "evaluating", current_skill: "reading", ... }
+      status: state === 'active' ? 'processing' : state, 
+      progress: progress || { status: "evaluating", testId }
     };
   }
 

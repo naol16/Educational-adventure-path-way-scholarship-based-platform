@@ -9,6 +9,8 @@ class MockExamGrading extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(mockExamProvider);
+    final notifier = ref.read(mockExamProvider.notifier);
     final primary = DesignSystem.primary(context);
 
     return Scaffold(
@@ -19,30 +21,63 @@ class MockExamGrading extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated spinner
-              SizedBox(
-                width: 72, height: 72,
-                child: CircularProgressIndicator(
-                  color: primary,
-                  strokeWidth: 3,
+              if (state.error != null) ...[
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+                const SizedBox(height: 24),
+                Text(
+                  'Grading Error',
+                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 22),
                 ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'AI Evaluator is grading your exam',
-                textAlign: TextAlign.center,
-                style: DesignSystem.headingStyle(buildContext: context, fontSize: 20),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Analyzing your responses, assessing grammar, and matching against the marking rubric...',
-                textAlign: TextAlign.center,
-                style: DesignSystem.labelStyle(buildContext: context, fontSize: 13)
-                    .copyWith(height: 1.5),
-              ),
-              const SizedBox(height: 32),
-              // Animated dots
-              _PulsingDots(color: primary),
+                const SizedBox(height: 12),
+                Text(
+                  state.error!,
+                  textAlign: TextAlign.center,
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => notifier.submitExam(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('RETRY GRADING', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => notifier.backToDashboard(),
+                  child: Text('Back to Dashboard', style: TextStyle(color: DesignSystem.subText(context))),
+                ),
+              ] else ...[
+                // Animated spinner
+                SizedBox(
+                  width: 72, height: 72,
+                  child: CircularProgressIndicator(
+                    color: primary,
+                    strokeWidth: 3,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'AI Evaluator is grading your exam',
+                  textAlign: TextAlign.center,
+                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 20),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Analyzing your responses, assessing grammar, and matching against the marking rubric...',
+                  textAlign: TextAlign.center,
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 13)
+                      .copyWith(height: 1.5),
+                ),
+                const SizedBox(height: 32),
+                // Animated dots
+                _PulsingDots(color: primary),
+              ],
             ],
           ),
         ),
