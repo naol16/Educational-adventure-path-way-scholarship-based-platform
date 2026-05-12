@@ -10,16 +10,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any) => void }) => {
-  console.log('Counselor data:', { id: counselor.id, score: counselor.recommendationScore, match: counselor.match_score });
+  console.log('Counselor data:', { id: counselor.id, match: counselor.match_score });
   return (
     <Card className="rounded-2xl shadow-sm border border-border/40 bg-card/40 backdrop-blur-md hover:border-primary/40 hover:shadow-xl transition-all duration-500 overflow-hidden group relative">
       <CardBody className="p-8">
         {/* Match Score Badge */}
-        {(counselor.recommendationScore > 0 || counselor.match_score > 0) && (
+        {counselor.match_score > 0 && (
           <div className="absolute top-4 right-4">
             <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-3 py-1 rounded-full flex items-center gap-1.5">
               <Sparkles size={10} className="fill-primary" />
-              {Math.round(counselor.recommendationScore || counselor.match_score)}% Match
+              {Math.round(counselor.match_score)}% Match
             </Badge>
           </div>
         )}

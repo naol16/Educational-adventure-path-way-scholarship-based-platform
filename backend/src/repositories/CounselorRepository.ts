@@ -41,6 +41,7 @@ export class CounselorRepository {
         minRating?: number | undefined;
         page: number;
         limit: number;
+        vectorStr?: string | undefined;
     }): Promise<{ rows: Counselor[]; count: number }> {
         const whereClause: any = {
             verificationStatus: "verified",
@@ -65,12 +66,32 @@ export class CounselorRepository {
         }
 
         const offset = (filters.page - 1) * filters.limit;
+
+        const attributes: any = {
+            include: []
+        };
+
+        const order: any[] = [];
+
+        if (filters.vectorStr) {
+            attributes.include.push([
+                Sequelize.literal(`(1 - (embedding <=> '${filters.vectorStr}'::vector)) * 100`),
+                'match_score'
+            ]);
+            order.push(Sequelize.literal(`embedding <=> '${filters.vectorStr}'::vector ASC`));
+        }
+
+        order.push(["rating", "DESC"], ["updatedAt", "DESC"]);
+
         return Counselor.findAndCountAll({
             where: whereClause,
+            attributes: attributes.include.length > 0 ? attributes : undefined,
             include: [{ model: User, as: "user", attributes: ["id", "name", "email"] }],
-            order: [["rating", "DESC"], ["updatedAt", "DESC"]] as Order,
+            order: order as Order,
             offset,
             limit: filters.limit,
+            raw: filters.vectorStr ? true : false,
+            nest: filters.vectorStr ? true : false
         });
     }
 

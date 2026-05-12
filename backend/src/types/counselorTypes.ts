@@ -192,7 +192,7 @@ export interface CounselorDirectoryQuery {
 }
 
 export interface CounselorRecommendationResponse extends CounselorResponse {
-    recommendationScore: number;
+    match_score: number;
     matchReasons?: string[];
 }
 
