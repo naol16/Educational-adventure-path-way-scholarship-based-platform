@@ -11,8 +11,11 @@ type RefreshTokenResponse = {
   };
 };
 
+const isWeb = typeof window !== 'undefined';
+const defaultBaseUrl = isWeb ? 'http://localhost:5000/api' : 'http://10.230.33.212:5000/api';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || defaultBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
