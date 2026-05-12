@@ -38,28 +38,129 @@ export const ScholarshipExplorer = () => {
   
   const getFullCountryName = (code: string) => {
     const mapping: Record<string, string> = {
+      "AE": "United Arab Emirates",
+      "AF": "Afghanistan",
+      "AL": "Albania",
+      "AM": "Armenia",
+      "AR": "Argentina",
+      "AT": "Austria",
+      "AU": "Australia",
+      "AZ": "Azerbaijan",
+      "BD": "Bangladesh",
+      "BE": "Belgium",
+      "BG": "Bulgaria",
+      "BH": "Bahrain",
+      "BR": "Brazil",
+      "CA": "Canada",
+      "CH": "Switzerland",
+      "CN": "China",
+      "CO": "Colombia",
+      "CZ": "Czech Republic",
+      "DE": "Germany",
+      "DK": "Denmark",
+      "DZ": "Algeria",
+      "EE": "Estonia",
+      "EG": "Egypt",
+      "ES": "Spain",
       "ET": "Ethiopia",
-      "UK": "United Kingdom",
+      "EU": "Europe (Region)",
+      "FI": "Finland",
+      "FR": "France",
       "GB": "United Kingdom",
+      "GE": "Georgia",
+      "GH": "Ghana",
+      "GR": "Greece",
+      "HK": "Hong Kong",
+      "HU": "Hungary",
+      "ID": "Indonesia",
+      "IE": "Ireland",
+      "IL": "Israel",
+      "IN": "India",
+      "IQ": "Iraq",
+      "IR": "Iran",
+      "IS": "Iceland",
+      "IT": "Italy",
+      "JO": "Jordan",
+      "JP": "Japan",
+      "KE": "Kenya",
+      "KR": "South Korea",
+      "KW": "Kuwait",
+      "KZ": "Kazakhstan",
+      "LB": "Lebanon",
+      "LK": "Sri Lanka",
+      "LT": "Lithuania",
+      "LU": "Luxembourg",
+      "LV": "Latvia",
+      "LY": "Libya",
+      "MA": "Morocco",
+      "MC": "Monaco",
+      "MD": "Moldova",
+      "ME": "Montenegro",
+      "MG": "Madagascar",
+      "MK": "North Macedonia",
+      "ML": "Mali",
+      "MM": "Myanmar",
+      "MN": "Mongolia",
+      "MT": "Malta",
+      "MX": "Mexico",
+      "MY": "Malaysia",
+      "NG": "Nigeria",
+      "NL": "Netherlands",
+      "NO": "Norway",
+      "NZ": "New Zealand",
+      "OM": "Oman",
+      "PH": "Philippines",
+      "PK": "Pakistan",
+      "PL": "Poland",
+      "PT": "Portugal",
+      "QA": "Qatar",
+      "RO": "Romania",
+      "RS": "Serbia",
+      "RU": "Russia",
+      "SA": "Saudi Arabia",
+      "SE": "Sweden",
+      "SG": "Singapore",
+      "SI": "Slovenia",
+      "SK": "Slovakia",
+      "TH": "Thailand",
+      "TR": "Turkey",
+      "TW": "Taiwan",
+      "UA": "Ukraine",
+      "UG": "Uganda",
+      "UK": "United Kingdom",
       "US": "United States",
       "USA": "United States",
-      "CA": "Canada",
-      "AU": "Australia",
-      "DE": "Germany",
-      "FR": "France",
-      "JP": "Japan",
-      "CN": "China",
-      "IN": "India"
+      "VN": "Vietnam",
+      "ZA": "South Africa"
     };
-    return mapping[code.toUpperCase()] || code;
+    
+    const upperCode = code.toUpperCase();
+    if (mapping[upperCode]) return mapping[upperCode];
+    
+    // Handle sub-regions like DE-NW
+    if (upperCode.includes('-')) {
+      const baseCode = upperCode.split('-')[0];
+      if (mapping[baseCode]) return mapping[baseCode];
+    }
+    
+    return code;
   };
 
   const countries = useMemo(() => {
     // Handle cases where api.ts interceptor might have unwrapped the data or not
     const raw = Array.isArray(countriesResponse) ? countriesResponse : (countriesResponse?.data || []);
-    return raw.map((c: string) => ({
-      code: c,
-      name: getFullCountryName(c)
+    
+    const uniqueMap = new Map();
+    raw.forEach((c: string) => {
+      const name = getFullCountryName(c);
+      if (!uniqueMap.has(name)) {
+        uniqueMap.set(name, c);
+      }
+    });
+
+    return Array.from(uniqueMap.entries()).map(([name, code]) => ({
+      code,
+      name
     })).sort((a: any, b: any) => a.name.localeCompare(b.name));
   }, [countriesResponse]);
 
