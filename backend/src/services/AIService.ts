@@ -171,7 +171,7 @@ export class AIService {
         `[AIService] Gemini Response for ${scholarships.length} scholarships:`,
         responseText,
       );
-      
+
       const parsed = JSON.parse(responseText);
 
       // Extract the array from the normalized Gemini response
@@ -268,7 +268,7 @@ export class AIService {
       return JSON.parse(content);
     } catch (error: any) {
       console.error("[AIService] Groq JSON Error, falling back to Gemini:", error.message);
-      
+
       try {
         console.log("[AIService] Attempting fallback to Gemini...");
         const model = genAI.getGenerativeModel({
@@ -281,7 +281,7 @@ export class AIService {
         return JSON.parse(text);
       } catch (geminiError: any) {
         console.error("[AIService] Primary Gemini Fallback Error:", geminiError.message);
-        
+
         // Try a secondary Gemini model if the primary one is rate-limited
         try {
           console.warn("[AIService] Attempting secondary Gemini model (gemini-flash-latest)...");
@@ -293,44 +293,44 @@ export class AIService {
           return JSON.parse(secondaryResult.response.text());
         } catch (secondaryError: any) {
           console.error("[AIService] Secondary Gemini Error:", secondaryError.message);
-          
+
           // --- LAST RESORT: MOCK DATA TO PREVENT 500 ERRORS ---
           console.warn("[AIService] ALL AI PROVIDERS FAILED. Returning mock safety data.");
-        
-        if (prompt.includes("Unit Test") || prompt.includes("questions") || prompt.includes("Mission")) {
-          return {
-            title: "Safety Mastery Mission",
-            level: "Standard",
-            skill: "Skill Mastery",
-            passage: "This is a safety-mode academic passage provided because the AI service is currently unavailable. Please check your API keys.",
-            script: "This is a safety-mode listening script provided because the AI service is currently unavailable.",
-            practiceDrill: {
-              type: "MCQ",
-              questions: [
-                { q: "What should you check if this message appears?", options: ["API keys", "CSS", "Database"], answer: "API keys", feedbackTip: "Check your .env file." }
-              ]
-            },
-            unitTest: {
-              type: "MCQ",
-              questions: [
-                { q: "Is the server still running?", options: ["Yes", "No"], answer: "Yes", feedbackTip: "The server is running in safety mode." }
-              ]
-            },
-            questions: [
-              {
-                question: "Which of the following is the primary purpose of this safety-mode content?",
-                options: ["To prevent server errors", "To simulate a real exam", "To provide difficult challenges", "To test the UI"],
-                correct_answer: 0,
-                explanation: "The system provides this mock data as a fallback when AI providers fail."
-              }
-            ]
-          };
-        }
 
-        // Default empty structure if no pattern matches
-        return { status: "fallback", message: "AI services are temporarily unavailable.", data: {} };
+          if (prompt.includes("Unit Test") || prompt.includes("questions") || prompt.includes("Mission")) {
+            return {
+              title: "Safety Mastery Mission",
+              level: "Standard",
+              skill: "Skill Mastery",
+              passage: "This is a safety-mode academic passage provided because the AI service is currently unavailable. Please check your API keys.",
+              script: "This is a safety-mode listening script provided because the AI service is currently unavailable.",
+              practiceDrill: {
+                type: "MCQ",
+                questions: [
+                  { q: "What should you check if this message appears?", options: ["API keys", "CSS", "Database"], answer: "API keys", feedbackTip: "Check your .env file." }
+                ]
+              },
+              unitTest: {
+                type: "MCQ",
+                questions: [
+                  { q: "Is the server still running?", options: ["Yes", "No"], answer: "Yes", feedbackTip: "The server is running in safety mode." }
+                ]
+              },
+              questions: [
+                {
+                  question: "Which of the following is the primary purpose of this safety-mode content?",
+                  options: ["To prevent server errors", "To simulate a real exam", "To provide difficult challenges", "To test the UI"],
+                  correct_answer: 0,
+                  explanation: "The system provides this mock data as a fallback when AI providers fail."
+                }
+              ]
+            };
+          }
+
+          // Default empty structure if no pattern matches
+          return { status: "fallback", message: "AI services are temporarily unavailable.", data: {} };
+        }
       }
     }
   }
-}
 }

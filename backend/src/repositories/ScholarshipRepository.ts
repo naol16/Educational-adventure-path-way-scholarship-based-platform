@@ -12,15 +12,16 @@ export class ScholarshipRepository {
         if (query) {
             where[Op.or] = [
                 { title: { [Op.iLike]: `%${query}%` } },
-                { description: { [Op.iLike]: `%${query}%` } }
+                { description: { [Op.iLike]: `%${query}%` } },
+                { country: { [Op.iLike]: `%${query}%` } }
             ];
         }
 
-        if (country) {
+        if (country && country !== '') {
             where.country = { [Op.iLike]: `%${country}%` };
         }
 
-        if (fund_type) {
+        if (fund_type && fund_type !== '') {
             where.fundType = { [Op.iLike]: `%${fund_type}%` };
         }
 
