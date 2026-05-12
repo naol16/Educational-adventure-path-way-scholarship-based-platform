@@ -14,7 +14,7 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
     ? new Date(scholarship.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : "No deadline";
 
-  const matchScore = scholarship.matchScore;
+  const matchScore = scholarship.matchScore || (scholarship as any).match_score;
 
   if (variant === 'featured') {
     return (
@@ -69,20 +69,31 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Link 
-                href={`/dashboard/student/scholarships/${scholarship.id}`}
-                className="h-16 rounded-2xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[10px] flex items-center justify-center transition-all"
-              >
-                In-Depth Details
-              </Link>
-              <a 
-                href={scholarship.applicationUrl || "#"} 
-                target="_blank" 
-                className="h-16 primary-gradient text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-primary/20 hover:scale-[1.02]"
-              >
-                Launch Application <ExternalLink size={16} />
-              </a>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-4">
+                <Link 
+                  href={`/dashboard/student/scholarships/${scholarship.id}`}
+                  className="h-16 rounded-2xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[10px] flex items-center justify-center transition-all"
+                >
+                  In-Depth Details
+                </Link>
+                <a 
+                  href={scholarship.applicationUrl || "#"} 
+                  target="_blank" 
+                  className="h-16 primary-gradient text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-primary/20 hover:scale-[1.02]"
+                >
+                  Launch Application <ExternalLink size={16} />
+                </a>
+              </div>
+              {scholarship.originalUrl && (
+                <a 
+                  href={scholarship.originalUrl} 
+                  target="_blank" 
+                  className="text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-2"
+                >
+                  <Globe size={12} /> Visit Original Source (Backup)
+                </a>
+              )}
             </div>
           </CardBody>
         </Card>
@@ -133,20 +144,31 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Link 
-                  href={`/dashboard/student/scholarships/${scholarship.id}`}
-                  className="h-12 rounded-xl border border-border text-foreground bg-muted/20 hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
-                >
-                  Details
-                </Link>
-                <a 
-                  href={scholarship.applicationUrl || "#"} 
-                  target="_blank" 
-                  className="h-12 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-lg"
-                >
-                  Apply <ExternalLink size={14} />
-                </a>
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <Link 
+                    href={`/dashboard/student/scholarships/${scholarship.id}`}
+                    className="h-12 rounded-xl border border-border text-foreground bg-muted/20 hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
+                  >
+                    Details
+                  </Link>
+                  <a 
+                    href={scholarship.applicationUrl || "#"} 
+                    target="_blank" 
+                    className="h-12 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-lg"
+                  >
+                    Apply <ExternalLink size={14} />
+                  </a>
+                </div>
+                {scholarship.originalUrl && (
+                  <a 
+                    href={scholarship.originalUrl} 
+                    target="_blank" 
+                    className="text-center text-[8px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Globe size={10} /> Source Link
+                  </a>
+                )}
               </div>
             </div>
           </CardBody>
@@ -212,20 +234,31 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
             </div>
 
             {/* Right: Actions */}
-            <div className="lg:w-72 border-t lg:border-t-0 lg:border-l border-border/40 p-6 flex items-center gap-3 bg-muted/5">
-              <Link 
-                href={`/dashboard/student/scholarships/${scholarship.id}`}
-                className="flex-1 h-11 rounded-xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
-              >
-                Explore
-              </Link>
-              <a 
-                href={scholarship.applicationUrl || "#"} 
-                target="_blank" 
-                className="flex-1 h-11 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-md shadow-primary/10"
-              >
-                Apply Now <ExternalLink size={12} />
-              </a>
+            <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-border/40 p-6 flex flex-col justify-center gap-3 bg-muted/5">
+              <div className="flex items-center gap-3">
+                <Link 
+                  href={`/dashboard/student/scholarships/${scholarship.id}`}
+                  className="flex-1 h-11 rounded-xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
+                >
+                  Explore
+                </Link>
+                <a 
+                  href={scholarship.applicationUrl || "#"} 
+                  target="_blank" 
+                  className="flex-1 h-11 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-md shadow-primary/10"
+                >
+                  Apply Now <ExternalLink size={12} />
+                </a>
+              </div>
+              {scholarship.originalUrl && (
+                <a 
+                  href={scholarship.originalUrl} 
+                  target="_blank" 
+                  className="text-center text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Globe size={10} /> Backup Source
+                </a>
+              )}
             </div>
           </div>
         </CardBody>

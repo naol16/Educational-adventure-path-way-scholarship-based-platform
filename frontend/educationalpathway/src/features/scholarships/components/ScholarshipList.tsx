@@ -46,7 +46,11 @@ export const ScholarshipList = ({ filters, activeTab, onPageChange }: Scholarshi
     
     if (activeTab === 'explore' || activeTab === 'matched') {
       const items = Array.isArray(rawData) ? rawData : (rawData.data || []);
-      return items;
+      return items.map((item: any) => ({
+        ...item,
+        matchScore: item.matchScore || item.match_score,
+        matchReason: item.matchReason || item.match_reason,
+      }));
     }
 
     const trackedItems = Array.isArray(rawData) ? rawData : (rawData.data || []);
@@ -136,7 +140,7 @@ export const ScholarshipList = ({ filters, activeTab, onPageChange }: Scholarshi
                     return (
                       <Button
                         key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
+                        variant={pagination.page === pageNum ? "primary" : "outline"}
                         onClick={() => onPageChange?.(pageNum)}
                         className={`h-12 w-12 rounded-xl font-bold transition-all ${
                           pagination.page === pageNum 

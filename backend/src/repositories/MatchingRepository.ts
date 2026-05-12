@@ -14,7 +14,9 @@ export class MatchingRepository {
    * Executes the optimized pgvector SQL search with hard filters.
    */
   static async findTopMatches(student: Student, vectorStr: string, limit: number = 5, offset: number = 0): Promise<{ rows: MatchedScholarship[]; count: number }> {
-    const whereConditions: any[] = [];
+    const whereConditions: any[] = [
+      { applicationUrl: { [Op.ne]: null } }
+    ];
 
     // First get the total count of potential matches
     const count = await Scholarship.count({
@@ -45,6 +47,8 @@ export class MatchingRepository {
       const score = parseFloat((m as any).match_score?.toString() || "0");
       return {
         ...m,
+        applicationUrl: (m as any).application_url || (m as any).applicationUrl,
+        originalUrl: (m as any).original_url || (m as any).originalUrl,
         match_score: score
       };
     }) as unknown as MatchedScholarship[];

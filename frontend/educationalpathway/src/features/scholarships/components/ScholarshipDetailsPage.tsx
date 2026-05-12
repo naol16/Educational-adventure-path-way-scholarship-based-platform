@@ -502,6 +502,16 @@ export default function ScholarshipDetailsPage() {
                           <><Bookmark size={18} /> SAVE FOR LATER</>
                         )}
                       </button>
+
+                      {scholarship.originalUrl && (
+                        <a 
+                          href={scholarship.originalUrl} 
+                          target="_blank" 
+                          className="w-full text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 mt-2"
+                        >
+                          <Globe2 size={14} /> Visit Original Source (Backup)
+                        </a>
+                      )}
                    </div>
 
                    <div className="relative z-10 pt-2 flex items-center justify-center gap-2 opacity-30 group-hover:opacity-60 transition-opacity">
