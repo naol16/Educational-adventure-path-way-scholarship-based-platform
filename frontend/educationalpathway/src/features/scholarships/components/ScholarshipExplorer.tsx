@@ -43,7 +43,7 @@ export const ScholarshipExplorer = () => {
     degree_level: '',
     fund_type: '',
     page: 1,
-    pageSize: 12
+    pageSize: 5
   });
 
   const handleRefresh = () => {

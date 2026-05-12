@@ -110,7 +110,7 @@ export class CounselorRepository {
                 Sequelize.literal(`embedding <=> '${vectorStr}'::vector ASC`),
                 ["rating", "DESC"]
             ] as any,
-            limit: 10,
+            limit: 5,
             raw: true,
             nest: true
         });

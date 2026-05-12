@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useAuth } from "@/providers/auth-context";
 import {
   Award,
@@ -62,7 +63,14 @@ export const StudentDashboard = () => {
     revalidateOnMount: true
   });
 
-  const matches: Scholarship[] = Array.isArray(matchesResponse) ? matchesResponse : (matchesResponse?.data || []);
+  const matches: Scholarship[] = useMemo(() => {
+    const items = Array.isArray(matchesResponse) ? matchesResponse : (matchesResponse?.data || []);
+    return items.map((item: any) => ({
+      ...item,
+      matchScore: item.matchScore || item.match_score,
+      matchReason: item.matchReason || item.match_reason,
+    }));
+  }, [matchesResponse]);
 
   const { data: recommendedCounselors = [], isLoading: loadingCounselors } = useSWR<any[]>(user?.isOnboarded ? "/counselors/recommended" : null, {
     fallbackData: [],
@@ -213,10 +221,19 @@ export const StudentDashboard = () => {
                             <p className="text-xs text-muted-foreground font-medium mb-1">Match</p>
                             <div className="flex items-center gap-1">
                               <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                              <p className="font-bold text-foreground text-sm">{match.matchScore !== undefined ? `${Math.round(match.matchScore)}%` : '85%'}</p>
+                              <p className="font-bold text-foreground text-sm">{match.matchScore !== undefined ? `${Math.round(match.matchScore)}%` : 'N/A'}</p>
                             </div>
                           </div>
                         </div>
+
+                        {/* AI Match Reason */}
+                        {match.matchReason && (
+                          <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+                            <p className="text-[10px] font-medium text-primary leading-relaxed italic">
+                              "{(match as any).matchReason}"
+                            </p>
+                          </div>
+                        )}
 
                         {/* Tags */}
                         {(match.requirements || (match.degreeLevels && match.degreeLevels.length > 0)) && (
@@ -372,10 +389,19 @@ export const StudentDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {loadingCounselors ? (
-                  [1, 2].map(i => <div key={i} className="h-64 bg-card/40 rounded-lg animate-pulse border border-border/20" />)
+                  [1, 2, 3].map(i => <div key={i} className="h-64 bg-card/40 rounded-lg animate-pulse border border-border/20" />)
                 ) : recommendedCounselors.length > 0 ? (
-                  recommendedCounselors.slice(0, 2).map(counselor => (
-                    <Card key={counselor.id} className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all p-6 group">
+                  recommendedCounselors.slice(0, 5).map((counselor: any) => (
+                    <Card key={counselor.id} className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all p-6 group relative overflow-hidden">
+                      {/* Match Score Badge */}
+                      {counselor.recommendationScore > 0 && (
+                        <div className="absolute top-0 right-0 p-2">
+                          <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-bl-xl rounded-tr-none">
+                            {Math.round(counselor.recommendationScore)}% Match
+                          </Badge>
+                        </div>
+                      )}
+                      
                       <div className="flex gap-4 mb-4">
                         <Avatar className="size-16 border-2 border-border group-hover:border-primary transition-all">
                           <AvatarImage src={counselor.profileImageUrl} />
@@ -390,6 +416,16 @@ export const StudentDashboard = () => {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Match Reasons */}
+                      {counselor.matchReasons && counselor.matchReasons.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-[10px] text-muted-foreground italic line-clamp-1">
+                            {counselor.matchReasons[0]}
+                          </p>
+                        </div>
+                      )}
+
                       {counselor.areasOfExpertise && (
                         <div className="flex flex-wrap gap-2 mb-4">
                           {counselor.areasOfExpertise.split(',').slice(0, 2).map((area: string) => (
