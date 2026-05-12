@@ -1628,19 +1628,30 @@ export class CounselorService {
       const student = await Student.findOne({ where: { userId: studentId } });
       if (student) {
         try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
           const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
-          const result = await Counselor.findOne({
-            where: { id: counselor.id },
-            attributes: [
-              [Sequelize.literal(`(1 - (embedding <=> '${vectorStr}'::vector)) * 100`), 'match_score']
-            ],
-            raw: true
-          });
-          if (result) {
-            match_score = parseFloat((result as any).match_score.toString());
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
           }
         } catch (err) {
-          console.error("[CounselorService] Error calculating match score for profile:", err);
+          console.error("[CounselorService] Error calculating match score for profile by userId:", err);
         }
       }
     }
@@ -1661,19 +1672,30 @@ export class CounselorService {
       const student = await Student.findOne({ where: { userId: studentId } });
       if (student) {
         try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
           const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
-          const result = await Counselor.findOne({
-            where: { id: counselor.id },
-            attributes: [
-              [Sequelize.literal(`(1 - (embedding <=> '${vectorStr}'::vector)) * 100`), 'match_score']
-            ],
-            raw: true
-          });
-          if (result) {
-            match_score = parseFloat((result as any).match_score.toString());
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
           }
         } catch (err) {
-          console.error("[CounselorService] Error calculating match score for profile:", err);
+          console.error("[CounselorService] Error calculating match score for profile by ID:", err);
         }
       }
     }

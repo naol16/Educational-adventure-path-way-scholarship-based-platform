@@ -148,10 +148,16 @@ export const CounselorDetailsPage = () => {
             {/* Tactical Stat Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { label: "Precision", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
+                { 
+                  label: "AI Compatibility", 
+                  value: counselor.match_score ? `${counselor.match_score}%` : "---", 
+                  icon: Sparkles, 
+                  color: "text-primary", 
+                  bgColor: "bg-primary/10" 
+                },
+                { label: "Precision Rating", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
                 { label: "Tactical Exp", value: `${counselor.yearsOfExperience || 0}+ Yrs`, icon: Clock, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-                { label: "Successful", value: "500+", icon: GraduationCap, color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
-                { label: "Frequency", value: counselor.languages?.split(',')[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+                { label: "Frequency", value: counselor.supportedLanguages?.[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
               ].map((stat, i) => (
                 <motion.div 
                   key={i}
