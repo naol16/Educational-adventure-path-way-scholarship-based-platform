@@ -122,10 +122,10 @@ export const CounselorDetailsPage = () => {
                     <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
                       <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Verified Expert
                     </Badge>
-                    {counselor.recommendationScore > 0 && (
+                    {counselor.match_score > 0 && (
                       <Badge className="bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
                         <Sparkles className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} />
-                        {Math.round(counselor.recommendationScore)}% Precision Match
+                        {Math.round(counselor.match_score)}% Precision Match
                       </Badge>
                     )}
                   </div>

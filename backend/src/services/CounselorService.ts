@@ -1,4 +1,4 @@
-import { Op, Transaction } from "sequelize";
+import { Op, Transaction, Sequelize } from "sequelize";
 import crypto from "crypto";
 import { sequelize } from "../config/sequelize.js";
 import { notificationQueue, isRedisAvailable } from "../config/redis.js";
@@ -222,7 +222,7 @@ export class CounselorService {
     return await this.formatCounselorResponse(counselor, user);
   }
 
-  static async getPublicDirectory(query: CounselorDirectoryQuery): Promise<{
+  static async getPublicDirectory(query: CounselorDirectoryQuery, studentId?: number): Promise<{
     rows: CounselorResponse[];
     count: number;
     page: number;
@@ -230,6 +230,19 @@ export class CounselorService {
   }> {
     const page = query.page || 1;
     const limit = query.limit || 10;
+
+    let vectorStr: string | undefined = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+        } catch (err) {
+          console.error("[CounselorService] Error generating student counselor embedding for directory:", err);
+        }
+      }
+    }
+
     const { rows, count } = await CounselorRepository.findVerifiedDirectory({
       search: query.search,
       ...(query.specialization ? { specialization: query.specialization } : {}),
@@ -238,6 +251,7 @@ export class CounselorService {
       ...(query.minRating !== undefined ? { minRating: query.minRating } : {}),
       page,
       limit,
+      vectorStr
     });
 
     const filteredRows = rows.filter((counselor) => {
@@ -272,6 +286,7 @@ export class CounselorService {
       const availableSlots = slotsByCounselor.get(c.id) || [];
       return {
         ...base,
+        match_score: (c as any).match_score ? parseFloat((c as any).match_score.toString()) : undefined,
         availabilitySummary:
           base.availabilitySummary ||
           (availableSlots.length > 0 ? `${availableSlots.length} open slots` : null),
@@ -301,7 +316,7 @@ export class CounselorService {
     if (!vectorStr) {
         console.log("[CounselorService] No vector available, falling back to basic directory list");
         const { rows } = await CounselorRepository.findVerifiedDirectory({ page: 1, limit: 10 });
-        return rows.map(c => ({ ...c, recommendationScore: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
+        return rows.map(c => ({ ...c, match_score: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
     }
 
     // 2. Fetch vector matches
@@ -342,7 +357,7 @@ export class CounselorService {
       const base = await this.formatCounselorResponse(counselor, counselor.user || null);
       return { 
         ...base, 
-        recommendationScore: vectorScore, 
+        match_score: vectorScore, 
         matchReasons 
       };
     }));
@@ -1602,22 +1617,70 @@ export class CounselorService {
     return PaymentService.getBanks();
   }
 
-  static async getPublicProfileByUserId(userId: number): Promise<any> {
+  static async getPublicProfileByUserId(userId: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findByUserId(userId);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          const result = await Counselor.findOne({
+            where: { id: counselor.id },
+            attributes: [
+              [Sequelize.literal(`(1 - (embedding <=> '${vectorStr}'::vector)) * 100`), 'match_score']
+            ],
+            raw: true
+          });
+          if (result) {
+            match_score = parseFloat((result as any).match_score.toString());
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
-  static async getPublicProfileById(id: number): Promise<any> {
+  static async getPublicProfileById(id: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findById(id);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          const result = await Counselor.findOne({
+            where: { id: counselor.id },
+            attributes: [
+              [Sequelize.literal(`(1 - (embedding <=> '${vectorStr}'::vector)) * 100`), 'match_score']
+            ],
+            raw: true
+          });
+          if (result) {
+            match_score = parseFloat((result as any).match_score.toString());
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(counselor.userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
   static async getStudentBookings(userId: number, role: UserRole = UserRole.STUDENT): Promise<any[]> {
