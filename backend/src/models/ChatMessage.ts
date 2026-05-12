@@ -92,6 +92,14 @@ export class ChatMessage extends Model {
     })
     declare moderationReason?: string;
 
+    @ForeignKey(() => ChatMessage)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'parent_id'
+    })
+    declare parentId: number | null;
+
     @CreatedAt
     @Column({
         type: DataType.DATE,
@@ -111,4 +119,7 @@ export class ChatMessage extends Model {
 
     @BelongsTo(() => User)
     sender!: UserType;
+
+    @BelongsTo(() => ChatMessage, 'parentId')
+    parent!: ChatMessage;
 }

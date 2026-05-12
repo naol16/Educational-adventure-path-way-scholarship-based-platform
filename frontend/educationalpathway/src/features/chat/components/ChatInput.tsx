@@ -4,10 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Smile, Paperclip, Calendar, X, Mic, Edit2, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import axios from "axios";
+import api from "@/lib/api";
 import { toast } from "react-hot-toast";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -38,6 +36,13 @@ export const ChatInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Voice Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Set content when editingMessage changes
   useEffect(() => {
@@ -88,14 +93,13 @@ export const ChatInput = ({
     formData.append("file", file);
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-      const res = await axios.post(`${API_BASE_URL}/chat/upload`, formData, {
+      const res = await api.post("/chat/upload", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'multipart/form-data'
         }
       });
-      const fileUrl = res.data.data.url;
+      // The api client unwraps res.data to the inner data object
+      const fileUrl = res.data.url;
       onSend(`[Attached File](${fileUrl})`);
       toast.success("File synchronized and sent", { id: toastId });
     } catch (err) {
@@ -131,6 +135,77 @@ export const ChatInput = ({
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (audioBlob.size < 1000) return; // Ignore very short recordings
+
+        const toastId = toast.loading("Syncing voice message...");
+        const formData = new FormData();
+        formData.append("file", audioBlob, "voice_message.webm");
+
+        try {
+          const res = await api.post("/chat/upload", formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          const fileUrl = res.data.url;
+          onSend(`[Audio Message](${fileUrl})`);
+          toast.success("Voice message sent", { id: toastId });
+        } catch (err) {
+          toast.error("Failed to send voice message", { id: toastId });
+        }
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      toast.error("Microphone access denied");
+      console.error("Recording error:", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = null; // Prevent sending
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+      toast.error("Recording cancelled");
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
     onTyping(true);
@@ -142,7 +217,7 @@ export const ChatInput = ({
   };
 
   return (
-    <div className="p-4 bg-[#0e1621] relative border-t border-white/5">
+    <div className="p-6 bg-[#0a0f18] relative border-t border-white/5">
       <AnimatePresence>
         {showEmoji && (
           <motion.div 
@@ -204,60 +279,80 @@ export const ChatInput = ({
         </AnimatePresence>
 
         <div className="flex items-end gap-2">
-          <div className="flex-1 bg-[#17212b] rounded-2xl border border-white/5 shadow-lg flex items-end px-2 py-1.5 transition-all focus-within:border-primary/30">
-            <button 
-              type="button" 
-              onClick={() => setShowEmoji((prev) => !prev)}
-              disabled={disabled}
-              className="p-2.5 text-white/40 hover:text-primary transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <Smile className="h-5 w-5" />
-            </button>
+          <div className="flex-1 bg-[#17212b] rounded-2xl border border-white/5 shadow-lg flex items-end px-2 py-1.5 transition-all focus-within:border-primary/30 relative">
+            {isRecording ? (
+              <div className="flex-1 flex items-center justify-between px-4 py-2 bg-primary/5 rounded-xl animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-xs font-black text-white/80 uppercase tracking-widest">Recording {formatDuration(recordingDuration)}</span>
+                </div>
+                <button 
+                  onClick={cancelRecording}
+                  className="text-[10px] font-black text-white/40 hover:text-red-400 uppercase tracking-widest transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <>
+                <button 
+                  type="button" 
+                  onClick={() => setShowEmoji((prev) => !prev)}
+                  disabled={disabled}
+                  className="p-2.5 text-white/40 hover:text-primary transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Smile className="h-5 w-5" />
+                </button>
 
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleChange}
-              onKeyDown={handleKeyPress}
-              disabled={disabled}
-              placeholder={editingMessage ? "Edit message..." : "Write a message..."}
-              className="flex-1 bg-transparent border-none py-2.5 px-1 text-sm text-white placeholder:text-white/20 outline-none resize-none max-h-40 min-h-[44px] custom-scrollbar"
-              rows={1}
-            />
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyPress}
+                  disabled={disabled}
+                  placeholder={editingMessage ? "Edit message..." : "Write a message..."}
+                  className="flex-1 bg-transparent border-none py-2.5 px-1 text-sm text-white placeholder:text-white/20 outline-none resize-none max-h-40 min-h-[44px] custom-scrollbar"
+                  rows={1}
+                />
 
-            <div className="flex items-center">
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden" 
-              />
-              <button 
-                type="button" 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || !!editingMessage}
-                className="p-2.5 text-white/40 hover:text-primary transition-colors cursor-pointer disabled:opacity-30"
-                title="Attach File"
-              >
-                <Paperclip className="h-5 w-5" />
-              </button>
-
-            </div>
+                <div className="flex items-center">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={disabled || !!editingMessage}
+                    className="p-2.5 text-white/40 hover:text-primary transition-colors cursor-pointer disabled:opacity-30"
+                    title="Attach File"
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <motion.button
             type="button"
-            onClick={() => handleSubmit()}
+            onClick={isRecording ? stopRecording : content.trim() ? () => handleSubmit() : startRecording}
             disabled={disabled}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-all shadow-lg
-              ${!content.trim() 
-                ? 'bg-[#17212b] text-white/40 cursor-default' 
-                : 'bg-primary text-white shadow-primary/20 cursor-pointer'}`}
+              ${isRecording 
+                ? 'bg-red-500 text-white animate-pulse' 
+                : !content.trim() 
+                  ? 'bg-[#17212b] text-white/40 cursor-pointer hover:text-primary' 
+                  : 'bg-primary text-white shadow-primary/20 cursor-pointer'}`}
           >
             {editingMessage ? (
               <CheckCheck className="h-5 w-5" />
+            ) : isRecording ? (
+              <Send className="h-5 w-5" />
             ) : content.trim() ? (
               <Send className="h-5 w-5 ml-0.5" />
             ) : (

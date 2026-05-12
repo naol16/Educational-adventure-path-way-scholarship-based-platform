@@ -2,7 +2,7 @@
 
 import { Message, ChatUser } from "../types";
 import { format, isToday, isYesterday } from "date-fns";
-import { User, CheckCheck, Edit2, Trash2, ChevronLeft, Calendar, Info, Search, MoreVertical, MessageCircle, Reply, Copy, CornerUpLeft } from "lucide-react";
+import { User, CheckCheck, Edit2, Trash2, ChevronLeft, Calendar, Info, Search, MoreVertical, MessageCircle, Reply, Copy, CornerUpLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -164,13 +164,13 @@ export const ChatWindow = ({
   return (
     <div 
       ref={containerRef}
-      className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#0e1621]"
+      className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#0a0f18]"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.373 6.06 47.96 7.473 41.887 0h1.428zM16.686 0L10.627 6.06l1.414 1.414L18.114 0h-1.428zm24.17 0l7.172 7.172-1.414 1.414L39.43 0h1.428zM19.144 0L11.97 7.172l1.414 1.414L20.572 0h-1.428zm15.427 0l9.57 9.57-1.414 1.414L33.143 0h1.428zm-9.142 0L15.857 9.57l1.414 1.414L26.43 0h-1.428zM24.713 0l12.373 12.373-1.414 1.414L23.286 0h1.427zM21.287 0L8.913 12.373l1.414 1.414L22.714 0h-1.427zM15.427 0L0 15.427v1.414L16.84 0h-1.413zM44.573 0L60 15.427v1.414L43.16 0h1.413zM28.43 0L0 28.43v1.414L29.844 0h-1.414zm3.14 0L60 28.43v1.414L30.156 0h1.414zM0 31.574L31.574 0h1.414L0 32.988v-1.414zm60 0L28.426 0h-1.414L60 32.988v-1.414zM0 37.23L37.23 0h1.414L0 38.644V37.23zm60 0L22.77 0h-1.414L60 38.644V37.23zM0 42.887L42.887 0h1.414L0 44.301v-1.414zm60 0L17.113 0h-1.414L60 44.301v-1.414zM0 48.544L48.544 0h1.414L0 49.958v-1.414zm60 0L11.456 0h-1.414L60 49.958v-1.414zM0 54.2L54.2 0h1.414L0 55.614V54.2zm60 0L5.8 0H4.386L60 55.614V54.2zM30 60l30-30v1.414L31.414 60H30zm0-60L0 30v-1.414L28.586 0H30z' fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
 
       {/* Header */}
-      <div className="z-20 px-4 py-2 bg-[#17212b]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 shadow-lg">
+      <div className="z-20 px-6 py-4 bg-[#0a0f18]/80 backdrop-blur-3xl border-b border-white/5 flex items-center justify-between sticky top-0 shadow-2xl">
         <div className="flex items-center gap-2">
           {onBack && (
             <button onClick={onBack} className="md:hidden p-2 -ml-2 text-primary hover:bg-card/5 rounded-full transition-colors">
@@ -355,7 +355,32 @@ export const ChatWindow = ({
 
                                     {m.content.startsWith('[Message Removed:') ? (
                                       <span className="italic opacity-40 text-xs">{m.content}</span>
-                                    ) : m.content.startsWith('[Attached File]') ? (() => {
+                                    ) : m.content.startsWith('[Audio Message]') ? (() => {
+                                      const match = m.content.match(/^\[Audio Message\]\((.*?)\)$/);
+                                      if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
+                                      const audioUrl = match[1];
+                                      return (
+                                        <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[280px]">
+                                          <div className="flex items-center gap-3 p-2 rounded-xl bg-black/20 border border-white/5">
+                                             <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-inner">
+                                               <Mic size={18} />
+                                             </div>
+                                             <div className="flex-1 flex flex-col gap-1.5">
+                                               <audio 
+                                                 controls 
+                                                 src={audioUrl} 
+                                                 className="h-8 w-full brightness-90 contrast-125"
+                                                 style={{ filter: isMe ? 'invert(1) hue-rotate(180deg)' : 'invert(1) opacity(0.8)' }}
+                                               />
+                                               <div className="flex justify-between items-center px-1">
+                                                 <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Voice Note</span>
+                                                 <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Secure</span>
+                                               </div>
+                                             </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })() : m.content.startsWith('[Attached File]') ? (() => {
                                       const match = m.content.match(/^\[Attached File\]\((.*?)\)$/);
                                       if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
                                       const rawUrl = match[1];
