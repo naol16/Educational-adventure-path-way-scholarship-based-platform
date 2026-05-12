@@ -9,7 +9,10 @@ import 'package:mobile/features/scholarships/providers/scholarship_providers.dar
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 
 import 'package:mobile/features/core/widgets/glass_container.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:io';
 
 class ScholarshipDetailScreen extends ConsumerStatefulWidget {
   final int scholarshipId;
@@ -24,6 +27,12 @@ class ScholarshipDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Controllers will be initialized when data arrives
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(scholarshipDetailProvider(widget.scholarshipId));
@@ -43,7 +52,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         ],
       ),
       body: detailAsync.when(
-        data: (scholarship) => _buildContent(scholarship, isTracked),
+        data: (scholarship) {
+          return _buildContent(scholarship, isTracked);
+        },
         loading: () => Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))),
         error: (err, stack) => Center(
           child: Text(
@@ -84,6 +95,8 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               _buildEligibilitySection(s),
               const SizedBox(height: 40),
               _buildAboutSection(s.description, s.requirements),
+              const SizedBox(height: 30),
+              _buildGeographicMap(s),
               const SizedBox(height: 30),
               _buildUniversityImage(),
               const SizedBox(height: 150), // Padding for bottom bar
@@ -390,6 +403,118 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
       ),
     );
   }
+
+  // --- GEOGRAPHIC CONTEXT (Map) ---
+  Widget _buildGeographicMap(MatchedScholarship s) {
+    final hasCoords = s.latitude != null && s.longitude != null;
+    
+    // Fallback logic for countries if coordinates are missing
+    // In a real app, this would be a larger map or an API call.
+    final LatLng position = hasCoords 
+      ? LatLng(s.latitude!, s.longitude!)
+      : _getCountryFallback(s.country);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4, height: 16,
+                decoration: BoxDecoration(
+                  color: DesignSystem.primary(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                "GEOGRAPHIC CONTEXT",
+                style: DesignSystem.labelStyle(
+                  buildContext: context,
+                  fontSize: 11,
+                  color: DesignSystem.labelText(context).withValues(alpha: 0.6),
+                ).copyWith(letterSpacing: 2, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Container(
+              height: 240,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: DesignSystem.surface(context),
+                border: Border.all(color: DesignSystem.surfaceMediumColor(context), width: 1),
+              ),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: position,
+                  zoom: hasCoords ? 10 : 4,
+                ),
+                onMapCreated: (controller) {
+                  controller.setMapStyle(_darkMapStyle);
+                },
+                markers: {
+                  Marker(
+                    markerId: const MarkerId("selected"),
+                    position: position,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                  )
+                },
+                liteModeEnabled: Platform.isAndroid, // Use lite mode for performance in details
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(LucideIcons.mapPin, size: 12, color: DesignSystem.primary(context)),
+              const SizedBox(width: 6),
+              Text(
+                s.university ?? s.country ?? "Global Location",
+                style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  LatLng _getCountryFallback(String? country) {
+    if (country == null) return LatLng(20, 0);
+    final c = country.toLowerCase();
+    if (c.contains("usa") || c.contains("united states")) return LatLng(37.0902, -95.7129);
+    if (c.contains("uk") || c.contains("united kingdom")) return LatLng(55.3781, -3.4360);
+    if (c.contains("germany")) return LatLng(51.1657, 10.4515);
+    if (c.contains("canada")) return LatLng(56.1304, -106.3468);
+    if (c.contains("ethiopia")) return LatLng(9.145, 40.4897);
+    return LatLng(20, 0);
+  }
+
+  static const String _darkMapStyle = '''
+[
+  { "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] },
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#0f172a" }] },
+  { "featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
+  { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+  { "featureType": "landscape.natural", "elementType": "geometry", "stylers": [{ "color": "#0b1120" }] },
+  { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#0f172a" }] },
+  { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+  { "featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{ "color": "#0f172a" }] },
+  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#020617" }] },
+  { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#1e293b" }] }
+]
+''';
 
   // --- BOTTOM ACTION BAR ---
   Widget _buildBottomActionBar(String? applicationUrl, bool isTracked) {

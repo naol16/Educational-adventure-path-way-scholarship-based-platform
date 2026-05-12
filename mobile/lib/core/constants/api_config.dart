@@ -7,7 +7,7 @@
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://educational-adventure-path-way-4zdc.onrender.com',
+    defaultValue: 'http://10.230.33.212:5000',
   );
 
   static String apiPath(String path) {
