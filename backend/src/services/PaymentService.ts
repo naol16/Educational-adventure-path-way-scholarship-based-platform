@@ -124,19 +124,4 @@ export class PaymentService {
         }
     }
 
-    /**
-     * Get transaction history for the merchant account
-     */
-    static async getTransactions() {
-        if (!configs.CHAPA_SECRET_KEY) throw new Error('Chapa secret key is not configured');
-        try {
-            const response = await axios.get('https://api.chapa.co/v1/transaction', {
-                headers: { Authorization: `Bearer ${configs.CHAPA_SECRET_KEY}` }
-            });
-            return response.data;
-        } catch (error: any) {
-            console.error('Chapa getTransactions error:', error.response?.data || error.message);
-            throw new Error('Failed to fetch transactions from Chapa');
-        }
-    }
 }
