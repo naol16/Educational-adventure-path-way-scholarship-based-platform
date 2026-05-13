@@ -11,8 +11,12 @@ export interface Message {
   senderId: number;
   content: string;
   isRead: boolean;
+  isDelivered: boolean;
+  deliveredAt?: string;
   createdAt: string;
+  updatedAt: string;
   sender?: ChatUser;
+  parentId?: number | null;
 }
 
 export interface Conversation {

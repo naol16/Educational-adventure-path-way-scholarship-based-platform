@@ -56,17 +56,64 @@ export class ChatService {
         return conversation;
     }
 
-    static async sendMessage(conversationId: number, senderId: number, content: string) {
+    static async sendMessage(conversationId: number, senderId: number, content: string, parentId?: number) {
         const message = await ChatMessage.create({
             conversationId,
             senderId,
-            content
+            content,
+            parentId: parentId || null
         });
-        
-        // Include sender info for real-time delivery
+
+        // Fetch the message with sender info for real-time delivery
         return ChatMessage.findByPk(message.id, {
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }]
+            include: [
+                {
+                    model: User,
+                    as: 'sender',
+                    attributes: ['id', 'name', 'role', 'avatarUrl']
+                },
+                {
+                    model: ChatMessage,
+                    as: 'parent',
+                    include: [{ model: User, as: 'sender', attributes: ['id', 'name'] }]
+                }
+            ]
         });
+    }
+
+    static async editMessage(messageId: number, senderId: number, newContent: string) {
+        console.log(`[ChatService] Attempting to edit message: id=${messageId}, senderId=${senderId}, newContent=${newContent}`);
+        if (!messageId || !senderId) throw new Error("Invalid messageId or senderId");
+        
+        const message = await ChatMessage.findByPk(messageId);
+        if (!message) {
+            console.log(`[ChatService] Edit message really not found by PK: ${messageId}`);
+            throw new Error("Message not found");
+        }
+        if (Number(message.senderId) !== Number(senderId)) {
+            console.log(`[ChatService] Edit unauthorized: message.senderId=${message.senderId}, requesting senderId=${senderId}`);
+            throw new Error("Unauthorized to edit");
+        }
+        message.content = newContent;
+        await message.save();
+        return message;
+    }
+
+    static async deleteMessage(messageId: number, senderId: number) {
+        console.log(`[ChatService] Attempting to delete message: id=${messageId}, senderId=${senderId}`);
+        if (!messageId || !senderId) throw new Error("Invalid messageId or senderId");
+        
+        const message = await ChatMessage.findByPk(messageId);
+        if (!message) {
+            console.log(`[ChatService] Delete message really not found by PK: ${messageId}`);
+            throw new Error("Message not found");
+        }
+        if (Number(message.senderId) !== Number(senderId)) {
+            console.log(`[ChatService] Delete unauthorized: message.senderId=${message.senderId}, requesting senderId=${senderId}`);
+            throw new Error("Unauthorized to delete");
+        }
+        await message.destroy();
+        return messageId;
     }
 
     static async getConversations(userId: number) {
@@ -96,7 +143,7 @@ export class ChatService {
                     model: User,
                     as: 'members',
                     through: { attributes: [] }, // Get other participants
-                    attributes: ['id', 'name', 'role', 'email']
+                    attributes: ['id', 'name', 'role', 'email', 'avatarUrl']
                 },
                 {
                     model: ChatMessage,
@@ -142,14 +189,25 @@ export class ChatService {
             where: {
                 id: { [Op.ne]: userId }
             },
-            attributes: ['id', 'name', 'role', 'email']
+            attributes: ['id', 'name', 'role', 'email', 'avatarUrl']
         });
     }
 
     static async getMessages(conversationId: number, limit = 50, offset = 0) {
         const messages = await ChatMessage.findAll({
             where: { conversationId },
-            include: [{ model: User, as: 'sender', attributes: ['id', 'name', 'role'] }],
+            include: [
+                {
+                    model: User,
+                    as: 'sender',
+                    attributes: ['id', 'name', 'role', 'avatarUrl']
+                },
+                {
+                    model: ChatMessage,
+                    as: 'parent',
+                    include: [{ model: User, as: 'sender', attributes: ['id', 'name'] }]
+                }
+            ],
             limit,
             offset,
             order: [['created_at', 'DESC']]
@@ -164,9 +222,23 @@ export class ChatService {
         });
     }
 
-    static async markAsRead(conversationId: number, userId: number) {
+    static async markAsDelivered(messageId: number) {
         return ChatMessage.update(
-            { isRead: true },
+            { 
+                isDelivered: true, 
+                deliveredAt: new Date() 
+            },
+            { where: { id: messageId, isDelivered: false } }
+        );
+    }
+
+    static async markAsRead(conversationId: number, userId: number) {
+        const now = new Date();
+        return ChatMessage.update(
+            { 
+                isRead: true,
+                readAt: now
+            },
             {
                 where: {
                     conversationId,

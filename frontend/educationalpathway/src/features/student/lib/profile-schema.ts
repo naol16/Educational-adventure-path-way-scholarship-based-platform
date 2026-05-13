@@ -65,12 +65,7 @@ export const profileSchema = z.object({
   needsFinancialSupport: z.boolean().default(false),
 
   // Step 10: Documents
-  documents: z.object({
-    cv: z.any().optional(),
-    transcript: z.any().optional(),
-    degreeCertificate: z.any().optional(),
-    languageCertificate: z.any().optional(),
-  }).optional(),
+  documents: z.record(z.any()).optional(),
 
   // Step 11: Notification Preferences
   notifications: z.object({

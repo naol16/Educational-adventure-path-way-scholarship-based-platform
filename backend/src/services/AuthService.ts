@@ -9,6 +9,7 @@ import { CounselorRepository } from "../repositories/CounselorRepository.js";
 import { UserRole } from "../types/userTypes.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/emailService.js";
+import { AppError } from "../errors/AppError.js";
 import { User } from "../models/User.js";
 import configs from "../config/configs.js";
 import { redisConnection } from "../config/redis.js";
@@ -181,11 +182,11 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
 
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      throw new Error("Invalid credentials");
+      throw new AppError("Invalid credentials", 401);
     }
 
     if (!user.isActive) {
-      throw new Error("Account is deactivated");
+      throw new AppError("Account is deactivated", 403);
     }
 
     if (!user.isVerified && !configs.DISABLE_EMAIL_VERIFICATION) {
@@ -199,6 +200,11 @@ export class AuthService {
     if (!idToken) {
       throw new Error("Google ID Token is required");
     }
+
+    // Diagnostic log to check for invisible newline characters injected by Render
+    console.log(`[Diagnostic] GOOGLE_CLIENT_ID length: ${process.env.GOOGLE_CLIENT_ID?.length || 0}`);
+    console.log(`[Diagnostic] GOOGLE_ANDROID_CLIENT_ID length: ${process.env.GOOGLE_ANDROID_CLIENT_ID?.length || 0}`);
+    console.log(`[Diagnostic] Active Audiences array:`, configs.GOOGLE_AUTH_AUDIENCES);
 
     const ticket = await client.verifyIdToken({
       idToken,

@@ -16,6 +16,7 @@ const app: Application = express();
 // 1. CORS MUST BE FIRST to ensure all responses (including errors/rate-limits) have headers
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001",
   "http://127.0.0.1:3000",
   "http://localhost:4000",
   "http://127.0.0.1:4000",
@@ -63,6 +64,10 @@ app.use(
 
 // 2. Logging
 app.use((req, res, next) => {
+  // Skip logging for high-frequency polling endpoints like notifications
+  if (req.path === '/api/notifications' || req.path === '/api/notifications/unread-count') {
+    return next();
+  }
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });

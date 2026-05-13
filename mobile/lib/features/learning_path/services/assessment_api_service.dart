@@ -5,6 +5,9 @@ import 'package:mobile/core/services/api_client.dart';
 import 'package:mobile/core/services/http_helpers.dart';
 import 'package:mobile/features/learning_path/models/assessment_model.dart';
 
+// The provider is already defined in mobile/core/providers/dependencies.dart
+// DO NOT re-define assessmentApiServiceProvider here.
+
 class AssessmentApiService {
   AssessmentApiService({required ApiClient apiClient}) : _api = apiClient;
 
@@ -115,6 +118,17 @@ class AssessmentApiService {
       throwForResponse(response, fallback: 'Failed to get result');
     }
 
+    return decodeJsonObject(response);
+  }
+
+  Future<Map<String, dynamic>> getProgress({String? examType}) async {
+    final path = examType != null
+        ? '/api/assessment/progress?examType=$examType'
+        : '/api/assessment/progress';
+    final response = await _api.get(path, auth: true);
+    if (response.statusCode != 200) {
+      throwForResponse(response, fallback: 'Failed to get progress');
+    }
     return decodeJsonObject(response);
   }
 

@@ -9,7 +9,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
+import { Student, type Student as StudentType } from "./Student.js";
 
 @Table({
     tableName: "assessment_results",
@@ -47,7 +47,7 @@ export class AssessmentResult extends Model {
     declare examType: string;
 
     @Column({
-        type: DataType.STRING(10),
+        type: DataType.STRING(20),
         allowNull: false,
         field: 'difficulty'
     })
@@ -102,5 +102,5 @@ export class AssessmentResult extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 }

@@ -35,9 +35,9 @@ export const Button = <T extends React.ElementType = "button">({
 
   const variants = {
     primary: "bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/10",
-    secondary: "bg-slate-900 dark:bg-white dark:text-slate-900 text-white hover:opacity-90 shadow-md",
-    outline: "border-2 border-slate-200 dark:border-slate-800 bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
-    ghost: "bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800",
+    secondary: "bg-zinc-800 text-white hover:bg-zinc-700 shadow-md",
+    outline: "border-2 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-800",
+    ghost: "bg-transparent text-zinc-400 hover:bg-zinc-800",
     destructive: "bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-600/10",
     gold: "bg-amber-500 text-white hover:bg-amber-400 shadow-md shadow-amber-500/10",
     indigo: "bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/10",
@@ -92,3 +92,4 @@ export const Button = <T extends React.ElementType = "button">({
     </Component>
   );
 };
+

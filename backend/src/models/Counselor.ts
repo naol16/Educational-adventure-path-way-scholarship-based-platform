@@ -10,11 +10,11 @@ import {
     UpdatedAt,
     HasMany,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { AvailabilitySlot } from './AvailabilitySlot.js';
-import { Booking } from './Booking.js';
-import { CounselorReview } from './CounselorReview.js';
-import { CounselorPayout } from './CounselorPayout.js';
+import { User, type User as UserType } from "./User.js";
+import { AvailabilitySlot, type AvailabilitySlot as AvailabilitySlotType } from './AvailabilitySlot.js';
+import { Booking, type Booking as BookingType } from './Booking.js';
+import { CounselorReview, type CounselorReview as CounselorReviewType } from './CounselorReview.js';
+import { CounselorPayout, type CounselorPayout as CounselorPayoutType } from './CounselorPayout.js';
 
 @Table({
     tableName: "counselors",
@@ -321,17 +321,17 @@ export class Counselor extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => User, { as: 'user' })
-    user!: User;
+    user!: UserType;
 
     @HasMany(() => AvailabilitySlot, { foreignKey: 'counselorId' })
-    availabilitySlots!: AvailabilitySlot[];
+    availabilitySlots!: AvailabilitySlotType[];
 
     @HasMany(() => Booking, { foreignKey: 'counselorId' })
-    bookings!: Booking[];
+    bookings!: BookingType[];
 
     @HasMany(() => CounselorReview, { foreignKey: 'counselorId' })
-    reviews!: CounselorReview[];
+    reviews!: CounselorReviewType[];
 
     @HasMany(() => CounselorPayout, { foreignKey: 'counselorId' })
-    payouts!: CounselorPayout[];
+    payouts!: CounselorPayoutType[];
 }

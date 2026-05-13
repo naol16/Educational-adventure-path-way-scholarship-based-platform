@@ -1,12 +1,13 @@
 /// Backend base URL (no trailing slash).
 ///
-/// Override at run time, e.g.:
-/// `flutter run --dart-define=API_BASE_URL=http://[IP_ADDRESS]`
-/// (Android emulator → host machine). iOS simulator often uses `http://[IP_ADDRESS]`.
+/// Override at run time for local development, e.g.:
+/// `flutter run --dart-define=API_BASE_URL=http://192.168.x.x:5000`
+///
+/// Production backend: https://educational-adventure-path-way-4zdc.onrender.com
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.137.243:5000',
+    defaultValue: 'https://educational-adventure-path-way-4zdc.onrender.com',
   );
 
   static String apiPath(String path) {

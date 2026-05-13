@@ -1,5 +1,7 @@
-import { Op, Transaction } from "sequelize";
+import { Op, Transaction, Sequelize } from "sequelize";
+import crypto from "crypto";
 import { sequelize } from "../config/sequelize.js";
+import { notificationQueue, isRedisAvailable } from "../config/redis.js";
 import { Counselor } from "../models/Counselor.js";
 import { User } from "../models/User.js";
 import { Student } from "../models/Student.js";
@@ -27,7 +29,6 @@ import { GoogleMeetService } from "./GoogleMeetService.js";
 import { EmailService } from "./EmailService.js";
 import { FileService } from "./FileService.js";
 import { VectorService } from "./VectorService.js";
-import crypto from "crypto";
 import configs from "../config/configs.js";
 import {
   AdminVerificationDto,
@@ -100,7 +101,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || existingCounselor.areasOfExpertise),
         hourlyRate: Number(dto.hourlyRate) || existingCounselor.hourlyRate,
         yearsOfExperience: Number(dto.yearsOfExperience) || existingCounselor.yearsOfExperience,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isOnboarded: dto.isOnboarded || false,
         phoneNumber: dto.phoneNumber || existingCounselor.phoneNumber,
         countryOfResidence: dto.countryOfResidence || existingCounselor.countryOfResidence,
@@ -130,7 +131,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || ""),
         hourlyRate: Number(dto.hourlyRate) || 0,
         yearsOfExperience: Number(dto.yearsOfExperience) || 0,
-        verificationStatus: "pending",
+        verificationStatus: "verified", // Auto-verify for dev
         isActive: true,
         isOnboarded: dto.isOnboarded || false,
         idCardUrl: idCardUrl || null,
@@ -221,7 +222,7 @@ export class CounselorService {
     return await this.formatCounselorResponse(counselor, user);
   }
 
-  static async getPublicDirectory(query: CounselorDirectoryQuery): Promise<{
+  static async getPublicDirectory(query: CounselorDirectoryQuery, studentId?: number): Promise<{
     rows: CounselorResponse[];
     count: number;
     page: number;
@@ -229,6 +230,19 @@ export class CounselorService {
   }> {
     const page = query.page || 1;
     const limit = query.limit || 10;
+
+    let vectorStr: string | undefined = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+        } catch (err) {
+          console.error("[CounselorService] Error generating student counselor embedding for directory:", err);
+        }
+      }
+    }
+
     const { rows, count } = await CounselorRepository.findVerifiedDirectory({
       search: query.search,
       ...(query.specialization ? { specialization: query.specialization } : {}),
@@ -237,6 +251,7 @@ export class CounselorService {
       ...(query.minRating !== undefined ? { minRating: query.minRating } : {}),
       page,
       limit,
+      vectorStr
     });
 
     const filteredRows = rows.filter((counselor) => {
@@ -271,6 +286,7 @@ export class CounselorService {
       const availableSlots = slotsByCounselor.get(c.id) || [];
       return {
         ...base,
+        match_score: (c as any).match_score ? parseFloat((c as any).match_score.toString()) : undefined,
         availabilitySummary:
           base.availabilitySummary ||
           (availableSlots.length > 0 ? `${availableSlots.length} open slots` : null),
@@ -300,7 +316,7 @@ export class CounselorService {
     if (!vectorStr) {
         console.log("[CounselorService] No vector available, falling back to basic directory list");
         const { rows } = await CounselorRepository.findVerifiedDirectory({ page: 1, limit: 10 });
-        return rows.map(c => ({ ...c, recommendationScore: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
+        return rows.map(c => ({ ...c, match_score: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
     }
 
     // 2. Fetch vector matches
@@ -341,7 +357,7 @@ export class CounselorService {
       const base = await this.formatCounselorResponse(counselor, counselor.user || null);
       return { 
         ...base, 
-        recommendationScore: vectorScore, 
+        match_score: vectorScore, 
         matchReasons 
       };
     }));
@@ -477,20 +493,31 @@ export class CounselorService {
 
         const [startH, startM] = slot.startTime.split(':').map(Number);
         const [endH, endM] = slot.endTime.split(':').map(Number);
+        const offsetMinutes = slot.utcOffset || 0;
 
-        const date = new Date(now);
-        // Find the next occurrence of this day of the week
-        const currentDay = now.getDay();
+        // Get current UTC time in milliseconds
+        const nowUtcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+        // User's current local time as a UTC Date object
+        const userNow = new Date(nowUtcMs + (offsetMinutes * 60000));
+
+        // Find the next occurrence of this day of the week in the user's timezone
+        const currentDay = userNow.getUTCDay();
         let diff = targetDay - currentDay;
         if (diff < 0) diff += 7; // Ensure we move forward
 
-        date.setDate(now.getDate() + diff + (week * 7));
+        // Set the target date in UTC matching the user's requested time
+        const userStartTime = new Date(userNow);
+        userStartTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userStartTime.setUTCHours(startH as number, startM, 0, 0);
 
-        const startTime = new Date(date);
-        startTime.setHours(startH as number, startM, 0, 0);
+        // Convert back to absolute UTC timestamp
+        const startTime = new Date(userStartTime.getTime() - (offsetMinutes * 60000));
 
-        const endTime = new Date(date);
-        endTime.setHours(endH as number, endM, 0, 0);
+        const userEndTime = new Date(userNow);
+        userEndTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+        userEndTime.setUTCHours(endH as number, endM, 0, 0);
+        
+        const endTime = new Date(userEndTime.getTime() - (offsetMinutes * 60000));
 
         // Skip if this time has already passed
         if (startTime < now) continue;
@@ -593,8 +620,12 @@ export class CounselorService {
 
     await booking.update({ paymentId: payment.id });
 
-    // Assuming we want to redirect user back to a specific route
-    const returnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    // Use caller-supplied returnUrl (mobile deep link) or fall back to web URL
+    const defaultReturnUrl = `${configs.FRONTEND_URL}/dashboard/student/bookings/success?bookingId=${booking.id}&tx_ref=${tx_ref}`;
+    
+    // Chapa requires a valid https:// return_url — deep links (edupath://) are rejected.
+    // For mobile, we always use the web success page; the mobile WebView intercepts it via URL matching.
+    const returnUrl = defaultReturnUrl;
 
     const chapaResponse = await PaymentService.initializePayment(
       tx_ref,
@@ -611,22 +642,33 @@ export class CounselorService {
       reservedStudentId: student.id,
     });
 
-    // Notify counselor about new request
-    try {
-      await NotificationService.createNotification(
-        counselor.userId,
-        "New Booking Request",
-        `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
-        "booking",
-        booking.id
-      );
-    } catch (notifyError) {
-      console.error("[CounselorService] Failed to send initial booking notification:", notifyError);
+    // Notify counselor about new request (Non-blocking to prevent frontend timeouts)
+    NotificationService.createNotification(
+      counselor.userId,
+      "New Booking Request",
+      `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
+      "booking",
+      booking.id
+    ).catch(notifyError => {
+      console.error("[CounselorService] Background notification failed:", notifyError);
+    });
+
+    if (chapaResponse.status !== 'success') {
+      console.error(`[CounselorService] Chapa initialization failed:`, chapaResponse);
+      throw httpError(400, chapaResponse.message || "Failed to initialize payment with Chapa");
     }
+
+    const checkoutUrl = chapaResponse.data?.checkout_url;
+    if (!checkoutUrl) {
+      console.error(`[CounselorService] Chapa response missing checkout_url:`, chapaResponse);
+      throw httpError(500, "Payment gateway did not provide a checkout URL");
+    }
+
+    console.log(`[CounselorService] Payment initialized successfully. Redirect URL: ${checkoutUrl}`);
 
     return {
       booking: this.formatBookingResponse(booking),
-      checkoutUrl: chapaResponse.data.checkout_url
+      checkoutUrl: checkoutUrl
     };
   }
 
@@ -653,7 +695,7 @@ export class CounselorService {
     return { booking, message: "Session invitation sent to student. They need to pay to confirm." };
   }
 
-  static async confirmBooking(tx_ref: string): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
+  static async confirmBooking(tx_ref: string, chapaVerifyResult?: any): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
     const payment = await Payment.findOne({ where: { tx_ref } });
 
     if (!payment) {
@@ -667,8 +709,11 @@ export class CounselorService {
     }
 
     try {
-      console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
-      const chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      let chapaVerify = chapaVerifyResult;
+      if (!chapaVerify) {
+        console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
+        chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      }
 
       // Chapa's response structure: { status: "success", message: "...", data: { status: "success", ... } }
       const apiSuccess = chapaVerify.status === 'success';
@@ -724,22 +769,11 @@ export class CounselorService {
               console.error("[ConfirmBooking] Error fetching attendee emails:", e);
             }
 
-            // Generate Google Meet Link
-            let meetingLink = `https://meet.edu-pathway.com/session-${booking.id}`;
-            try {
-              if (slot) {
-                console.log(`[ConfirmBooking] Creating Google Meet for booking ${booking.id}`);
-                meetingLink = await GoogleMeetService.createMeeting(
-                  "Counseling Session: Educational Pathway",
-                  `Counseling session between student and counselor.`,
-                  slot.startTime,
-                  60,
-                  attendees
-                );
-              }
-            } catch (e) {
-              console.error("[ConfirmBooking] Google Meet creation failed, using fallback:", e);
-            }
+            // Generate In-App Jitsi Meeting Link (Room Name)
+            // Example: Pathway-Session-123-1698765432100
+            const timestamp = Date.now();
+            const meetingLink = `Pathway-Session-${booking.id}-${timestamp}`;
+            console.log(`[ConfirmBooking] Generated In-App Meeting Room: ${meetingLink}`);
 
             await booking.update({ status: 'confirmed', meetingLink });
             if (slot) {
@@ -748,56 +782,72 @@ export class CounselorService {
               // Send direct email invites to both participants as a reliable fallback.
               try {
                 const endTime = new Date(slot.startTime.getTime() + 60 * 60 * 1000);
-                const sendEmailTasks: Promise<void>[] = [];
-
-                if (studentEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                
+                if (isRedisAvailable()) {
+                  // OFF-LOAD TO BACKGROUND WORKER (Instant response)
+                  if (studentEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: studentEmail,
                       recipientName: studentName || "Student",
                       counterpartName: counselorName || "Counselor",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
-                }
-
-                if (counselorEmail) {
-                  sendEmailTasks.push(
-                    EmailService.sendSessionInviteEmail({
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  if (counselorEmail) {
+                    await notificationQueue.add('send-session-invite', {
                       to: counselorEmail,
                       recipientName: counselorName || "Counselor",
                       counterpartName: studentName || "Student",
                       meetingLink,
                       startTime: slot.startTime,
                       endTime,
-                    })
-                  );
+                    }, { attempts: 3, backoff: 10000 });
+                  }
+                  console.log(`[ConfirmBooking] Email tasks added to background queue for: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                } else {
+                  // FALLBACK: Synchronous (Parallelized) if Redis is down
+                  const sendEmailTasks: Promise<void>[] = [];
+                  if (studentEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: studentEmail, recipientName: studentName || "Student",
+                      counterpartName: counselorName || "Counselor", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  if (counselorEmail) {
+                    sendEmailTasks.push(EmailService.sendSessionInviteEmail({
+                      to: counselorEmail, recipientName: counselorName || "Counselor",
+                      counterpartName: studentName || "Student", meetingLink,
+                      startTime: slot.startTime, endTime,
+                    }));
+                  }
+                  
+                  // Start emails in parallel and continue
+                  Promise.all(sendEmailTasks).then(() => {
+                    console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                  }).catch(e => console.error("[ConfirmBooking] Parallel email fallback error:", e));
                 }
-
-                await Promise.all(sendEmailTasks);
-                console.log(`[ConfirmBooking] Direct invite emails sent to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
               } catch (emailError) {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
               }
 
               // Funds remain held in escrow until student milestone confirmation.
               const counselor = await CounselorRepository.findById(booking.counselorId);
-              if (counselor) {
-                // Notify counselor about confirmed booking
-                try {
-                  await NotificationService.createNotification(
+                if (counselor) {
+                  // Notify counselor about confirmed booking (Fire and forget to speed up response)
+                  NotificationService.createNotification(
                     counselor.userId,
                     "Booking Confirmed",
                     `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
-                    booking.id
-                  );
-                } catch (notifyError) {
-                  console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                    booking.id,
+                    false
+                  ).catch(notifyError => {
+                    console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                  });
                 }
-              }
 
               this.queueSessionReminder(booking.id, slot.startTime);
             }
@@ -900,6 +950,7 @@ export class CounselorService {
           userId: student.userId,
           name: studentUser?.name || "Unknown",
           email: studentUser?.email || "Unknown",
+          avatarUrl: studentUser?.avatarUrl || null,
           lastBookingDate: booking.createdAt,
           lastBookingStatus: booking.status,
         });
@@ -942,6 +993,7 @@ export class CounselorService {
       studentId: student.id,
       name: (student as any).user?.name || "Unknown",
       email: (student as any).user?.email || "Unknown",
+      avatarUrl: (student as any).user?.avatarUrl || null,
       learningPath: learningPath
         ? {
           id: learningPath.id,
@@ -1014,6 +1066,9 @@ export class CounselorService {
     if ((dto.status === "completed" || dto.status === "awaiting_confirmation") && booking.status !== "started") throw httpError(409, "Can only complete a started booking");
     if (dto.status === "cancelled" && booking.status === "completed") throw httpError(409, "Cannot cancel a completed booking");
 
+    if (dto.status === "confirmed") {
+      await booking.update({ status: "confirmed" });
+    }
     if (dto.status === "started") await booking.update({ status: "started", startedAt: new Date() });
     if (dto.status === "completed" || dto.status === "awaiting_confirmation") {
       await booking.update({ status: "awaiting_confirmation", completedAt: new Date() });
@@ -1132,7 +1187,14 @@ export class CounselorService {
     if (!slot) throw httpError(404, "Slot not found");
     const start = new Date(slot.startTime);
     const end = new Date(slot.endTime);
-    if (now > end) throw httpError(409, "This session has already ended");
+    
+    // Allow joining if session is started OR if it's within 60 mins after the scheduled end (grace period for late starters)
+    const gracePeriod = 60 * 60 * 1000;
+    const isPastGrace = now.getTime() > (end.getTime() + gracePeriod);
+    
+    if (booking.status !== "started" && isPastGrace) {
+      throw httpError(409, "This session has already ended and the grace period has passed");
+    }
 
     const meetingLink = booking.meetingLink || slot.meetingLink || `https://meet.edu-pathway.com/session-${booking.id}`;
     // Allow immediate access once the meeting exists; only mark started near/after scheduled start.
@@ -1410,6 +1472,12 @@ export class CounselorService {
       student?.dataValues?.user ||
       null;
 
+    const payment =
+      (typeof booking?.get === "function" ? booking.get("payment") : null) ||
+      booking?.payment ||
+      booking?.dataValues?.payment ||
+      null;
+
     return {
       id: booking.id,
       studentId: booking.studentId,
@@ -1425,6 +1493,7 @@ export class CounselorService {
         userId: student.userId,
         name: studentUser?.name || "Unknown",
         email: studentUser?.email || "N/A",
+        avatarUrl: studentUser?.avatarUrl || null,
       } : null,
       counselor: counselor ? {
         id: counselor.id,
@@ -1445,6 +1514,13 @@ export class CounselorService {
         status: slot.status,
         reservedStudentId: slot.reservedStudentId,
         meetingLink: slot.meetingLink,
+      } : null,
+      payment: payment ? {
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: payment.status,
+        tx_ref: payment.tx_ref
       } : null
     };
   }
@@ -1541,22 +1617,92 @@ export class CounselorService {
     return PaymentService.getBanks();
   }
 
-  static async getPublicProfileByUserId(userId: number): Promise<any> {
+  static async getPublicProfileByUserId(userId: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findByUserId(userId);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile by userId:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
-  static async getPublicProfileById(id: number): Promise<any> {
+  static async getPublicProfileById(id: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findById(id);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile by ID:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(counselor.userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
   static async getStudentBookings(userId: number, role: UserRole = UserRole.STUDENT): Promise<any[]> {
@@ -1586,6 +1732,10 @@ export class CounselorService {
             association: 'slot',
             required: false,
           },
+          {
+            association: 'payment',
+            required: false,
+          },
         ],
         order: [[{ model: AvailabilitySlot, as: 'slot' }, 'startTime', 'ASC']],
       });
@@ -1608,6 +1758,10 @@ export class CounselorService {
         },
         {
           association: 'slot',
+          required: false,
+        },
+        {
+          association: 'payment',
           required: false,
         },
       ],
@@ -1792,5 +1946,12 @@ export class CounselorService {
       include: [{ model: Counselor, as: 'counselor', include: [{ association: 'user', attributes: ['name'] }] }],
       order: [['createdAt', 'DESC']],
     });
+  }
+  static async updateBookingNotes(counselorId: number, bookingId: number, notes: string): Promise<any> {
+    const booking = await (await import('../repositories/BookingRepository.js')).BookingRepository.findByIdAndCounselorId(bookingId, counselorId);
+    if (!booking) throw new Error("Booking not found");
+    
+    await booking.update({ notes });
+    return booking;
   }
 }

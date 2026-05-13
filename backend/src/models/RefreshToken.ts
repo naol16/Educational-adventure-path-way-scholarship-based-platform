@@ -10,7 +10,7 @@ import {
     BelongsTo,
     CreatedAt,
 } from "sequelize-typescript";
-import { User } from "./User.js";
+import { User, type User as UserType } from "./User.js";
 
 @Table({
     tableName: "refresh_tokens",
@@ -33,7 +33,7 @@ export class RefreshToken extends Model {
     declare userId: number;
 
     @BelongsTo(() => User)
-    user!: User;
+    user!: UserType;
 
     @Unique
     @Column({

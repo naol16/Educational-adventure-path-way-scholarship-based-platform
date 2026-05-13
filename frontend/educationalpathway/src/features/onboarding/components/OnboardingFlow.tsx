@@ -59,7 +59,7 @@ export function OnboardingFlow() {
                 className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                   step >= s
                     ? "bg-primary text-white scale-110"
-                    : "bg-white text-gray-400 border border-gray-200"
+                    : "bg-card text-gray-400 border border-border"
                 }`}
               >
                 {step > s ? <CheckCircle2 className="h-6 w-6" /> : s}
@@ -92,7 +92,7 @@ export function OnboardingFlow() {
                   </p>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-10 text-center hover:border-primary/50 transition-colors group relative cursor-pointer min-h-60 flex flex-col items-center justify-center bg-gray-50/10">
+                <div className="border-2 border-dashed border-border rounded-lg p-10 text-center hover:border-primary/50 transition-colors group relative cursor-pointer min-h-60 flex flex-col items-center justify-center bg-muted/10">
                   <input
                     type="file"
                     id="document-upload"
@@ -124,7 +124,7 @@ export function OnboardingFlow() {
                   ) : (
                     <div className="animate-in fade-in duration-300">
                       <Upload className="h-12 w-12 text-gray-300 group-hover:text-primary transition-colors mx-auto mb-4" />
-                      <p className="font-bold text-gray-600">
+                      <p className="font-bold text-muted-foreground">
                         Click to upload CV or records
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
@@ -161,7 +161,7 @@ export function OnboardingFlow() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* ID Card Upload */}
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-accent/50 transition-colors relative cursor-pointer bg-gray-50/20 min-h-48 flex flex-col items-center justify-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent/50 transition-colors relative cursor-pointer bg-muted/20 min-h-48 flex flex-col items-center justify-center">
                     <input
                       type="file"
                       id="id-card-upload"
@@ -187,13 +187,13 @@ export function OnboardingFlow() {
                     ) : (
                       <div className="animate-in fade-in duration-300">
                         <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-sm font-bold text-gray-600">Upload ID Card</p>
+                        <p className="text-sm font-bold text-muted-foreground">Upload ID Card</p>
                       </div>
                     )}
                   </div>
 
                   {/* Selfie Upload */}
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-accent/50 transition-colors relative cursor-pointer bg-gray-50/20 min-h-48 flex flex-col items-center justify-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent/50 transition-colors relative cursor-pointer bg-muted/20 min-h-48 flex flex-col items-center justify-center">
                     <input
                       type="file"
                       id="selfie-upload"
@@ -219,7 +219,7 @@ export function OnboardingFlow() {
                     ) : (
                       <div className="animate-in fade-in duration-300">
                         <UserCheck className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-sm font-bold text-gray-600">Upload Selfie</p>
+                        <p className="text-sm font-bold text-muted-foreground">Upload Selfie</p>
                       </div>
                     )}
                   </div>
@@ -262,3 +262,4 @@ export function OnboardingFlow() {
     </div>
   );
 }
+

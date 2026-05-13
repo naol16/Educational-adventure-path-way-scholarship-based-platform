@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { SWRProvider } from "@/providers/swr-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,24 +40,27 @@ export default function RootLayout({
       <body
         className={`${openSans.variable} ${playfair.variable} font-sans antialiased text-foreground bg-background`}
       >
-        {googleClientId ? (
-          <GoogleOAuthProvider clientId={googleClientId}>
+        <SWRProvider>
+          {googleClientId ? (
+            <GoogleOAuthProvider clientId={googleClientId}>
+              <ThemeProvider>
+                <AuthProvider>
+                  {children}
+                  <Toaster position="top-right" />
+                </AuthProvider>
+              </ThemeProvider>
+            </GoogleOAuthProvider>
+          ) : (
             <ThemeProvider>
               <AuthProvider>
                 {children}
                 <Toaster position="top-right" />
               </AuthProvider>
             </ThemeProvider>
-          </GoogleOAuthProvider>
-        ) : (
-          <ThemeProvider>
-            <AuthProvider>
-              {children}
-              <Toaster position="top-right" />
-            </AuthProvider>
-          </ThemeProvider>
-        )}
+          )}
+        </SWRProvider>
       </body>
     </html>
   );
 }
+

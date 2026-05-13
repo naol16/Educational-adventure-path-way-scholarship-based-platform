@@ -11,8 +11,8 @@ import {
     BelongsTo,
     Default,
 } from "sequelize-typescript";
-import { User } from "./User.js";
-import { Conversation } from "./Conversation.js";
+import { User, type User as UserType } from "./User.js";
+import { Conversation, type Conversation as ConversationType } from "./Conversation.js";
 
 @Table({
     tableName: "chat_messages",
@@ -51,9 +51,31 @@ export class ChatMessage extends Model {
     @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
+        field: 'is_delivered'
+    })
+    declare isDelivered: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'delivered_at'
+    })
+    declare deliveredAt?: Date;
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
         field: 'is_read'
     })
     declare isRead: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'read_at'
+    })
+    declare readAt?: Date;
 
     @Default(false)
     @Column({
@@ -70,6 +92,14 @@ export class ChatMessage extends Model {
     })
     declare moderationReason?: string;
 
+    @ForeignKey(() => ChatMessage)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'parent_id'
+    })
+    declare parentId: number | null;
+
     @CreatedAt
     @Column({
         type: DataType.DATE,
@@ -85,8 +115,11 @@ export class ChatMessage extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Conversation)
-    conversation!: Conversation;
+    conversation!: ConversationType;
 
     @BelongsTo(() => User)
-    sender!: User;
+    sender!: UserType;
+
+    @BelongsTo(() => ChatMessage, 'parentId')
+    parent!: ChatMessage;
 }

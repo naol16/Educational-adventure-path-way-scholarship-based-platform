@@ -29,11 +29,12 @@ import {
   Pdf,
   CounselorPayout,
   CounselorWalletTransaction,
+  AIChatMessage,
   MarketingTestimonial,
   MarketingFaq,
   MarketingStat,
   UserWarning,
-  AIChatMessage,
+  MessageReport,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -46,19 +47,22 @@ const dbOptions: SequelizeOptions = {
   // Keep SQL logs off by default; enable only when DB_LOGGING=true.
   logging: configs.DB_LOGGING ? console.log : false,
   pool: {
-    max: 10,    
-    min: 0,       
+    max: 10,
+    min: 0,
     acquire: 30000,// Maximum time (ms) to try getting a connection before throwing error
     idle: 10000    // Maximum time (ms) a connection can be idle before being released
   },
 
-  dialectOptions: {
-    ssl: configs.DB_HOST !== "localhost" && configs.DB_HOST !== "127.0.0.1" ? {
-      require: true,
-      rejectUnauthorized: false,
-    } : false,
-  },
-    
+  dialectOptions:
+    configs.DB_HOST === "localhost" || configs.DB_HOST === "127.0.0.1"
+      ? (configs.DB_SSL ? { ssl: { require: true, rejectUnauthorized: false } } : {})
+      : {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        },
+
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 export const sequelize = new Sequelize({
@@ -95,11 +99,12 @@ export const sequelize = new Sequelize({
     Pdf,
     CounselorPayout,
     CounselorWalletTransaction,
+    AIChatMessage,
     MarketingTestimonial,
     MarketingFaq,
     MarketingStat,
     UserWarning,
-    AIChatMessage,
+    MessageReport,
   ], // Add all models here
 } as SequelizeOptions);
 
@@ -108,12 +113,12 @@ export let hasVectorExtension = false;
 export const connectSequelize = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Sequelize connected successfully");
+
 
     // Enable pgvector extension
     try {
       await sequelize.query("CREATE EXTENSION IF NOT EXISTS vector;");
-      console.log("pgvector extension ensured");
+
       hasVectorExtension = true;
     } catch (extensionError) {
       console.warn(
@@ -123,8 +128,12 @@ export const connectSequelize = async () => {
     }
 
     // Sync models with database (creates tables if missing, updates columns if alter is true)
-    await sequelize.sync({ alter: true });
-    console.log("Database models synchronized");
+    if (configs.DB_SYNC) {
+      await sequelize.sync({ alter: true });
+      console.log("Database models synchronized (alter: true)");
+    } else {
+      console.log("Database sync skipped (DB_SYNC is false)");
+    }
   } catch (error) {
     console.error("Sequelize connection error:", error);
     process.exit(1);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import { Filter, Sparkles, RefreshCcw, Search, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { ScholarshipList } from './ScholarshipList';
@@ -20,36 +21,170 @@ const container = {
 
 const item = {
   hidden: { opacity: 0, y: 30, scale: 0.98 },
-  show: { 
-    opacity: 1, 
-    y: 0, 
+  show: {
+    opacity: 1,
+    y: 0,
     scale: 1,
     transition: { type: "spring" as const, stiffness: 300, damping: 24 }
   }
 };
 
 export const ScholarshipExplorer = () => {
-  const [activeTab, setActiveTab] = useState('matched');
+  const [activeTab, setActiveTab] = useState('explore');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   
-  // Consolidate filter state
+  const { data: countriesResponse } = useSWR<any>('/scholarships/countries');
+  
+  const getFullCountryName = (code: string) => {
+    const mapping: Record<string, string> = {
+      "AE": "United Arab Emirates",
+      "AF": "Afghanistan",
+      "AL": "Albania",
+      "AM": "Armenia",
+      "AR": "Argentina",
+      "AT": "Austria",
+      "AU": "Australia",
+      "AZ": "Azerbaijan",
+      "BD": "Bangladesh",
+      "BE": "Belgium",
+      "BG": "Bulgaria",
+      "BH": "Bahrain",
+      "BR": "Brazil",
+      "CA": "Canada",
+      "CH": "Switzerland",
+      "CN": "China",
+      "CO": "Colombia",
+      "CZ": "Czech Republic",
+      "DE": "Germany",
+      "DK": "Denmark",
+      "DZ": "Algeria",
+      "EE": "Estonia",
+      "EG": "Egypt",
+      "ES": "Spain",
+      "ET": "Ethiopia",
+      "EU": "Europe (Region)",
+      "FI": "Finland",
+      "FR": "France",
+      "GB": "United Kingdom",
+      "GE": "Georgia",
+      "GH": "Ghana",
+      "GR": "Greece",
+      "HK": "Hong Kong",
+      "HU": "Hungary",
+      "ID": "Indonesia",
+      "IE": "Ireland",
+      "IL": "Israel",
+      "IN": "India",
+      "IQ": "Iraq",
+      "IR": "Iran",
+      "IS": "Iceland",
+      "IT": "Italy",
+      "JO": "Jordan",
+      "JP": "Japan",
+      "KE": "Kenya",
+      "KR": "South Korea",
+      "KW": "Kuwait",
+      "KZ": "Kazakhstan",
+      "LB": "Lebanon",
+      "LK": "Sri Lanka",
+      "LT": "Lithuania",
+      "LU": "Luxembourg",
+      "LV": "Latvia",
+      "LY": "Libya",
+      "MA": "Morocco",
+      "MC": "Monaco",
+      "MD": "Moldova",
+      "ME": "Montenegro",
+      "MG": "Madagascar",
+      "MK": "North Macedonia",
+      "ML": "Mali",
+      "MM": "Myanmar",
+      "MN": "Mongolia",
+      "MT": "Malta",
+      "MX": "Mexico",
+      "MY": "Malaysia",
+      "NG": "Nigeria",
+      "NL": "Netherlands",
+      "NO": "Norway",
+      "NZ": "New Zealand",
+      "OM": "Oman",
+      "PH": "Philippines",
+      "PK": "Pakistan",
+      "PL": "Poland",
+      "PT": "Portugal",
+      "QA": "Qatar",
+      "RO": "Romania",
+      "RS": "Serbia",
+      "RU": "Russia",
+      "SA": "Saudi Arabia",
+      "SE": "Sweden",
+      "SG": "Singapore",
+      "SI": "Slovenia",
+      "SK": "Slovakia",
+      "TH": "Thailand",
+      "TR": "Turkey",
+      "TW": "Taiwan",
+      "UA": "Ukraine",
+      "UG": "Uganda",
+      "UK": "United Kingdom",
+      "US": "United States",
+      "USA": "United States",
+      "VN": "Vietnam",
+      "ZA": "South Africa"
+    };
+    
+    const upperCode = code.toUpperCase();
+    if (mapping[upperCode]) return mapping[upperCode];
+    
+    // Handle sub-regions like DE-NW
+    if (upperCode.includes('-')) {
+      const baseCode = upperCode.split('-')[0];
+      if (mapping[baseCode]) return mapping[baseCode];
+    }
+    
+    return code;
+  };
+
+  const countries = useMemo(() => {
+    // Handle cases where api.ts interceptor might have unwrapped the data or not
+    const raw = Array.isArray(countriesResponse) ? countriesResponse : (countriesResponse?.data || []);
+    
+    const uniqueMap = new Map();
+    raw.forEach((c: string) => {
+      const name = getFullCountryName(c);
+      if (!uniqueMap.has(name)) {
+        uniqueMap.set(name, c);
+      }
+    });
+
+    return Array.from(uniqueMap.entries()).map(([name, code]) => ({
+      code,
+      name
+    })).sort((a: any, b: any) => a.name.localeCompare(b.name));
+  }, [countriesResponse]);
+
   const [filters, setFilters] = useState<ScholarshipFilters>({
     query: '',
     country: '',
     degree_level: '',
-    fund_type: ''
+    fund_type: '',
+    page: 1,
+    pageSize: 12
   });
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Force re-fetch triggered by state change
-    setFilters({...filters}); 
+    setFilters({ ...filters, page: 1 });
     setTimeout(() => setIsRefreshing(false), 800);
   };
 
-  const updateFilter = (key: keyof ScholarshipFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const updateFilter = (key: keyof ScholarshipFilters, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: key === 'page' ? value : 1 // Reset to page 1 if any filter other than page changes
+    }));
   };
 
   const clearFilters = () => {
@@ -57,7 +192,9 @@ export const ScholarshipExplorer = () => {
       query: '',
       country: '',
       degree_level: '',
-      fund_type: ''
+      fund_type: '',
+      page: 1,
+      pageSize: 12
     });
   };
 
@@ -66,171 +203,210 @@ export const ScholarshipExplorer = () => {
   }, [filters]);
 
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-8"
-    >
-      {/* Refined Header Section */}
-      <motion.section 
-        variants={item}
-        className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-10 md:p-12 shadow-sm"
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-hidden">
+      {/* Immersive Background Elements */}
+      <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
+      <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
+
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 space-y-12 relative z-10"
       >
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-linear-to-bl from-primary/5 via-transparent to-transparent opacity-50" />
-        
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="max-w-xl space-y-4">
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-               <Sparkles size={12} className="fill-primary" />
-               Scholarships for you
-             </div>
-             
-             <h1 className="text-4xl font-bold tracking-tight text-foreground">
-               Scholarship <span className="text-primary italic">Explorer</span>
-             </h1>
+        {/* Refined Header Section */}
+        <motion.section
+          variants={item}
+          className="relative py-10 md:py-16 group"
+        >
 
-             <p className="text-muted-foreground text-base leading-relaxed">
-               Discover international opportunities curated specifically for your academic and financial background.
-             </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-             <Button
-               onClick={handleRefresh}
-               disabled={isRefreshing}
-               variant="ghost"
-               className="h-12 w-12 rounded-lg hover:bg-muted text-muted-foreground border border-border/40"
-             >
-                <RefreshCcw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-             </Button>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Standardized Toolbar */}
-      <motion.div variants={item} className="flex flex-col gap-6">
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 border-b border-border/50">
-          {/* Tabs */}
-          <div className="flex gap-8">
-            {['explore', 'matched', 'saved', 'applied'].map((id) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`group pb-4 text-sm font-bold relative transition-colors capitalize
-                  ${activeTab === id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
-                `}
-              >
-                {id}
-                {activeTab === id && (
-                  <motion.div
-                    layoutId="explorer-tab-dot"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full shadow-[0_2px_8px_rgba(16,185,129,0.3)]"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Integrated Bar */}
-          <div className="relative group flex-1 max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <input 
-              value={filters.query}
-              onChange={(e) => updateFilter('query', e.target.value)}
-              placeholder="Search by title or country..." 
-              className="w-full h-11 pl-11 pr-4 bg-muted/30 border border-border/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all font-medium"
-            />
-          </div>
-
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant={showFilters ? 'primary' : 'outline'}
-            className={`h-11 px-6 rounded-lg flex items-center gap-2 font-bold text-xs transition-all ${showFilters ? 'primary-gradient text-white shadow-lg' : 'border-border/60'}`}
-          >
-            <Filter size={14} />
-            FILTERS
-            <ChevronDown size={14} className={`transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Filters Expansion */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-muted/20 border border-border/50 rounded-2xl px-6 py-6"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Country</span>
-                  <select 
-                    value={filters.country}
-                    onChange={(e) => updateFilter('country', e.target.value)}
-                    className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    <option value="">Any Country</option>
-                    <option value="USA">United States</option>
-                    <option value="UK">United Kingdom</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Germany">Germany</option>
-                  </select>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+            <div className="max-w-2xl space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.2em] border border-primary/20">
+                  <Sparkles size={12} className="fill-primary" />
+                  Curated Intelligence
                 </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Degree Level</span>
-                  <select 
-                    value={filters.degree_level}
-                    onChange={(e) => updateFilter('degree_level', e.target.value)}
-                    className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    <option value="">Any Level</option>
-                    <option value="Bachelor">Bachelor's</option>
-                    <option value="Master">Master's</option>
-                    <option value="PhD">PhD / Doctorate</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Funding Type</span>
-                  <select 
-                    value={filters.fund_type}
-                    onChange={(e) => updateFilter('fund_type', e.target.value)}
-                    className="w-full h-10 px-3 bg-card border border-border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    <option value="">Any Type</option>
-                    <option value="Full">Full Funding</option>
-                    <option value="Partial">Partial / Tuition Only</option>
-                    <option value="Entrance">Entrance Scholarship</option>
-                  </select>
-                </div>
+                <div className="h-4 w-px bg-border/40" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">International Protocol</span>
               </div>
 
-              {hasActiveFilters && (
-                <div className="mt-6 flex justify-end">
-                  <button 
-                    onClick={clearFilters}
-                    className="text-xs font-bold text-muted-foreground hover:text-destructive flex items-center gap-1.5 transition-colors"
-                  >
-                    <X size={14} />
-                    RESET ALL FILTERS
-                  </button>
+              <div className="space-y-4">
+                <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
+                  Scholarship <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Explorer</span>
+                </h1>
+                <p className="text-lg text-muted-foreground font-medium leading-relaxed max-w-xl">
+                  Discover global academic opportunities synchronized with your specific proficiency profile and financial trajectory.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                variant="outline"
+                className="h-16 w-16 rounded-2xl hover:bg-muted text-muted-foreground border border-border/60 bg-card transition-all active:scale-95 shadow-sm"
+              >
+                <RefreshCcw className={`h-6 w-6 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button className="h-16 px-10 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">
+                Global Search Strategy
+              </Button>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Standardized Toolbar */}
+        <motion.div variants={item} className="flex flex-col gap-10">
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 py-4 border-b border-border/10">
+            {/* Tabs */}
+            <div className="flex gap-10">
+              {['explore', 'matched', 'saved', 'applied'].map((id) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`group pb-6 text-xs font-black uppercase tracking-[0.2em] relative transition-all
+                    ${activeTab === id ? 'text-primary' : 'text-muted-foreground/40 hover:text-foreground'}
+                  `}
+                >
+                  {id}
+                  {activeTab === id && (
+                    <motion.div
+                      layoutId="explorer-tab-dot"
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full shadow-[0_4px_12px_rgba(16,185,129,0.4)]"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 flex-1 lg:max-w-4xl">
+              {/* Search Integrated Bar */}
+              <div className="relative group flex-1 w-full">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+                <input 
+                  value={filters.query}
+                  onChange={(e) => updateFilter('query', e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRefresh()}
+                  placeholder="Query title, institution, or region..." 
+                  className="w-full h-14 pl-14 pr-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all shadow-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg ${showFilters ? 'bg-primary text-white' : 'bg-card border border-border/60 text-foreground hover:bg-muted'}`}
+                >
+                  <Filter size={14} />
+                  Filters
+                  <ChevronDown size={14} className={`transition-transform duration-500 ${showFilters ? 'rotate-180' : ''}`} />
+                </Button>
+
+                <Button 
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="h-14 px-10 rounded-2xl primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  {isRefreshing ? <RefreshCcw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  Start Discovery
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Expansion */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, y: -20 }}
+                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, ease: "circOut" }}
+                className="overflow-hidden bg-card/30 backdrop-blur-sm border border-border/40 rounded-[32px] px-10 py-10 shadow-inner"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="size-1.5 rounded-full bg-primary" />
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Target Country</span>
+                    </div>
+                    <select
+                      value={filters.country}
+                      onChange={(e) => updateFilter('country', e.target.value)}
+                      className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
+                    >
+                      <option value="">Global Coverage</option>
+                      {countries.map((c: any) => (
+                        <option key={c.code} value={c.code}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="size-1.5 rounded-full bg-primary" />
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Academic Status</span>
+                    </div>
+                    <select
+                      value={filters.degree_level}
+                      onChange={(e) => updateFilter('degree_level', e.target.value)}
+                      className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
+                    >
+                      <option value="">Any Degree level</option>
+                      <option value="Bachelor">Bachelor's Certification</option>
+                      <option value="Master">Master's Protocol</option>
+                      <option value="PhD">PhD / Doctorate Level</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="size-1.5 rounded-full bg-primary" />
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Funding Matrix</span>
+                    </div>
+                    <select
+                      value={filters.fund_type}
+                      onChange={(e) => updateFilter('fund_type', e.target.value)}
+                      className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
+                    >
+                      <option value="">All Funding Types</option>
+                      <option value="Full">Full Synthesis (100%)</option>
+                      <option value="Partial">Partial / Tuition Only</option>
+                      <option value="Entrance">Entrance Merits</option>
+                    </select>
+                  </div>
                 </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
 
-      {/* Integrated Results */}
-      <motion.div variants={item}>
-        <ScholarshipList filters={filters} activeTab={activeTab} />
-      </motion.div>
+                {hasActiveFilters && (
+                  <div className="mt-10 flex justify-end border-t border-border/10 pt-6">
+                    <button
+                      onClick={clearFilters}
+                      className="text-[10px] font-black text-muted-foreground hover:text-destructive flex items-center gap-3 transition-colors tracking-widest uppercase"
+                    >
+                      <X size={14} />
+                      Purge Filter Parameters
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-    </motion.div>
+        {/* Integrated Results */}
+        <motion.div variants={item} className="pb-20">
+          <ScholarshipList
+            filters={filters}
+            activeTab={activeTab}
+            onPageChange={(page) => updateFilter('page', page)}
+          />
+        </motion.div>
+
+      </motion.div>
+    </div>
   );
 };
+

@@ -143,7 +143,7 @@ export const GroupChatManager: React.FC = () => {
                             <form onSubmit={createGroup} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
+                                        <label className="block text-sm font-medium text-foreground/80 mb-1">Group Name</label>
                                         <Input 
                                             value={name} 
                                             onChange={(e) => setName(e.target.value)} 
@@ -151,7 +151,7 @@ export const GroupChatManager: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                        <label className="block text-sm font-medium text-foreground/80 mb-1">Country</label>
                                         <Input 
                                             value={country} 
                                             onChange={(e) => setCountry(e.target.value)} 
@@ -160,7 +160,7 @@ export const GroupChatManager: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <label className="block text-sm font-medium text-foreground/80 mb-1">Description</label>
                                     <textarea 
                                         className="w-full border rounded-md p-2 bg-background"
                                         rows={3}
@@ -185,7 +185,7 @@ export const GroupChatManager: React.FC = () => {
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-blue-600 font-medium mb-2">{group.country}</p>
-                                    <p className="text-gray-600 text-sm mb-4">{group.description}</p>
+                                    <p className="text-muted-foreground text-sm mb-4">{group.description}</p>
                                     <div className="flex gap-2">
                                         <Button variant="outline" size="sm">Edit</Button>
                                         <Button variant="destructive" size="sm">Delete</Button>
@@ -314,3 +314,4 @@ export const GroupChatManager: React.FC = () => {
         </div>
     );
 };
+

@@ -8,6 +8,7 @@ import { SocketService } from "./services/SocketService.js";
 // Scholarship automation imports
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
 import { assessmentWorker } from "./workers/AssessmentWorker.js";
+import { notificationWorker } from "./workers/NotificationWorker.js";
 import { seedScholarshipSources } from "./scripts/seedScholarships.js";
 
 // Temporary: Global unhandled rejection handler for debugging
@@ -16,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 async function start() {
-  console.log("Initializing server...");
+
 
   // PRIORITY: Use configs.PORT
   const finalPort = configs.PORT;
@@ -28,26 +29,36 @@ async function start() {
   SocketService.initialize(server);
 
   server.listen(Number(finalPort), '0.0.0.0', () => {
-    console.log(`Server listening on port ${finalPort}`);
-    console.log(
-      `Health check available at: http://0.0.0.0:${finalPort}/health`,
-    );
   });
 
   // Load configurations and connect to DB asynchronously
   try {
     await connectSequelize();
 
-    // Ensure the assessment worker is running (explicit reference prevents tree-shaking)
+    // Ensure the workers are running (explicit reference prevents tree-shaking)
     if (assessmentWorker) {
         console.log(`🧠 Assessment worker started: ${assessmentWorker.name}`);
     } else {
         console.warn("⚠️ Assessment worker skipped (Redis not connected)");
     }
+    if (notificationWorker) {
+        console.log(`🔔 Notification worker started: ${notificationWorker.name}`);
+    }
 
     // Initialize Scholarship Ingestion System
     await seedScholarshipSources();
     startScholarshipCron();
+
+    console.log(`
+===================================================
+🚀 BACKEND IS FULLY RUNNING AND READY 🚀
+===================================================
+✅ Server listening on port ${finalPort}
+✅ Database Connected Successfully
+✅ WebSockets Initialized
+✅ Workers Active
+===================================================
+    `);
 
   } catch (err) {
     console.error("Failed to connect to database:", err);

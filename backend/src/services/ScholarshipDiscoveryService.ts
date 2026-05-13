@@ -18,7 +18,7 @@ import { ScholarshipNotificationService } from "./ScholarshipNotificationService
 
 export class ScholarshipDiscoveryService {
   private static isRunning = false;
-  private static MAX_CONCURRENT_SOURCES = 3;
+  private static MAX_CONCURRENT_SOURCES = 1;
   private static MAX_LINKS_PER_SOURCE = 30;
 
   private static isLikelyScholarshipLink(url: string): boolean {
@@ -59,7 +59,8 @@ export class ScholarshipDiscoveryService {
       });
 
       const sources = await ScholarshipSourceRepository.findAllActive();
-      console.log(`Starting discovery for ${sources.length} sources...`);
+      console.log(`[DISCOVERY] Starting discovery for ${sources.length} sources...`);
+      console.log(`[DISCOVERY] Concurrency: ${this.MAX_CONCURRENT_SOURCES}, Links per source: ${this.MAX_LINKS_PER_SOURCE}`);
 
       // Process sources with limited concurrency
       for (let i = 0; i < sources.length; i += this.MAX_CONCURRENT_SOURCES) {
@@ -70,20 +71,16 @@ export class ScholarshipDiscoveryService {
       }
     } catch (error) {
       const err = error as any;
-      const message =
-        typeof err?.message === "string" ? err.message : String(error);
+      const message = typeof err?.message === "string" ? err.message : String(error);
 
-      if (
-        message.includes("Executable doesn't exist") ||
-        message.includes("playwright")
-      ) {
-        console.error(
-          "discoverAll error: Playwright browser binary is missing. Run 'npx playwright install chromium' in backend folder.",
-        );
-        console.error("Original error:", message);
-      } else {
-        console.error("discoverAll error:", error);
+      console.error("[DISCOVERY ERROR] Failed to start browser.");
+      console.error(`[ENVIRONMENT] Node: ${process.version}, Platform: ${process.platform}, Arch: ${process.arch}`);
+      console.error(`[EXEC PATH] ${process.env.PLAYWRIGHT_BROWSERS_PATH || "Default Playwright Path"}`);
+
+      if (message.includes("Executable doesn't exist") || message.includes("playwright")) {
+        console.error("CRITICAL: Playwright browser binary is missing on Render. Please ensure 'npm run build' includes 'npx playwright install chromium'.");
       }
+      console.error("Full Error:", message);
     } finally {
       if (browser) await browser.close();
       this.isRunning = false;
@@ -533,26 +530,64 @@ export class ScholarshipDiscoveryService {
     text: string,
     baseUrl: string,
   ): string | null {
+    const countryMapping: Record<string, string> = {
+      "ET": "Ethiopia",
+      "UK": "United Kingdom",
+      "GB": "United Kingdom",
+      "US": "United States",
+      "USA": "United States",
+      "CA": "Canada",
+      "AU": "Australia",
+      "DE": "Germany",
+      "FR": "France",
+      "JP": "Japan",
+      "CN": "China",
+      "IN": "India",
+      "IT": "Italy",
+      "ES": "Spain",
+      "NL": "Netherlands",
+      "SE": "Sweden",
+      "NO": "Norway",
+      "FI": "Finland",
+      "DK": "Denmark",
+      "CH": "Switzerland",
+      "AT": "Austria",
+      "BE": "Belgium",
+      "IE": "Ireland",
+      "NZ": "New Zealand",
+      "RU": "Russia",
+      "BR": "Brazil",
+      "ZA": "South Africa",
+      "TR": "Turkey",
+      "SA": "Saudi Arabia",
+      "AE": "United Arab Emirates",
+      "KR": "South Korea",
+      "SG": "Singapore",
+      "MY": "Malaysia",
+      "TH": "Thailand",
+      "VN": "Vietnam",
+      "ID": "Indonesia",
+      "PH": "Philippines",
+      "PK": "Pakistan",
+      "BD": "Bangladesh",
+      "EG": "Egypt",
+      "NG": "Nigeria",
+      "KE": "Kenya",
+      "GH": "Ghana",
+    };
+
     try {
       const url = new URL(baseUrl);
       const domainParts = url.hostname.split(".");
-      const tld = domainParts[domainParts.length - 1];
-      if (
-        tld &&
-        tld.length === 2 &&
-        tld !== "com" &&
-        tld !== "org" &&
-        tld !== "net" &&
-        tld !== "edu"
-      ) {
-        return tld.toUpperCase();
+      const tld = domainParts[domainParts.length - 1]?.toUpperCase();
+      
+      if (tld && countryMapping[tld]) {
+        return countryMapping[tld];
       }
     } catch {}
 
     const countryKeywords = [
-      "USA",
       "United States",
-      "UK",
       "United Kingdom",
       "Canada",
       "Australia",
@@ -561,10 +596,16 @@ export class ScholarshipDiscoveryService {
       "Japan",
       "China",
       "Ethiopia",
+      "USA",
+      "UK",
     ];
-    for (const country of countryKeywords) {
-      if (text.includes(country)) return country;
+
+    for (const keyword of countryKeywords) {
+      if (text.includes(keyword)) {
+        return countryMapping[keyword] || keyword;
+      }
     }
+
     return null;
   }
 

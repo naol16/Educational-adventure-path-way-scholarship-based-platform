@@ -146,3 +146,4 @@ export default function BookingSuccessPage() {
     </Suspense>
   );
 }
+

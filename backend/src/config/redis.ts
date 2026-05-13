@@ -30,7 +30,7 @@ export const redisOptions: ConnectionOptions = {
 
 redisConnection.on("connect", () => {
   redisAvailable = true;
-  console.log("✅ Redis connected successfully");
+
 });
 
 redisConnection.on("error", (err) => {
@@ -47,6 +47,10 @@ redisConnection.on("error", (err) => {
 
 // Only initialize queue if possible, otherwise we handle it in services
 export const assessmentQueue = new Queue("assessment-queue", {
+  connection: redisOptions,
+});
+
+export const notificationQueue = new Queue("notification-queue", {
   connection: redisOptions,
 });
 

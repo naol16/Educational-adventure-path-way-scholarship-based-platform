@@ -3,3 +3,4 @@ import { CounselorManagement } from '@/features/admin/components/CounselorManage
 export default function AdminCounselorsPage() {
   return <CounselorManagement />;
 }
+

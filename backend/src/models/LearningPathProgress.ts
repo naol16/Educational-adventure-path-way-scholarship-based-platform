@@ -8,9 +8,9 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Student } from "./Student.js";
-import { Video } from "./Video.js";
-import { Pdf } from "./Pdf.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Video, type Video as VideoType } from "./Video.js";
+import { Pdf, type Pdf as PdfType } from "./Pdf.js";
 
 @Table({
     tableName: "learning_path_progress",
@@ -123,11 +123,11 @@ export class LearningPathProgress extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Student)
-    student!: Student;
+    student!: StudentType;
 
     @BelongsTo(() => Video)
-    video!: Video;
+    video!: VideoType;
 
     @BelongsTo(() => Pdf)
-    pdf!: Pdf;
+    pdf!: PdfType;
 }

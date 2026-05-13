@@ -189,3 +189,4 @@ export function AIChatBot({ scholarshipId }: AIChatBotProps) {
         </div>
     );
 }
+

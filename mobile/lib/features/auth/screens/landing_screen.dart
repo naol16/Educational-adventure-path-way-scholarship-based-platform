@@ -1,183 +1,309 @@
-import 'package:mobile/features/core/theme/design_system.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:mobile/features/core/theme/design_system.dart';
 
-import 'package:mobile/features/core/widgets/glass_container.dart';
+class CarouselSlide {
+  final String title;
+  final String description;
+  final String imageUrl;
 
-import 'package:mobile/features/core/widgets/primary_button.dart';
+  CarouselSlide({
+    required this.title,
+    required this.description,
+    required this.imageUrl,
+  });
+}
 
-class LandingScreen extends StatelessWidget {
+class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
 
   @override
+  State<LandingScreen> createState() => _LandingScreenState();
+}
+
+class _LandingScreenState extends State<LandingScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _autoPlayTimer;
+
+  final List<CarouselSlide> _slides = [
+    CarouselSlide(
+      title: 'Precision Discovery',
+      description: 'Unlock your academic potential with our hyper-accurate AI-driven scholarship matching engine.',
+      imageUrl: 'assets/images/landing/scholarship_ui.png',
+    ),
+    CarouselSlide(
+      title: 'Verified Mentorship',
+      description: 'Unlock expert guidance with total peace of mind. Every transaction is protected by secure escrow.',
+      imageUrl: 'assets/images/landing/mentorship_ui.png',
+    ),
+    CarouselSlide(
+      title: 'Academic Mastery',
+      description: 'Master your exams with personalized IELTS & TOEFL training built to bridge your skill gaps.',
+      imageUrl: 'assets/images/landing/exam_ui.png',
+    ),
+    CarouselSlide(
+      title: 'AI Speaking Lab',
+      description: 'Speak with confidence. Practice with our real-time mock interview simulator and get instant AI feedback.',
+      imageUrl: 'assets/images/landing/ai_speaking_ui.png',
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
+
+  @override
+  void dispose() {
+    _autoPlayTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_currentPage < _slides.length - 1) {
+        _currentPage++;
+      } else {
+        _currentPage = 0;
+      }
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentPage = index;
+    });
+    // Reset timer on manual swipe to prevent double-swiping
+    _startAutoPlay();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData.light(),
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            backgroundColor: DesignSystem.themeBackground(context),
-            body: Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
+      body: Stack(
+        children: [
+          // Background Glows
+          Positioned(
+            top: -100,
+            right: -100,
+            child: DesignSystem.buildBlurCircle(
+              DesignSystem.emerald.withValues(alpha: 0.12),
+              350,
+            ),
+          ),
+          Positioned(
+            bottom: -50,
+            left: -100,
+            child: DesignSystem.buildBlurCircle(
+              const Color(0xFF6366F1).withValues(alpha: 0.08),
+              300,
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
               children: [
-                // Background Glows
-                Positioned(
-                  top: -100,
-                  right: -100,
-                  child: DesignSystem.buildBlurCircle(
-                    DesignSystem.emerald.withValues(alpha: 0.12),
-                    350,
-                  ),
-                ),
-                Positioned(
-                  bottom: -50,
-                  left: -100,
-                  child: DesignSystem.buildBlurCircle(
-                    const Color(0xFF2563EB).withValues(alpha: 0.08),
-                    300,
-                  ),
-                ),
-
-                SafeArea(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0,
-                          vertical: 40,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight - 80,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Top Illustration Area
-                              Container(
-                                height: 160,
-                                width: 160,
-                                decoration: BoxDecoration(
-                                  color: DesignSystem.emerald.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  LucideIcons.globe,
-                                  size: 70,
-                                  color: DesignSystem.emerald,
-                                ),
-                              ),
-                              const SizedBox(height: 48),
-
-                              Text(
-                                "Prepare Today.\nStudy Anywhere Tomorrow.",
-                                textAlign: TextAlign.center,
-                                style: DesignSystem.headingStyle(
-                                  buildContext: context,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              Text(
-                                "Your guided path to international scholarship readiness.",
-                                textAlign: TextAlign.center,
-                                style: DesignSystem.bodyStyle(
-                                  buildContext: context,
-                                  color: DesignSystem.subText(context),
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 48),
-
-                              // Feature list with glass cards
-                              _buildFeatureCard(
-                                context,
-                                LucideIcons.checkCircle,
-                                "Scholarship readiness",
-                              ),
-                              _buildFeatureCard(
-                                context,
-                                LucideIcons.bookOpen,
-                                "English & interview prep",
-                              ),
-                              _buildFeatureCard(
-                                context,
-                                LucideIcons.shieldCheck,
-                                "Verified counselors",
-                              ),
-
-                              const SizedBox(height: 48),
-
-                              PrimaryButton(
-                                text: "Get Started",
-                                onPressed: () =>
-                                    context.push('/role-selection'),
-                              ),
-                              const SizedBox(height: 16),
-
-                              TextButton(
-                                onPressed: () => context.push('/login'),
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: "Already using it? ",
-                                    style: DesignSystem.bodyStyle(
-                                      buildContext: context,
-                                      color: DesignSystem.subText(context),
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text: "Log in",
-                                        style: DesignSystem.bodyStyle(
-                                          buildContext: context,
-                                          color: DesignSystem.primary(context),
-                                          fontSize: 14,
-                                        ).copyWith(fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                // Top Bar with Skip
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => context.push('/role-selection'),
+                        child: Text(
+                          'SKIP',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            fontSize: 13,
                           ),
                         ),
-                      );
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Carousel
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      return _buildSlide(_slides[index]);
                     },
                   ),
                 ),
+
+                // Indicators
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 40),
+                  child: SmoothPageIndicator(
+                    controller: _pageController,
+                    count: _slides.length,
+                    effect: const ExpandingDotsEffect(
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      spacing: 8,
+                      expansionFactor: 4,
+                      dotColor: Colors.white24,
+                      activeDotColor: Color(0xFF10B981),
+                    ),
+                  ),
+                ),
+
+                // Bottom Button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
+                  child: _buildActionButton(),
+                ),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context, IconData icon, String title) {
+  Widget _buildSlide(CarouselSlide slide) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        borderRadius: 20,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: DesignSystem.emerald.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Image with subtle inner glow/shadow and large radius
+          Container(
+            height: 320,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  spreadRadius: -10,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    slide.imageUrl,
+                    fit: BoxFit.cover,
+                  ),
+                  // Subtle gradient overlay for better text contrast if needed
+                  // but we place text below, so this is for depth
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.3),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: DesignSystem.emerald, size: 22),
             ),
-            const SizedBox(width: 20),
-            Text(
-              title,
-              style: DesignSystem.bodyStyle(
-                buildContext: context,
+          ),
+          const SizedBox(height: 48),
+          
+          Text(
+            slide.title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              slide.description,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+                height: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton() {
+    final isLastPage = _currentPage == _slides.length - 1;
+    
+    return Container(
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (isLastPage) {
+              context.push('/role-selection');
+            } else {
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOut,
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: Text(
+              isLastPage ? 'START ADVENTURE' : 'NEXT',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.black,
+                fontWeight: FontWeight.w900,
                 fontSize: 15,
-              ).copyWith(fontWeight: FontWeight.w600),
+                letterSpacing: 1.2,
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

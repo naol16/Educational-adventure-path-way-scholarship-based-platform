@@ -11,7 +11,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { ScholarshipSource } from "./ScholarshipSource.js";
+import { ScholarshipSource, type ScholarshipSource as ScholarshipSourceType } from "./ScholarshipSource.js";
 
 @Table({
     tableName: "scholarships",
@@ -147,5 +147,5 @@ export class Scholarship extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => ScholarshipSource)
-    source!: ScholarshipSource;
+    source!: ScholarshipSourceType;
 }

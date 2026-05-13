@@ -1,0 +1,20 @@
+# Ignore local dependencies
+node_modules
+dist
+
+# Ignore local environment/secrets
+.env
+.env.local
+
+# Ignore git and logs
+.git
+.gitignore
+*.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore temp files
+tmp
+temp

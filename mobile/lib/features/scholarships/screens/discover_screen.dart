@@ -25,11 +25,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   int _activeTabIndex = 0; // 0: Matched, 1: Saved, 2: Applied
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _activeTabIndex);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -70,27 +78,34 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               },
               backgroundColor: DesignSystem.surfaceMediumColor(context),
               color: DesignSystem.primary(context),
-              child: SingleChildScrollView(
+              child: NestedScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 15),
+                          _buildTopHeader(),
+                          const SizedBox(height: 25),
+                          _buildSearchBar(),
+                          const SizedBox(height: 25),
+                          _buildTabSwitcher(),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                body: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) => setState(() => _activeTabIndex = index),
                   children: [
-                    const SizedBox(height: 15),
-                    _buildTopHeader(),
-                    const SizedBox(height: 25),
-                    _buildSearchBar(),
-                    const SizedBox(height: 25),
-                    _buildTabSwitcher(),
-                    const SizedBox(height: 30),
-
-                    // Content based on tab
-                    if (_activeTabIndex == 0)
-                      _buildMatchedContent(matchedAsync)
-                    else
-                      _buildTrackedContent(watchlistAsync, _activeTabIndex),
-
-                    const SizedBox(height: 120),
+                    _buildMatchedContent(matchedAsync),
+                    _buildTrackedContent(watchlistAsync, 1),
+                    _buildTrackedContent(watchlistAsync, 2),
                   ],
                 ),
               ),
@@ -186,7 +201,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     bool active = _activeTabIndex == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _activeTabIndex = index),
+        onTap: () {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -221,10 +242,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final topMatch = list.first;
         final listItems = list.skip(1).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildScholarshipHeroCard(topMatch, label: "PATHFINDER'S TOP CHOICE"),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildScholarshipHeroCard(topMatch, label: "PATHFINDER'S TOP CHOICE"),
             const SizedBox(height: 35),
             Text(
               "Curated For Your Pathway",
@@ -252,7 +276,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     },
                   ),
                 )),
-          ],
+            ],
+          ),
         );
       },
       loading: () => Center(
@@ -285,10 +310,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final topItem = filteredList.first;
         final listItems = filteredList.skip(1).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (tabIndex == 1) ...[
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (tabIndex == 1) ...[
               _buildScholarshipHeroCard(
                 topItem.scholarship!,
                 label: "SAVED OPPORTUNITY",
@@ -342,7 +370,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     },
                   ),
                 ),
-          ],
+            ],
+          ),
         );
       },
       loading: () => Center(

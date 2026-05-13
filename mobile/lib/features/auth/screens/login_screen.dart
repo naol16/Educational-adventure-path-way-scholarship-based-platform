@@ -24,6 +24,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _submitting = false;
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -37,26 +39,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return error?.toString() ?? 'Something went wrong';
   }
 
-  Future<void> _signIn() async {
-    FocusScope.of(context).unfocus();
+  bool _validateInputs() {
+    bool isValid = true;
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
-      return;
+
+    if (email.isEmpty) {
+      setState(() => _emailError = 'Email address is required');
+      isValid = false;
+    } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() => _emailError = 'Please enter a valid email address');
+      isValid = false;
     }
+
+    if (password.isEmpty) {
+      setState(() => _passwordError = 'Password is required');
+      isValid = false;
+    } else if (password.length < 6) {
+      setState(() => _passwordError = 'Password must be at least 6 characters');
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  Future<void> _signIn() async {
+    FocusScope.of(context).unfocus();
+    
+    if (!_validateInputs()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() => _submitting = true);
     try {
       await ref.read(authProvider.notifier).login(email: email, password: password);
       if (!mounted) return;
-      final next = ref.read(authProvider);
-      if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_messageForError(next.error))),
-        );
+      
+      final authState = ref.read(authProvider);
+      if (authState.hasError) {
+        final errorMsg = _messageForError(authState.error);
+        if (errorMsg.toLowerCase().contains('email') || errorMsg.toLowerCase().contains('user')) {
+          setState(() => _emailError = errorMsg);
+        } else if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('credentials')) {
+          setState(() => _passwordError = errorMsg);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -66,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: ThemeData.light(),
+      data: Theme.of(context),
       child: Builder(
         builder: (context) {
           return Scaffold(
@@ -136,6 +176,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             autofillHints: const [AutofillHints.email],
+                            hasError: _emailError != null,
+                            errorText: _emailError,
                           ),
                           
                           const SizedBox(height: 8),
@@ -147,12 +189,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             prefixIcon: LucideIcons.lock,
                             controller: _passwordController,
                             autofillHints: const [AutofillHints.password],
+                            hasError: _passwordError != null,
+                            errorText: _passwordError,
                           ),
                           
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () => context.push('/forgot-password'),
                               child: Text(
                                 "Forgot password?",
                                 style: DesignSystem.bodyStyle(

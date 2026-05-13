@@ -197,6 +197,8 @@ export class AssessmentService {
       ? "This is a TOEFL Integrated Task. 1. READING: 1 Academic Passage (250-300 words) + 5 Multiple Choice Questions. 2. LISTENING: 1 Lecture Script (300-400 words) + 5 Multiple Choice Questions. 3. WRITING: 5 Integrated Task Prompts/Questions. 4. SPEAKING: 5 Integrated Speaking Prompts/Questions based on the topic."
       : "1. READING: 1 Passage + 5 Questions (with a hidden 'correct_answer' key). 2. LISTENING: 1 Detailed Script + 5 Questions (with a hidden 'correct_answer' key). 3. WRITING: 5 Task Prompts/Questions. 4. SPEAKING: 5 Long-form Prompts/Questions (Part 1 style).";
 
+    examInstructions += " CRITICAL FOR WRITING: Ensure all writing prompts are strictly TEXT-BASED essay questions (like IELTS Task 2). DO NOT include prompts that require viewing a chart, graph, map, diagram, or image.";
+
     if (skill) {
       examInstructions = `Focus EXCLUSIVELY on generating the ${skill.toUpperCase()} section. Generate exactly 5 questions/prompts for this section. Leave other sections empty or null.`;
     } else if (isDiagnostic) {
@@ -242,17 +244,20 @@ export class AssessmentService {
     const chain = groq70b.pipe(new StringOutputParser());
     let response: string;
     try {
+      console.log(`[AssessmentService] Requesting Groq 70B for exam generation (Type: ${examType}, Difficulty: ${difficulty}, TestID: ${testId})...`);
       response = await chain.invoke(
         await prompt.format({ examType, difficulty, testId, examInstructions }),
         { response_format: { type: "json_object" } } as any
       );
-    } catch (err) {
-      console.warn("Groq 70B failed for generation, falling back to Gemini...");
+      console.log(`[AssessmentService] Groq generation successful (Response length: ${response.length})`);
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq 70B failed for generation: ${err.message}. Falling back to Gemini...`);
       try {
         const fallbackChain = geminiModel.pipe(new StringOutputParser());
         response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
+        console.log("[AssessmentService] Gemini fallback successful.");
       } catch (geminiErr: any) {
-        console.error("Gemini fallback also failed. Using safety mock exam.");
+        console.error(`[AssessmentService] Gemini fallback also failed: ${geminiErr.message}. Using safety mock exam.`);
         response = JSON.stringify({
           status: "success",
           data: {
@@ -662,7 +667,7 @@ export class AssessmentService {
       "You are a strict JSON generator. Return ONLY valid JSON objects. NO markdown, NO preamble, NO explanations."
     );
 
-    const chain = groq70b.pipe(new StringOutputParser());
+    const chain = groq8b.pipe(new StringOutputParser());
     
     const responseText = await chain.invoke(
       [systemInstruction, new HumanMessage({ content: textPrompt })],
@@ -692,7 +697,7 @@ export class AssessmentService {
 
     const promptTemplate = PromptTemplate.fromTemplate(`
       Role: STRICT Senior {skill} Examiner
-      Task: Evaluate the student's {skill} section for an English Proficiency Exam.
+      Task: Evaluate the student's {skill} section for a {examType} Proficiency Exam.
       
       Blueprint (Grading Key): {blueprint}
       Student Response: {response}
@@ -761,8 +766,23 @@ export class AssessmentService {
       ? 'CRITICAL: Use the DETERMINISTIC SCORE provided above. If student gave no answers, the score MUST be 0. DO NOT deviate from this number.'
       : 'Evaluate the response qualitatively. Be extremely strict. If the response is empty, irrelevant, or too short, assign a score of 0.';
 
+    if (skill === "writing" && (!skillResponse || (typeof skillResponse === 'string' && skillResponse.trim().length < 10) || (typeof skillResponse === 'object' && Object.keys(skillResponse).length === 0))) {
+        console.log(`[AssessmentService] Empty response for writing. Auto-scoring 0.`);
+        return {
+          score: 0,
+          feedback: "No written response was detected. You must provide a structured essay to receive a score.",
+          learning_mode: {
+             sample_answer: "An ideal response would be a multi-paragraph essay addressing the prompt with specific examples.",
+             tips: ["Plan your essay before writing.", "Focus on grammar and varied vocabulary."]
+          }
+        };
+    }
+
+    const examType = blueprint.data?.exam_summary?.type || "IELTS";
+
     const textPrompt = await promptTemplate.format({
       skill,
+      examType,
       blueprint: JSON.stringify(skillBlueprint),
       response: JSON.stringify(skillResponse),
       deterministicScore: deterministicScore !== null ? deterministicScore.toString() : "N/A",
@@ -798,6 +818,19 @@ export class AssessmentService {
       }
     }
 
+    // --- Voice Detection check for 0 score (Now that transcriptionText is declared and populated) ---
+    if (skill === "speaking" && (!transcriptionText || transcriptionText.trim().length < 5)) {
+       console.log(`[AssessmentService] No voice detected for speaking. Auto-scoring 0.`);
+       return {
+         score: 0,
+         feedback: "No clear spoken response was detected. Please ensure your microphone is working and you speak clearly for the full duration.",
+         learning_mode: { 
+            sample_response: "A clear response should restate the main points of the reading and lecture, showing how they conflict or agree.",
+            tips: ["Speak clearly and at a steady pace.", "Use transition words like 'however' or 'furthermore'."]
+         }
+       };
+    }
+
     const chain = selectedModel.pipe(new StringOutputParser());
     
     let responseText: string;
@@ -813,13 +846,14 @@ export class AssessmentService {
       const options: any = {};
       options.response_format = { type: "json_object" };
       
+      console.log(`[AssessmentService] Requesting ${selectedModel.model || "selected model"} for ${skill} evaluation...`);
       responseText = await chain.invoke(
         [systemInstruction, new HumanMessage({ content: evaluationContent })],
         options
       );
-    } catch (err) {
-      console.warn(`Groq failed for ${skill}, attempting recovery...`);
-      // Since Gemini is 404, we don't fallback to it here, just throw or retry
+      console.log(`[AssessmentService] ${skill} evaluation response received.`);
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq failed for ${skill} evaluation: ${err.message}.`);
       throw err;
     }
 
@@ -912,22 +946,25 @@ export class AssessmentService {
       4. NO MARKDOWN (no \`\`\`json blocks).
     `);
 
-    const chain = groq70b.pipe(new StringOutputParser());
+    const chain = geminiModel.pipe(new StringOutputParser());
     let response: string;
     try {
+      console.log("[AssessmentService] Requesting Groq 70B for final synthesis...");
       response = await chain.invoke(await prompt.format({
         scores: JSON.stringify(scores),
         notes: JSON.stringify(notes),
         examType
       }));
-    } catch (err) {
-      console.warn("Groq 70B failed for synthesis, falling back to Gemini...");
+      console.log("[AssessmentService] Synthesis successful.");
+    } catch (err: any) {
+      console.warn(`[AssessmentService] Groq 70B failed for synthesis: ${err.message}. Falling back to Gemini...`);
       const fallbackChain = geminiModel.pipe(new StringOutputParser());
       response = await fallbackChain.invoke(await prompt.format({
         scores: JSON.stringify(scores),
         notes: JSON.stringify(notes),
         examType
       }));
+      console.log("[AssessmentService] Gemini synthesis fallback successful.");
     }
 
     const sanitized = this.sanitizeJSONString(response);

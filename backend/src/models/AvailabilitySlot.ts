@@ -8,7 +8,7 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { Counselor } from "./Counselor.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
 
 @Table({
     tableName: "availability_slots",
@@ -81,5 +81,5 @@ export class AvailabilitySlot extends Model {
     declare updatedAt: Date;
 
     @BelongsTo(() => Counselor, { as: 'counselor' })
-    counselor!: Counselor;
+    counselor!: CounselorType;
 }

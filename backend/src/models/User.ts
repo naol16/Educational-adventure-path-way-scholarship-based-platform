@@ -12,13 +12,14 @@ import {
     CreatedAt,
     UpdatedAt,
 } from "sequelize-typescript";
-import { RefreshToken } from "./RefreshToken.js";
-import { PasswordResetToken } from "./PasswordResetToken.js";
-import { Consultation } from "./Consultation.js";
-import { Counselor } from "./Counselor.js";
-import { Student } from "./Student.js";
-import { Notification } from "./Notification.js";
+import { RefreshToken, type RefreshToken as RefreshTokenType } from "./RefreshToken.js";
+import { PasswordResetToken, type PasswordResetToken as PasswordResetTokenType } from "./PasswordResetToken.js";
+import { Consultation, type Consultation as ConsultationType } from "./Consultation.js";
+import { Counselor, type Counselor as CounselorType } from "./Counselor.js";
+import { Student, type Student as StudentType } from "./Student.js";
+import { Notification, type Notification as NotificationType } from "./Notification.js";
 import { UserRole } from "../types/userTypes.js";
+import type { UserRole as UserRoleType } from "../types/userTypes.js";
 
 @Table({
     tableName: "users",
@@ -129,23 +130,23 @@ export class User extends Model {
 
     // Associations
     @HasMany(() => RefreshToken, { onDelete: 'CASCADE' })
-    refreshTokens!: RefreshToken[];
+    refreshTokens!: RefreshTokenType[];
 
     @HasMany(() => PasswordResetToken, { onDelete: 'CASCADE' })
-    passwordResetTokens!: PasswordResetToken[];
+    passwordResetTokens!: PasswordResetTokenType[];
 
     @HasMany(() => Consultation, { foreignKey: 'student_id', onDelete: 'CASCADE' })
-    consultationsAsStudent!: Consultation[];
+    consultationsAsStudent!: ConsultationType[];
 
     @HasMany(() => Consultation, { foreignKey: 'counselor_id', onDelete: 'CASCADE' })
-    consultationsAsCounselor!: Consultation[];
+    consultationsAsCounselor!: ConsultationType[];
 
     @HasOne(() => Counselor, { onDelete: 'CASCADE' })
-    counselor!: Counselor;
+    counselor!: CounselorType;
 
     @HasOne(() => Student, { onDelete: 'CASCADE' })
-    student!: Student;
+    student!: StudentType;
 
     @HasMany(() => Notification, { onDelete: 'CASCADE' })
-    notifications!: Notification[];
+    notifications!: NotificationType[];
 }

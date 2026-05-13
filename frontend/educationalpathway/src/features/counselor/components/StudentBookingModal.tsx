@@ -43,17 +43,26 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
     setBookingInProgress(true);
     try {
       const response = await api.post('/counselors/bookings', { slotId: selectedSlot.id });
-      const { checkoutUrl } = response.data;
       
+      // Handle potential double-wrapping from interceptors or direct response
+      const result = response.data;
+      const checkoutUrl = result?.checkoutUrl || result?.data?.checkoutUrl;
+      
+      console.log("[Booking] Response received:", result);
+
       if (checkoutUrl) {
         toast.loading("Redirecting to secure payment...");
-        window.location.href = checkoutUrl;
+        setTimeout(() => {
+          window.location.href = checkoutUrl;
+        }, 500);
       } else {
+        console.warn("[Booking] No checkoutUrl in response:", result);
         toast.success("Booking confirmed successfully!");
         if (onSuccess) onSuccess();
         onClose();
       }
     } catch (error: any) {
+      console.error("[Booking] Error:", error);
       toast.error(error.response?.data?.message || "Failed to process booking");
     } finally {
       setBookingInProgress(false);
@@ -134,7 +143,7 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
               })}
             </div>
           ) : (
-            <div className="text-center p-12 border-2 border-dashed rounded-3xl border-border bg-muted/10">
+            <div className="text-center p-12 border-2 border-dashed rounded-2xl border-border bg-muted/10">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
               <h3 className="font-bold text-lg">Fully Booked</h3>
               <p className="text-muted-foreground mt-2 max-w-[200px] mx-auto">

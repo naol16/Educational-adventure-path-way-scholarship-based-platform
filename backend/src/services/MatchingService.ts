@@ -4,12 +4,13 @@ import { MatchedScholarship } from "../types/scholarshipTypes.js";
 import { StudentRepository } from "../repositories/StudentRepository.js";
 import { MatchingRepository } from "../repositories/MatchingRepository.js";
 import { AIService } from "./AIService.js";
+import { CounselorService } from "./CounselorService.js";
 import { Scholarship } from "../models/Scholarship.js";
 import { redisConnection } from "../config/redis.js";
 
 export class MatchingService {
 
-  static async getTopMatches(userId: number): Promise<MatchedScholarship[]> {
+  static async getTopMatches(userId: number, limit: number = 5, offset: number = 0): Promise<{ rows: MatchedScholarship[]; count: number }> {
     const student = await StudentRepository.findByUserId(userId);
 
     if (!student) {
@@ -28,12 +29,39 @@ export class MatchingService {
     }
 
     // Prepare the vector as a SQL-friendly string: '[0.1, 0.2, ...]'
-    // Our model now handles formatting via setter, but we explicitly format here for the raw SQL query
     const vectorStr = Array.isArray(student.embedding)
       ? `[${student.embedding.join(",")}]`
       : student.embedding;
 
-    return MatchingRepository.findTopMatches(student, vectorStr);
+    const { rows, count } = await MatchingRepository.findTopMatches(student, vectorStr, limit, offset);
+
+    // AI ENHANCEMENT: Apply deeper AI ranking for the top matches (only for the first page)
+    if (rows.length > 0 && offset === 0) {
+        try {
+            console.log(`[MatchingService] Triggering AI re-ranking for top ${rows.length} scholarships...`);
+            
+            // Get recommended counselors to provide context for "Expert Advisor" logic
+            const recommendedCounselors = await CounselorService.recommendForStudent(userId);
+            
+            const aiResults = await AIService.rankScholarships(student.toJSON(), rows, recommendedCounselors);
+            
+            // Merge AI scores and reasons back into the results
+            rows.forEach(row => {
+                const aiMatch = aiResults.find((r: any) => String(r.id) === String(row.id));
+                if (aiMatch) {
+                    row.match_score = aiMatch.match_score;
+                    row.match_reason = aiMatch.match_reason;
+                }
+            });
+            
+            // Re-sort based on the new AI match scores
+            rows.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+        } catch (err) {
+            console.error("[MatchingService] AI re-ranking failed, falling back to vector scores:", err);
+        }
+    }
+
+    return { rows, count };
   }
 
 

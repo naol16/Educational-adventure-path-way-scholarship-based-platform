@@ -21,7 +21,12 @@ export class LearningPathController {
                 return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
-            const examType = req.query.examType as string || "IELTS";
+            // Accept ?examType=IELTS or ?examType=TOEFL to fetch each path independently.
+            // Without it, falls back to returning the most recent path (any exam type).
+            const examType = typeof req.query.examType === 'string'
+                ? req.query.examType.toUpperCase()
+                : undefined;
+
             const path = await LearningPathService.getFormattedPath(student.id, examType);
 
             return ResponseHelper.success(res, path);
@@ -36,7 +41,7 @@ export class LearningPathController {
     static async markComplete(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer, examType } = req.body;
+            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer } = req.body;
 
             if (!userId) {
                 return ResponseHelper.error(res, "Unauthorized", 401);
@@ -54,13 +59,11 @@ export class LearningPathController {
                     pdfId: pdfId ?? null,
                     questionIndex: questionIndex ?? null,
                     isNote: isNote ?? false,
-                    section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section,
-                    examType: examType || 'IELTS'
+                    section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section
                 },
                 defaults: {
                     isCompleted: isCompleted ?? true,
-                    answerText: answer ?? null,
-                    examType: examType || 'IELTS'
+                    answerText: answer ?? null
                 }
             });
 
@@ -83,7 +86,7 @@ export class LearningPathController {
     static async markSectionComplete(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            const { section, examType } = req.body; // e.g. "Reading"
+            const { section } = req.body; // e.g. "Reading"
 
             if (!userId || !section) {
                 return ResponseHelper.error(res, "Missing userId or section", 400);
@@ -102,7 +105,6 @@ export class LearningPathController {
             // Normalizing the section string to match keys in the JSON sections
             const lowerSection = section.toLowerCase();
             const normalizedSection = section.charAt(0).toUpperCase() + section.slice(1).toLowerCase();
-            const normalizedExamType = (examType || 'IELTS').toUpperCase();
 
             // 1. Get all Video IDs for this section
             const videoIds = (path.videoSections as any)[lowerSection] || [];
@@ -117,8 +119,8 @@ export class LearningPathController {
             // Mark all videos
             for (const vId of videoIds) {
                 await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, videoId: vId, section: normalizedSection, examType: normalizedExamType },
-                    defaults: { isCompleted: true, examType: normalizedExamType }
+                    where: { studentId: student.id, videoId: vId, section: normalizedSection },
+                    defaults: { isCompleted: true }
                 }).then(([progress, created]) => {
                    if (!created) progress.update({ isCompleted: true });
                 });
@@ -127,8 +129,8 @@ export class LearningPathController {
             // Mark all questions
             for (let i = 0; i < questions.length; i++) {
                 await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, questionIndex: i, section: normalizedSection, examType: normalizedExamType },
-                    defaults: { isCompleted: true, examType: normalizedExamType }
+                    where: { studentId: student.id, questionIndex: i, section: normalizedSection },
+                    defaults: { isCompleted: true }
                 }).then(([progress, created]) => {
                    if (!created) progress.update({ isCompleted: true });
                 });
@@ -136,8 +138,8 @@ export class LearningPathController {
 
             // Mark the note
             await LearningPathProgress.findOrCreate({
-                where: { studentId: student.id, isNote: true, section: normalizedSection, examType: normalizedExamType },
-                defaults: { isCompleted: true, examType: normalizedExamType }
+                where: { studentId: student.id, isNote: true, section: normalizedSection },
+                defaults: { isCompleted: true }
             }).then(([progress, created]) => {
                 if (!created) progress.update({ isCompleted: true });
             });
@@ -209,29 +211,14 @@ export class LearningPathController {
      */
     static async generateDynamicMission(req: Request, res: Response) {
         try {
-            const { skill, level, topic, missionIndex, examType } = req.body;
+            const { skill, level, topic, missionIndex } = req.body;
             
             if (!skill || !level || !topic) {
                 return ResponseHelper.error(res, "Missing skill, level, or topic", 400);
             }
 
-            let examTypeToUse = examType;
-            if (!examTypeToUse && req.user?.id) {
-                const student = await StudentRepository.findByUserId(req.user.id);
-                if (student) {
-                    const path = await LearningPathRepository.findByStudentId(student.id);
-                    if (path) examTypeToUse = path.examType;
-                }
-            }
-
             const parsedIndex = missionIndex !== undefined ? parseInt(missionIndex, 10) : 0;
-            const missionData = await LearningPathService.generateMissionContent(
-                skill, 
-                level, 
-                topic, 
-                parsedIndex, 
-                examTypeToUse || 'IELTS'
-            );
+            const missionData = await LearningPathService.generateMissionContent(skill, level, topic, parsedIndex);
             
             return ResponseHelper.success(res, missionData);
         } catch (error: any) {

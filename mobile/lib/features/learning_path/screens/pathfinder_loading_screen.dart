@@ -1,20 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/learning_path/providers/assessment_provider.dart';
 
-class PathfinderLoadingScreen extends StatefulWidget {
+class PathfinderLoadingScreen extends ConsumerStatefulWidget {
   const PathfinderLoadingScreen({super.key});
 
   @override
-  State<PathfinderLoadingScreen> createState() => _PathfinderLoadingScreenState();
+  ConsumerState<PathfinderLoadingScreen> createState() => _PathfinderLoadingScreenState();
 }
 
-class _PathfinderLoadingScreenState extends State<PathfinderLoadingScreen> with SingleTickerProviderStateMixin {
+class _PathfinderLoadingScreenState extends ConsumerState<PathfinderLoadingScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   int _messageIndex = 0;
   Timer? _timer;
+  Timer? _pollTimer;
 
   final List<String> _messages = [
     "Analyzing your speaking fluency...",
@@ -38,12 +41,26 @@ class _PathfinderLoadingScreenState extends State<PathfinderLoadingScreen> with 
         });
       }
     });
+
+    // Start polling for results
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final state = ref.read(assessmentProvider);
+      final testId = state.testId;
+      if (testId != null) {
+        await ref.read(assessmentProvider.notifier).pollResult(testId);
+      }
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _timer?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 

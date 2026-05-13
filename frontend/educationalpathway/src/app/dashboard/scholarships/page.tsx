@@ -3,3 +3,4 @@ import { ScholarshipExplorer } from '@/features/scholarships/components/Scholars
 export default function ScholarshipsPage() {
   return <ScholarshipExplorer />;
 }
+

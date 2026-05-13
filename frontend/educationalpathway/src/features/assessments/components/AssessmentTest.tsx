@@ -23,7 +23,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { submitAssessment, getAssessmentResult } from "../api/assessment-api";
+import { submitAssessment, getAssessmentResult } from "@/features/assessments/api/assessment-api";
 
 interface AssessmentQuestion {
   id: string | number;
@@ -126,12 +126,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   const isTOEFL = examType === "TOEFL";
   const theme = {
     primary: isTOEFL ? "bg-blue-600" : "bg-emerald-500",
-    text: isTOEFL ? "text-blue-600" : "text-emerald-600",
-    border: isTOEFL ? "border-blue-200" : "border-emerald-200",
-    accent: isTOEFL ? "text-blue-500" : "text-emerald-500",
-    bg: isTOEFL ? "bg-blue-50" : "bg-emerald-50",
+    text: isTOEFL ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400",
+    border: isTOEFL ? "border-blue-200 dark:border-blue-500/20" : "border-emerald-200 dark:border-emerald-500/20",
+    accent: isTOEFL ? "text-blue-500 dark:text-blue-400" : "text-emerald-500 dark:text-emerald-400",
+    bg: isTOEFL ? "bg-blue-500/10" : "bg-emerald-500/10",
     btn: isTOEFL ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-500 hover:bg-emerald-600",
-    optionSelected: isTOEFL ? "border-blue-500 bg-blue-50 text-blue-700" : "border-emerald-500 bg-emerald-50 text-emerald-700"
+    optionSelected: isTOEFL ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
   };
 
   const [currentSection, setCurrentSection] = useState<SectionKey>("reading");
@@ -325,188 +325,343 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   const isTimeLow = timeLeft <= 120;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 pb-0">
-      <div className="flex justify-between items-start mb-4 gap-4 flex-wrap">
-        <div><h1 className="h3">Mock Exam in Progress</h1><p className="text-xs text-muted-foreground">{examType} Protocol</p></div>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold ${isTimeLow ? "bg-red-50 text-red-600 animate-pulse" : "bg-muted"}`}>
-          <Clock className="size-4" />{formatTime(timeLeft)}
-        </div>
-      </div>
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-hidden">
+      {/* Immersive Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
 
-      <div className="w-full bg-muted h-1 rounded-full overflow-hidden mb-8">
-        <motion.div className={`h-full ${isTimeLow ? "bg-red-500" : theme.primary} rounded-full`} animate={{ width: `${timerPct}%` }} />
-      </div>
-
-      <AnimatePresence mode="wait">
-        {showSectionSummary ? (
-          <motion.div 
-            key="summary"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-xl mx-auto py-12 text-center space-y-8"
-          >
-            <div className={`mx-auto size-20 rounded-full ${theme.bg} flex items-center justify-center`}>
-              <CheckCircle2 className={`size-10 ${theme.accent}`} />
-            </div>
-            <div className="space-y-3">
-              <h2 className="text-3xl font-black">{SECTION_META[currentSection].label} Completed!</h2>
-              <p className="text-muted-foreground">You have finished all questions in this section.</p>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-10 relative z-10">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.3em] ${theme.bg} ${theme.text} ${theme.border}`}>
+                Live Assessment Protocol
+              </div>
+              <div className="h-4 w-px bg-border/40" />
+              <div className="flex items-center gap-2">
+                <Target size={12} className="text-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{examType} Standard</span>
+              </div>
             </div>
             
-            <div className="p-6 bg-muted/30 rounded-3xl border border-border/50">
-               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Next Section</p>
-               <h3 className="text-xl font-bold capitalize">{SECTION_ORDER[currentIdx + 1]}</h3>
+            <div className="space-y-4">
+              <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase leading-none">
+                Exam <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">In Progress</span>
+              </h1>
             </div>
-
-            <Button 
-              onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
-              className={`rounded-2xl px-12 h-16 font-black uppercase tracking-widest text-xs shadow-xl transition-all ${theme.btn} text-white w-full`}
-            >
-              Continue to {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} <ArrowRight className="ml-3" />
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div key={currentSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-            {currentSection === "reading" && (
-              <div className="flex flex-col gap-8 max-w-3xl mx-auto">
-                <Card className="border border-border/60 rounded-[32px] bg-muted/10">
-                  <CardBody className="p-8 max-h-[300px] overflow-y-auto custom-scrollbar">
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{sections.reading?.passage}</p>
-                  </CardBody>
-                </Card>
-                {sections.reading?.questions && (
-                  <div className="space-y-12">
-                    {sections.reading.questions.map((q: any, i: number) => {
-                      const qId = q.id || i;
-                      return (
-                        <div key={qId} className="space-y-6">
-                          <h4 className="text-xl font-bold">{i + 1}. {q.question}</h4>
-                          <div className="grid gap-3">
-                            {q.options?.map((opt: string, j: number) => {
-                              const isSelected = responses.reading[qId] === opt;
-                              return (
-                                <button 
-                                  key={j} 
-                                  onClick={() => handleOptionSelect("reading", qId, opt)} 
-                                  className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
-                                >
-                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
-                                       {String.fromCharCode(65 + j)}
-                                   </div>
-                                   <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {currentSection === "listening" && (
-              <div className="flex flex-col gap-8 max-w-3xl mx-auto">
-                <Card className="border border-border/60 rounded-[32px] bg-muted/10 overflow-hidden text-center">
-                  <CardBody className="p-8 space-y-4">
-                    <Headphones className="size-10 mx-auto opacity-40" />
-                    <audio controls className="w-full" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
-                  </CardBody>
-                </Card>
-                {sections.listening?.questions && (
-                  <div className="space-y-12">
-                    {sections.listening.questions.map((q: any, i: number) => {
-                      const qId = q.id || i;
-                      return (
-                        <div key={qId} className="space-y-6">
-                          <h4 className="text-xl font-bold">{i + 1}. {q.question}</h4>
-                          <div className="grid gap-3">
-                            {q.options?.map((opt: string, j: number) => {
-                              const isSelected = responses.listening[qId] === opt;
-                              return (
-                                <button 
-                                  key={j} 
-                                  onClick={() => handleOptionSelect("listening", qId, opt)} 
-                                  className={`text-left p-4 sm:p-6 rounded-2xl border-2 transition-all flex items-center group shadow-sm hover:shadow-md ${isSelected ? theme.optionSelected : "border-border/60 hover:border-primary/40 bg-card hover:bg-muted/50"}`}
-                                >
-                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full mr-4 text-xs sm:text-sm font-black border-2 transition-all ${isSelected ? "bg-white " + theme.text + " border-current" : "border-border text-muted-foreground group-hover:border-primary/30"}`}>
-                                       {String.fromCharCode(65 + j)}
-                                   </div>
-                                   <span className="flex-1 text-sm sm:text-base font-medium leading-relaxed">{opt}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {currentSection === "writing" && (
-              <div className="max-w-3xl mx-auto space-y-8">
-                <div className="px-2"><span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Writing Task 1 of 1</span></div>
-                <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 italic text-sm text-muted-foreground">{sections.writing?.questions?.[0]?.prompt || sections.writing?.prompt}</CardBody></Card>
-                <textarea value={responses.writing} onChange={(e) => setResponses({ ...responses, writing: e.target.value })} placeholder="Composition synthesis..." className="w-full h-96 p-8 rounded-[40px] border-2 border-border/40 bg-card text-foreground focus:outline-none resize-none" />
-              </div>
-            )}
-
-            {currentSection === "speaking" && (
-              <div className="max-w-3xl mx-auto space-y-8 text-center">
-                <div className="px-2"><span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Speaking Task 1 of 1</span></div>
-                <Card className="border border-border/60 rounded-[32px] bg-muted/10"><CardBody className="p-8 font-bold italic">{sections.speaking?.questions?.[0]?.prompt || sections.speaking?.prompt}</CardBody></Card>
-                <div className="p-12 bg-card rounded-[40px] border-2 border-border/40 shadow-xl space-y-6">
-                  {isRecording ? (
-                    <button onClick={stopRecording} className="size-24 rounded-full bg-red-500 text-white flex items-center justify-center animate-pulse"><StopCircle size={32} /></button>
-                  ) : (
-                    <button onClick={startRecording} className={`size-24 rounded-full ${theme.primary} text-white flex items-center justify-center shadow-xl`}><Mic size={32} /></button>
-                  )}
-                  {audioBlob && <p className="text-success text-xs font-bold uppercase tracking-widest">Audio Stream Captured</p>}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!showSectionSummary && (
-        <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0">
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              if (currentIdx > 0) {
-                handleSectionChange(SECTION_ORDER[currentIdx - 1]);
-              }
-            }}
-            disabled={currentIdx === 0}
-            className="rounded-2xl px-8 sm:px-10 h-14 font-black uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted transition-all shadow-sm"
-          >
-            <ArrowLeft className="mr-3 size-4" /> Back
-          </Button>
-          
-          <div className="flex gap-2">
-            {SECTION_ORDER.map((sec) => (
-              <div key={sec} className={`h-1.5 rounded-full transition-all ${currentSection === sec ? "w-12 " + theme.primary : "w-4 bg-muted"}`} />
-            ))}
           </div>
 
-          {currentIdx < 3 ? (
-            <Button 
-              onClick={() => {
-                setShowSectionSummary(true);
-              }} 
-              className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] shadow-lg hover:shadow-xl transition-all ${theme.btn} text-white`}
-            >
-              Continue <ArrowRight className="ml-3 size-4" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} className={`rounded-2xl px-8 sm:px-14 h-14 font-black uppercase tracking-widest text-[10px] bg-black text-white`}>Finalize Exam <CheckCircle2 className="ml-3" /></Button>
-          )}
+          <div className="space-y-4">
+            <div className={`flex items-center gap-4 px-8 h-20 rounded-2xl border-2 font-mono text-2xl font-black shadow-xl transition-all duration-500 ${isTimeLow ? "bg-destructive/10 text-destructive border-destructive/20 animate-pulse" : "bg-card border-border/40"}`}>
+              <Clock className={isTimeLow ? "animate-spin-slow" : "opacity-40"} size={28} />
+              {formatTime(timeLeft)}
+            </div>
+            <div className="w-full bg-muted/40 h-2 rounded-full overflow-hidden p-0.5 border border-border/10">
+              <motion.div 
+                className={`h-full ${isTimeLow ? "bg-destructive" : "primary-gradient"} rounded-full`} 
+                animate={{ width: `${timerPct}%` }} 
+                transition={{ ease: "linear" }}
+              />
+            </div>
+          </div>
         </div>
-      )}
+
+        <AnimatePresence mode="wait">
+          {showSectionSummary ? (
+            <motion.div 
+              key="summary"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="max-w-2xl mx-auto py-24 text-center space-y-12"
+            >
+              <div className={`mx-auto size-32 rounded-[40px] ${theme.bg} flex items-center justify-center shadow-inner`}>
+                <CheckCircle2 className={`size-16 ${theme.accent}`} />
+              </div>
+              
+              <div className="space-y-4">
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">{SECTION_META[currentSection].label} Verified</h2>
+                <p className="text-lg text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+                  Data synthesis complete for this module. Calibration for the next diagnostic phase is ready.
+                </p>
+              </div>
+              
+              <div className="p-10 bg-card rounded-2xl border border-border/40 shadow-sm space-y-2">
+                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Next Objective</p>
+                 <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Analysis</h3>
+              </div>
+
+              <Button 
+                onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
+                className={`rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
+              >
+                Execute {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} Protocol <ArrowRight className="ml-4" />
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key={currentSection} 
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -20 }} 
+              transition={{ duration: 0.4, ease: "circOut" }}
+              className="space-y-8"
+            >
+              {/* Top Horizontal Skills Info */}
+              <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden shadow-sm">
+                <CardBody className="p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Active Phase</p>
+                      <h4 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
+                        <span className={theme.text}>{SECTION_META[currentSection].icon}</span>
+                        {SECTION_META[currentSection].label}
+                      </h4>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4 md:gap-8">
+                    {SECTION_ORDER.map((sec, idx) => (
+                      <div key={sec} className="flex items-center gap-3 group">
+                        <div className={`size-8 rounded-lg flex items-center justify-center font-black text-xs border transition-all ${currentSection === sec ? theme.bg + " " + theme.text + " " + theme.border : completedSections.has(sec) ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted/30 border-transparent text-muted-foreground"}`}>
+                          {idx + 1}
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${currentSection === sec ? "text-foreground" : "text-muted-foreground opacity-40"}`}>
+                          {sec}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
+
+              {/* Main Content Area */}
+              <div className="space-y-8">
+                {currentSection === "reading" && (
+                  <div className="space-y-10">
+                    <Card className="border border-border/40 rounded-2xl bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm">
+                      <CardBody className="p-10 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        <div className="prose prose-zinc dark:prose-invert max-w-none">
+                          <p className="text-lg leading-[1.8] text-foreground/80 font-medium whitespace-pre-wrap">
+                            {sections.reading?.passage}
+                          </p>
+                        </div>
+                      </CardBody>
+                    </Card>
+                    
+                    <div className="space-y-12 pb-12">
+                      {sections.reading?.questions?.map((q: any, i: number) => {
+                        const qId = q.id || i;
+                        return (
+                          <div key={qId} className="space-y-8 p-2">
+                            <div className="flex items-start gap-6">
+                              <span className="size-10 rounded-2xl bg-muted/30 border border-border/40 flex items-center justify-center font-black text-sm shrink-0">{i + 1}</span>
+                              <h4 className="text-xl font-bold tracking-tight leading-relaxed first-letter:uppercase">{q.question}</h4>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 ml-0 md:ml-16">
+                              {q.options?.map((opt: string, j: number) => {
+                                const isSelected = responses.reading[qId] === opt;
+                                return (
+                                  <label 
+                                    key={j} 
+                                    className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
+                                  >
+                                     <input 
+                                       type="radio" 
+                                       name={`reading-q-${qId}`} 
+                                       checked={isSelected} 
+                                       onChange={() => handleOptionSelect("reading", qId, opt)} 
+                                       className="size-5 accent-primary cursor-pointer"
+                                     />
+                                     <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {currentSection === "listening" && (
+                  <div className="space-y-10">
+                    <Card className="border border-border/40 rounded-2xl bg-card overflow-hidden shadow-sm">
+                      <CardBody className="p-10 text-center space-y-6">
+                        <div className="size-20 rounded-[32px] bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-inner">
+                          <Headphones size={32} />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-xl font-black uppercase tracking-tight">Audio Diagnostic</h3>
+                          <p className="text-sm text-muted-foreground font-medium">Verify audio fidelity before proceeding to synthesis.</p>
+                        </div>
+                        <div className="max-w-md mx-auto p-4 bg-muted/20 rounded-2xl border border-border/10">
+                          <audio controls className="w-full h-10" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
+                        </div>
+                      </CardBody>
+                    </Card>
+
+                    <div className="space-y-12 pb-12">
+                      {sections.listening?.questions?.map((q: any, i: number) => {
+                        const qId = q.id || i;
+                        return (
+                          <div key={qId} className="space-y-8 p-2">
+                            <div className="flex items-start gap-6">
+                              <span className="size-10 rounded-2xl bg-muted/30 border border-border/40 flex items-center justify-center font-black text-sm shrink-0">{i + 1}</span>
+                              <h4 className="text-xl font-bold tracking-tight leading-relaxed first-letter:uppercase">{q.question}</h4>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 ml-0 md:ml-16">
+                              {q.options?.map((opt: string, j: number) => {
+                                const isSelected = responses.listening[qId] === opt;
+                                return (
+                                  <label 
+                                    key={j} 
+                                    className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
+                                  >
+                                     <input 
+                                       type="radio" 
+                                       name={`listening-q-${qId}`} 
+                                       checked={isSelected} 
+                                       onChange={() => handleOptionSelect("listening", qId, opt)} 
+                                       className="size-5 accent-primary cursor-pointer"
+                                     />
+                                     <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {currentSection === "writing" && (
+                  <div className="space-y-8 pb-12">
+                    <div className="flex items-center justify-between px-2">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Module Synthesis: Task 01</span>
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                        <PenLine size={12} /> Live Composition
+                      </div>
+                    </div>
+                    <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner">
+                      <CardBody className="p-10 italic text-lg text-foreground/70 font-medium leading-relaxed">
+                        {sections.writing?.questions?.[0]?.prompt || sections.writing?.prompt}
+                      </CardBody>
+                    </Card>
+                    <textarea 
+                      value={responses.writing} 
+                      onChange={(e) => setResponses({ ...responses, writing: e.target.value })} 
+                      placeholder="Begin composition synthesis here..." 
+                      className="w-full h-[500px] p-12 rounded-2xl border-2 border-border/40 bg-card text-lg font-medium text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none shadow-xl custom-scrollbar"
+                    />
+                  </div>
+                )}
+
+                {currentSection === "speaking" && (
+                  <div className="space-y-12 py-12 flex flex-col items-center">
+                    <div className="space-y-2 text-center">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Aural Diagnostic: Task 01</span>
+                      <h3 className="text-3xl font-black uppercase tracking-tight">Vocal Analysis</h3>
+                    </div>
+                    
+                    <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner max-w-2xl w-full">
+                      <CardBody className="p-10 text-xl font-black uppercase tracking-tight text-center leading-relaxed">
+                        {sections.speaking?.questions?.[0]?.prompt || sections.speaking?.prompt}
+                      </CardBody>
+                    </Card>
+
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                      <div className="relative size-48 p-2 rounded-full border-2 border-border/20 bg-card shadow-2xl flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                          {isRecording ? (
+                            <motion.button 
+                              key="stop"
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              onClick={stopRecording} 
+                              className="size-full rounded-full bg-destructive text-white flex flex-col items-center justify-center gap-3 shadow-2xl shadow-destructive/20 active:scale-95 transition-transform"
+                            >
+                              <StopCircle size={48} className="animate-pulse" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">{formatTime(recordingSeconds)}</span>
+                            </motion.button>
+                          ) : (
+                            <motion.button 
+                              key="start"
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              onClick={startRecording} 
+                              className={`size-full rounded-full ${theme.primary} text-white flex flex-col items-center justify-center gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all`}
+                            >
+                              <Mic size={48} />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Initiate Stream</span>
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {audioBlob && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 px-6 py-3 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full">
+                        <CheckCircle2 size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Audio Stream Captured & Encrypted</span>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Footer Navigation */}
+        {!showSectionSummary && (
+          <div className="mt-16 py-10 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-8 relative z-20">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (currentIdx > 0) handleSectionChange(SECTION_ORDER[currentIdx - 1]);
+              }}
+              disabled={currentIdx === 0}
+              className="h-16 px-10 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted transition-all shadow-sm bg-card disabled:opacity-20"
+            >
+              <ArrowLeft className="mr-3 size-4" /> Previous Module
+            </Button>
+            
+            <div className="flex gap-3">
+              {SECTION_ORDER.map((sec, idx) => (
+                <div 
+                  key={sec} 
+                  className={`h-2 rounded-full transition-all duration-700 ${currentSection === sec ? "w-16 " + theme.primary : completedSections.has(sec) ? "w-4 bg-emerald-500" : "w-4 bg-muted/40"}`} 
+                />
+              ))}
+            </div>
+
+            {currentIdx < 3 ? (
+              <Button 
+                onClick={() => setShowSectionSummary(true)} 
+                className={`h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl hover:shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 ${theme.btn} text-white`}
+              >
+                Proceed <ArrowRight className="ml-3 size-4" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSubmit} 
+                className="h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] bg-foreground text-background shadow-xl hover:scale-[1.05] active:scale-95 transition-all"
+              >
+                Finalize Diagnostic <CheckCircle2 className="ml-3 size-4" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+

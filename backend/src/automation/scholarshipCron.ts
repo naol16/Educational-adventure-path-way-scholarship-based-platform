@@ -4,19 +4,26 @@ import { DeadlineReminderService } from "../services/DeadlineReminderService.js"
 import { SettlementService } from "../services/SettlementService.js";
 
 export const startScholarshipCron = () => {
-  // Schedule task to run every 5 minutes (or 1 minute for testing)
-  cron.schedule("*/1 * * * *", async () => {
-    console.log("Running scheduled scholarship discovery...");
-    await ScholarshipDiscoveryService.discoverAll();
+  // Schedule task to run every 5 minutes
+  cron.schedule("*/5 * * * *", async () => {
+    try {
+      console.log(`[CRON] ${new Date().toISOString()} - Starting scholarship discovery...`);
+      await ScholarshipDiscoveryService.discoverAll();
+    } catch (err) {
+      console.error("[CRON] Scholarship discovery failed:", err);
+    }
     
-    // TODO: Fix SettlementService booking query (paymentStatus column doesn't exist)
-    // Running escrow auto-release check after fixing the query
-    // console.log("Running scheduled escrow auto-release check...");
-    // await SettlementService.autoReleaseEscrow();
+    // TODO: Fixed SettlementService booking query (paymentStatus column issue resolved)
+    try {
+      console.log("Running scheduled escrow auto-release check...");
+      await SettlementService.autoReleaseEscrow();
+    } catch (err) {
+      console.error("Escrow auto-release failed:", err);
+    }
   });
 
-  // Schedule deadline reminders to run every hour
-  cron.schedule("0 * * * *", async () => {
+  // Schedule deadline reminders to run every 5 minutes
+  cron.schedule("*/5 * * * *", async () => {
       console.log("Running scheduled deadline reminder check...");
       await DeadlineReminderService.checkAndSendReminders();
   });

@@ -58,6 +58,7 @@ export interface CreateSlotDto {
     startTime: string; // HH:mm format
     endTime: string;   // HH:mm format
     isRecurring?: boolean;
+    utcOffset?: number; // Minutes from UTC
 }
 
 export interface UpdateSlotDto {
@@ -191,7 +192,7 @@ export interface CounselorDirectoryQuery {
 }
 
 export interface CounselorRecommendationResponse extends CounselorResponse {
-    recommendationScore: number;
+    match_score: number;
     matchReasons?: string[];
 }
 
@@ -261,6 +262,7 @@ export interface StudentProgressResponse {
     studentId: number;
     name: string;
     email: string;
+    avatarUrl?: string | null;
     learningPath?: {
         id: number;
         currentProgress: number;
