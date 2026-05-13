@@ -21,11 +21,12 @@ CREATE TABLE IF NOT EXISTS scholarships (
     amount VARCHAR(100),
     deadline TIMESTAMPTZ,
     original_url VARCHAR(512) UNIQUE NOT NULL,
-    embedding vector(768), -- For Gemini text-embedding-004
+    embedding vector(3072), -- For Gemini embeddings (3072 dimensions)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create index for faster vector search
-CREATE INDEX IF NOT EXISTS scholarships_embedding_idx ON scholarships USING ivfflat (embedding vector_cosine_ops)
-    WITH (lists = 100);
+ALTER TABLE scholarships ALTER COLUMN embedding TYPE vector(3072);
+
+-- Note: vector index creation for 3072-dimensional embeddings may be unsupported on some pgvector builds.
+-- If the current database can't build the index, the table schema is still usable without it.

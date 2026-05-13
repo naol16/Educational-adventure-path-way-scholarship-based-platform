@@ -19,12 +19,19 @@ function setConfigs() {
     // Server Config
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: parseInt(process.env.PORT || "5000"),
-    SERVER_URL: normalizeUrl(process.env.SERVER_URL) || normalizeUrl(process.env.BACKEND_URL) || "https://capable-famished-shallot.ngrok-free.dev",
+    SERVER_URL:
+      normalizeUrl(process.env.SERVER_URL) ||
+      normalizeUrl(process.env.BACKEND_URL) ||
+      "https://capable-famished-shallot.ngrok-free.dev",
     HOST_URL: process.env.HOST_URL,
-    FRONTEND_URL: normalizeUrl(process.env.FRONTEND_URL) || "http://localhost:3000",
+    FRONTEND_URL:
+      normalizeUrl(process.env.FRONTEND_URL) || "http://localhost:3000",
     PRODUCTION_URL: normalizeUrl(process.env.PRODUCTION_URL),
-    BACKEND_URL: normalizeUrl(process.env.BACKEND_URL) || normalizeUrl(process.env.SERVER_URL) || "https://educational-adventure-path-way.onrender.com",
-    
+    BACKEND_URL:
+      normalizeUrl(process.env.BACKEND_URL) ||
+      normalizeUrl(process.env.SERVER_URL) ||
+      "https://educational-adventure-path-way.onrender.com",
+
     // Database Config
     DB_HOST: process.env.DB_HOST || "localhost",
     DB_PORT: parseInt(process.env.DB_PORT || "5432"),
@@ -33,7 +40,9 @@ function setConfigs() {
     DB_NAME: process.env.DB_NAME || "auth_system",
     DB_LOGGING: process.env.DB_LOGGING === "true",
     DB_SSL: process.env.DB_SSL === "true",
-    DB_SYNC: process.env.DB_SYNC === "true",
+    DB_SYNC: process.env.DB_SYNC
+      ? process.env.DB_SYNC === "true"
+      : process.env.NODE_ENV !== "production",
 
     // Auth Config
     JWT_SECRET: process.env.JWT_SECRET || "tempSecret",
@@ -45,22 +54,26 @@ function setConfigs() {
       process.env.JWT_REFRESH_EXPIRES_IN ||
       "7d",
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
-    GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
+    GOOGLE_ANDROID_CLIENT_ID:
+      process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
     GOOGLE_AUTH_AUDIENCES: [
       process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
       process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
       // Bulletproof IDs as requested by Senior Architect
       "57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com",
       "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com",
-      "57881811503-pphhpvffu8uhv517cj40a51f5qtrl4ue.apps.googleusercontent.com"
+      "57881811503-pphhpvffu8uhv517cj40a51f5qtrl4ue.apps.googleusercontent.com",
     ].filter((id): id is string => !!id),
-    
-    // Google Calendar / Meet Configs
-    GOOGLE_MEET_CLIENT_ID: process.env.GOOGLE_MEET_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_MEET_CLIENT_SECRET: process.env.GOOGLE_MEET_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_MEET_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || "https://developers.google.com/oauthplayground",
-    GOOGLE_MEET_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
 
+    // Google Calendar / Meet Configs
+    GOOGLE_MEET_CLIENT_ID:
+      process.env.GOOGLE_MEET_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_MEET_CLIENT_SECRET:
+      process.env.GOOGLE_MEET_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET,
+    GOOGLE_MEET_REDIRECT_URI:
+      process.env.GOOGLE_REDIRECT_URI ||
+      "https://developers.google.com/oauthplayground",
+    GOOGLE_MEET_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
 
     // Email SMTP Config
     SMTP_HOST: process.env.SMTP_HOST,
@@ -99,8 +112,8 @@ function setConfigs() {
 
     VAPI_API_KEY: normalizeSecret(
       process.env.VAPI_API_KEY ||
-      process.env.VAPI_PRIVATE_KEY ||
-      process.env.VAPI_TOKEN,
+        process.env.VAPI_PRIVATE_KEY ||
+        process.env.VAPI_TOKEN,
     ),
     VAPI_MODEL: process.env.VAPI_MODEL || "gpt-4o-mini",
     VAPI_DEBUG: process.env.VAPI_DEBUG === "true",

@@ -49,20 +49,21 @@ const dbOptions: SequelizeOptions = {
   pool: {
     max: 10,
     min: 0,
-    acquire: 30000,// Maximum time (ms) to try getting a connection before throwing error
-    idle: 10000    // Maximum time (ms) a connection can be idle before being released
+    acquire: 30000, // Maximum time (ms) to try getting a connection before throwing error
+    idle: 10000, // Maximum time (ms) a connection can be idle before being released
   },
 
   dialectOptions:
     configs.DB_HOST === "localhost" || configs.DB_HOST === "127.0.0.1"
-      ? (configs.DB_SSL ? { ssl: { require: true, rejectUnauthorized: false } } : {})
+      ? configs.DB_SSL
+        ? { ssl: { require: true, rejectUnauthorized: false } }
+        : {}
       : {
           ssl: {
             require: true,
             rejectUnauthorized: false,
           },
         },
-
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 export const sequelize = new Sequelize({
@@ -113,13 +114,14 @@ export let hasVectorExtension = false;
 export const connectSequelize = async () => {
   try {
     await sequelize.authenticate();
-
+    console.log("✅ Database authentication successful");
 
     // Enable pgvector extension
     try {
       await sequelize.query("CREATE EXTENSION IF NOT EXISTS vector;");
 
       hasVectorExtension = true;
+      console.log("✅ pgvector extension is available");
     } catch (extensionError) {
       console.warn(
         "⚠️ Warning: Failed to enable pgvector extension. Ensure it is installed on your PostgreSQL system.",
@@ -129,10 +131,15 @@ export const connectSequelize = async () => {
 
     // Sync models with database (creates tables if missing, updates columns if alter is true)
     if (configs.DB_SYNC) {
+      console.log(
+        "🔧 DB_SYNC is enabled: synchronizing models now. This may slow startup.",
+      );
       await sequelize.sync({ alter: true });
-      console.log("Database models synchronized (alter: true)");
+      console.log("✅ Database models synchronized (alter: true)");
     } else {
-      console.log("Database sync skipped (DB_SYNC is false)");
+      console.log(
+        "⏭️ Database sync disabled (DB_SYNC is false). Startup will be faster.",
+      );
     }
   } catch (error) {
     console.error("Sequelize connection error:", error);
