@@ -156,7 +156,6 @@ export const ChatDetails = ({
                       </div>
                     </motion.div>
                   )}
-                  )}
                   {activeTab === "Media" && (
                     <motion.div key="media" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                       <SectionTitle title={`Media (${mediaMessages.length})`} />
@@ -234,7 +233,14 @@ const SectionTitle = ({ title }: { title: string }) => (
   </h4>
 );
 
-const InfoItem = ({ icon: Icon, label, value, action }: any) => (
+interface InfoItemProps {
+  icon: any;
+  label: string;
+  value: string;
+  action?: React.ReactNode;
+}
+
+const InfoItem = ({ icon: Icon, label, value, action }: InfoItemProps) => (
   <div className="px-4 py-3 flex items-start gap-4 group">
     <Icon className="text-primary mt-0.5 shrink-0" size={18} />
     <div className="flex-1 min-w-0">
@@ -245,7 +251,15 @@ const InfoItem = ({ icon: Icon, label, value, action }: any) => (
   </div>
 );
 
-const MenuItem = ({ icon: Icon, label, value, variant, onClick }: any) => (
+interface MenuItemProps {
+  icon: any;
+  label: string;
+  value?: string;
+  variant?: "destructive";
+  onClick?: () => void;
+}
+
+const MenuItem = ({ icon: Icon, label, value, variant, onClick }: MenuItemProps) => (
   <button
     onClick={onClick}
     className="w-full px-4 py-3 flex items-center gap-4 hover:bg-muted transition-colors group"

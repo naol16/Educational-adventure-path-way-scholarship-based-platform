@@ -139,8 +139,8 @@ export class ChatMessage extends Model {
     @BelongsTo(() => Conversation)
     conversation!: ConversationType;
 
-    @BelongsTo(() => User)
-    sender!: UserType;
+    @BelongsTo(() => User, { as: 'sender' })
+    declare sender: UserType;
 
     @BelongsTo(() => ChatMessage, { foreignKey: 'reply_to_id', as: 'repliedTo' })
     repliedTo?: ChatMessage;

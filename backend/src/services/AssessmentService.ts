@@ -641,21 +641,37 @@ export class AssessmentService {
     );
     const examT = normalizeExamType(result.examType);
     if (allSkillsSubmitted) {
-      applyStandardEvaluationShape(
-        updatedEval as Record<string, unknown>,
-        examT,
+      console.log(`[AssessmentService] All skills submitted for test ${testId}. Synthesizing final results...`);
+      const synthesis = await this.synthesizeEvaluation(
+        updatedEval.score_breakdown,
+        updatedEval.section_notes,
+        result.examType
       );
+
+      updatedEval.competency_gap_analysis = synthesis.competency_gap_analysis;
+      updatedEval.adaptive_curriculum_map = synthesis.adaptive_curriculum_map;
+      updatedEval.feedback_report = synthesis.feedback_report;
+      updatedEval.adaptive_learning_tags = synthesis.adaptive_learning_tags;
+      updatedEval.learning_mode = synthesis.learning_mode || updatedEval.learning_mode;
+
+      applyStandardEvaluationShape(updatedEval as Record<string, unknown>, examT);
     }
 
     const updatePayload: Record<string, unknown> = {
       evaluation: updatedEval,
       scoreBreakdown: updatedEval.score_breakdown,
+      overallBand: allSkillsSubmitted ? updatedEval.overall_band : 0,
     };
-    if (allSkillsSubmitted) {
-      updatePayload.overallBand = updatedEval.overall_band;
-    }
 
     await result.update(updatePayload);
+
+    // Generate/Update learning path upon completion of any assessment
+    console.log(`[AssessmentService] Assessment complete. Generating/Updating learning path for student ${studentId}...`);
+    await LearningPathService.generateForStudent(
+      studentId,
+      updatedEval,
+      examT
+    );
 
     return {
       status: "success",
@@ -770,12 +786,16 @@ export class AssessmentService {
     }
 
     // Final Storage
-    await redisConnection.set(
-      `evaluation:${testId}`,
-      JSON.stringify(finalEvaluation),
-      "EX",
-      7200,
-    );
+    try {
+      await redisConnection.set(
+        `evaluation:${testId}`,
+        JSON.stringify(finalEvaluation),
+        "EX",
+        7200,
+      );
+    } catch (redisErr) {
+      console.warn(`[AssessmentService] Failed to cache evaluation in Redis for ${testId}:`, redisErr);
+    }
 
     try {
       // Parallelize DB operations for speed
@@ -790,13 +810,11 @@ export class AssessmentService {
           overallBand: finalEvaluation.overall_band,
           isDiagnostic,
         }),
-        isDiagnostic
-          ? LearningPathService.generateForStudent(
+        LearningPathService.generateForStudent(
               studentId,
               finalEvaluation,
               examTypeNorm,
             )
-          : Promise.resolve(),
       ];
 
       await Promise.all(dbOperations);
@@ -898,16 +916,16 @@ export class AssessmentService {
     };
   }
 
-  private static async evaluateSingleSkill(
+private static async evaluateSingleSkill(
     skill: string,
     blueprint: any,
     responses: any,
     audioData?: { base64: string; mimetype: string },
     skillEvalOptions?: {
       /** When true (full mock only), skip LLM for reading/listening — score is deterministic; synthesis builds learning_mode. */
-      objectiveFastPath?: boolean;
+      objectiveFastPath?: boolean | undefined;
       /** Pre-computed Whisper text so speaking can overlap other skills. */
-      preTranscribedText?: string;
+      preTranscribedText?: string | undefined;
     },
   ) {
     const miniBlueprint = this.stripBlueprintForEvaluation(blueprint);
@@ -1389,16 +1407,16 @@ export class AssessmentService {
     return await AssessmentRepository.getStudentProgress(studentId, examType);
   }
 
-  static async resetAssessment(studentId: number) {
+  static async resetAssessment(studentId: number, examType: string) {
     // 1. Delete all assessment results
     await AssessmentRepository.deleteByStudentId(studentId);
 
-    // 2. Clear learning path (upsert handles it, but if we want to DELETE it completely:)
+    // 2. Clear learning path
     const { LearningPath } = await import("../models/LearningPath.js");
     const { LearningPathProgress } =
       await import("../models/LearningPathProgress.js");
 
-    await LearningPathProgress.destroy({ where: { studentId } });
+    await LearningPathProgress.destroy({ where: { studentId, examType } });
     await LearningPath.destroy({ where: { studentId } });
   }
 }

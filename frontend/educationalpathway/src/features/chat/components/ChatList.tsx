@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Conversation } from "../types";
 import { isToday, isYesterday, format } from "date-fns";
-import { Search, Plus, Users } from "lucide-react";
+import { Search, Plus, Users, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   getConversationLastMessage, 
@@ -110,7 +111,7 @@ export const ChatList = ({
             )}
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
-            <p className="min-w-0 flex-1 truncate text-[14px] leading-snug text-muted-foreground">
+            <div className="min-w-0 flex-1 truncate text-[14px] leading-snug text-muted-foreground">
               {lastMessage ? (
                 <>
                   {lastMessage.senderId === currentUserId && (
@@ -119,14 +120,21 @@ export const ChatList = ({
                   {lastMessage.content.startsWith("[Attached File]") ? "📎 File" : lastMessage.content}
                 </>
               ) : isGroup ? (
-                <span>
-                  {members.length} {members.length === 1 ? "member" : "members"}
-                  {conv.country ? ` · ${conv.country}` : ""}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {members.length} {members.length === 1 ? "member" : "members"}
+                    {conv.country ? ` · ${conv.country}` : ""}
+                  </span>
+                  {(conv as any).isNotJoined && (
+                    <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                      Join
+                    </span>
+                  )}
+                </div>
               ) : (
                 <span className="italic opacity-70">{otherUser?.role ?? ""}</span>
               )}
-            </p>
+            </div>
           </div>
         </div>
       </motion.button>
@@ -186,7 +194,27 @@ export const ChatList = ({
               exit={{ opacity: 0 }}
               className="px-6 py-16 text-center"
             >
-              <p className="text-sm text-muted-foreground">No chats match your search.</p>
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-1">
+                  <Users className="text-muted-foreground opacity-40" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {searchQuery ? "No chats match your search." : 
+                     activeTab === 'groups' ? "You haven't joined any groups yet." : 
+                     "No active conversations yet."}
+                  </p>
+                  {activeTab === 'groups' && !searchQuery && (
+                    <Link 
+                      href="/dashboard/student/community"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+                    >
+                      Discover Communities
+                      <ChevronRight size={16} />
+                    </Link>
+                  )}
+                </div>
+              </div>
             </motion.div>
           ) : (
             <div className="flex flex-col bg-background">

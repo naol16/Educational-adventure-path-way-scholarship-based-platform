@@ -6,16 +6,15 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 type RefreshTokenResponse = {
   accessToken?: string;
+  user?: any;
   data?: {
     accessToken?: string;
+    user?: any;
   };
 };
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
   withCredentials: true,
 });
 
@@ -73,7 +72,12 @@ api.interceptors.response.use(
           throw new Error('Refresh token response did not include accessToken');
         }
 
+        const user = response.data?.user || response.data?.data?.user;
+        
         localStorage.setItem('accessToken', accessToken);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
 
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;

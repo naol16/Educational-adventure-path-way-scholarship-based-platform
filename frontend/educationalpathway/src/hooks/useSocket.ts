@@ -16,7 +16,7 @@ export const useSocket = (token: string | null) => {
 
         socketRef.current = io(SOCKET_URL, {
             auth: { token },
-            transports: ["websocket"],
+            transports: ["polling", "websocket"],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             autoConnect: true,

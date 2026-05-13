@@ -4,7 +4,7 @@ import { Message, ChatUser } from "../types";
 import { format, isToday, isYesterday } from "date-fns";
 import {
   User, CheckCheck, Edit2, Trash2, ChevronLeft, Info,
-  MessageCircle, Reply, Copy, CornerUpLeft, File, Download,
+  MessageCircle, Reply, Copy, CornerUpLeft, File, Download, Loader2, MessageSquare
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -19,6 +19,7 @@ interface ChatWindowProps {
   typingUser: { userId: number; isTyping: boolean } | null;
   currentUserRole?: string;
   isGroup?: boolean;
+  isMember?: boolean;
   conversationId?: number;
   onBookSession?: () => void;
   onShowMembers?: () => void;
@@ -32,6 +33,8 @@ interface ChatWindowProps {
   onEditMessage?: (id: number, content: string) => void;
   onDeleteMessage?: (id: number) => void;
   onReplyMessage?: (message: Message) => void;
+  onJoinGroup?: () => void;
+  isJoining?: boolean;
   onBack?: () => void;
 }
 
@@ -43,6 +46,7 @@ export const ChatWindow = ({
   typingUser,
   currentUserRole,
   isGroup,
+  isMember,
   conversationId,
   onBookSession,
   onShowMembers,
@@ -56,6 +60,8 @@ export const ChatWindow = ({
   onEditMessage,
   onDeleteMessage,
   onReplyMessage,
+  onJoinGroup,
+  isJoining,
   onBack,
 }: ChatWindowProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -420,7 +426,7 @@ export const ChatWindow = ({
 
       {/* Typing Indicator */}
       <AnimatePresence>
-        {typingUser && typingUser.isTyping && typingUser.userId !== currentUserId && (
+        {typingUser && typingUser.isTyping && typingUser.userId !== currentUserId && isMember && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -441,6 +447,43 @@ export const ChatWindow = ({
         )}
       </AnimatePresence>
 
+      {/* Join CTA Overlay for non-members in groups */}
+      <AnimatePresence>
+        {isGroup && !isMember && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-card/95 p-4 shadow-xl backdrop-blur-md md:bottom-6 md:left-6 md:right-6 md:p-6"
+          >
+            <div className="text-center">
+              <h4 className="text-[15px] font-bold text-foreground">Welcome to {groupName}!</h4>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                You are currently in preview mode. Join the community to send messages and participate in discussions.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={isJoining}
+              onClick={onJoinGroup}
+              className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+            >
+              {isJoining ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Joining...
+                </>
+              ) : (
+                <>
+                  <MessageSquare size={16} />
+                  Join to Chat
+                </>
+              )}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Context Menu */}
       <AnimatePresence>
         {contextMenu && (
@@ -457,7 +500,7 @@ export const ChatWindow = ({
               animate={{ opacity: 1, left: contextMenu.x, top: contextMenu.y }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.1 }}
-              className="absolute z-[999] w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl"
+              className="absolute z-999 w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl"
             >
               <button
                 onClick={() => { onReplyMessage?.(contextMenu.message); setContextMenu(null); }}

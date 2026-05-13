@@ -112,7 +112,9 @@ export let hasVectorExtension = false;
 
 export const connectSequelize = async () => {
   try {
+    console.log("🔍 Attempting to authenticate with Database...");
     await sequelize.authenticate();
+    console.log("✅ Database authenticated successfully.");
 
 
     // Enable pgvector extension

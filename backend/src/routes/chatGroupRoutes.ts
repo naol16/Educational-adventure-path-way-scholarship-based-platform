@@ -133,6 +133,52 @@ router.post("/:id/members", authenticate, async (req, res) => {
 });
 
 /**
+ * @route GET /api/groups/:id
+ * @desc Get group details
+ */
+router.get("/:id", authenticate, async (req, res) => {
+    try {
+        const conversationId = parseInt(req.params.id as string);
+        if (isNaN(conversationId)) {
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
+        }
+        const group = await ChatService.getConversationById(conversationId);
+        if (!group || !group.isGroup) {
+            return res.status(404).json({ status: "error", message: "Group not found" });
+        }
+        
+        // Check if user is a member
+        const isMember = await ChatService.checkMembership(req.user!.id, conversationId);
+        
+        res.status(200).json({ 
+            status: "success", 
+            data: { ...group.get({ plain: true }), isMember } 
+        });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in GET /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
+ * @route GET /api/groups/:id/membership
+ * @desc Check if current user is a member
+ */
+router.get("/:id/membership", authenticate, async (req, res) => {
+    try {
+        const conversationId = parseInt(req.params.id as string);
+        if (isNaN(conversationId)) {
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
+        }
+        const isMember = await ChatService.checkMembership(req.user!.id, conversationId);
+        res.status(200).json({ status: "success", data: { isMember } });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in GET /api/groups/:id/membership ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
  * @route DELETE /api/groups/:id/members/:userId
  * @desc Remove a member from a group (Admin only)
  */

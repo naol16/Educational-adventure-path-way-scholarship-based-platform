@@ -55,9 +55,7 @@ export const ProfileInfo = () => {
 
     setIsUploadingAvatar(true);
     try {
-      await api.post("/user/upload-avatar", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/user/upload-avatar", formData);
       await refreshUser();
       toast.success("Profile picture updated!");
     } catch (error: any) {

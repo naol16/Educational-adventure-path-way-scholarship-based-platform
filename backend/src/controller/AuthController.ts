@@ -101,7 +101,7 @@ export class AuthController {
         await AuthService.logout(refreshToken);
       }
 
-      res.clearCookie("refreshToken");
+      res.clearCookie("refreshToken", AuthController.getCookieOptions());
       res.json({ message: "Logged out successfully" });
     } catch (error) {
       next(error);
@@ -115,7 +115,7 @@ export class AuthController {
         return;
       }
       await AuthService.logoutAll(req.user.id);
-      res.clearCookie("refreshToken");
+      res.clearCookie("refreshToken", AuthController.getCookieOptions());
       res.json({ message: "Logged out from all devices" });
     } catch (error) {
       next(error);
@@ -177,6 +177,7 @@ export class AuthController {
         return;
       }
       const user = await AuthService.getMe(req.user.id);
+      console.log(`[AuthController.me] Fetched profile for UserID: ${req.user.id}, Role: ${user.role}, Name: ${user.name}`);
       res.json(user);
     } catch (error) {
       next(error);

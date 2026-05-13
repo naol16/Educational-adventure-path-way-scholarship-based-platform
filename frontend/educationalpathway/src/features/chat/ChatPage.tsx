@@ -33,6 +33,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const [editingMessage, setEditingMessage] = useState<{ id: number; content: string } | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: number; content: string; senderName: string } | null>(null);
+  const [isMember, setIsMember] = useState<boolean>(true);
+  const [isJoining, setIsJoining] = useState(false);
   
   // Pagination
   const [page, setPage] = useState(0);
@@ -84,16 +86,36 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/chat/conversations`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const [convsRes, groupsRes] = await Promise.all([
+          api.get('/chat/conversations'),
+          api.get('/groups')
+        ]);
+
+        const convs = convsRes.data || [];
+        const allGroups = groupsRes.data || [];
+
+        // Merge groups: prioritize active conversations, but add missing groups
+        const mergedConvs = [...convs];
+        
+        allGroups.forEach((group: any) => {
+          const exists = mergedConvs.find(c => c.isGroup && c.id === group.id);
+          if (!exists) {
+            mergedConvs.push({
+              ...group,
+              isGroup: true,
+              chatMessages: [],
+              unreadCount: 0,
+              isNotJoined: true // Flag for UI
+            });
+          }
         });
-        const convs = res.data.data;
-        setConversations(convs);
+
+        setConversations(mergedConvs);
 
         // If targetUserId is provided, try to find or start chat
         if (targetUserId) {
           const tid = parseInt(targetUserId);
-          const existing = convs.find((c: Conversation) => 
+          const existing = mergedConvs.find((c: Conversation) => 
             !c.isGroup && getConversationMembers(c).some((m) => m.id === tid)
           );
           if (existing) {
@@ -116,9 +138,22 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
         // If targetGroupId is provided, select it
         if (targetGroupId) {
           const gid = parseInt(targetGroupId);
-          const existing = convs.find((c: any) => c.isGroup && c.id === gid);
+          const existing = mergedConvs.find((c: any) => c.isGroup && c.id === gid);
           if (existing) {
             setActiveConversation(existing);
+          } else {
+            // Fetch group details if not in joined list
+            try {
+              const groupRes = await api.get(`/groups/${gid}`);
+              const groupData = groupRes.data;
+              if (groupData) {
+                // Temporary add to conversations for viewing
+                setConversations(prev => [groupData, ...prev]);
+                setActiveConversation(groupData);
+              }
+            } catch (err) {
+              console.error("Failed to fetch group details for preview", err);
+            }
           }
         }
       } catch (err) {
@@ -165,10 +200,25 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   }, [activeConversation, token, page, hasMore, socket]);
 
   useEffect(() => {
+    const fetchMembership = async () => {
+      if (activeConversation?.isGroup) {
+        try {
+          const res = await api.get(`/groups/${activeConversation.id}/membership`);
+          setIsMember(res.data.isMember);
+        } catch (err) {
+          console.error("Failed to fetch membership", err);
+          setIsMember(false);
+        }
+      } else {
+        setIsMember(true); // Direct chats are always "members"
+      }
+    };
+
     if (activeConversation) {
       setHasMore(true);
       setPage(0);
       fetchMessages(true);
+      fetchMembership();
       if (socket) {
         socket.emit("join_conversation", activeConversation.id);
       }
@@ -443,6 +493,29 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     }
   };
 
+  const handleJoinGroup = async () => {
+    if (!activeConversation) return;
+    setIsJoining(true);
+    try {
+      await api.post(`/groups/${activeConversation.id}/join`);
+      toast.success("Joined group!");
+      setIsMember(true);
+      // Re-join socket room now that we are a member
+      if (socket) {
+        socket.emit("join_conversation", activeConversation.id);
+      }
+      // Update local conversation list if needed
+      setConversations(prev => prev.map(c => 
+        c.id === activeConversation.id ? { ...c, isJoined: true } : c
+      ));
+    } catch (err) {
+      console.error("Failed to join group", err);
+      toast.error("Failed to join group");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   return (
     <div className={`relative flex h-[calc(100vh-80px)] w-full overflow-hidden border-b border-border/60 bg-background shadow-sm dark:border-white/10 dark:bg-background ${isResizing ? 'select-none' : ''}`}>
       {/* Sidebar */}
@@ -488,6 +561,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
               typingUser={typingStatus} 
               currentUserRole={currentUser.role} 
               isGroup={activeConversation.isGroup} 
+              isMember={isMember}
               conversationId={activeConversation.id} 
               onBookSession={handleOpenBooking} 
               onShowMembers={() => setShowDetails(!showDetails)} 
@@ -501,18 +575,21 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
               onEditMessage={handleEditMessage} 
               onDeleteMessage={handleDeleteMessage} 
               onReplyMessage={handleReplyMessage} 
+              onJoinGroup={handleJoinGroup}
+              isJoining={isJoining}
               onBack={() => setActiveConversation(null)} 
             />
             <ChatInput 
               onSend={handleSendMessage} 
               onTyping={handleTyping} 
               onSchedule={handleOpenBooking} 
-              disabled={!activeConversation} 
+              disabled={!activeConversation || !isMember} 
               editingMessage={editingMessage} 
               replyingTo={replyingTo} 
               onUpdate={handleUpdateMessage} 
               onCancelEdit={() => setEditingMessage(null)} 
               onCancelReply={() => setReplyingTo(null)} 
+              placeholder={isMember ? "Type a message..." : "Join this group to participate"}
             />
           </>
         ) : (

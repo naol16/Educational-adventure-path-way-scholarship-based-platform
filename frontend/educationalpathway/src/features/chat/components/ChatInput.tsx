@@ -19,6 +19,7 @@ interface ChatInputProps {
   onUpdate: (content: string) => void;
   onCancelEdit: () => void;
   onCancelReply: () => void;
+  placeholder?: string;
 }
 
 export const ChatInput = ({
@@ -31,6 +32,7 @@ export const ChatInput = ({
   onUpdate,
   onCancelEdit,
   onCancelReply,
+  placeholder,
 }: ChatInputProps) => {
   const [content, setContent] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
@@ -85,7 +87,6 @@ export const ChatInput = ({
       const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
       const res = await axios.post(`${API_BASE_URL}/chat/upload`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -231,7 +232,7 @@ export const ChatInput = ({
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               disabled={disabled}
-              placeholder={editingMessage ? "Edit message…" : "Message"}
+              placeholder={editingMessage ? "Edit message…" : (placeholder || "Message")}
               className="custom-scrollbar max-h-40 min-h-[40px] flex-1 resize-none border-none bg-transparent py-2.5 pl-1 pr-2 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/50"
               rows={1}
             />

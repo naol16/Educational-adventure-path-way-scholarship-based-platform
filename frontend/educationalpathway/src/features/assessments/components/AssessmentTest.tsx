@@ -23,7 +23,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { submitAssessment, getAssessmentResult } from "@/features/assessments/api/assessment-api";
+import { submitAssessment, getAssessmentResult, submitSection } from "@/features/assessments/api/assessment-api";
 
 interface AssessmentQuestion {
   id: string | number;
@@ -160,6 +160,9 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     new Set(),
   );
   const [showSectionSummary, setShowSectionSummary] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sectionScores, setSectionScores] = useState<Record<string, number>>({});
+  const [isEvaluatingSection, setIsEvaluatingSection] = useState(false);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -249,15 +252,43 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     }
   };
 
+  const evaluateCurrentSection = async () => {
+    try {
+      setIsEvaluatingSection(true);
+      setError(null);
+      
+      const skillResponse = currentSection === "reading" || currentSection === "listening" 
+        ? responses[currentSection] 
+        : currentSection === "writing" 
+          ? responses.writing 
+          : responses.speaking;
+
+      const res = await submitSection(testId, currentSection, skillResponse, currentSection === "speaking" ? audioBlob : undefined);
+      
+      if (res.status === "success") {
+        setSectionScores(prev => ({ ...prev, [currentSection]: res.score }));
+        setShowSectionSummary(true);
+      } else {
+        throw new Error(res.error || "Evaluation failed");
+      }
+    } catch (err: any) {
+      toast.error(`Evaluation failed for ${currentSection}.`);
+      setError(`We couldn't grade your ${currentSection} section. You can retry or skip to the next section.`);
+    } finally {
+      setIsEvaluatingSection(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     try {
       setIsSubmitting(true);
+      // Final submission just ensures everything is synced, but we've been doing it step-by-step
       await submitAssessment(testId, responses, audioBlob);
-      toast.success("Submitted. Grading...");
+      toast.success("Finalizing assessment...");
       pollResult();
     } catch (error: any) {
-      toast.error("Submission failed.");
+      toast.error("Finalization failed.");
       setIsSubmitting(false);
     }
   };
@@ -271,6 +302,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
         if (normalized?.status === "failed") {
           clearInterval(pollIntervalRef.current!);
           setIsSubmitting(false);
+          setError(normalized.error || "The AI Evaluator encountered an error while grading. Please try again.");
         } else if (normalized && (normalized.evaluation || normalized.overall_band !== undefined)) {
           clearInterval(pollIntervalRef.current!);
           setResult(normalized);
@@ -315,7 +347,26 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-6">
         <Loader2 className="animate-spin text-primary size-14" />
-        <h2 className="h3">AI Evaluator is grading your exam</h2>
+        <div className="text-center space-y-2">
+          <h2 className="h3">AI Evaluator is grading your exam</h2>
+          <p className="text-sm text-muted-foreground animate-pulse">This typically takes 30-60 seconds...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center space-y-6 max-w-md mx-auto text-center">
+        <div className="size-20 rounded-full bg-destructive/10 flex items-center justify-center text-destructive mb-4">
+          <AlertCircle size={40} />
+        </div>
+        <h2 className="h3">Grading Failed</h2>
+        <p className="text-muted-foreground">{error}</p>
+        <div className="flex gap-4">
+          <Button onClick={() => { setError(null); handleSubmit(); }} className="primary-gradient text-white">Retry Grading</Button>
+          <Button onClick={() => window.location.reload()} variant="outline">Restart Test</Button>
+        </div>
       </div>
     );
   }
@@ -381,24 +432,54 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               </div>
               
               <div className="space-y-4">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">{SECTION_META[currentSection].label} Verified</h2>
-                <p className="text-lg text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
-                  Data synthesis complete for this module. Calibration for the next diagnostic phase is ready.
-                </p>
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">{SECTION_META[currentSection].label} Complete</h2>
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Section Score</span>
+                  <div className="text-6xl font-black tabular-nums tracking-tighter">
+                    {sectionScores[currentSection] !== undefined ? sectionScores[currentSection] : "--"}
+                    <span className="text-xl text-muted-foreground/40 ml-1">/{isTOEFL ? "30" : "9.0"}</span>
+                  </div>
+                </div>
               </div>
               
-              <div className="p-10 bg-card rounded-2xl border border-border/40 shadow-sm space-y-2">
-                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Next Objective</p>
-                 <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Analysis</h3>
-              </div>
+              {currentIdx < SECTION_ORDER.length - 1 ? (
+                <>
+                  <div className="p-10 bg-card rounded-2xl border border-border/40 shadow-sm space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Next Objective</p>
+                    <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Analysis</h3>
+                  </div>
 
-              <Button 
-                onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
-                className={`rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
-              >
-                Execute {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} Protocol <ArrowRight className="ml-4" />
-              </Button>
+                  <Button 
+                    onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
+                    className={`rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
+                  >
+                    Execute {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} Protocol <ArrowRight className="ml-4" />
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <div className="p-10 bg-success/5 rounded-2xl border border-success/20 shadow-sm space-y-4">
+                    <Sparkles className="mx-auto text-success size-8" />
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Diagnostic Concluded</h3>
+                    <p className="text-sm text-muted-foreground font-medium">Your full performance matrix and adaptive learning path are being synthesized.</p>
+                  </div>
+                  <Button 
+                    onClick={handleSubmit}
+                    className="rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 bg-foreground text-background w-full"
+                  >
+                    Finalize Diagnostic & View Performance <BarChart3 className="ml-4" />
+                  </Button>
+                </div>
+              )}
             </motion.div>
+          ) : isEvaluatingSection ? (
+            <div className="max-w-2xl mx-auto py-32 text-center space-y-8">
+              <Loader2 className="animate-spin text-primary size-16 mx-auto opacity-20" />
+              <div className="space-y-2">
+                <h2 className="h3 uppercase tracking-tighter">Analyzing Performance</h2>
+                <p className="text-sm text-muted-foreground animate-pulse">Our AI is scoring your {currentSection} responses...</p>
+              </div>
+            </div>
           ) : (
             <motion.div 
               key={currentSection} 
@@ -465,15 +546,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                                 return (
                                   <label 
                                     key={j} 
+                                    onClick={() => handleOptionSelect("reading", qId, opt)}
                                     className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
                                   >
-                                     <input 
-                                       type="radio" 
-                                       name={`reading-q-${qId}`} 
-                                       checked={isSelected} 
-                                       onChange={() => handleOptionSelect("reading", qId, opt)} 
-                                       className="size-5 accent-primary cursor-pointer"
-                                     />
+                                     <div className={`size-8 rounded-lg flex items-center justify-center font-black text-xs border transition-all ${isSelected ? "bg-primary text-white border-primary" : "bg-muted/30 border-border/40 text-muted-foreground"}`}>
+                                       {String.fromCharCode(65 + j)}
+                                     </div>
                                      <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
                                   </label>
                                 );
@@ -518,15 +596,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                                 return (
                                   <label 
                                     key={j} 
+                                    onClick={() => handleOptionSelect("listening", qId, opt)}
                                     className={`text-left p-4 rounded-lg border transition-all duration-300 flex items-center gap-4 cursor-pointer ${isSelected ? theme.optionSelected : "border-border/40 hover:border-primary/40 bg-card/50 hover:bg-muted/10"}`}
                                   >
-                                     <input 
-                                       type="radio" 
-                                       name={`listening-q-${qId}`} 
-                                       checked={isSelected} 
-                                       onChange={() => handleOptionSelect("listening", qId, opt)} 
-                                       className="size-5 accent-primary cursor-pointer"
-                                     />
+                                     <div className={`size-8 rounded-lg flex items-center justify-center font-black text-xs border transition-all ${isSelected ? "bg-primary text-white border-primary" : "bg-muted/30 border-border/40 text-muted-foreground"}`}>
+                                       {String.fromCharCode(65 + j)}
+                                     </div>
                                      <span className="flex-1 text-base font-medium leading-relaxed">{opt}</span>
                                   </label>
                                 );
@@ -564,12 +639,12 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 {currentSection === "speaking" && (
                   <div className="space-y-12 py-12 flex flex-col items-center">
                     <div className="space-y-2 text-center">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Aural Diagnostic: Task 01</span>
-                      <h3 className="text-3xl font-black uppercase tracking-tight">Vocal Analysis</h3>
+                      <span className="text-[10px] font-black text-muted-foreground tracking-[0.3em]">Aural Diagnostic: Task 01</span>
+                      <h3 className="text-3xl font-black tracking-tight">Vocal Analysis</h3>
                     </div>
                     
                     <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner max-w-2xl w-full">
-                      <CardBody className="p-10 text-xl font-black uppercase tracking-tight text-center leading-relaxed">
+                      <CardBody className="p-10 text-xl font-black tracking-tight text-center leading-relaxed">
                         {sections.speaking?.questions?.[0]?.prompt || sections.speaking?.prompt}
                       </CardBody>
                     </Card>
@@ -628,7 +703,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               onClick={() => {
                 if (currentIdx > 0) handleSectionChange(SECTION_ORDER[currentIdx - 1]);
               }}
-              disabled={currentIdx === 0}
+              disabled={currentIdx === 0 || isEvaluatingSection}
               className="h-16 px-10 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted transition-all shadow-sm bg-card disabled:opacity-20"
             >
               <ArrowLeft className="mr-3 size-4" /> Previous Module
