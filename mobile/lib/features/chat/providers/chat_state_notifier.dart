@@ -149,9 +149,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
         : await _chatService.sendMessage(receiverId, content.trim());
 
     if (saved != null) {
+      final confirmed = saved;
       // Replace optimistic bubble with the confirmed server message
       final updated = state.messages
-          .map((m) => m.id == tempId ? saved! : m)
+          .map((m) => m.id == tempId ? confirmed : m)
           .toList();
       state = state.copyWith(messages: updated);
     } else {
