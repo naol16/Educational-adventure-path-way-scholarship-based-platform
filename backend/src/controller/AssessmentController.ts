@@ -210,8 +210,8 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
-
-      await AssessmentService.resetAssessment(student.id as number);
+      const examType = (req.body?.examType || req.query?.examType) as string | undefined;
+      await AssessmentService.resetAssessment(student.id as number, examType);
       res.json({
         status: "success",
         message: "Assessment and learning path reset successfully.",

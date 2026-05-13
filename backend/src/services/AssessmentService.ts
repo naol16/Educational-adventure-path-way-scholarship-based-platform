@@ -1407,16 +1407,19 @@ private static async evaluateSingleSkill(
     return await AssessmentRepository.getStudentProgress(studentId, examType);
   }
 
-  static async resetAssessment(studentId: number, examType: string) {
+  static async resetAssessment(studentId: number, examType?: string) {
     // 1. Delete all assessment results
-    await AssessmentRepository.deleteByStudentId(studentId);
+    await AssessmentRepository.deleteByStudentId(studentId, examType);
 
     // 2. Clear learning path
     const { LearningPath } = await import("../models/LearningPath.js");
     const { LearningPathProgress } =
       await import("../models/LearningPathProgress.js");
 
-    await LearningPathProgress.destroy({ where: { studentId, examType } });
-    await LearningPath.destroy({ where: { studentId } });
+    const where: any = { studentId };
+    if (examType) where.examType = examType;
+
+    await LearningPathProgress.destroy({ where });
+    await LearningPath.destroy({ where });
   }
 }

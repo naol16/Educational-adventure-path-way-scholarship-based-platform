@@ -48,11 +48,13 @@ export class AssessmentRepository {
     }
 
     /**
-     * Delete all assessment results for a specific student.
+     * Delete all assessment results for a specific student, optionally filtered by exam type.
      */
-    static async deleteByStudentId(studentId: number): Promise<void> {
+    static async deleteByStudentId(studentId: number, examType?: string): Promise<void> {
+        const where: any = { studentId };
+        if (examType) where.examType = examType;
         await AssessmentResult.destroy({
-            where: { studentId }
+            where
         });
     }
 }
