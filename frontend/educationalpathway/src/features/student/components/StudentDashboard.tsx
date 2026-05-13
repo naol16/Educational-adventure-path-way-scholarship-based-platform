@@ -64,10 +64,18 @@ export const StudentDashboard = () => {
 
   const matches: Scholarship[] = Array.isArray(matchesResponse) ? matchesResponse : (matchesResponse?.data || []);
 
-  const { data: recommendedCounselors = [], isLoading: loadingCounselors } = useSWR<any[]>(user?.isOnboarded ? "/counselors/recommended" : null, {
+  const { data: recommendedCounselors = [], isLoading: loadingCounselors } = useSWR<any[]>(user?.isOnboarded ? "/counselors/recommendations/me" : null, {
     fallbackData: [],
     revalidateOnMount: true
   });
+
+  const topRecommendedCounselors = Array.isArray(recommendedCounselors)
+    ? [...recommendedCounselors].sort((a, b) => {
+        const scoreA = Number(a.recommendationScore ?? a.rating ?? 0);
+        const scoreB = Number(b.recommendationScore ?? b.rating ?? 0);
+        return scoreB - scoreA;
+      })
+    : [];
 
   const { data: statsData = { savedCount: 0, appliedCount: 0, deadlineCount: 0 }, isLoading: loadingStats } = useSWR<{savedCount: number, appliedCount: number, deadlineCount: number}>(user?.isOnboarded ? "/scholarships/dashboard/stats" : null, {
     fallbackData: { savedCount: 0, appliedCount: 0, deadlineCount: 0 },
@@ -373,8 +381,8 @@ export const StudentDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {loadingCounselors ? (
                   [1, 2].map(i => <div key={i} className="h-64 bg-card/40 rounded-lg animate-pulse border border-border/20" />)
-                ) : recommendedCounselors.length > 0 ? (
-                  recommendedCounselors.slice(0, 2).map(counselor => (
+                ) : topRecommendedCounselors.length > 0 ? (
+                  topRecommendedCounselors.slice(0, 2).map(counselor => (
                     <Card key={counselor.id} className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all p-6 group">
                       <div className="flex gap-4 mb-4">
                         <Avatar className="size-16 border-2 border-border group-hover:border-primary transition-all">
