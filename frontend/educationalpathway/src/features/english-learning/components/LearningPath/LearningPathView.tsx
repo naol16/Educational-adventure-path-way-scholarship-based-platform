@@ -40,7 +40,8 @@ import {
   Star,
   Brain,
   ChevronDown,
-  Layers
+  Layers,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { 
@@ -58,6 +59,7 @@ import Link from "next/link";
 import { UnitTestOverlay, DynamicMissionOverlay } from "./LearningPathOverlays";
 import { EnvironmentSwitcher } from "./EnvironmentSwitcher";
 import { AssessmentDashboard } from "@/features/assessments/components/AssessmentDashboard";
+import { SystemArchitectureOverlay } from "./SystemArchitectureOverlay";
 import { AssessmentTest } from "@/features/assessments/components/AssessmentTest";
 import { AssessmentResultView } from "@/features/assessments/components/AssessmentResultView";
 import { toast } from "react-hot-toast";
@@ -82,6 +84,7 @@ interface Mission {
 
 interface SkillData {
   videos: Video[];
+  pdfs: any[];
   notes: string;
   isNoteCompleted?: boolean;
   missions: Mission[];
@@ -125,8 +128,19 @@ const isCorrectOption = (answer: unknown, option: string, options: string[]) => 
 };
 
 const getSkillQuestions = (learningMode: LearningPathData["learningMode"], skill: string) => {
-   const modeData = learningMode?.[skill];
-   return Array.isArray(modeData) ? modeData : (modeData as any)?.questions || [];
+    const modeData = learningMode?.[skill];
+    return Array.isArray(modeData) ? modeData : (modeData as any)?.questions || [];
+};
+
+const getYoutubeEmbedUrl = (url: string) => {
+  if (!url) return "";
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  const videoId = (match && match[2].length === 11) ? match[2] : null;
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1&modestbranding=1`;
+  }
+  return url;
 };
 
 function SkillGauge({ label, value, color, active }: { label: string, value: number, color: string, active?: boolean }) {
@@ -213,12 +227,41 @@ export function LearningPathView() {
   const [isSubmittingTest, setIsSubmittingTest] = useState(false);
   const [loadingUnitTestIndex, setLoadingUnitTestIndex] = useState<number | null>(null);
   const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
+  const [hasDiagnostic, setHasDiagnostic] = useState<{ IELTS: boolean, TOEFL: boolean }>({ IELTS: false, TOEFL: false });
+  const [showArchModal, setShowArchModal] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [activeMissionTab, setActiveMissionTab] = useState<Record<number, 'videos' | 'pdfs' | 'practice'>>({});
+
+  useEffect(() => {
+    async function discoverEnvironment() {
+      try {
+        const [ieltsProg, toeflProg] = await Promise.all([
+          getAssessmentProgress("IELTS"),
+          getAssessmentProgress("TOEFL")
+        ]);
+        
+        const ieltsOk = ieltsProg?.data?.length > 0;
+        const toeflOk = toeflProg?.data?.length > 0;
+        
+        setHasDiagnostic({ IELTS: ieltsOk, TOEFL: toeflOk });
+
+        if (!ieltsOk && toeflOk) {
+          setEnvMode("TOEFL");
+        }
+      } catch (e) {
+        console.error("Discovery failed", e);
+      }
+    }
+    discoverEnvironment();
+  }, []);
 
   const load = async (mode: string) => {
     try {
       setLoading(true);
+      setError(null);
       const res = await getLearningPath(mode);
       const pathData = res?.skills ? res : (res?.data?.skills ? res.data : null);
+      
       if (pathData) {
         setData(pathData);
         const initialExplanations: Record<string, Record<number, boolean>> = {};
@@ -244,27 +287,49 @@ export function LearningPathView() {
         if (skills.length > 0 && !skills.includes(activeTab)) setActiveTab(skills[0]);
       } else {
         setError("Not found");
+        setData(null);
       }
     } catch (err: any) {
       setError(err.response?.status === 404 ? "Not found" : "Error");
+      setData(null);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(envMode); }, [envMode]);
+  useEffect(() => { 
+    if (envMode) {
+      load(envMode); 
+    }
+  }, [envMode]);
 
-  const handleToggleVideo = async (videoId: number) => {
+  const handleToggleVideo = async (videoId: number, mIndex: number) => {
     setData(prev => {
       if (!prev) return prev;
       const newData = JSON.parse(JSON.stringify(prev));
       const video = newData.skills[activeTab].videos.find((v: any) => v.id === videoId);
-      if (video) video.isCompleted = !video.isCompleted;
+      if (video) video.isCompleted = true;
+      const mVideo = newData.skills[activeTab].missions[mIndex]?.videos.find((v: any) => v.id === videoId);
+      if (mVideo) mVideo.isCompleted = true;
       return newData;
     });
     try {
-      const currentVideoStatus = data?.skills[activeTab]?.videos.find(v => v.id === videoId)?.isCompleted;
-      await trackProgress({ videoId, section: activeTab, isCompleted: !currentVideoStatus, examType: envMode });
+      await trackProgress({ videoId, section: activeTab, isCompleted: true, examType: envMode });
+    } catch (error) {}
+  };
+
+  const handleTogglePdf = async (pdfId: number, mIndex: number) => {
+    setData(prev => {
+      if (!prev) return prev;
+      const newData = JSON.parse(JSON.stringify(prev));
+      const pdf = newData.skills[activeTab].pdfs?.find((p: any) => p.id === pdfId);
+      if (pdf) pdf.isCompleted = true;
+      const mPdf = newData.skills[activeTab].missions[mIndex]?.pdfs.find((p: any) => p.id === pdfId);
+      if (mPdf) mPdf.isCompleted = true;
+      return newData;
+    });
+    try {
+      await trackProgress({ pdfId: pdfId, section: activeTab, isCompleted: true, examType: envMode });
     } catch (error) {}
   };
 
@@ -378,14 +443,29 @@ export function LearningPathView() {
             <Compass className="h-10 w-10 text-muted-foreground" />
          </div>
          <div className="space-y-4">
-            <h2 className="text-4xl font-black text-foreground tracking-tighter uppercase">Journey Locked</h2>
+            <h2 className="text-4xl font-black text-foreground tracking-tighter uppercase">
+              {hasDiagnostic[envMode] ? "Synchronizing Journey" : "Journey Locked"}
+            </h2>
             <p className="text-muted-foreground font-medium leading-relaxed">
-               Execute the diagnostic assessment protocol to unlock your personalized learning matrix.
+               {hasDiagnostic[envMode] 
+                 ? "We found your assessment data. The AI is calibrating your path. Please wait a moment and refresh."
+                 : "Execute the diagnostic assessment protocol to unlock your personalized learning matrix."}
             </p>
          </div>
-         <Link href="/dashboard/learning-path/diagnostic/assessment">
-            <Button className="h-16 px-12 rounded-2xl primary-gradient text-white font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">Initialize Diagnostic</Button>
-         </Link>
+         {hasDiagnostic[envMode] ? (
+            <Button 
+              onClick={() => load(envMode)}
+              className="h-16 px-12 rounded-2xl bg-muted border border-border/50 text-foreground font-black uppercase tracking-widest text-[10px] hover:bg-muted/80 transition-all"
+            >
+              Refresh Status
+            </Button>
+         ) : (
+           <Link href="/dashboard/learning-path/diagnostic/assessment">
+              <Button className="h-16 px-12 rounded-2xl primary-gradient text-white font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">
+                Initialize Diagnostic
+              </Button>
+           </Link>
+         )}
       </div>
     );
   }
@@ -411,7 +491,6 @@ export function LearningPathView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary transition-colors duration-500 overflow-x-hidden">
-      {/* Background Ambience - Dynamically shifted based on mode */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div 
@@ -431,17 +510,25 @@ export function LearningPathView() {
 
       <div className="relative max-w-[1600px] mx-auto px-6 md:px-12 py-12 lg:py-20 flex flex-col lg:flex-row gap-16">
         
-        {/* Sidebar Navigation */}
         <aside className="lg:w-[320px] shrink-0 space-y-16">
           <div className="space-y-8">
-            <div className="flex items-center gap-4">
-              <div className={`h-12 w-12 rounded-2xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text}`}>
-                <Brain size={24} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`h-12 w-12 rounded-2xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text}`}>
+                  <Brain size={24} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black uppercase tracking-widest">Pathfinder</h1>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{envMode} Intelligence</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-black uppercase tracking-widest">Pathfinder</h1>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{envMode} Intelligence</p>
-              </div>
+              <button 
+                onClick={() => setShowArchModal(true)}
+                className="p-3 bg-muted hover:bg-muted/80 border border-border/50 rounded-xl transition-all text-muted-foreground hover:text-foreground shadow-sm"
+                title="View System Architecture"
+              >
+                <Info size={20} />
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -502,18 +589,16 @@ export function LearningPathView() {
           </div>
         </aside>
 
-        {/* Main Workspace */}
         <main className="flex-1 space-y-20">
           
-          {/* Header Section */}
           <section className="space-y-10">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Star className={`${theme.text} size-3 fill-current`} />
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Active Module Optimization</span>
               </div>
-              <h2 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
-                {activeTab} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Mastery</span>
+              <h2 className="text-4xl sm:text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
+                {activeTab} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-2 md:ml-4">Mastery</span>
               </h2>
             </div>
 
@@ -523,7 +608,7 @@ export function LearningPathView() {
                   <Activity size={24} strokeWidth={1} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Data Stream</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{envMode} Curriculum</p>
                   <p className="text-sm font-bold text-foreground uppercase tracking-tighter">Verified Protocol</p>
                 </div>
               </div>
@@ -540,7 +625,6 @@ export function LearningPathView() {
             </div>
           </section>
 
-          {/* Intelligence Insights (Collapsible) */}
           <section className="space-y-4">
             <IntelligenceInsight 
               title="Tactical Overview" 
@@ -554,15 +638,23 @@ export function LearningPathView() {
             )}
           </section>
 
-          {/* Roadmap Pipeline */}
           <section className="space-y-12">
             <div className="flex items-center gap-3">
               <Compass size={18} className="text-muted-foreground" />
               <h3 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Mission Pipeline</h3>
             </div>
 
-            <div className="relative flex flex-col gap-8">
-              {/* Vertical Connector Line */}
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50">
+              <Globe className={envMode === 'IELTS' ? 'text-emerald-500' : 'text-blue-500'} size={24} />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current Environment</p>
+                <p className={`text-sm font-bold uppercase tracking-tighter ${envMode === 'IELTS' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                  {envMode} Specialization Active
+                </p>
+              </div>
+            </div>
+
+            <div className="relative flex flex-col gap-8 mt-6">
               <div className="absolute left-10 top-0 bottom-0 w-px bg-border/40 hidden md:block" />
 
               {currentSkill.missions?.map((m: any, i: number) => {
@@ -584,11 +676,38 @@ export function LearningPathView() {
                       <div className="flex-1 pt-4 space-y-6">
                         <div className="space-y-2">
                           <div className="flex items-center gap-3">
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${isDone ? 'text-emerald-500' : 'text-muted-foreground'}`}>{isDone ? 'Mission Resolved' : isLocked ? 'Encryption Locked' : 'Protocol Active'}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${isDone ? 'text-emerald-500' : 'text-muted-foreground'}`}>{isDone ? 'Mission Resolved' : isLocked ? 'Mission Locked' : 'Protocol Active'}</span>
                             <div className="h-px flex-1 bg-border/20" />
                           </div>
                           <h4 className="text-3xl font-black text-foreground uppercase tracking-tighter">{m.title}</h4>
                           <p className="text-sm text-muted-foreground font-medium leading-relaxed max-w-2xl">{m.objective}</p>
+                          
+                          <div className="flex flex-wrap items-center gap-2 pt-2">
+                            {(() => {
+                              const vDone = m.videos?.filter((v: any) => v.isCompleted).length || 0;
+                              const vTotal = m.videos?.length || 0;
+                              const pDone = m.pdfs?.filter((p: any) => p.isCompleted).length || 0;
+                              const pTotal = m.pdfs?.length || 0;
+                              const isQuizDone = m.isUnitTestCompleted;
+                              
+                              return (
+                                <>
+                                  <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 transition-all ${vDone === vTotal && vTotal > 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-muted/50 border-border/50 text-muted-foreground'}`}>
+                                    {vDone === vTotal && vTotal > 0 ? <CheckCircle2 size={12} /> : <PlayCircle size={12} />}
+                                    Videos {vDone}/{vTotal}
+                                  </div>
+                                  <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 transition-all ${pDone === pTotal && pTotal > 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-muted/50 border-border/50 text-muted-foreground'}`}>
+                                    {pDone === pTotal && pTotal > 0 ? <CheckCircle2 size={12} /> : <BookOpen size={12} />}
+                                    Resources {pDone}/{pTotal}
+                                  </div>
+                                  <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1.5 transition-all ${isQuizDone ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-muted/50 border-border/50 text-muted-foreground'}`}>
+                                    {isQuizDone ? <CheckCircle2 size={12} /> : <Zap size={12} />}
+                                    Quiz {isQuizDone ? '1/1' : '0/1'}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
 
                         <div className="flex gap-4">
@@ -602,10 +721,10 @@ export function LearningPathView() {
                           {!isLocked && (
                             <Button 
                               onClick={() => handleTakeUnitTest(i)}
-                              disabled={m.isUnitTestCompleted || isSubmittingTest}
-                              className={`h-12 px-8 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-all ${m.isUnitTestCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-background border-border text-muted-foreground hover:border-border/80'}`}
+                              disabled={m.isUnitTestCompleted || isSubmittingTest || (!m.videos?.every((v:any) => v.isCompleted) || !m.pdfs?.every((p:any) => p.isCompleted))}
+                              className={`h-12 px-8 rounded-xl font-black uppercase tracking-widest text-[9px] border transition-all ${m.isUnitTestCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : (!m.videos?.every((v:any) => v.isCompleted) || !m.pdfs?.every((p:any) => p.isCompleted)) ? 'bg-muted/50 border-border/20 text-muted-foreground/30 cursor-not-allowed' : 'bg-background border-border text-muted-foreground hover:border-border/80'}`}
                             >
-                              {m.isUnitTestCompleted ? 'Test Verified' : loadingUnitTestIndex === i ? <Loader2 size={16} className="animate-spin" /> : 'Unit Test'}
+                              {m.isUnitTestCompleted ? 'Test Verified' : loadingUnitTestIndex === i ? <Loader2 size={16} className="animate-spin" /> : (!m.videos?.every((v:any) => v.isCompleted) || !m.pdfs?.every((p:any) => p.isCompleted)) ? <><Lock size={12} className="mr-2 inline" /> Unit Test</> : 'Unit Test'}
                             </Button>
                           )}
                         </div>
@@ -618,78 +737,181 @@ export function LearningPathView() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden pt-8 px-8 space-y-16"
+                          className="overflow-hidden pt-8 px-4 md:px-8 space-y-8"
                         >
-                          <div className="h-px w-full bg-border/40" />
-                          
-                          {/* Inner Video Section */}
-                          <div className="space-y-8">
-                            <div className="flex items-center gap-3">
-                              <PlayCircle size={16} className="text-muted-foreground" />
-                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Embedded Intelligence</span>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {currentSkill?.videos?.map((v, vi) => (
-                                <div key={v.id} className="group relative bg-card border border-border/50 rounded-[32px] p-6 flex items-center gap-6 hover:shadow-lg transition-all">
-                                  <div className="size-24 rounded-2xl overflow-hidden bg-muted relative shrink-0 shadow-sm">
-                                    <img src={v.thubnail} className="size-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-60 group-hover:opacity-100" />
-                                    {v.videolink && (
-                                      <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all">
-                                        <PlayCircle size={20} className="text-white" fill="currentColor" />
-                                      </a>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="text-lg font-black uppercase tracking-tight truncate">{v.title || 'Module Alpha'}</h5>
-                                    <button 
-                                      onClick={() => handleToggleVideo(v.id)}
-                                      className={`flex items-center gap-2 mt-2 text-[9px] font-black uppercase tracking-widest ${v.isCompleted ? 'text-emerald-500' : 'text-muted-foreground'}`}
-                                    >
-                                      {v.isCompleted ? <><CheckCircle2 size={10} /> Verified</> : <><Circle size={10} /> Standby</>}
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="flex items-center gap-2 p-1 bg-muted/40 rounded-2xl w-fit border border-border/30">
+                            {[
+                              { id: 'videos', icon: PlayCircle, label: 'Intelligence' },
+                              { id: 'pdfs', icon: BookOpen, label: 'Resources' },
+                              { id: 'practice', icon: Zap, label: 'Practice' }
+                            ].map((tab) => {
+                              const areVideosDone = m.videos?.every((v: any) => v.isCompleted) || false;
+                              const arePdfsDone = m.pdfs?.length > 0 ? m.pdfs.every((p: any) => p.isCompleted) : true;
+                              const isTabLocked = (tab.id === 'practice' && (!areVideosDone || !arePdfsDone));
+
+                              return (
+                                <button
+                                  key={tab.id}
+                                  disabled={isTabLocked}
+                                  onClick={() => setActiveMissionTab(prev => ({ ...prev, [i]: tab.id as any }))}
+                                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    (activeMissionTab[i] || 'videos') === tab.id 
+                                      ? 'bg-foreground text-background shadow-lg' 
+                                      : isTabLocked 
+                                        ? 'text-muted-foreground/30 cursor-not-allowed opacity-50' 
+                                        : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                >
+                                  {isTabLocked ? <Lock size={12} /> : <tab.icon size={12} />}
+                                  {tab.label}
+                                </button>
+                              );
+                            })}
                           </div>
 
-                          {/* Inner Practice Section */}
-                          <div className="space-y-10 pb-12">
-                             <div className="flex items-center gap-3">
-                               <Zap size={16} className="text-muted-foreground" />
-                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Practice Vectors</span>
-                             </div>
-                             <div className="space-y-12">
-                                {pQues.map((q: any, idx: number) => (
-                                  <div key={idx} className="space-y-6 relative">
-                                    <div className="absolute -left-6 top-0 text-7xl font-black text-muted-foreground/10 leading-none select-none pointer-events-none">0{idx + 1}</div>
-                                    <h5 className="text-2xl font-black text-foreground leading-tight tracking-tighter italic relative z-10">"{q.question || q.prompt}"</h5>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      {(q.options || q.choices)?.map((opt: string) => {
-                                        const rev = showExplanation[activeTab]?.[idx];
-                                        const correct = isCorrectOption(q.answer || q.correct_answer || q.correctAnswer, opt, q.options || q.choices);
-                                        const selected = practiceAnswers[activeTab]?.[idx] === opt;
-                                        return (
+              <div className="h-px w-full bg-border/20" />
+                          
+                          <div className="pb-10">
+                            {(activeMissionTab[i] || 'videos') === 'videos' && (
+                              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                  {m.videos?.map((v: any) => (
+                                    <div key={v.id} className="group relative bg-card/40 border border-border/40 rounded-[40px] p-8 flex flex-col gap-6 hover:shadow-2xl transition-all duration-500 hover:border-primary/30">
+                                      <div className="aspect-video rounded-[32px] overflow-hidden bg-black relative shadow-2xl border border-white/5">
+                                        {v.videolink?.includes('youtube.com') || v.videolink?.includes('youtu.be') ? (
+                                          <iframe 
+                                            src={getYoutubeEmbedUrl(v.videolink)} 
+                                            className="size-full"
+                                            loading="lazy"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                          />
+                                        ) : (
+                                          <video 
+                                            src={v.videolink} 
+                                            controls 
+                                            className="size-full"
+                                            poster={v.thubnail}
+                                          />
+                                        )}
+                                      </div>
+                                      <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${envMode === 'IELTS' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
+                                              {v.examType || envMode} Protocol
+                                            </span>
+                                            <span className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                                              {v.duration || '10:00'}
+                                            </span>
+                                          </div>
                                           <button 
-                                            key={opt}
-                                            disabled={rev}
-                                            onClick={() => handleSelectAnswer(activeTab, idx, opt)}
-                                            className={`text-left p-6 rounded-2xl text-xs font-bold border transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400' : selected ? 'bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400' : 'opacity-20 border-border/20') : 'bg-muted/30 border-border/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground'}`}
+                                            onClick={() => handleToggleVideo(v.id, i)}
+                                            className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest transition-colors ${v.isCompleted ? 'text-emerald-500' : 'text-muted-foreground hover:text-foreground'}`}
                                           >
-                                            {opt}
+                                            {v.isCompleted ? <><CheckCircle2 size={12} /> Resolved</> : <><Circle size={12} /> Standby</>}
                                           </button>
-                                        );
-                                      })}
+                                        </div>
+                                        <h5 className="text-lg font-black text-foreground uppercase tracking-tighter line-clamp-1">{v.title || 'Mission Intelligence'}</h5>
+                                        <p className="text-[10px] text-muted-foreground font-medium leading-relaxed line-clamp-2">
+                                          {v.description || 'Analyze the provided intelligence stream to master the current tactical objective.'}
+                                        </p>
+                                      </div>
                                     </div>
-                                    {showExplanation[activeTab]?.[idx] && (
-                                      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="p-8 bg-muted/20 rounded-[32px] border-l border-border space-y-2">
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Calibration Note</span>
-                                        <p className="text-sm text-muted-foreground font-medium leading-relaxed italic">"{q.explanation || q.tips || q.sample_answer}"</p>
-                                      </motion.div>
-                                    )}
-                                  </div>
-                                ))}
-                             </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {(activeMissionTab[i] || 'videos') === 'pdfs' && (
+                              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  {(m.pdfs || []).map((p: any) => (
+                                    <div key={p.id} className="group relative bg-card border border-border/50 rounded-[32px] p-6 flex items-center gap-6 hover:shadow-lg transition-all hover:border-primary/20">
+                                      <div className="size-16 rounded-2xl bg-muted border border-border/50 flex items-center justify-center text-muted-foreground shrink-0 group-hover:bg-primary/5 group-hover:text-primary transition-colors shadow-sm">
+                                        <BookOpen size={24} strokeWidth={1.5} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${envMode === 'IELTS' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
+                                            {p.examType || envMode}
+                                          </span>
+                                        </div>
+                                        <h5 className="text-xs font-black uppercase tracking-tight truncate">{p.title || 'Technical Manual'}</h5>
+                                        <div className="flex items-center gap-4 mt-2">
+                                          <a 
+                                            href={p.pdfLink} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            onClick={() => handleTogglePdf(p.id, i)}
+                                            className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                                          >
+                                            Open PDF <ExternalLink size={10} />
+                                          </a>
+                                          {p.isCompleted && (
+                                            <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                              <CheckCircle2 size={10} /> Verified
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {(!m.pdfs || m.pdfs.length === 0) && (
+                                    <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 text-muted-foreground/40 italic font-medium">
+                                      <Layers size={40} strokeWidth={1} />
+                                      <p className="text-[10px] uppercase tracking-widest">No PDF resources available for this sector</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {(activeMissionTab[i] || 'videos') === 'practice' && (
+                              <div className="space-y-12 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                 <div className="space-y-12 max-w-4xl">
+                                    {pQues.map((q: any, idx: number) => (
+                                      <div key={idx} className="space-y-6 relative">
+                                        <div className="absolute -left-6 top-0 text-7xl font-black text-muted-foreground/10 leading-none select-none pointer-events-none">0{idx + 1}</div>
+                                        <div className="flex items-center gap-2 mb-2 relative z-10">
+                                          <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${envMode === 'IELTS' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
+                                            {envMode} Practice Vector
+                                          </span>
+                                        </div>
+                                        <h5 className="text-2xl font-black text-foreground leading-tight tracking-tighter italic relative z-10">"{q.question || q.prompt}"</h5>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {(q.options || q.choices)?.map((opt: string) => {
+                                            const rev = showExplanation[activeTab]?.[idx];
+                                            const correct = isCorrectOption(q.answer || q.correct_answer || q.correctAnswer, opt, q.options || q.choices);
+                                            const selected = practiceAnswers[activeTab]?.[idx] === opt;
+                                            return (
+                                              <button 
+                                                key={opt}
+                                                disabled={rev}
+                                                onClick={() => handleSelectAnswer(activeTab, idx, opt)}
+                                                className={`group text-left p-6 rounded-2xl text-xs font-bold border transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400' : selected ? 'bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400' : 'opacity-20 border-border/20') : 'bg-muted/30 border-border/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground'}`}
+                                              >
+                                                <div className="flex items-center gap-4">
+                                                  <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500 text-white' : selected ? 'bg-red-500 text-white' : 'bg-muted-foreground/10 text-muted-foreground opacity-50') : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
+                                                    {String.fromCharCode(65 + (q.options || q.choices).indexOf(opt))}
+                                                  </div>
+                                                  <span>{opt}</span>
+                                                </div>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        {showExplanation[activeTab]?.[idx] && (
+                                          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="pt-4 space-y-2">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Calibration Note</span>
+                                            <p className="text-sm text-muted-foreground font-medium leading-relaxed italic">"{q.explanation || q.tips || q.sample_answer}"</p>
+                                          </motion.div>
+                                        )}
+                                      </div>
+                                    ))}
+                                 </div>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -700,7 +922,6 @@ export function LearningPathView() {
             </div>
           </section>
 
-          {/* Finalization Section */}
           <section className="flex flex-col items-center gap-20 py-40 border-t border-border/40">
               <div className="flex flex-col items-center gap-8 text-center">
                 <div className={`size-24 rounded-full ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text}`}>
@@ -713,29 +934,29 @@ export function LearningPathView() {
                 <Button
                   onClick={() => handleCompleteSection(activeTab)}
                   disabled={completing || completedSections[activeTab]}
-                  className={`px-16 h-20 rounded-full font-black uppercase tracking-[0.3em] text-[10px] transition-all duration-700 shadow-xl ${completedSections[activeTab] ? `${theme.bg} border ${theme.border} ${theme.text}` : 'bg-foreground text-background hover:bg-foreground/90 hover:scale-110 active:scale-95'}`}
+                  className={`w-full sm:w-auto px-10 md:px-16 h-16 md:h-20 rounded-full font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[9px] md:text-[10px] transition-all duration-700 shadow-xl ${completedSections[activeTab] ? `${theme.bg} border ${theme.border} ${theme.text}` : 'bg-foreground text-background hover:bg-foreground/90 hover:scale-110 active:scale-95'}`}
                 >
                   {completing ? "Synchronizing..." : completedSections[activeTab] ? "Section Resolved" : `Seal ${activeTab} Protocol`}
                 </Button>
               </div>
 
-            <div className={`w-full max-w-5xl p-16 rounded-[80px] border transition-all duration-1000 ${canLevelUp ? 'bg-foreground text-background border-foreground shadow-2xl' : 'bg-muted/20 text-muted-foreground border-border/40'}`}>
+            <div className={`w-full max-w-5xl p-8 md:p-16 rounded-[40px] md:rounded-[80px] border transition-all duration-1000 ${canLevelUp ? 'bg-foreground text-background border-foreground shadow-2xl' : 'bg-muted/20 text-muted-foreground border-border/40'}`}>
               <div className="flex flex-col md:flex-row items-center justify-between gap-16">
                 <div className="space-y-8 flex-1">
                   <div className={`inline-flex items-center gap-3 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.4em] ${canLevelUp ? 'bg-background/10 text-background' : 'bg-muted border border-border/40'}`}>
                     {canLevelUp ? <Unlock size={14} className="animate-bounce" /> : <Lock size={14} />} Universal Certification
                   </div>
-                  <h3 className="text-6xl font-black tracking-tighter uppercase leading-[0.85]">Neural <br/> Graduation</h3>
-                  <p className={`text-xl font-medium leading-tight ${canLevelUp ? 'opacity-70' : 'text-muted-foreground'}`}>
+                  <h3 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-[0.85]">Neural <br/> Graduation</h3>
+                  <p className={`text-lg md:text-xl font-medium leading-tight ${canLevelUp ? 'opacity-70' : 'text-muted-foreground'}`}>
                     {canLevelUp 
                       ? "Module synchronization complete. You are authorized for the final proficiency verification." 
                       : "Continue resolving sectors to reach 100% mastery and unlock the final graduation protocol."}
                   </p>
                 </div>
-                <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"}>
+                <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"} className="w-full md:w-auto">
                   <Button 
                     disabled={!canLevelUp} 
-                    className={`rounded-full h-24 px-16 font-black uppercase tracking-widest text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-background text-foreground hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
+                    className={`rounded-full h-20 md:h-24 w-full md:px-16 font-black uppercase tracking-widest text-[10px] md:text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-background text-foreground hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
                   >
                     {canLevelUp ? "Initialize Graduation" : "Protocol Encrypted"}
                   </Button>
@@ -746,15 +967,75 @@ export function LearningPathView() {
         </main>
       </div>
 
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10 bg-background/95 backdrop-blur-2xl"
+          >
+            <div className="relative w-full max-w-6xl aspect-video rounded-[40px] overflow-hidden bg-black shadow-2xl border border-border/20">
+              <button 
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-8 right-8 z-10 size-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95"
+              >
+                <StopCircle size={24} />
+              </button>
+              {selectedVideo.videolink.includes('youtube.com') || selectedVideo.videolink.includes('youtu.be') ? (
+                <iframe 
+                  src={getYoutubeEmbedUrl(selectedVideo.videolink)} 
+                  className="size-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video 
+                  src={selectedVideo.videolink} 
+                  controls 
+                  className="size-full"
+                />
+              )}
+              <div className="absolute bottom-10 left-10 right-10 flex items-end justify-between pointer-events-none">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Active Stream</p>
+                  <h4 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">{selectedVideo.title}</h4>
+                </div>
+                <div className="pointer-events-auto">
+                   <a 
+                     href={selectedVideo.videolink} 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:scale-105"
+                   >
+                     Watch on YouTube <ExternalLink size={14} />
+                   </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <UnitTestOverlay 
         show={showUnitTest} 
-        onClose={() => setShowUnitTest(false)}
+        onClose={() => {
+          setShowUnitTest(false);
+          setUnitTestContent(null);
+          setUnitTestResults(null);
+          setActiveMission(null);
+        }}
         unitTestContent={unitTestContent}
         setUnitTestContent={setUnitTestContent}
         unitTestResults={unitTestResults}
-        onSubmit={handleSubmitUnitTest}
         isSubmitting={isSubmittingTest}
         activeTab={activeTab}
+        onSubmit={handleSubmitUnitTest}
+      />
+
+      <SystemArchitectureOverlay 
+        isOpen={showArchModal} 
+        onClose={() => setShowArchModal(false)} 
       />
     </div>
   );
