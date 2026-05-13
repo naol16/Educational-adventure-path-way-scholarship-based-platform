@@ -114,11 +114,23 @@ export class AssessmentController {
       }
 
 
+      let transcribedText: string | undefined;
+      if (audioData) {
+        console.log(`[AssessmentController] 🎙️ Transcribing audio immediately...`);
+        transcribedText = await AssessmentService.transcribeSpeakingAudio({
+          base64: audioData.buffer.toString("base64"),
+          mimetype: audioData.mimetype
+        });
+        console.log(`[AssessmentController] ✅ Transcription complete: "${transcribedText.substring(0, 50)}..."`);
+      }
+
       const result = await AssessmentService.submitAssessment(
         test_id,
         parsedResponses,
         student.id,
-        audioData,
+        undefined, // Don't pass audioData buffer to save space in Redis
+        false,
+        transcribedText
       );
       console.log(`[AssessmentController] ✅ Job added to queue for test_id: ${test_id}`);
       res.json(result);
@@ -146,12 +158,22 @@ export class AssessmentController {
         return;
       }
 
+      let transcribedText: string | undefined;
+      if (audioData) {
+        console.log(`[AssessmentController] 🎙️ Transcribing audio for section...`);
+        transcribedText = await AssessmentService.transcribeSpeakingAudio({
+          base64: audioData.buffer.toString("base64"),
+          mimetype: audioData.mimetype
+        });
+      }
+
       const result = await AssessmentService.evaluateSkillSection(
         test_id,
         skill,
         parsedResponses,
         student.id,
-        audioData
+        undefined, // Pass undefined to avoid redundant transcription
+        transcribedText
       );
       res.json(result);
     } catch (error) {

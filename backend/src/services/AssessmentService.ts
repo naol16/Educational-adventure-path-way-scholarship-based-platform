@@ -199,7 +199,7 @@ export class AssessmentService {
   /**
    * Whisper transcription for speaking — can run in parallel with reading/listening/writing LLM work.
    */
-  private static async transcribeSpeakingAudio(
+  public static async transcribeSpeakingAudio(
     audioData?: { base64: string; mimetype: string },
   ): Promise<string> {
     if (!audioData?.base64) return "";
@@ -478,6 +478,7 @@ export class AssessmentService {
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string },
     isDiagnostic: boolean = false,
+    transcribedText?: string,
   ) {
     let blueprint: any;
 
@@ -509,6 +510,7 @@ export class AssessmentService {
           responses,
           studentId,
           isDiagnostic,
+          transcribedText,
           audioData: audioData
             ? {
                 base64: audioData.buffer.toString("base64"),
@@ -568,6 +570,7 @@ export class AssessmentService {
     responses: any,
     studentId: number,
     audioData?: { buffer: Buffer; mimetype: string },
+    transcribedText?: string
   ) {
     let blueprint: any;
 
@@ -603,6 +606,9 @@ export class AssessmentService {
             mimetype: audioData.mimetype,
           }
         : undefined,
+      {
+        preTranscribedText: transcribedText
+      }
     );
 
     // Save/Update progress in AssessmentResult table
@@ -690,6 +696,7 @@ export class AssessmentService {
     job: Job,
     audioData?: { base64: string; mimetype: string },
     isDiagnostic: boolean = false,
+    transcribedText?: string,
   ) {
     const finalEvaluation: any = {
       score_breakdown: {},
@@ -698,8 +705,12 @@ export class AssessmentService {
     };
 
     const skills = [...EXAM_SKILL_ORDER];
-
-    const transcriptionPromise = this.transcribeSpeakingAudio(audioData);
+    
+    // If we already have the text (transcribed at the controller level), use it.
+    // Otherwise, transcribe it now.
+    const transcriptionPromise = transcribedText 
+      ? Promise.resolve(transcribedText)
+      : this.transcribeSpeakingAudio(audioData);
 
     const skillEvaluations = await Promise.allSettled(
       skills.map(async (skill) => {
