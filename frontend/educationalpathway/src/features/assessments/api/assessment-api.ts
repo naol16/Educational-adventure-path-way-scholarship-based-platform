@@ -76,9 +76,9 @@ export const getLearningPath = async (examType?: string) => {
     return response.data;
 };
 
-export const trackProgress = async (params: { videoId?: number; questionIndex?: number; isNote?: boolean; section: string; isCompleted?: boolean; answer?: string; examType: string }) => {
-    const { videoId, questionIndex, isNote, section, isCompleted = true, answer, examType } = params;
-    const response = await api.post('/learning-path/track', { videoId, questionIndex, isNote, section, isCompleted, answer, examType });
+export const trackProgress = async (params: { videoId?: number; pdfId?: number; questionIndex?: number; isNote?: boolean; section: string; isCompleted?: boolean; answer?: string; examType: string }) => {
+    const { videoId, pdfId, questionIndex, isNote, section, isCompleted = true, answer, examType } = params;
+    const response = await api.post('/learning-path/track', { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer, examType });
     return response.data;
 };
 
