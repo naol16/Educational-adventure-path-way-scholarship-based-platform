@@ -295,7 +295,7 @@ class _LandingScreenState extends State<LandingScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Center(
             child: Text(
-              isLastPage ? 'START ADVENTURE' : 'NEXT',
+              isLastPage ? 'START NOW' : 'NEXT',
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.black,
                 fontWeight: FontWeight.w900,

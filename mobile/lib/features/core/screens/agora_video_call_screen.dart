@@ -3,7 +3,6 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/features/core/services/agora_service.dart';
-import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 
 class AgoraVideoCallScreen extends StatefulWidget {
@@ -54,12 +53,17 @@ class _AgoraVideoCallScreenState extends State<AgoraVideoCallScreen> {
             _remoteUid = remoteUid;
           });
         },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("remote user $remoteUid left channel");
-          setState(() {
-            _remoteUid = null;
-          });
-        },
+        onUserOffline:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              UserOfflineReasonType reason,
+            ) {
+              debugPrint("remote user $remoteUid left channel");
+              setState(() {
+                _remoteUid = null;
+              });
+            },
         onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
           debugPrint("[onTokenPrivilegeWillExpire] with token: $token");
         },
@@ -107,9 +111,7 @@ class _AgoraVideoCallScreenState extends State<AgoraVideoCallScreen> {
       backgroundColor: const Color(0xFF0F172A), // Deep Slate
       body: Stack(
         children: [
-          Center(
-            child: _remoteVideo(),
-          ),
+          Center(child: _remoteVideo()),
           Align(
             alignment: Alignment.topLeft,
             child: SafeArea(
@@ -183,10 +185,7 @@ class _AgoraVideoCallScreenState extends State<AgoraVideoCallScreen> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _buildControls(),
-          ),
+          Align(alignment: Alignment.bottomCenter, child: _buildControls()),
         ],
       ),
     );
@@ -208,7 +207,11 @@ class _AgoraVideoCallScreenState extends State<AgoraVideoCallScreen> {
           CircleAvatar(
             radius: 50,
             backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
-            child: const Icon(LucideIcons.user, size: 50, color: Color(0xFF10B981)),
+            child: const Icon(
+              LucideIcons.user,
+              size: 50,
+              color: Color(0xFF10B981),
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -276,10 +279,7 @@ class _AgoraVideoCallScreenState extends State<AgoraVideoCallScreen> {
       child: Container(
         width: isLarge ? 60 : 50,
         height: isLarge ? 60 : 50,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         child: Icon(icon, color: iconColor, size: isLarge ? 28 : 24),
       ),
     );

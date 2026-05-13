@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AgoraService {
@@ -16,10 +15,12 @@ class AgoraService {
     await [Permission.microphone, Permission.camera].request();
 
     _engine = createAgoraRtcEngine();
-    await _engine.initialize(const RtcEngineContext(
-      appId: appId,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-    ));
+    await _engine.initialize(
+      const RtcEngineContext(
+        appId: appId,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+      ),
+    );
 
     await _engine.enableVideo();
     await _engine.startPreview();
@@ -30,7 +31,9 @@ class AgoraService {
 
   Future<void> joinChannel(String channelId, int uid, {String? token}) async {
     await _engine.joinChannel(
-      token: token ?? "", // Using empty string for "Testing Mode" (No token required)
+      token:
+          token ??
+          "", // Using empty string for "Testing Mode" (No token required)
       channelId: channelId,
       uid: uid,
       options: const ChannelMediaOptions(
