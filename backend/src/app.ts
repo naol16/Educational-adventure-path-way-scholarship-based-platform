@@ -50,7 +50,10 @@ app.use(
 // 2. Logging
 app.use((req, res, next) => {
   // Skip logging for high-frequency polling endpoints like notifications
-  if (req.path === '/api/notifications' || req.path === '/api/notifications/unread-count') {
+  if (
+    req.path === "/api/notifications" ||
+    req.path === "/api/notifications/unread-count"
+  ) {
     return next();
   }
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -61,20 +64,24 @@ app.use((req, res, next) => {
 app.use(helmet());
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({
-  limit: "1mb",
-  verify: (req: any, res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+app.use(
+  express.json({
+    limit: "1mb",
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(cookieParser());
-app.use(expressupload({
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  useTempFiles: true,
-  tempFileDir: '/tmp/',
-  createParentPath: true,
-  parseNested: true
-}));
+app.use(
+  expressupload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    createParentPath: true,
+    parseNested: true,
+  }),
+);
 
 // 4. Rate Limiting
 app.use(apiLimiter);

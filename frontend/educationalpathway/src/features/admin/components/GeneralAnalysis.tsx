@@ -87,16 +87,16 @@ export const GeneralAnalysis = () => {
 
       {/* Header Section */}
       <div className="pt-12 pb-12">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 border-b border-border pb-12">
+        <div className="flex flex-col lg:flex-row justify-between items-center lg:items-end gap-8 border-b border-border pb-12">
           <div className="space-y-4">
              {/* Header text removed for simple look */}
           </div>
 
-          <div className="flex gap-4">
-             <Button variant="outline" className="h-14 px-8 rounded-2xl border-border font-black uppercase text-[10px] tracking-widest hover:bg-muted transition-all">
+          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+             <Button variant="outline" className="h-14 flex-1 lg:px-8 rounded-2xl border-border font-black uppercase text-[10px] tracking-widest hover:bg-muted transition-all">
                 <Lock className="mr-2" size={16} /> Security Audit
              </Button>
-             <Button className="primary-gradient h-14 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+             <Button className="primary-gradient h-14 flex-1 lg:px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all">
                 <Zap className="mr-2" size={16} /> Quick Actions
              </Button>
           </div>

@@ -33,8 +33,8 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui";
-import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ScholarshipCard } from "@/features/scholarships/components/ScholarshipCard";
@@ -81,33 +81,37 @@ export const StudentDashboard = () => {
           : undefined,
   }));
 
-  const { data: recommendedCounselors = [], isLoading: loadingCounselors } =
-    useSWR<any[]>(user?.isOnboarded ? "/counselors/recommended" : null, {
-      fallbackData: [],
-      revalidateOnMount: true,
-    });
-
   const {
-    data: statsData = { savedCount: 0, appliedCount: 0, deadlineCount: 0 },
+    data: statsData = { deadlineCount: 0 },
     isLoading: loadingStats,
   } = useSWR<{
-    savedCount: number;
-    appliedCount: number;
     deadlineCount: number;
   }>(user?.isOnboarded ? "/scholarships/dashboard/stats" : null, {
-    fallbackData: { savedCount: 0, appliedCount: 0, deadlineCount: 0 },
+    fallbackData: { deadlineCount: 0 },
     revalidateOnMount: true,
   });
 
-  const { data: pathData, isLoading: loadingPath } = useSWR<any>(
-    user?.isOnboarded ? "/learning-path" : null,
-    {
+  const { data: counselorsResponse, isLoading: loadingCounselors } =
+    useSWR<any>(user?.isOnboarded ? "/counselors/recommendations/me" : null, {
       revalidateOnMount: true,
-    },
+    });
+
+  const recommendedCounselors: any[] = Array.isArray(counselorsResponse)
+    ? counselorsResponse
+    : counselorsResponse?.data || [];
+
+  const { data: ieltsPathData } = useSWR<any>(
+    user?.isOnboarded ? "/learning-path?examType=IELTS" : null,
+    { revalidateOnMount: true }
   );
 
-  const learningPathProgress = pathData?.current_progress_percentage ?? 0;
-  const examType = pathData?.examType || "IELTS";
+  const { data: toeflPathData } = useSWR<any>(
+    user?.isOnboarded ? "/learning-path?examType=TOEFL" : null,
+    { revalidateOnMount: true }
+  );
+
+  const ieltsProgress = ieltsPathData?.current_progress_percentage ?? 0;
+  const toeflProgress = toeflPathData?.current_progress_percentage ?? 0;
 
   useEffect(() => {
     if (user && !user.isOnboarded) {
@@ -123,33 +127,45 @@ export const StudentDashboard = () => {
   const completionRate = calculateCompletion();
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-x-hidden">
+       {/* High-End Neutral Background Ambiance */}
+       <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-primary/5 blur-[100px] rounded-full dark:opacity-100 opacity-30" />
+          <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-30" />
+       </div>
+
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8 relative z-10"
       >
         {/* Header Section - Clean & Professional */}
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
           <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={12} className="text-primary animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                Strategic Intelligence Dashboard
+              </span>
+            </div>
             <p className="text-sm font-medium text-muted-foreground">
               Welcome back
             </p>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-              {user?.name ? `Hi, ${user.name}!` : "Student Dashboard"}
+            <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none md:leading-tight">
+              Your Academic <span className="text-primary/40">Horizon</span>
             </h1>
-            <p className="text-base text-muted-foreground max-w-2xl mt-2">
+            <p className="text-base text-muted-foreground max-w-2xl mt-2 font-medium">
               {matches.length > 0
-                ? `You have ${matches.length} recommended scholarships waiting for you. Check your opportunities and get started on your applications.`
-                : "Complete your profile to discover personalized scholarship opportunities."}
+                ? `You have ${matches.length} strategic scholarship opportunities synchronized with your profile. Accelerate your global journey today.`
+                : "Initialize your profile parameters to discover world-class academic opportunities tailored to your trajectory."}
             </p>
           </div>
 
           {/* Quick Stats Badge */}
           <div className="flex flex-col gap-3 lg:items-end">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
-              <div className="size-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/5 text-primary border border-primary/10">
+              <div className="size-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-semibold">
                 Profile {completionRate}% Complete
               </span>
@@ -158,35 +174,28 @@ export const StudentDashboard = () => {
         </header>
 
         {/* Stats Cards - Clean Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {[
             {
-              label: "Saved",
-              value: statsData.savedCount || 0,
-              icon: Star,
-              color: "bg-blue-50 dark:bg-blue-950",
-              textColor: "text-blue-600 dark:text-blue-400",
-            },
-            {
-              label: "Applied",
-              value: statsData.appliedCount || 0,
-              icon: FileText,
-              color: "bg-green-50 dark:bg-green-950",
-              textColor: "text-green-600 dark:text-green-400",
-            },
-            {
-              label: "Deadlines",
+              label: "Active Deadlines",
               value: statsData.deadlineCount || 0,
               icon: Clock,
               color: "bg-orange-50 dark:bg-orange-950",
               textColor: "text-orange-600 dark:text-orange-400",
             },
             {
-              label: "Profile",
+              label: "Profile Completion",
               value: `${completionRate}%`,
               icon: Target,
               color: "bg-purple-50 dark:bg-purple-950",
               textColor: "text-purple-600 dark:text-purple-400",
+            },
+            {
+              label: "Strategic Matches",
+              value: matches.length || 0,
+              icon: Sparkles,
+              color: "bg-emerald-50 dark:bg-emerald-950",
+              textColor: "text-emerald-600 dark:text-emerald-400",
             },
           ].map((stat, i) => (
             <Card
@@ -207,7 +216,7 @@ export const StudentDashboard = () => {
         </div>
 
         {/* Main Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Scholarship Matches Section */}
@@ -328,100 +337,83 @@ export const StudentDashboard = () => {
               )}
             </section>
 
-            {/* Learning Path Progress - NEW SECTION */}
-            <section className="space-y-4">
+            {/* Learning Path Progress - Dual Analysis */}
+            <section className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                     <Compass className="text-primary" size={24} /> Learning Path
-                    Status
+                    Analysis
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Your journey towards {examType} mastery
+                    Synchronized progress across exam environments
                   </p>
                 </div>
-                <Link href="/dashboard/learning-path">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    Open Path <ChevronRight size={16} />
-                  </Button>
-                </Link>
               </div>
 
-              <Card className="rounded-xl border border-border/40 bg-card p-8 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Zap size={100} className="text-primary" />
-                </div>
-                <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
-                  <div className="size-32 rounded-full border-8 border-muted flex items-center justify-center relative">
-                    <svg className="size-full -rotate-90">
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        className="text-primary/20"
-                      />
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        strokeDasharray={351.8}
-                        strokeDashoffset={
-                          351.8 * (1 - (learningPathProgress || 0) / 100)
-                        }
-                        strokeLinecap="round"
-                        className="text-primary transition-all duration-1000"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-black">
-                        {learningPathProgress || 0}%
-                      </span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">
-                        Mastery
-                      </span>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* IELTS Progress Card */}
+                <Card className="rounded-xl border border-emerald-500/20 bg-card p-6 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Zap size={60} className="text-emerald-500" />
                   </div>
-
-                  <div className="flex-1 space-y-6">
-                    <div className="space-y-2">
-                      <h4 className="text-xl font-bold">Next Milestone</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {learningPathProgress && learningPathProgress >= 100
-                          ? "Congratulations! You've mastered the curriculum. You are now eligible for the Final Mock Exam."
-                          : "Complete your daily missions in Reading and Listening to unlock the next proficiency level."}
-                      </p>
+                  <div className="flex items-center gap-6 relative z-10">
+                    <div className="size-20 rounded-full border-4 border-muted flex items-center justify-center relative shrink-0">
+                      <svg className="size-full -rotate-90">
+                        <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/10" />
+                        <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={226.2} strokeDashoffset={226.2 * (1 - ieltsProgress / 100)} strokeLinecap="round" className="text-emerald-500 transition-all duration-1000" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-sm font-black text-emerald-500">{ieltsProgress}%</span>
+                      </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-4">
-                      <Link href="/dashboard/learning-path">
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg"
-                        >
-                          Resume Training
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <h4 className="text-lg font-bold flex items-center gap-2">
+                          IELTS <Badge className="bg-emerald-500/10 text-emerald-600 border-none text-[8px] px-1.5">EMERALD</Badge>
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Curriculum Mastery</p>
+                      </div>
+                      <Link href="/dashboard/learning-path?examType=IELTS">
+                        <Button size="sm" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold uppercase tracking-widest text-[8px] h-8 rounded-lg">
+                          Resume Path
                         </Button>
                       </Link>
-                      {learningPathProgress >= 100 && (
-                        <Link href="/dashboard/learning-path/final/assessment">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-primary text-primary hover:bg-primary/5 font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg"
-                          >
-                            Take Mock Exam
-                          </Button>
-                        </Link>
-                      )}
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+
+                {/* TOEFL Progress Card */}
+                <Card className="rounded-xl border border-blue-600/20 bg-card p-6 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Zap size={60} className="text-blue-600" />
+                  </div>
+                  <div className="flex items-center gap-6 relative z-10">
+                    <div className="size-20 rounded-full border-4 border-muted flex items-center justify-center relative shrink-0">
+                      <svg className="size-full -rotate-90">
+                        <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/10" />
+                        <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={226.2} strokeDashoffset={226.2 * (1 - toeflProgress / 100)} strokeLinecap="round" className="text-blue-600 transition-all duration-1000" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-sm font-black text-blue-600">{toeflProgress}%</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <h4 className="text-lg font-bold flex items-center gap-2">
+                          TOEFL <Badge className="bg-blue-600/10 text-blue-600 border-none text-[8px] px-1.5">ELECTRIC</Badge>
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Curriculum Mastery</p>
+                      </div>
+                      <Link href="/dashboard/learning-path?examType=TOEFL">
+                        <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[8px] h-8 rounded-lg">
+                          Resume Path
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </Card>
+              </div>
             </section>
 
             {/* Recommended Counselors Section */}
@@ -617,11 +609,11 @@ export const StudentDashboard = () => {
                 >
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start gap-2 rounded-lg border border-border/10 bg-muted/20 text-foreground hover:bg-muted/40 whitespace-nowrap ${learningPathProgress === 100 ? "border-primary/30 text-primary" : ""}`}
+                    className={`w-full justify-start gap-2 rounded-lg border border-border/10 bg-muted/20 text-foreground hover:bg-muted/40 whitespace-nowrap ${(ieltsProgress === 100 || toeflProgress === 100) ? "border-primary/30 text-primary" : ""}`}
                   >
                     <ClipboardList size={16} />
                     Final Mock Exam
-                    {learningPathProgress === 100 && (
+                    {(ieltsProgress === 100 || toeflProgress === 100) && (
                       <Badge className="ml-auto bg-primary/10 text-primary border-none text-[8px] px-1.5">
                         UNLOCKED
                       </Badge>
@@ -637,16 +629,10 @@ export const StudentDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-3 border-b border-border/40">
                   <span className="text-sm text-muted-foreground">
-                    Applications
+                    Matches Found
                   </span>
                   <span className="font-bold text-lg">
-                    {statsData.appliedCount}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-border/40">
-                  <span className="text-sm text-muted-foreground">Saved</span>
-                  <span className="font-bold text-lg">
-                    {statsData.savedCount}
+                    {matches.length}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

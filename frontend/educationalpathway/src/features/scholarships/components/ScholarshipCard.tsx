@@ -32,7 +32,7 @@ export const ScholarshipCard = ({
       })
     : "No deadline";
 
-  const matchScore = scholarship.matchScore;
+  const matchScore = scholarship.matchScore ?? (scholarship as any).match_score;
 
   if (variant === "featured") {
     return (

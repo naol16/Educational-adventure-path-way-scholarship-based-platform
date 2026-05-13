@@ -431,7 +431,7 @@ export const ChatWindow = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="pointer-events-none absolute bottom-[4.75rem] left-1/2 z-30 -translate-x-1/2 md:bottom-20"
+            className="pointer-events-none absolute bottom-19 left-1/2 z-30 -translate-x-1/2 md:bottom-20"
           >
             <div className="flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1.5 text-[12px] text-muted-foreground shadow-md backdrop-blur-md">
               <div className="flex gap-1">
@@ -493,7 +493,7 @@ export const ChatWindow = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setContextMenu(null)}
-              className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm sm:hidden"
+              className="fixed inset-0 z-998 bg-black/40 backdrop-blur-sm sm:hidden"
             />
             <motion.div
               initial={{ opacity: 0 }}
