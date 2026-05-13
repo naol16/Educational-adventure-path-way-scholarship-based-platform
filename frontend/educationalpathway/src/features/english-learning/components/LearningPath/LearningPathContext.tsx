@@ -89,7 +89,7 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getLearningPath();
+      const res = await getLearningPath(envMode);
       const pathData = res?.skills ? res : (res?.data?.skills ? res.data : null);
       if (pathData) {
         setData(pathData);
@@ -126,7 +126,7 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     load();
-  }, []);
+  }, [envMode, load]);
 
   const toggleVideo = async (videoId: number, skill: string) => {
     setData(prev => {
@@ -138,7 +138,7 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
     try {
       const currentVideoStatus = data?.skills[skill]?.videos.find(v => v.id === videoId)?.isCompleted;
-      await trackProgress({ videoId, section: skill, isCompleted: !currentVideoStatus });
+      await trackProgress({ videoId, section: skill, isCompleted: !currentVideoStatus, examType: envMode });
     } catch (error) {}
   };
 
@@ -151,7 +151,7 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return newData;
     });
     try {
-      await trackProgress({ section: skill, isNote: true, isCompleted: !data.skills[skill].isNoteCompleted });
+      await trackProgress({ section: skill, isNote: true, isCompleted: !data.skills[skill].isNoteCompleted, examType: envMode });
     } catch (error) {}
   };
 
@@ -167,14 +167,14 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return newData;
     });
     try {
-      await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer });
+      await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer, examType: envMode });
     } catch (error) {}
   };
 
   const evaluateSpeaking = async (qIndex: number, blob: Blob, skill: string) => {
     try {
       setEvaluating(prev => ({ ...prev, [qIndex]: true }));
-      const result = await evaluateSpeakingPractice(qIndex, blob);
+      const result = await evaluateSpeakingPractice(qIndex, blob, envMode);
       const normalizedResult = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
       if (normalizedResult) {
         setEvaluationResults(prev => ({ ...prev, [qIndex]: normalizedResult }));
@@ -200,13 +200,13 @@ export const LearningPathProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const submitTest = async (responses: any[], skill: string, mIndex: number) => {
-    const res = await submitUnitTest({ skill, responses, missionIndex: mIndex });
+    const res = await submitUnitTest({ skill, responses, missionIndex: mIndex, examType: envMode });
     if (res?.data?.passed || res?.passed) await load();
     return res?.data || res;
   };
 
   const finalizeSection = async (skill: string) => {
-    await completeSection(skill);
+    await completeSection(skill, envMode);
     setCompletedSections(prev => ({ ...prev, [skill]: true }));
     await load(); 
     toast.success(`${skill.toUpperCase()} phase synchronized.`);

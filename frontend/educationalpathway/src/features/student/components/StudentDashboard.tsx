@@ -33,12 +33,13 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui";
-import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ScholarshipCard } from "@/features/scholarships/components/ScholarshipCard";
 import { Scholarship } from "@/features/scholarships/types";
+import { EnvironmentSwitcher } from "@/features/english-learning/components/LearningPath/EnvironmentSwitcher";
 
 const container = {
   hidden: { opacity: 0 },
@@ -107,7 +108,17 @@ export const StudentDashboard = () => {
   );
 
   const learningPathProgress = pathData?.current_progress_percentage ?? 0;
-  const examType = pathData?.examType || "IELTS";
+  const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">((pathData?.examType || "IELTS") as "IELTS" | "TOEFL");
+
+  const theme = {
+    primary: envMode === "IELTS" ? "emerald" : "blue",
+    text: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
+    bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
+    border: envMode === "IELTS" ? "border-emerald-500/20" : "border-blue-600/20",
+    glow: envMode === "IELTS" ? "bg-emerald-500/5" : "bg-blue-600/5",
+    gradient: envMode === "IELTS" ? "from-emerald-500 to-teal-500" : "from-blue-600 to-indigo-600",
+    button: envMode === "IELTS" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500",
+  };
 
   useEffect(() => {
     if (user && !user.isOnboarded) {
@@ -123,16 +134,43 @@ export const StudentDashboard = () => {
   const completionRate = calculateCompletion();
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-x-hidden">
+       {/* Dynamic Background Ambiance */}
+       <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={envMode}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0"
+          >
+            <div className={`absolute top-[-5%] left-[-5%] w-[40%] h-[40%] ${theme.glow} blur-[100px] rounded-full dark:opacity-100 opacity-30`} />
+            <div className={`absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] ${theme.glow} blur-[120px] rounded-full dark:opacity-100 opacity-30`} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8 relative z-10"
       >
         {/* Header Section - Clean & Professional */}
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
           <div className="space-y-3">
+            <div className="flex items-center gap-4 mb-2">
+              <EnvironmentSwitcher mode={envMode} onChange={setEnvMode} />
+              <div className="h-4 w-px bg-border/40" />
+              <div className="flex items-center gap-2">
+                <Sparkles size={12} className={`${theme.text} animate-pulse`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                  Unified Learning
+                </span>
+              </div>
+            </div>
             <p className="text-sm font-medium text-muted-foreground">
               Welcome back
             </p>
@@ -148,8 +186,8 @@ export const StudentDashboard = () => {
 
           {/* Quick Stats Badge */}
           <div className="flex flex-col gap-3 lg:items-end">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
-              <div className="size-2 rounded-full bg-emerald-500" />
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-lg ${theme.bg} ${theme.text} border ${theme.border}`}>
+              <div className={`size-2 rounded-full ${envMode === 'IELTS' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
               <span className="text-sm font-semibold">
                 Profile {completionRate}% Complete
               </span>
@@ -333,11 +371,11 @@ export const StudentDashboard = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <Compass className="text-primary" size={24} /> Learning Path
+                    <Compass className={theme.text} size={24} /> Learning Path
                     Status
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Your journey towards {examType} mastery
+                    Your journey towards {envMode} mastery
                   </p>
                 </div>
                 <Link href="/dashboard/learning-path">
@@ -347,9 +385,9 @@ export const StudentDashboard = () => {
                 </Link>
               </div>
 
-              <Card className="rounded-xl border border-border/40 bg-card p-8 shadow-sm relative overflow-hidden group">
+              <Card className={`rounded-xl border ${theme.border} bg-card p-8 shadow-sm relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Zap size={100} className="text-primary" />
+                  <Zap size={100} className={theme.text} />
                 </div>
                 <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
                   <div className="size-32 rounded-full border-8 border-muted flex items-center justify-center relative">
@@ -361,7 +399,7 @@ export const StudentDashboard = () => {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="8"
-                        className="text-primary/20"
+                        className="text-muted/10"
                       />
                       <circle
                         cx="64"
@@ -375,11 +413,11 @@ export const StudentDashboard = () => {
                           351.8 * (1 - (learningPathProgress || 0) / 100)
                         }
                         strokeLinecap="round"
-                        className="text-primary transition-all duration-1000"
+                        className={`${theme.text} transition-all duration-1000`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-black">
+                      <span className={`text-2xl font-black ${theme.text}`}>
                         {learningPathProgress || 0}%
                       </span>
                       <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">
@@ -393,8 +431,8 @@ export const StudentDashboard = () => {
                       <h4 className="text-xl font-bold">Next Milestone</h4>
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         {learningPathProgress && learningPathProgress >= 100
-                          ? "Congratulations! You've mastered the curriculum. You are now eligible for the Final Mock Exam."
-                          : "Complete your daily missions in Reading and Listening to unlock the next proficiency level."}
+                          ? `Congratulations! You've mastered the ${envMode} curriculum. You are now eligible for the Final Mock Exam.`
+                          : `Complete your daily missions in ${envMode} Reading and Listening to unlock the next proficiency level.`}
                       </p>
                     </div>
 
@@ -402,9 +440,9 @@ export const StudentDashboard = () => {
                       <Link href="/dashboard/learning-path">
                         <Button
                           size="sm"
-                          className="bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg"
+                          className={`${theme.button} text-white font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg transition-all`}
                         >
-                          Resume Training
+                          Resume {envMode} Training
                         </Button>
                       </Link>
                       {learningPathProgress >= 100 && (
@@ -412,7 +450,7 @@ export const StudentDashboard = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-primary text-primary hover:bg-primary/5 font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg"
+                            className={`${theme.border} ${theme.text} hover:${theme.bg} font-bold uppercase tracking-widest text-[9px] h-10 px-6 rounded-lg transition-all`}
                           >
                             Take Mock Exam
                           </Button>

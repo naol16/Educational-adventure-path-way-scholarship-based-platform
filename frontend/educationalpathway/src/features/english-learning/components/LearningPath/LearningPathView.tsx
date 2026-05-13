@@ -342,7 +342,7 @@ export function LearningPathView() {
     if (activeMission === null) return;
     try {
        setIsSubmittingTest(true);
-       const res = await submitUnitTest({ skill: activeTab, responses, missionIndex: activeMission });
+       const res = await submitUnitTest({ skill: activeTab, responses, missionIndex: activeMission, examType: envMode });
        setUnitTestResults(res?.data || res);
        if (res?.data?.passed || res?.passed) await load(envMode);
     } catch (err) {} finally {
@@ -399,12 +399,33 @@ export function LearningPathView() {
   const vTotal = currentSkill?.videos?.length || 0;
   const vComp = currentSkill?.videos?.filter(v => v.isCompleted).length || 0;
 
+  const theme = {
+    primary: envMode === "IELTS" ? "emerald" : "blue",
+    text: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
+    bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
+    border: envMode === "IELTS" ? "border-emerald-500/20" : "border-blue-600/20",
+    glow: envMode === "IELTS" ? "bg-emerald-500/5" : "bg-blue-600/5",
+    gradient: envMode === "IELTS" ? "from-emerald-500 to-teal-500" : "from-blue-600 to-indigo-600",
+    button: envMode === "IELTS" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500",
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary transition-colors duration-500 overflow-x-hidden">
-      {/* Background Ambience */}
+      {/* Background Ambience - Dynamically shifted based on mode */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 blur-[150px] rounded-full dark:opacity-100 opacity-50" />
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={envMode}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0"
+          >
+            <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${theme.glow} blur-[120px] rounded-full dark:opacity-100 opacity-50`} />
+            <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] ${theme.glow} blur-[150px] rounded-full dark:opacity-100 opacity-50`} />
+          </motion.div>
+        </AnimatePresence>
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
       </div>
 
@@ -414,12 +435,12 @@ export function LearningPathView() {
         <aside className="lg:w-[320px] shrink-0 space-y-16">
           <div className="space-y-8">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <div className={`h-12 w-12 rounded-2xl ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text}`}>
                 <Brain size={24} />
               </div>
               <div>
                 <h1 className="text-xl font-black uppercase tracking-widest">Pathfinder</h1>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Neural Adaptive System</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{envMode} Intelligence</p>
               </div>
             </div>
 
@@ -437,10 +458,10 @@ export function LearningPathView() {
               <div className="flex flex-col gap-1">
                 {Object.keys(data.skills).map((skill) => {
                   const colors: Record<string, string> = { 
-                    reading: '#10B981', 
-                    listening: '#3B82F6', 
-                    writing: '#8B5CF6', 
-                    speaking: '#F59E0B' 
+                    reading: envMode === "IELTS" ? '#10B981' : '#2563EB', 
+                    listening: envMode === "IELTS" ? '#10B981' : '#2563EB', 
+                    writing: envMode === "IELTS" ? '#10B981' : '#2563EB', 
+                    speaking: envMode === "IELTS" ? '#10B981' : '#2563EB' 
                   };
                   
                   const skillData = data.skills[skill];
@@ -463,19 +484,19 @@ export function LearningPathView() {
 
             <div className="p-8 rounded-[32px] bg-card border border-border/50 backdrop-blur-xl space-y-6 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Progress</span>
-                <span className="text-2xl font-black text-foreground">{progress}%</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Path Progress</span>
+                <span className={`text-2xl font-black ${theme.text}`}>{progress}%</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  className="h-full bg-linear-to-r from-emerald-500 to-teal-500"
+                  className={`h-full bg-linear-to-r ${theme.gradient}`}
                 />
               </div>
-              <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
+              <div className={`flex items-center gap-2 text-[9px] font-bold ${theme.text} uppercase tracking-widest`}>
                 <TrendingUp size={12} />
-                +12% Performance increase
+                Focusing on {envMode} Mastery
               </div>
             </div>
           </div>
@@ -488,7 +509,7 @@ export function LearningPathView() {
           <section className="space-y-10">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Star className="text-amber-500 size-3 fill-current" />
+                <Star className={`${theme.text} size-3 fill-current`} />
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Active Module Optimization</span>
               </div>
               <h2 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
@@ -681,22 +702,22 @@ export function LearningPathView() {
 
           {/* Finalization Section */}
           <section className="flex flex-col items-center gap-20 py-40 border-t border-border/40">
-            <div className="flex flex-col items-center gap-8 text-center">
-              <div className="size-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                <CheckCircle2 size={40} strokeWidth={1.5} />
+              <div className="flex flex-col items-center gap-8 text-center">
+                <div className={`size-24 rounded-full ${theme.bg} border ${theme.border} flex items-center justify-center ${theme.text}`}>
+                  <CheckCircle2 size={40} strokeWidth={1.5} />
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-4xl font-black uppercase tracking-tighter">Sector Finalization</h3>
+                  <p className="text-muted-foreground font-medium max-w-md">Seal your current module progress and synchronize with the global proficiency matrix.</p>
+                </div>
+                <Button
+                  onClick={() => handleCompleteSection(activeTab)}
+                  disabled={completing || completedSections[activeTab]}
+                  className={`px-16 h-20 rounded-full font-black uppercase tracking-[0.3em] text-[10px] transition-all duration-700 shadow-xl ${completedSections[activeTab] ? `${theme.bg} border ${theme.border} ${theme.text}` : 'bg-foreground text-background hover:bg-foreground/90 hover:scale-110 active:scale-95'}`}
+                >
+                  {completing ? "Synchronizing..." : completedSections[activeTab] ? "Section Resolved" : `Seal ${activeTab} Protocol`}
+                </Button>
               </div>
-              <div className="space-y-4">
-                <h3 className="text-4xl font-black uppercase tracking-tighter">Sector Finalization</h3>
-                <p className="text-muted-foreground font-medium max-w-md">Seal your current module progress and synchronize with the global proficiency matrix.</p>
-              </div>
-              <Button
-                onClick={() => handleCompleteSection(activeTab)}
-                disabled={completing || completedSections[activeTab]}
-                className={`px-16 h-20 rounded-full font-black uppercase tracking-[0.3em] text-[10px] transition-all duration-700 shadow-xl ${completedSections[activeTab] ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-foreground text-background hover:bg-foreground/90 hover:scale-110 active:scale-95'}`}
-              >
-                {completing ? "Synchronizing..." : completedSections[activeTab] ? "Section Resolved" : `Seal ${activeTab} Protocol`}
-              </Button>
-            </div>
 
             <div className={`w-full max-w-5xl p-16 rounded-[80px] border transition-all duration-1000 ${canLevelUp ? 'bg-foreground text-background border-foreground shadow-2xl' : 'bg-muted/20 text-muted-foreground border-border/40'}`}>
               <div className="flex flex-col md:flex-row items-center justify-between gap-16">

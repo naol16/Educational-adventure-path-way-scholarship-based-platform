@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
   Target,
@@ -70,10 +70,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   // Theme configuration
   const theme = {
     primary: envMode === "IELTS" ? "emerald" : "blue",
-    text: envMode === "IELTS" ? "text-emerald-600" : "text-blue-600",
+    text: envMode === "IELTS" ? "text-emerald-500" : "text-blue-600",
     accent: envMode === "IELTS" ? "text-emerald-500" : "text-blue-500",
     bg: envMode === "IELTS" ? "bg-emerald-500/10" : "bg-blue-600/10",
-    border: envMode === "IELTS" ? "border-emerald-200" : "border-blue-200",
+    border: envMode === "IELTS" ? "border-emerald-500/20" : "border-blue-600/20",
+    glow: envMode === "IELTS" ? "bg-emerald-500/5" : "bg-blue-600/5",
     gradient:
       envMode === "IELTS"
         ? "from-emerald-500 to-emerald-600"
@@ -192,10 +193,27 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
   }, [historyPage, totalHistoryPages]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-hidden">
-      {/* Immersive Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full dark:opacity-100 opacity-50" />
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 pb-20 relative overflow-x-hidden">
+      {/* Immersive Background Elements - Dynamic Mode */}
+      <div className="absolute inset-0 pointer-events-none">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={envMode}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0"
+          >
+            <div
+              className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${theme.glow} blur-[120px] rounded-full dark:opacity-100 opacity-50`}
+            />
+            <div
+              className={`absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] ${theme.glow} blur-[120px] rounded-full dark:opacity-100 opacity-50`}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 space-y-12 relative z-10">
         {/* Header Section */}
@@ -211,7 +229,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               />
               <div className="h-4 w-px bg-border/40" />
               <div className="flex items-center gap-2">
-                <Sparkles size={12} className="text-primary animate-pulse" />
+                <Sparkles size={12} className={`${theme.accent} animate-pulse`} />
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
                   Strategic Diagnostic
                 </span>
@@ -289,7 +307,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                     {averages.tests}
                   </h3>
                 </div>
-                <div className="bg-blue-500/10 p-5 rounded-2xl text-blue-600 shadow-inner">
+                <div className={`${theme.bg} p-5 rounded-2xl ${theme.accent} shadow-inner`}>
                   <TrendingUp size={28} />
                 </div>
               </div>
@@ -446,12 +464,12 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                           className="flex-1 flex flex-col items-center gap-4 group"
                         >
                           <div className="w-full relative flex flex-col items-center">
-                            <span className="absolute -top-6 text-[10px] font-black text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className={`absolute -top-6 text-[10px] font-black ${theme.text} opacity-0 group-hover:opacity-100 transition-opacity`}>
                               {item.overallBand}
                             </span>
                             <div className="w-full bg-muted/30 rounded-full h-32 flex flex-col justify-end p-1 border border-border/10">
                               <motion.div
-                                className="w-full bg-primary rounded-full shadow-sm"
+                                className={`w-full ${theme.gradient.includes('emerald') ? 'bg-emerald-500' : 'bg-blue-600'} rounded-full shadow-sm`}
                                 initial={{ height: 0 }}
                                 animate={{ height: `${h}%` }}
                                 transition={{
@@ -525,7 +543,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                         <div className="flex items-center gap-8 flex-1 w-full sm:w-auto">
                           {/* Performance Indicator */}
                           <div
-                            className={`w-20 h-20 rounded-2xl ${parseFloat(String(item.overallBand)) >= thresholdBand ? "bg-emerald-500/10 text-emerald-600" : "bg-primary/10 text-primary"} flex flex-col items-center justify-center shrink-0 border border-current/10 shadow-sm relative group-hover:scale-105 transition-transform duration-500`}
+                            className={`w-20 h-20 rounded-2xl ${parseFloat(String(item.overallBand)) >= thresholdBand ? `${theme.bg} ${theme.text}` : `${theme.bg} ${theme.text}`} flex flex-col items-center justify-center shrink-0 border border-current/10 shadow-sm relative group-hover:scale-105 transition-transform duration-500`}
                           >
                             <span className="text-3xl font-black tracking-tighter leading-none">
                               {parseFloat(String(item.overallBand)).toFixed(1)}

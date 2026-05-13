@@ -76,20 +76,21 @@ export const getLearningPath = async (examType?: string) => {
     return response.data;
 };
 
-export const trackProgress = async (params: { videoId?: number; questionIndex?: number; isNote?: boolean; section: string; isCompleted?: boolean; answer?: string }) => {
-    const { videoId, questionIndex, isNote, section, isCompleted = true, answer } = params;
-    const response = await api.post('/learning-path/track', { videoId, questionIndex, isNote, section, isCompleted, answer });
+export const trackProgress = async (params: { videoId?: number; questionIndex?: number; isNote?: boolean; section: string; isCompleted?: boolean; answer?: string; examType: string }) => {
+    const { videoId, questionIndex, isNote, section, isCompleted = true, answer, examType } = params;
+    const response = await api.post('/learning-path/track', { videoId, questionIndex, isNote, section, isCompleted, answer, examType });
     return response.data;
 };
 
-export const completeSection = async (section: string) => {
-    const response = await api.post('/learning-path/complete-section', { section });
+export const completeSection = async (section: string, examType: string) => {
+    const response = await api.post('/learning-path/complete-section', { section, examType });
     return response.data;
 };
 
-export const evaluateSpeakingPractice = async (questionIndex: number, audio: Blob) => {
+export const evaluateSpeakingPractice = async (questionIndex: number, audio: Blob, examType: string) => {
     const formData = new FormData();
     formData.append('questionIndex', questionIndex.toString());
+    formData.append('examType', examType);
     formData.append('audio', audio, 'practice_recording.webm');
 
     const response = await api.post('/learning-path/speaking/evaluate', formData);
@@ -106,7 +107,7 @@ export const generateUnitTest = async (params: { skill: string; level: string; e
     return response.data;
 };
 
-export const submitUnitTest = async (params: { skill: string; responses: any[]; missionIndex: number }) => {
+export const submitUnitTest = async (params: { skill: string; responses: any[]; missionIndex: number; examType: string }) => {
     const response = await api.post('/learning-path/unit-test/submit', params);
     return response.data;
 };
