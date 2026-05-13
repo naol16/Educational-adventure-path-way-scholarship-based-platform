@@ -209,7 +209,7 @@ export function VisaPrepHub({ onStartInterview }: VisaPrepHubProps) {
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-20 px-4 md:px-0 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* ─── ENHANCED HERO SECTION ─── */}
-      <div className="relative rounded-2xl overflow-hidden bg-card border border-border/50 shadow-2xl p-12 lg:p-16">
+      <div className="relative rounded-2xl overflow-hidden bg-card border border-border/50 p-12 lg:p-16">
         <div className="absolute inset-0 bg-linear-to-br from-emerald-500/5 to-teal-500/5 pointer-events-none" />
         <div className="absolute top-0 right-0 w-1/3 h-full bg-linear-to-l from-emerald-500/10 to-transparent blur-3xl pointer-events-none" />
         
@@ -246,7 +246,7 @@ export function VisaPrepHub({ onStartInterview }: VisaPrepHubProps) {
           {/* Quick Stats/Badge */}
           <div className="relative shrink-0 group">
              <div className="absolute -inset-4 bg-emerald-500/20 blur-2xl rounded-full group-hover:bg-emerald-500/30 transition-all duration-700" />
-             <div className="relative size-48 md:size-56 rounded-full border-4 border-emerald-500/20 bg-card flex flex-col items-center justify-center text-center p-8 shadow-2xl">
+             <div className="relative size-48 md:size-56 rounded-full border-4 border-emerald-500/20 bg-card flex flex-col items-center justify-center text-center p-8">
                 <span className="text-4xl md:text-5xl font-black text-emerald-500">94%</span>
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2">Pass Rate</span>
                 <Globe2 className="mt-4 text-emerald-500/20" size={32} />
@@ -328,7 +328,7 @@ export function VisaPrepHub({ onStartInterview }: VisaPrepHubProps) {
             </div>
           </div>
 
-          <Card className="border-none bg-linear-to-br from-amber-500/5 to-orange-500/5 shadow-xl">
+          <Card className="border-none bg-linear-to-br from-amber-500/5 to-orange-500/5 rounded-2xl">
             <CardBody className="p-8 space-y-4">
                <div className="flex items-start gap-4">
                   <div className="rounded-xl bg-amber-500/10 p-3 shrink-0">
@@ -357,7 +357,7 @@ export function VisaPrepHub({ onStartInterview }: VisaPrepHubProps) {
                 transition={{ duration: 0.6 }}
                 className="space-y-8"
               >
-                <div className="relative bg-card border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="relative bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
                     <Globe2 size={200} />
                   </div>
@@ -451,7 +451,7 @@ export function VisaPrepHub({ onStartInterview }: VisaPrepHubProps) {
                           onStartInterview(selectedCountry.code, university, interviewType);
                         }}
                         size="xl" 
-                        className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-linear-to-r from-emerald-500 to-teal-600 text-white font-black tracking-widest text-lg gap-4 shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:shadow-[0_30px_70px_rgba(16,185,129,0.5)] hover:scale-[1.02] transition-all duration-300 group"
+                        className="w-full sm:w-auto h-20 px-16 rounded-lg bg-linear-to-r from-emerald-500 to-teal-600 text-white font-black tracking-widest text-lg gap-4 hover:scale-[1.02] transition-all duration-300 group"
                       >
                         START INTERVIEW <ArrowRight className="size-6 group-hover:translate-x-2 transition-transform" />
                       </Button>

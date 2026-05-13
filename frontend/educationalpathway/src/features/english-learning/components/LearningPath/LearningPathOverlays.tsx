@@ -33,7 +33,7 @@ export const UnitTestOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
+          className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -117,9 +117,14 @@ export const UnitTestOverlay = ({
                                 newR[qi] = { selected: oi, isCorrect: oi === q.correct_answer };
                                 setUnitTestContent({ ...unitTestContent, userResponses: newR });
                               }}
-                              className={`text-left p-8 rounded-2xl border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
+                              className={`group text-left p-8 rounded-2xl border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
                             >
-                              {opt}
+                              <div className="flex items-center gap-4">
+                                <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'bg-primary text-white' : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
+                                  {String.fromCharCode(65 + oi)}
+                                </div>
+                                <span>{opt}</span>
+                              </div>
                             </button>
                           ))}
                         </div>
@@ -159,7 +164,7 @@ export const DynamicMissionOverlay = ({
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
+          className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl"
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}

@@ -131,18 +131,18 @@ export const ScholarshipExplorer = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4 w-full lg:w-auto">
               <Button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 variant="outline"
-                className="h-16 w-16 rounded-2xl hover:bg-muted text-muted-foreground border border-border/60 bg-card transition-all active:scale-95 shadow-sm"
+                className="h-14 w-14 md:h-16 md:w-16 rounded-2xl hover:bg-muted text-muted-foreground border border-border/60 bg-card transition-all active:scale-95 shadow-sm shrink-0"
               >
                 <RefreshCcw
-                  className={`h-6 w-6 ${isRefreshing ? "animate-spin" : ""}`}
+                  className={`h-5 w-5 md:h-6 md:w-6 ${isRefreshing ? "animate-spin" : ""}`}
                 />
               </Button>
-              <Button className="h-16 px-10 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">
+              <Button className="h-14 md:h-16 flex-1 lg:flex-none px-6 md:px-10 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-[9px] md:text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">
                 Global Search Strategy
               </Button>
             </div>
@@ -154,11 +154,11 @@ export const ScholarshipExplorer = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 py-4 border-b border-border/10">
             {/* Tabs */}
             <div className="flex gap-10">
-              {["explore", "matched", "saved", "applied"].map((id) => (
+              {["explore", "matched"].map((id) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  className={`group pb-6 text-xs font-black uppercase tracking-[0.2em] relative transition-all
+                  className={`group pb-4 md:pb-6 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] relative transition-all
                     ${activeTab === id ? "text-primary" : "text-muted-foreground/40 hover:text-foreground"}
                   `}
                 >
@@ -187,7 +187,7 @@ export const ScholarshipExplorer = () => {
 
               <Button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg ${showFilters ? "bg-primary text-white" : "bg-card border border-border/60 text-foreground hover:bg-muted"}`}
+                className={`h-12 md:h-14 px-6 md:px-8 rounded-2xl flex items-center gap-2 md:gap-3 font-black text-[9px] md:text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg w-full sm:w-auto justify-center ${showFilters ? "bg-primary text-white" : "bg-card border border-border/60 text-foreground hover:bg-muted"}`}
               >
                 <Filter size={14} />
                 Filters

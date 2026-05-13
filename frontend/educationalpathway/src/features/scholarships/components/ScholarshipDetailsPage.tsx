@@ -23,17 +23,9 @@ import {
   TrendingUp,
   TrendingDown,
   Sparkles,
-  Bookmark,
-  BookmarkCheck,
   Globe2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  trackScholarship,
-  untrackScholarship,
-  updateScholarshipStatus,
-} from "../api/tracking";
-import { toast } from "react-hot-toast";
 import { AIChatBot } from "@/components/AIChatBot";
 
 interface CriteriaMatch {
@@ -78,10 +70,6 @@ export default function ScholarshipDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [trackingInfo, setTrackingInfo] = useState<{
-    id: number;
-    status: string;
-  } | null>(null);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -94,7 +82,6 @@ export default function ScholarshipDetailsPage() {
         setLoading(true);
         const data = await getScholarship(scholarshipId);
         setScholarship(data);
-        setTrackingInfo(data.tracking || null);
         setError(null);
       } catch (err: unknown) {
         console.error("Failed to fetch scholarship details:", err);
@@ -256,7 +243,7 @@ export default function ScholarshipDetailsPage() {
     );
   }
 
-  const matchScore = Math.round(scholarship.matchScore || 0);
+  const matchScore = Math.round(scholarship.matchScore ?? (scholarship as any).match_score ?? 0);
   const deadline = scholarship.deadline
     ? new Date(scholarship.deadline).toLocaleDateString(undefined, {
         month: "short",
@@ -301,54 +288,12 @@ export default function ScholarshipDetailsPage() {
 
   const matchInfo = getMatchInfo(matchScore);
 
-  const handleToggleSave = async () => {
-    if (!scholarship || isActionLoading) return;
-    setIsActionLoading(true);
-    try {
-      if (trackingInfo) {
-        await untrackScholarship(scholarship.id);
-        setTrackingInfo(null);
-        toast.success("Scholarship removed from watchlist");
-      } else {
-        const res = await trackScholarship(scholarship.id);
-        const newTracking = res.status === "success" ? res.data : res;
-        setTrackingInfo({ id: newTracking.id, status: newTracking.status });
-        toast.success("Scholarship saved to watchlist");
-      }
-    } catch (err) {
-      toast.error("Failed to update watchlist");
-      console.error(err);
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
 
-  const handleBeginApplication = async () => {
-    if (!scholarship || isActionLoading) return;
+  const handleBeginApplication = () => {
+    if (!scholarship) return;
     const applyUrl = scholarship.applicationUrl || scholarship.originalUrl;
     if (applyUrl) {
       window.open(applyUrl, "_blank");
-    }
-    setIsActionLoading(true);
-    try {
-      let currentTracking = trackingInfo;
-      if (!currentTracking) {
-        const res = await trackScholarship(scholarship.id);
-        currentTracking = res.status === "success" ? res.data : res;
-        setTrackingInfo(currentTracking);
-      }
-      if (currentTracking && currentTracking.status !== "APPLIED") {
-        const res = await updateScholarshipStatus(
-          currentTracking.id,
-          "APPLIED",
-        );
-        const updated = res.status === "success" ? res.data : res;
-        setTrackingInfo({ id: updated.id, status: updated.status });
-      }
-    } catch (err) {
-      console.error("Failed to update application status", err);
-    } finally {
-      setIsActionLoading(false);
     }
   };
 
@@ -668,30 +613,11 @@ export default function ScholarshipDetailsPage() {
                 <div className="relative z-10 space-y-4 pt-2">
                   <Button
                     onClick={handleBeginApplication}
-                    disabled={isActionLoading}
                     className="flex items-center justify-center gap-4 w-full h-16 primary-gradient text-white font-black text-sm rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all border-none"
                   >
-                    {trackingInfo?.status === "APPLIED"
-                      ? "VIEW APPLICATION"
-                      : "APPLY NOW"}
+                    APPLY NOW
                     <ExternalLink size={18} />
                   </Button>
-                  <button
-                    onClick={handleToggleSave}
-                    disabled={isActionLoading}
-                    className={`w-full h-16 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-muted transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${trackingInfo ? "bg-primary/5 text-primary" : "bg-card"}`}
-                  >
-                    {trackingInfo ? (
-                      <>
-                        <BookmarkCheck size={18} className="fill-primary" />{" "}
-                        OPPORTUNITY SAVED
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark size={18} /> SAVE FOR LATER
-                      </>
-                    )}
-                  </button>
                 </div>
 
                 <div className="relative z-10 pt-2 flex items-center justify-center gap-2 opacity-30 group-hover:opacity-60 transition-opacity">

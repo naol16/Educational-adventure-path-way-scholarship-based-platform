@@ -61,30 +61,6 @@ export const ScholarshipList = ({
       return items;
     }
 
-    const trackedItems = Array.isArray(rawData) ? rawData : rawData.data || [];
-
-    if (activeTab === "saved") {
-      return trackedItems
-        .filter((item: any) =>
-          ["NOT_STARTED", "WATCHING"].includes(item.status),
-        )
-        .map((item: any) => ({
-          ...item.scholarship,
-          tracking: { id: item.id, status: item.status },
-        }));
-    }
-
-    if (activeTab === "applied") {
-      return trackedItems
-        .filter((item: any) =>
-          ["APPLIED", "SUBMITTED", "ACCEPTED"].includes(item.status),
-        )
-        .map((item: any) => ({
-          ...item.scholarship,
-          tracking: { id: item.id, status: item.status },
-        }));
-    }
-
     return [];
   }, [rawData, activeTab]);
 
@@ -141,21 +117,22 @@ export const ScholarshipList = ({
                 size="icon"
                 disabled={pagination.page <= 1}
                 onClick={() => onPageChange?.(pagination.page - 1)}
-                className="h-12 w-12 rounded-lg border-border/40 hover:bg-muted"
+                className="h-10 w-10 md:h-12 md:w-12 rounded-lg border-border/40 hover:bg-muted shrink-0"
               >
                 <ChevronLeft size={20} />
               </Button>
 
-              <div className="flex items-center gap-2 px-4">
+              <div className="flex items-center gap-1 md:gap-2 px-1 md:px-4">
                 {[...Array(pagination.totalPages)].map((_, i) => {
                   const pageNum = i + 1;
-                  // Show current page, first, last, and pages around current
-                  if (
-                    pageNum === 1 ||
-                    pageNum === pagination.totalPages ||
-                    (pageNum >= pagination.page - 1 &&
-                      pageNum <= pagination.page + 1)
-                  ) {
+                  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                  
+                  // Mobile: show current, first, last. Desktop: show current +/- 1, first, last.
+                  const shouldShow = isMobile 
+                    ? (pageNum === 1 || pageNum === pagination.totalPages || pageNum === pagination.page)
+                    : (pageNum === 1 || pageNum === pagination.totalPages || (pageNum >= pagination.page - 1 && pageNum <= pagination.page + 1));
+
+                  if (shouldShow) {
                     return (
                       <Button
                         key={pageNum}
@@ -163,7 +140,7 @@ export const ScholarshipList = ({
                           pagination.page === pageNum ? "default" : "outline"
                         }
                         onClick={() => onPageChange?.(pageNum)}
-                        className={`h-12 w-12 rounded-lg font-bold transition-all ${
+                        className={`h-10 w-10 md:h-12 md:w-12 rounded-lg font-bold transition-all text-xs md:text-sm ${
                           pagination.page === pageNum
                             ? "bg-primary text-white shadow-lg shadow-primary/20 scale-110 z-10"
                             : "border-border/40 hover:bg-muted"
@@ -173,15 +150,16 @@ export const ScholarshipList = ({
                       </Button>
                     );
                   }
+                  
+                  // Ellipsis logic
                   if (
-                    (pageNum === 2 && pagination.page > 3) ||
-                    (pageNum === pagination.totalPages - 1 &&
-                      pagination.page < pagination.totalPages - 2)
+                    (pageNum === 2 && (isMobile ? pagination.page > 2 : pagination.page > 3)) ||
+                    (pageNum === pagination.totalPages - 1 && (isMobile ? pagination.page < pagination.totalPages - 1 : pagination.page < pagination.totalPages - 2))
                   ) {
                     return (
                       <span
                         key={pageNum}
-                        className="text-muted-foreground/30 font-black"
+                        className="text-muted-foreground/30 font-black px-1"
                       >
                         ...
                       </span>
@@ -196,7 +174,7 @@ export const ScholarshipList = ({
                 size="icon"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => onPageChange?.(pagination.page + 1)}
-                className="h-12 w-12 rounded-lg border-border/40 hover:bg-muted"
+                className="h-10 w-10 md:h-12 md:w-12 rounded-lg border-border/40 hover:bg-muted shrink-0"
               >
                 <ChevronRight size={20} />
               </Button>

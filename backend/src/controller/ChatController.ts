@@ -253,4 +253,35 @@ export class ChatController {
             message: "Conversation deleted successfully."
         });
     });
+
+    /**
+     * PATCH /messages/:messageId - Edit a message
+     */
+    static editMessage = catchAsync(async (req: Request, res: Response) => {
+        const { messageId } = req.params;
+        const { content } = req.body;
+        const userId = (req as any).user.id;
+
+        const message = await ChatService.editMessage(Number(messageId), userId, content);
+
+        res.status(200).json({
+            status: "success",
+            data: message
+        });
+    });
+
+    /**
+     * DELETE /messages/:messageId - Delete a message
+     */
+    static deleteMessage = catchAsync(async (req: Request, res: Response) => {
+        const { messageId } = req.params;
+        const userId = (req as any).user.id;
+
+        await ChatService.deleteMessage(Number(messageId), userId);
+
+        res.status(200).json({
+            status: "success",
+            message: "Message deleted successfully."
+        });
+    });
 }
