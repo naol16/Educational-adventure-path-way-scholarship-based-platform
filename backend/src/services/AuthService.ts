@@ -29,7 +29,7 @@ export class AuthService {
     
     if (existingUser) {
       if (existingUser.isVerified) {
-        throw new Error("User already exists");
+        throw new AppError("An account with this email already exists. Please log in.", 400);
       }
       // If not verified, allow "re-registration" (update info and send new OTP)
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -61,11 +61,11 @@ export class AuthService {
     const { email } = userData;
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("We couldn't find an account associated with this email address.", 404);
     }
 
     if (user.isVerified) {
-      throw new Error("User account is already activated");
+      throw new AppError("This account is already activated. You can log in directly.", 400);
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -129,19 +129,19 @@ export class AuthService {
     const { email, otp } = verifyData;
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("We couldn't find an account associated with this email address.", 404);
     }
 
     if (!user.verificationCode || !user.verificationCodeExpires) {
-      throw new Error("Activation code not found. Please request a new one.");
+      throw new AppError("No activation code was found for this account. Please request a new one.", 400);
     }
 
     if (new Date() > user.verificationCodeExpires) {
-      throw new Error("Activation code expired. Please request a new one.");
+      throw new AppError("Your activation code has expired. Please request a new one.", 400);
     }
 
     if (user.verificationCode !== otp) {
-      throw new Error("Invalid activation code");
+      throw new AppError("The activation code you entered is incorrect. Please check and try again.", 400);
     }
 
     // Mark as verified and active, and clear OTP
@@ -162,15 +162,15 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
 
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      throw new AppError("Invalid credentials", 401);
+      throw new AppError("The email or password you entered is incorrect. Please try again.", 401);
     }
 
     if (!user.isActive) {
-      throw new AppError("Account is deactivated", 403);
+      throw new AppError("Your account has been deactivated. Please contact support for assistance.", 403);
     }
 
     if (!user.isVerified) {
-      throw new Error("Please activate your account before logging in. An activation code has been sent to your email.");
+      throw new AppError("Your account is not yet activated. Please activate your account using the code sent to your email.", 403);
     }
 
     return this.generateAuthResponse(user);
@@ -178,7 +178,7 @@ export class AuthService {
 
   static async googleLogin(idToken: string, role?: string) {
     if (!idToken) {
-      throw new Error("Google ID Token is required");
+      throw new AppError("A valid Google ID token is required to continue.", 400);
     }
 
     // Diagnostic log to check for invisible newline characters injected by Render
@@ -192,7 +192,7 @@ export class AuthService {
     });
 
     const payload = ticket.getPayload() as GoogleTokenPayload | undefined;
-    if (!payload || !payload.email) throw new Error("Invalid Google Token");
+    if (!payload || !payload.email) throw new AppError("We couldn't verify your Google account. Please try again.", 400);
 
     const { email, name, sub: googleId } = payload;
     let user = await UserRepository.findByEmail(email);
@@ -215,8 +215,8 @@ export class AuthService {
 
     // Refresh user instance to ensure we have latest data
     const refreshedUser = await UserRepository.findById(user.id);
-    if (!refreshedUser) throw new Error("User not found after creation/update");
-    if (!refreshedUser.isActive) throw new Error("Account is deactivated");
+    if (!refreshedUser) throw new AppError("We encountered an issue verifying your account. Please try logging in again.", 500);
+    if (!refreshedUser.isActive) throw new AppError("Your account has been deactivated. Please contact support for assistance.", 403);
 
     return this.generateAuthResponse(refreshedUser);
   }
@@ -231,16 +231,16 @@ export class AuthService {
 
   static async refreshToken(token: string) {
     const storedToken = await AuthRepository.findRefreshToken(token);
-    if (!storedToken) throw new Error("Invalid refresh token");
+    if (!storedToken) throw new AppError("Your session has expired. Please log in again.", 401);
 
     if (new Date() > storedToken.expiresAt) {
       await AuthRepository.deleteRefreshToken(token);
-      throw new Error("Refresh token expired");
+      throw new AppError("Your session has expired. Please log in again.", 401);
     }
 
     const payload = jwt.verify(token, configs.REFRESH_TOKEN_SECRET!) as any;
     const user = await UserRepository.findById(payload.id);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new AppError("We couldn't verify your account. Please log in again.", 401);
 
     // Rotate tokens
     await AuthRepository.deleteRefreshToken(token);
@@ -249,7 +249,7 @@ export class AuthService {
 
   static async forgotPassword(email: string) {
     const user = await UserRepository.findByEmail(email);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new AppError("We couldn't find an account associated with this email address.", 404);
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 3600000); // 1 hour
@@ -316,7 +316,7 @@ export class AuthService {
     const resetToken = await AuthRepository.findPasswordResetToken(token);
 
     if (!resetToken) {
-      throw new Error("Invalid reset token");
+      throw new AppError("This password reset link is invalid. Please request a new one.", 400);
     }
 
     const now = new Date();
@@ -332,11 +332,11 @@ export class AuthService {
     });
 
     if (resetToken.used) {
-      throw new Error("This reset token has already been used");
+      throw new AppError("This password reset link has already been used. Please request a new one if needed.", 400);
     }
 
     if (now > resetToken.expiresAt) {
-      throw new Error("This reset token has expired");
+      throw new AppError("This password reset link has expired. Please request a new one.", 400);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -346,10 +346,10 @@ export class AuthService {
 
   static async changePassword(userId: number, oldPassword: string, newPassword: string) {
     const user = await UserRepository.findById(userId);
-    if (!user || !user.password) throw new Error("User not found");
+    if (!user || !user.password) throw new AppError("We couldn't verify your account. Please log in again.", 401);
 
     if (!(await bcrypt.compare(oldPassword, user.password))) {
-      throw new Error("Invalid old password");
+      throw new AppError("The current password you entered is incorrect. Please try again.", 400);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -358,7 +358,7 @@ export class AuthService {
 
   static async getMe(userId: number) {
     const user = await UserRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new AppError("We couldn't verify your account. Please log in again.", 401);
     return this.getUserWithProfile(user);
   }
 

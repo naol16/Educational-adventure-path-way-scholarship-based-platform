@@ -1,4 +1,5 @@
 import { Pdf } from "../models/Pdf.js";
+import { Op } from "sequelize";
 
 export class PdfRepository {
     static async create(data: any): Promise<Pdf> {
@@ -33,9 +34,9 @@ export class PdfRepository {
         for (const type of types) {
             const pdfs = await Pdf.findAll({
                 where: {
-                    level,
-                    type,
-                    examType
+                    level: { [Op.iLike]: level },
+                    type: { [Op.iLike]: type },
+                    examType: { [Op.iLike]: examType }
                 },
                 order: [['id', 'ASC']],
                 limit: 25

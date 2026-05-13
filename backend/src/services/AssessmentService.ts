@@ -21,7 +21,7 @@ const groqClient = new Groq({
 
 // Providers
 const geminiFlash15 = new ChatGoogleGenerativeAI({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
   apiKey: configs.GEMINI_API_KEY as string,
   temperature: 0.1,
   maxOutputTokens: 16384,
@@ -29,7 +29,7 @@ const geminiFlash15 = new ChatGoogleGenerativeAI({
 });
 
 const geminiModel = new ChatGoogleGenerativeAI({
-  model: configs.GEMINI_MODEL as string || "gemini-1.5-flash",
+  model: configs.GEMINI_MODEL as string || "gemini-2.5-flash",
   apiKey: configs.GEMINI_API_KEY as string,
   temperature: 0.1,
   maxOutputTokens: 16384,
@@ -261,34 +261,28 @@ export class AssessmentService {
       );
       console.log(`[AssessmentService] Groq 8B generation successful (Response length: ${response.length})`);
     } catch (err: any) {
-      console.warn(`[AssessmentService] Groq 8B failed: ${err.message}. Trying Gemini 1.5 Flash...`);
-      try {
-        const fallbackChain = geminiFlash15.pipe(new StringOutputParser());
-        response = await fallbackChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
-        console.log("[AssessmentService] Gemini 1.5 Flash fallback successful.");
-      } catch (geminiErr: any) {
-        console.warn(`[AssessmentService] Gemini 1.5 Flash also failed: ${geminiErr.message}. Trying Gemini 2.5 Flash...`);
-        try {
-          const lastResortChain = geminiModel.pipe(new StringOutputParser());
-          response = await lastResortChain.invoke(await prompt.format({ examType, difficulty, testId, examInstructions }));
-          console.log("[AssessmentService] Gemini 2.5 Flash last-resort successful.");
-        } catch (finalErr: any) {
-          console.error(`[AssessmentService] All AI providers failed. Using safety mock exam.`);
-          response = JSON.stringify({
-            status: "success",
-            data: {
-              test_id: testId,
-              exam_summary: { type: examType, difficulty: difficulty, focus_skill: skill || "all", is_fallback: true },
-              sections: {
-                reading: { passage: "Safety Mode Passage...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
-                listening: { script: "Safety Mode Script...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
-                writing: { questions: [{ id: 1, prompt: "Safety Writing Prompt" }] },
-                speaking: { questions: [{ id: 1, prompt: "Safety Speaking Prompt" }] }
-              }
-            }
-          });
+      console.error(`[AssessmentService] Groq generation failed: ${err.message}. Gemini fallback disabled per configuration.`);
+      // Return safety mock exam with error message
+      response = JSON.stringify({
+        status: "success",
+        data: {
+          test_id: testId,
+          exam_summary: { 
+            type: examType, 
+            difficulty: difficulty, 
+            focus_skill: skill || "all", 
+            is_fallback: true,
+            is_error: true,
+            error_message: `AI Service Unavailable: ${err.message}` 
+          },
+          sections: {
+            reading: { passage: "Safety Mode Passage...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+            listening: { script: "Safety Mode Script...", questions: [{ id: 1, question: "Safety Question", options: ["A", "B"], correct_answer: "A" }] },
+            writing: { questions: [{ id: 1, prompt: "Safety Writing Prompt" }] },
+            speaking: { questions: [{ id: 1, prompt: "Safety Speaking Prompt" }] }
+          }
         }
-      }
+      });
     }
 
     // Ensure response is valid JSON
@@ -396,9 +390,22 @@ export class AssessmentService {
       // Fallback: Try DB
       const { AssessmentResult } = await import("../models/AssessmentResult.js");
       const result = await AssessmentResult.findOne({ where: { testId } });
-      if (result && result.blueprint) {
+      if (result) {
         blueprint = result.blueprint;
+        // If isDiagnostic wasn't passed, use the one from DB
+        if (isDiagnostic === false && result.isDiagnostic === true) {
+          isDiagnostic = true;
+          console.log(`[AssessmentService] Auto-detected diagnostic status for test: ${testId}`);
+        }
       }
+    } else {
+       // Even if blueprint was in Redis, we still need to check if it's diagnostic in DB
+       // to ensure the worker gets the correct flag if it wasn't passed to this method
+       const { AssessmentResult } = await import("../models/AssessmentResult.js");
+       const result = await AssessmentResult.findOne({ where: { testId }, attributes: ['isDiagnostic'] });
+       if (result?.isDiagnostic) {
+         isDiagnostic = true;
+       }
     }
 
     if (!blueprint) throw new Error("Assessment not found or expired.");
@@ -535,25 +542,43 @@ export class AssessmentService {
       learning_mode: {},
     };
 
+    // ── Fast-path: Reuse scores already saved via submit-section (e.g. TOEFL) ──
+    // If all 4 sections were individually scored, skip re-evaluation entirely.
     const skills = ["reading", "listening", "writing", "speaking"];
-    // Parallelize skill evaluation for 4x speedup
-    await job.updateProgress({ status: "evaluating", testId });
-    
-    const evaluationPromises = skills.map(skill => 
-      this.evaluateSingleSkill(
-        skill,
-        blueprint,
-        responses,
-        skill === "speaking" ? audioData : undefined
-      ).then(evalResult => ({ skill, evalResult }))
-    );
+    const { AssessmentResult } = await import("../models/AssessmentResult.js");
+    const existingResult = await AssessmentResult.findOne({ where: { testId } });
+    const existingBreakdown = existingResult?.scoreBreakdown as Record<string, number> | null;
+    const allSectionsScored = existingBreakdown &&
+      skills.every(s => existingBreakdown[s] !== undefined && existingBreakdown[s] !== null);
 
-    const results = await Promise.all(evaluationPromises);
+    if (allSectionsScored && existingResult) {
+      console.log(`[AssessmentService] ⚡ All sections pre-scored for ${testId}. Skipping re-evaluation.`);
+      const existingEval = existingResult.evaluation as any || {};
+      for (const skill of skills) {
+        finalEvaluation.score_breakdown[skill] = existingBreakdown![skill];
+        finalEvaluation.section_notes[skill] = existingEval.section_notes?.[skill] || "";
+        finalEvaluation.learning_mode[skill] = existingEval.learning_mode?.[skill] || {};
+      }
+    } else {
+      // ── Slow-path: Evaluate all skills now (IELTS or incomplete TOEFL) ──
+      await job.updateProgress({ status: "evaluating", testId });
 
-    for (const { skill, evalResult } of results) {
-      finalEvaluation.score_breakdown[skill] = evalResult.score;
-      finalEvaluation.section_notes[skill] = evalResult.feedback;
-      finalEvaluation.learning_mode[skill] = evalResult.learning_mode;
+      const evaluationPromises = skills.map(skill =>
+        this.evaluateSingleSkill(
+          skill,
+          blueprint,
+          responses,
+          skill === "speaking" ? audioData : undefined
+        ).then(evalResult => ({ skill, evalResult }))
+      );
+
+      const results = await Promise.all(evaluationPromises);
+
+      for (const { skill, evalResult } of results) {
+        finalEvaluation.score_breakdown[skill] = evalResult.score;
+        finalEvaluation.section_notes[skill] = evalResult.feedback;
+        finalEvaluation.learning_mode[skill] = evalResult.learning_mode;
+      }
     }
 
     // Calculate Overall Band
@@ -596,11 +621,12 @@ export class AssessmentService {
     try {
       // Parallelize DB operations for speed
       const dbOperations = [
-        AssessmentRepository.create({
+        AssessmentResult.upsert({
           studentId,
           testId,
           examType: blueprint.data?.exam_summary?.type || "Unknown",
           difficulty: blueprint.data?.exam_summary?.difficulty || "Unknown",
+          blueprint: blueprint,
           evaluation: finalEvaluation,
           scoreBreakdown: finalEvaluation.score_breakdown,
           overallBand: finalEvaluation.overall_band,
@@ -620,6 +646,7 @@ export class AssessmentService {
 
     return finalEvaluation;
   }
+
 
   /**
    * Evaluates a speaking recording directly without a full assessment context.

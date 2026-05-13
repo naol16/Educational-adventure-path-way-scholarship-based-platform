@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/AuthService.js";
 import configs from "../config/configs.js";
 import { ResponseHelper } from "../utils/responseHelper.js";
+import { AppError } from "../errors/AppError.js";
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
@@ -54,7 +55,7 @@ export class AuthController {
       const token = credential || idToken || id_token;
 
       if (!token) {
-        return res.status(400).json({ error: "Google ID Token is required (credential, idToken, or id_token)" });
+        return next(new AppError("A valid Google ID token is required to continue.", 400));
       }
 
       console.log(`[AuthController] Attempting Google Login for role: ${role || 'default'}`);
@@ -79,8 +80,7 @@ export class AuthController {
     try {
       const { refreshToken } = req.cookies;
       if (!refreshToken) {
-        res.status(401).json({ error: "Refresh token not found" });
-        return;
+        return next(new AppError("Your session has expired. Please log in again.", 401));
       }
 
       const result = await AuthService.refreshToken(refreshToken);
@@ -111,8 +111,7 @@ export class AuthController {
   static async logoutAll(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
+        return next(new AppError("We couldn't verify your account. Please log in again.", 401));
       }
       await AuthService.logoutAll(req.user.id);
       res.clearCookie("refreshToken");
@@ -144,8 +143,7 @@ export class AuthController {
   static async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
+        return next(new AppError("We couldn't verify your account. Please log in again.", 401));
       }
 
       const { currentPassword, oldPassword, newPassword, confirmPassword } = req.body;
@@ -154,13 +152,11 @@ export class AuthController {
       const passwordToCompare = currentPassword || oldPassword;
 
       if (!passwordToCompare || !newPassword) {
-        res.status(400).json({ error: "Current password and new password are required" });
-        return;
+        return next(new AppError("Both current password and new password are required.", 400));
       }
 
       if (newPassword !== confirmPassword) {
-        res.status(400).json({ error: "New password and confirmation do not match" });
-        return;
+        return next(new AppError("The new password and confirmation do not match.", 400));
       }
 
       await AuthService.changePassword(req.user.id, passwordToCompare, newPassword);
@@ -173,8 +169,7 @@ export class AuthController {
   static async me(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
+        return next(new AppError("We couldn't verify your account. Please log in again.", 401));
       }
       const user = await AuthService.getMe(req.user.id);
       res.json(user);

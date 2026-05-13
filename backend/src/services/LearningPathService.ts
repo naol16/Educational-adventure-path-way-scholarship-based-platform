@@ -877,7 +877,7 @@ export class LearningPathService {
       ${isListening ? "- Provide a detailed Listening Script (conversation or lecture). Add a distractor (speaker corrects themselves) to mimic the real exam pressure." : ""}
       ${isWriting ? "- Provide a PRACTICAL writing scenario (e.g., a sample paragraph needing correction, a graph requiring trend analysis, or a brainstorming prompt for a complex Task 2 topic)." : ""}
       ${isSpeaking ? "- Provide a REAL-TIME speaking prompt. The student will be expected to record a spontaneous response to this, simulating the examiner's room." : ""}
-      - The Practice Drill must use the ${type1} question type and contain 2 questions focused on applying strategies.
+      - The Practice Drill must use the ${type1} question type and contain 3 questions focused on applying strategies.
       - The Unit Test must use the ${type2} question type and contain 3 questions that validate mastery of the practical skill.
       - For each question, provide the correct answer and a 'feedbackTip' that explains the logical process or identifies the trap.
       
@@ -892,7 +892,8 @@ export class LearningPathService {
         "practiceDrill": {
           "type": "${type1}",
           "questions": [
-            { "q": "Question text", "options": ["A", "B", "C"], "answer": "correct string/option", "distractor": "optional string to trick them", "feedbackTip": "AI generated explanation" }
+            { "q": "Question text", "options": ["A", "B", "C"], "answer": "correct string/option", "distractor": "optional string to trick them", "feedbackTip": "AI generated explanation" },
+            { "q": "Question 2", "options": ["A", "B", "C"], "answer": "correct", "distractor": "distractor", "feedbackTip": "AI tip" }
           ]
         },
         "unitTest": {
@@ -920,7 +921,7 @@ export class LearningPathService {
     }
 
     const score = (correctCount / responses.length) * 100;
-    const passed = score >= 80; // 80% to pass
+    const passed = score >= 20; // 20% to pass for easier progression during testing
 
     if (passed) {
       // Mark this section as mastered in LearningPathProgress

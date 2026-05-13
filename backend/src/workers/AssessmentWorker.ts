@@ -11,8 +11,8 @@ import { AssessmentService } from "../services/AssessmentService.js";
 export const assessmentWorker = new Worker(
   "assessment-queue",
   async (job) => {
-    const { testId, blueprint, responses, studentId, audioData } = job.data;
-    console.log(`[AssessmentWorker] 🚀 Picking up job ${job.id} for test_id: ${testId}`);
+    const { testId, blueprint, responses, studentId, audioData, isDiagnostic } = job.data;
+    console.log(`[AssessmentWorker] 🚀 Picking up job ${job.id} for test_id: ${testId} (Diagnostic: ${!!isDiagnostic})`);
 
     try {
       const evaluation = await AssessmentService.evaluateAssessment(
@@ -22,6 +22,7 @@ export const assessmentWorker = new Worker(
         studentId,
         job, // Pass job for incremental progress updates
         audioData,
+        !!isDiagnostic
       );
       console.log(`✅ Evaluation complete for test_id: ${testId}`);
       return evaluation;
