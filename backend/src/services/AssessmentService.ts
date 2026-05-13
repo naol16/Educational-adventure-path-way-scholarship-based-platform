@@ -359,28 +359,52 @@ export class AssessmentService {
     testId: string,
     responses: any,
     studentId: number,
-    audioData?: { buffer: Buffer; mimetype: string },
-    isDiagnostic: boolean = false,
+    audioData?: { buffer: Buffer; mimetype: string }
   ) {
     let blueprint: any;
+    let isDiagnostic = false;
 
-    if (isRedisAvailable()) {
+    // Load from DB to reliably get isDiagnostic and blueprint
+    const { AssessmentResult } = await import("../models/AssessmentResult.js");
+    const result = await AssessmentResult.findOne({ where: { testId } });
+    
+    if (result) {
+      if (result.blueprint) blueprint = result.blueprint;
+      isDiagnostic = result.isDiagnostic;
+    }
+
+    if (!blueprint && isRedisAvailable()) {
       const blueprintData = await redisConnection.get(`test_id:${testId}`);
       if (blueprintData) {
         blueprint = JSON.parse(blueprintData);
       }
     }
 
-    if (!blueprint) {
-      // Fallback: Try DB
-      const { AssessmentResult } = await import("../models/AssessmentResult.js");
-      const result = await AssessmentResult.findOne({ where: { testId } });
-      if (result && result.blueprint) {
-        blueprint = result.blueprint;
+    if (!blueprint) throw new Error("Assessment not found or expired.");
+
+    // --- NEW OPTIMIZATION: Transcribe immediately to save space in Redis ---
+    let transcriptionText: string | null = null;
+    if (audioData?.buffer) {
+      console.log(`[AssessmentService] Transcribing audio immediately for ${testId} to optimize storage...`);
+      try {
+        const ext = audioData.mimetype?.split("/")[1]?.split(";")[0] || "webm";
+        const tempPath = path.join(os.tmpdir(), `transcribe_pre_${Date.now()}.${ext}`);
+        fs.writeFileSync(tempPath, audioData.buffer);
+        
+        const transcription = await groqClient.audio.transcriptions.create({
+          file: fs.createReadStream(tempPath),
+          model: "whisper-large-v3",
+          response_format: "json",
+        });
+        
+        transcriptionText = transcription.text;
+        fs.unlinkSync(tempPath); 
+        console.log("[AssessmentService] Immediate transcription success.");
+      } catch (err) {
+        console.error("[AssessmentService] Immediate transcription failed:", err);
+        transcriptionText = "[AUDIO ERROR: COULD NOT TRANSCRIBE]";
       }
     }
-
-    if (!blueprint) throw new Error("Assessment not found or expired.");
 
     if (isRedisAvailable()) {
       const job = await assessmentQueue.add(
@@ -391,7 +415,8 @@ export class AssessmentService {
           responses,
           studentId,
           isDiagnostic,
-          audioData: audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : null,
+          transcriptionText, // Store the text string instead of the large buffer
+          audioData: null,   // Wipe the buffer to save space
         },
         { jobId: testId, removeOnComplete: { age: 3600 }, removeOnFail: { age: 24 * 3600 } },
       );
@@ -407,7 +432,7 @@ export class AssessmentService {
         responses,
         studentId,
         { updateProgress: async () => {} } as any, // Mock job for progress updates
-        audioData ? { base64: audioData.buffer.toString("base64"), mimetype: audioData.mimetype } : undefined,
+        { transcriptionText } as any, // Pass the text directly
         isDiagnostic
       ).catch(err => console.error(`[AssessmentService] Background evaluation failed for ${testId}:`, err));
 
@@ -501,7 +526,7 @@ export class AssessmentService {
     responses: any,
     studentId: number,
     job: Job,
-    audioData?: { base64: string; mimetype: string },
+    audioData?: { base64?: string; mimetype?: string; transcriptionText?: string },
     isDiagnostic: boolean = false,
   ) {
     const finalEvaluation: any = {
@@ -612,7 +637,7 @@ export class AssessmentService {
     let transcriptionText = "";
 
     try {
-      const tempPath = path.join(os.tmpdir(), `speaking_direct_${Date.now()}.m4a`);
+      const tempPath = path.join(os.tmpdir(), `speaking_direct_${Date.now()}.webm`);
       fs.writeFileSync(tempPath, audioBuffer);
 
       const transcription = await groqClient.audio.transcriptions.create({
@@ -687,7 +712,7 @@ export class AssessmentService {
     skill: string,
     blueprint: any,
     responses: any,
-    audioData?: { base64: string; mimetype: string }
+    audioData?: { base64?: string; mimetype?: string; transcriptionText?: string }
   ) {
     const miniBlueprint = this.stripBlueprintForEvaluation(blueprint);
     const skillBlueprint = miniBlueprint.data?.sections[skill];
@@ -796,11 +821,12 @@ export class AssessmentService {
     let selectedModel: any = groq70b; // Reading/Listening use the Brain
     if (skill === "writing") selectedModel = groq8b; // Writing uses the Speed Specialist
     
-    let transcriptionText = "";
-    if (skill === "speaking" && audioData?.base64) {
+    let transcriptionText = audioData?.transcriptionText || "";
+    if (skill === "speaking" && !transcriptionText && audioData?.base64) {
       console.log("Transcribing speaking audio with Groq Whisper...");
       try {
-        const tempPath = path.join(os.tmpdir(), `speaking_${Date.now()}.m4a`);
+        const ext = audioData.mimetype?.split("/")[1]?.split(";")[0] || "webm";
+        const tempPath = path.join(os.tmpdir(), `speaking_${Date.now()}.${ext}`);
         fs.writeFileSync(tempPath, Buffer.from(audioData.base64, "base64"));
         
         const transcription = await groqClient.audio.transcriptions.create({

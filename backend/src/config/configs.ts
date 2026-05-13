@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ override: true });
 
 function normalizeSecret(value?: string) {
   if (!value) return undefined;
@@ -95,6 +95,7 @@ function setConfigs() {
     REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",
     REDIS_PORT: parseInt(process.env.REDIS_PORT || "6379"),
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || "",
+    REDIS_TLS: process.env.REDIS_TLS === "true" || (process.env.REDIS_HOST?.includes("upstash.io") ?? false),
 
     VAPI_API_KEY: normalizeSecret(
       process.env.VAPI_API_KEY ||
