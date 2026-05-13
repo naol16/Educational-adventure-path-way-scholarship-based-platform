@@ -26,24 +26,26 @@ export class NotificationService {
       
       if (user?.fcmToken) {
         console.log(`[NotificationService] Sending push to user ${userId}...`);
-        await FirebaseService.sendPush(user.fcmToken, title, message, {
+        // Fire and forget: Don't await push notification
+        FirebaseService.sendPush(user.fcmToken, title, message, {
           type,
           scholarshipId: relatedId,
+        }).catch(pushError => {
+          console.error("[NotificationService] Background push sending failed:", pushError.message || pushError);
         });
       }
 
       if (sendEmail && user?.email) {
         console.log(`[NotificationService] Sending generic email to user ${userId}...`);
-        try {
-          await EmailService.sendGenericNotificationEmail(
-            user.email,
-            user.name || 'User',
-            title,
-            message
-          );
-        } catch (emailError) {
-          console.error("[NotificationService] Failed to send generic email:", emailError);
-        }
+        // Fire and forget: Don't await email so it doesn't block the main flow/transaction
+        EmailService.sendGenericNotificationEmail(
+          user.email,
+          user.name || 'User',
+          title,
+          message
+        ).catch(emailError => {
+          console.error("[NotificationService] Background email sending failed:", emailError.message || emailError);
+        });
       }
 
       return notification;
