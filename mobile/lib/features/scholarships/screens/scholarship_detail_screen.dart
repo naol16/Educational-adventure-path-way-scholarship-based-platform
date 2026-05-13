@@ -11,22 +11,22 @@ import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:io';
+
+const bool kScholarshipMapsEnabled = false;
 
 class ScholarshipDetailScreen extends ConsumerStatefulWidget {
   final int scholarshipId;
 
-  const ScholarshipDetailScreen({
-    super.key,
-    required this.scholarshipId,
-  });
+  const ScholarshipDetailScreen({super.key, required this.scholarshipId});
 
   @override
-  ConsumerState<ScholarshipDetailScreen> createState() => _ScholarshipDetailScreenState();
+  ConsumerState<ScholarshipDetailScreen> createState() =>
+      _ScholarshipDetailScreenState();
 }
 
-class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScreen> {
+class _ScholarshipDetailScreenState
+    extends ConsumerState<ScholarshipDetailScreen> {
   @override
   void initState() {
     super.initState();
@@ -35,9 +35,15 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
 
   @override
   Widget build(BuildContext context) {
-    final detailAsync = ref.watch(scholarshipDetailProvider(widget.scholarshipId));
+    final detailAsync = ref.watch(
+      scholarshipDetailProvider(widget.scholarshipId),
+    );
     final watchlistState = ref.watch(scholarshipWatchlistProvider);
-    final isTracked = watchlistState.valueOrNull?.any((s) => s.scholarshipId == widget.scholarshipId) ?? false;
+    final isTracked =
+        watchlistState.valueOrNull?.any(
+          (s) => s.scholarshipId == widget.scholarshipId,
+        ) ??
+        false;
 
     return Scaffold(
       backgroundColor: DesignSystem.themeBackground(context),
@@ -45,7 +51,10 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: _buildRoundIconButton(LucideIcons.arrowLeft, () => Navigator.pop(context)),
+        leading: _buildRoundIconButton(
+          LucideIcons.arrowLeft,
+          () => Navigator.pop(context),
+        ),
         actions: [
           _buildRoundIconButton(LucideIcons.share2, () {}),
           const SizedBox(width: 15),
@@ -55,7 +64,11 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         data: (scholarship) {
           return _buildContent(scholarship, isTracked);
         },
-        loading: () => Center(child: CircularProgressIndicator(color: DesignSystem.primary(context))),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            color: DesignSystem.primary(context),
+          ),
+        ),
         error: (err, stack) => Center(
           child: Text(
             "Error loading details: $err",
@@ -124,7 +137,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 value: score / 100,
                 strokeWidth: 8,
                 backgroundColor: DesignSystem.surfaceMediumColor(context),
-                valueColor: AlwaysStoppedAnimation(DesignSystem.primary(context)),
+                valueColor: AlwaysStoppedAnimation(
+                  DesignSystem.primary(context),
+                ),
               ),
             ),
             Text(
@@ -140,18 +155,24 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: DesignSystem.primary(context).withValues(alpha: 0.5)),
+            border: Border.all(
+              color: DesignSystem.primary(context).withValues(alpha: 0.5),
+            ),
             borderRadius: BorderRadius.circular(15),
           ),
           child: Text(
-            score >= 80 ? "High Compatibility" : score >= 50 ? "Good Match" : "Moderate Match",
+            score >= 80
+                ? "High Compatibility"
+                : score >= 50
+                ? "Good Match"
+                : "Moderate Match",
             style: GoogleFonts.inter(
               color: DesignSystem.primary(context),
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
           ),
-        )
+        ),
       ],
     );
   }
@@ -172,11 +193,8 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           ),
           const SizedBox(height: 10),
           Text(
-            subtitle, 
-            style: DesignSystem.labelStyle(
-              buildContext: context,
-              fontSize: 18,
-            ),
+            subtitle,
+            style: DesignSystem.labelStyle(buildContext: context, fontSize: 18),
           ),
         ],
       ),
@@ -190,13 +208,21 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildStatCard("AWARD", s.amount ?? "Varies", DesignSystem.primary(context)),
+          _buildStatCard(
+            "AWARD",
+            s.amount ?? "Varies",
+            DesignSystem.primary(context),
+          ),
           _buildStatCard(
             "LEVEL",
             s.degreeLevels.isNotEmpty ? s.degreeLevels.first : "Various",
             DesignSystem.primary(context),
           ),
-          _buildStatCard("INTAKE", s.intakeSeason ?? "Rolling", DesignSystem.primary(context)),
+          _buildStatCard(
+            "INTAKE",
+            s.intakeSeason ?? "Rolling",
+            DesignSystem.primary(context),
+          ),
         ],
       ),
     );
@@ -242,7 +268,11 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           children: [
             CircleAvatar(
               backgroundColor: Color(0xFF065F46),
-              child: Icon(LucideIcons.zap, color: DesignSystem.primary(context), size: 18),
+              child: Icon(
+                LucideIcons.zap,
+                color: DesignSystem.primary(context),
+                size: 18,
+              ),
             ),
             const SizedBox(width: 15),
             Expanded(
@@ -257,7 +287,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                       ),
                     ),
                     TextSpan(
-                      text: reason ?? "This scholarship is a great fit for your academic goals.",
+                      text:
+                          reason ??
+                          "This scholarship is a great fit for your academic goals.",
                       style: DesignSystem.bodyStyle(
                         buildContext: context,
                         color: DesignSystem.subText(context),
@@ -266,7 +298,7 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   ],
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -295,15 +327,24 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               children: [
                 Text(
                   "SCHOLARSHIP NEEDS",
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 9,
+                  ),
                 ),
                 Text(
                   "STATUS",
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 9,
+                  ),
                 ),
                 Text(
                   "YOUR PROFILE",
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 9),
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 9,
+                  ),
                 ),
               ],
             ),
@@ -316,8 +357,16 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
             "Matched",
             true,
           ),
-          _buildComparisonRow("Location: ${s.country ?? 'Any'}", "Matched", true),
-          _buildComparisonRow("Grant Type: ${s.fundType ?? 'Varies'}", "Preferred", true),
+          _buildComparisonRow(
+            "Location: ${s.country ?? 'Any'}",
+            "Matched",
+            true,
+          ),
+          _buildComparisonRow(
+            "Grant Type: ${s.fundType ?? 'Varies'}",
+            "Preferred",
+            true,
+          ),
         ],
       ),
     );
@@ -342,7 +391,11 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 ),
               ),
             ),
-            Icon(LucideIcons.checkCircle2, color: DesignSystem.primary(context), size: 20),
+            Icon(
+              LucideIcons.checkCircle2,
+              color: DesignSystem.primary(context),
+              size: 20,
+            ),
             SizedBox(
               width: 100,
               child: Text(
@@ -377,7 +430,8 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           ),
           const SizedBox(height: 15),
           Text(
-            description ?? "Details about this scholarship have not been fully provided yet.",
+            description ??
+                "Details about this scholarship have not been fully provided yet.",
             style: DesignSystem.bodyStyle(
               buildContext: context,
               fontSize: 15,
@@ -388,7 +442,12 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: DesignSystem.primary(context), width: 4)),
+                border: Border(
+                  left: BorderSide(
+                    color: DesignSystem.primary(context),
+                    width: 4,
+                  ),
+                ),
                 color: DesignSystem.surface(context),
               ),
               child: Text(
@@ -397,8 +456,8 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   buildContext: context,
                 ).copyWith(fontStyle: FontStyle.italic),
               ),
-            )
-          ]
+            ),
+          ],
         ],
       ),
     );
@@ -407,12 +466,112 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
   // --- GEOGRAPHIC CONTEXT (Map) ---
   Widget _buildGeographicMap(MatchedScholarship s) {
     final hasCoords = s.latitude != null && s.longitude != null;
-    
+
     // Fallback logic for countries if coordinates are missing
     // In a real app, this would be a larger map or an API call.
-    final LatLng position = hasCoords 
-      ? LatLng(s.latitude!, s.longitude!)
-      : _getCountryFallback(s.country);
+    final LatLng position = hasCoords
+        ? LatLng(s.latitude!, s.longitude!)
+        : _getCountryFallback(s.country);
+
+    if (!kScholarshipMapsEnabled) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: DesignSystem.primary(context),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  "GEOGRAPHIC CONTEXT",
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 11,
+                    color: DesignSystem.labelText(
+                      context,
+                    ).withValues(alpha: 0.6),
+                  ).copyWith(letterSpacing: 2, fontWeight: FontWeight.w900),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Container(
+                height: 240,
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                color: DesignSystem.surface(context),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.mapPin,
+                      size: 42,
+                      color: DesignSystem.primary(context),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Map preview disabled",
+                      textAlign: TextAlign.center,
+                      style: DesignSystem.headingStyle(
+                        buildContext: context,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      s.university ?? s.country ?? "Location unavailable",
+                      textAlign: TextAlign.center,
+                      style: DesignSystem.bodyStyle(
+                        buildContext: context,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Google Maps is disabled in this build to avoid billing-dependent crashes.",
+                      textAlign: TextAlign.center,
+                      style: DesignSystem.labelStyle(
+                        buildContext: context,
+                        fontSize: 12,
+                      ).copyWith(color: DesignSystem.subText(context)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  LucideIcons.mapPin,
+                  size: 12,
+                  color: DesignSystem.primary(context),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  s.university ?? s.country ?? "Global Location",
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -422,7 +581,8 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           Row(
             children: [
               Container(
-                width: 4, height: 16,
+                width: 4,
+                height: 16,
                 decoration: BoxDecoration(
                   color: DesignSystem.primary(context),
                   borderRadius: BorderRadius.circular(2),
@@ -447,7 +607,10 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
               width: double.infinity,
               decoration: BoxDecoration(
                 color: DesignSystem.surface(context),
-                border: Border.all(color: DesignSystem.surfaceMediumColor(context), width: 1),
+                border: Border.all(
+                  color: DesignSystem.surfaceMediumColor(context),
+                  width: 1,
+                ),
               ),
               child: GoogleMap(
                 initialCameraPosition: CameraPosition(
@@ -461,10 +624,13 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   Marker(
                     markerId: const MarkerId("selected"),
                     position: position,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-                  )
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueGreen,
+                    ),
+                  ),
                 },
-                liteModeEnabled: Platform.isAndroid, // Use lite mode for performance in details
+                liteModeEnabled: Platform
+                    .isAndroid, // Use lite mode for performance in details
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
                 mapToolbarEnabled: false,
@@ -474,11 +640,18 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(LucideIcons.mapPin, size: 12, color: DesignSystem.primary(context)),
+              Icon(
+                LucideIcons.mapPin,
+                size: 12,
+                color: DesignSystem.primary(context),
+              ),
               const SizedBox(width: 6),
               Text(
                 s.university ?? s.country ?? "Global Location",
-                style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+                style: DesignSystem.labelStyle(
+                  buildContext: context,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -490,8 +663,10 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
   LatLng _getCountryFallback(String? country) {
     if (country == null) return LatLng(20, 0);
     final c = country.toLowerCase();
-    if (c.contains("usa") || c.contains("united states")) return LatLng(37.0902, -95.7129);
-    if (c.contains("uk") || c.contains("united kingdom")) return LatLng(55.3781, -3.4360);
+    if (c.contains("usa") || c.contains("united states"))
+      return LatLng(37.0902, -95.7129);
+    if (c.contains("uk") || c.contains("united kingdom"))
+      return LatLng(55.3781, -3.4360);
     if (c.contains("germany")) return LatLng(51.1657, 10.4515);
     if (c.contains("canada")) return LatLng(56.1304, -106.3468);
     if (c.contains("ethiopia")) return LatLng(9.145, 40.4897);
@@ -532,7 +707,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 onTap: () async {
                   // 1. Mark as Applied / Track it immediately
                   try {
-                    await ref.read(scholarshipWatchlistProvider.notifier).trackAndApply(widget.scholarshipId);
+                    await ref
+                        .read(scholarshipWatchlistProvider.notifier)
+                        .trackAndApply(widget.scholarshipId);
                     ref.invalidate(dashboardStatsProvider);
                   } catch (e) {
                     debugPrint('Automatic tracking error: $e');
@@ -542,12 +719,17 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   if (applicationUrl != null && applicationUrl.isNotEmpty) {
                     final uri = Uri.parse(applicationUrl);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     } else {
                       if (context.mounted) {
                         // ignore: use_build_context_synchronously
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not launch application URL')),
+                          const SnackBar(
+                            content: Text('Could not launch application URL'),
+                          ),
                         );
                       }
                     }
@@ -555,7 +737,11 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                     if (context.mounted) {
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No application URL available for this scholarship')),
+                        const SnackBar(
+                          content: Text(
+                            'No application URL available for this scholarship',
+                          ),
+                        ),
                       );
                     }
                   }
@@ -564,14 +750,19 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [DesignSystem.primary(context), Color(0xFF059669)],
+                      colors: [
+                        DesignSystem.primary(context),
+                        Color(0xFF059669),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: DesignSystem.primary(context).withValues(alpha: 0.3),
+                        color: DesignSystem.primary(
+                          context,
+                        ).withValues(alpha: 0.3),
                         blurRadius: 20,
-                      )
+                      ),
                     ],
                   ),
                   child: Center(
@@ -579,7 +770,9 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                       "BEGIN APPLICATION",
                       style: DesignSystem.headingStyle(
                         buildContext: context,
-                        color: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white,
                         fontSize: 15,
                       ),
                     ),
@@ -591,12 +784,20 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
             GestureDetector(
               onTap: () async {
                 try {
-                  await ref.read(scholarshipWatchlistProvider.notifier).toggleWatchlist(widget.scholarshipId);
+                  await ref
+                      .read(scholarshipWatchlistProvider.notifier)
+                      .toggleWatchlist(widget.scholarshipId);
                   ref.invalidate(dashboardStatsProvider);
                   if (context.mounted) {
                     // ignore: use_build_context_synchronously
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isTracked ? 'Removed from Watchlist' : 'Added to Watchlist')),
+                      SnackBar(
+                        content: Text(
+                          isTracked
+                              ? 'Removed from Watchlist'
+                              : 'Added to Watchlist',
+                        ),
+                      ),
                     );
                   }
                 } catch (e) {
@@ -612,11 +813,15 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
                 padding: const EdgeInsets.all(18),
                 borderRadius: 20,
                 child: Icon(
-                  isTracked ? LucideIcons.bookmarkMinus : LucideIcons.bookmarkPlus,
-                  color: isTracked ? DesignSystem.primary(context) : DesignSystem.mainText(context),
+                  isTracked
+                      ? LucideIcons.bookmarkMinus
+                      : LucideIcons.bookmarkPlus,
+                  color: isTracked
+                      ? DesignSystem.primary(context)
+                      : DesignSystem.mainText(context),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -652,10 +857,3 @@ class _ScholarshipDetailScreenState extends ConsumerState<ScholarshipDetailScree
     );
   }
 }
-
-
-
-
-
-
-

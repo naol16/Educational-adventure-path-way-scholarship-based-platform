@@ -36,13 +36,29 @@ class MissionDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pathState = ref.watch(learningPathProvider);
+
+    // Use the passed sectionData as base, but refresh mission data if available
+    SkillPathSection currentSectionData = sectionData;
+    Mission? currentMission = mission;
+    Object? currentLearningMode = learningMode;
+
+    // Try to get updated mission data from current state
+    if (pathState.activePath != null &&
+        index < currentSectionData.missions.length) {
+      currentMission = currentSectionData.missions[index];
+    }
+
     return Scaffold(
       backgroundColor: DesignSystem.themeBackground(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft, color: DesignSystem.mainText(context)),
+          icon: Icon(
+            LucideIcons.arrowLeft,
+            color: DesignSystem.mainText(context),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -57,7 +73,7 @@ class MissionDetailScreen extends ConsumerWidget {
               300,
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
@@ -84,16 +100,23 @@ class MissionDetailScreen extends ConsumerWidget {
                   child: Material(
                     type: MaterialType.transparency,
                     child: Text(
-                      mission?.title ?? (video.videoLink.contains("sample") ? "Instructional Module 0${index + 1}" : "Dynamic Mastery: $section"),
+                      currentMission?.title ??
+                          (video.videoLink.contains("sample")
+                              ? "Instructional Module 0${index + 1}"
+                              : "Dynamic Mastery: $section"),
                       style: DesignSystem.headingStyle(buildContext: context),
                     ),
                   ),
                 ),
                 const SizedBox(height: 30),
-                
-                _buildMissionBriefing(context),
+
+                _buildMissionBriefing(
+                  context,
+                  currentMission,
+                  currentSectionData,
+                ),
                 const SizedBox(height: 30),
-                
+
                 // THE 4 PILLARS GRID
                 Expanded(
                   child: GridView.count(
@@ -102,42 +125,59 @@ class MissionDetailScreen extends ConsumerWidget {
                     crossAxisSpacing: 16,
                     childAspectRatio: 0.85,
                     children: [
-                      _buildActionCard(context, LucideIcons.playCircle, "Watch Videos", "Library", () async {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VideoLibraryScreen(
-                              videos: mission?.videos ?? sectionData.videos,
-                              skillName: mission?.title ?? section,
-                            ),
-                          ),
-                        );
-                      }),
-                      _buildActionCard(context, LucideIcons.fileText, "Read Briefings", "Library", () async {
-                        // Mark progress for the note in this section (keeping legacy logic)
-                        await ref.read(learningPathProvider.notifier).markProgress(
-                          section: section,
-                          isNote: true,
-                        );
- 
-                        if (context.mounted) {
+                      _buildActionCard(
+                        context,
+                        LucideIcons.playCircle,
+                        "Watch Videos",
+                        "Library",
+                        () async {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PDFLibraryScreen(
-                                pdfs: mission?.pdfs ?? sectionData.pdfs,
-                                skillName: mission?.title ?? section,
+                              builder: (context) => VideoLibraryScreen(
+                                videos:
+                                    currentMission?.videos ??
+                                    currentSectionData.videos,
+                                skillName: currentMission?.title ?? section,
                               ),
                             ),
                           );
-                        }
-                      }),
+                        },
+                      ),
+                      _buildActionCard(
+                        context,
+                        LucideIcons.fileText,
+                        "Read Briefings",
+                        "Library",
+                        () async {
+                          // Mark progress for the note in this section (keeping legacy logic)
+                          await ref
+                              .read(learningPathProvider.notifier)
+                              .markProgress(section: section, isNote: true);
+
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PDFLibraryScreen(
+                                  pdfs:
+                                      currentMission?.pdfs ??
+                                      currentSectionData.pdfs,
+                                  skillName: currentMission?.title ?? section,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
                       _buildActionCard(
                         context,
                         LucideIcons.trophy,
                         "Unit Test",
-                        _isUnitTestUnlocked() ? "Unlocked" : "Locked",
-                        _isUnitTestUnlocked()
+                        _isUnitTestUnlocked(currentMission, currentLearningMode)
+                            ? "Unlocked"
+                            : "Locked",
+                        _isUnitTestUnlocked(currentMission, currentLearningMode)
                             ? () {
                                 Navigator.push(
                                   context,
@@ -151,69 +191,84 @@ class MissionDetailScreen extends ConsumerWidget {
                                 );
                               }
                             : null,
-                        isLocked: !_isUnitTestUnlocked(),
+                        isLocked: !_isUnitTestUnlocked(
+                          currentMission,
+                          currentLearningMode,
+                        ),
                       ),
-                      _buildActionCard(context, LucideIcons.edit3, "Practice Drill", "Active Training", () {
-                        // Extract questions for this skill
-                        List<dynamic> questions = [];
-                        if (learningMode is Map) {
-                          final skillKey = section.toLowerCase();
-                          // Try both lowercase and capitalized keys
-                          final skillLm = (learningMode as Map)[skillKey] ?? 
-                                         (learningMode as Map)[section];
-                          if (skillLm is List) {
-                            questions = skillLm;
-                          } else if (skillLm is Map && skillLm['questions'] is List) {
-                            questions = skillLm['questions'];
-                          }
-                        }
-
-                        if (section.toLowerCase() == "writing") {
-                          // Writing Lab flow
-                          String writingPrompt = "Discuss the impact of technology on modern education. Provide examples to support your answer.";
-                          if (questions.isNotEmpty && questions[0] is Map) {
-                             writingPrompt = questions[0]['question'] ?? writingPrompt;
-                          }
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WritingLabScreen(
-                                skill: section,
-                                initialPrompt: writingPrompt,
-                              ),
-                            ),
-                          );
-                        } else {
-                          // Standard Practice Engine
-                          String? passage;
-                          String? script;
-                          if (learningMode is Map) {
+                      _buildActionCard(
+                        context,
+                        LucideIcons.edit3,
+                        "Practice Drill",
+                        "Active Training",
+                        () {
+                          // Extract questions for this skill
+                          List<dynamic> questions = [];
+                          if (currentLearningMode is Map) {
                             final skillKey = section.toLowerCase();
-                            final skillLm = (learningMode as Map)[skillKey] ?? (learningMode as Map)[section];
-                            if (skillLm is Map) {
-                              passage = skillLm['passage'];
-                              script = skillLm['script'];
+                            // Try both lowercase and capitalized keys
+                            final skillLm =
+                                (currentLearningMode)[skillKey] ??
+                                (currentLearningMode)[section];
+                            if (skillLm is List) {
+                              questions = skillLm;
+                            } else if (skillLm is Map &&
+                                skillLm['questions'] is List) {
+                              questions = skillLm['questions'];
                             }
                           }
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PracticeEngineScreen(
-                                section: section,
-                                questions: questions,
-                                passage: passage,
-                                script: script,
+                          if (section.toLowerCase() == "writing") {
+                            // Writing Lab flow
+                            String writingPrompt =
+                                "Discuss the impact of technology on modern education. Provide examples to support your answer.";
+                            if (questions.isNotEmpty && questions[0] is Map) {
+                              writingPrompt =
+                                  questions[0]['question'] ?? writingPrompt;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WritingLabScreen(
+                                  skill: section,
+                                  initialPrompt: writingPrompt,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                      }),
+                            );
+                          } else {
+                            // Standard Practice Engine
+                            String? passage;
+                            String? script;
+                            if (currentLearningMode is Map) {
+                              final skillKey = section.toLowerCase();
+                              final skillLm =
+                                  (currentLearningMode)[skillKey] ??
+                                  (currentLearningMode)[section];
+                              if (skillLm is Map) {
+                                passage = skillLm['passage'];
+                                script = skillLm['script'];
+                              }
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PracticeEngineScreen(
+                                  section: section,
+                                  questions: questions,
+                                  passage: passage,
+                                  script: script,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
-                
+
                 PrimaryButton(
                   text: video.isCompleted ? "REWATCH LESSON" : "START MISSION",
                   onPressed: () {
@@ -230,7 +285,9 @@ class MissionDetailScreen extends ConsumerWidget {
                     );
 
                     // 2. Mark as completed in background
-                    ref.read(learningPathProvider.notifier).completeResource(video.id, section);
+                    ref
+                        .read(learningPathProvider.notifier)
+                        .completeResource(video.id, section);
                   },
                 ),
                 const SizedBox(height: 40),
@@ -242,7 +299,11 @@ class MissionDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMissionBriefing(BuildContext context) {
+  Widget _buildMissionBriefing(
+    BuildContext context,
+    Mission? currentMission,
+    SkillPathSection currentSectionData,
+  ) {
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -259,38 +320,43 @@ class MissionDetailScreen extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (sectionData.isNoteCompleted)
-                Icon(LucideIcons.checkCircle2, color: DesignSystem.emerald, size: 14),
+              if (currentSectionData.isNoteCompleted)
+                Icon(
+                  LucideIcons.checkCircle2,
+                  color: DesignSystem.emerald,
+                  size: 14,
+                ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            mission?.objective ?? (sectionData.notes.isNotEmpty 
-                ? sectionData.notes 
-                : "Complete the instructional modules to master this skill and unlock advanced practice tasks."),
+            currentMission?.objective ??
+                (currentSectionData.notes.isNotEmpty
+                    ? currentSectionData.notes
+                    : "Complete the instructional modules to master this skill and unlock advanced practice tasks."),
             maxLines: 6,
             overflow: TextOverflow.ellipsis,
-            style: DesignSystem.bodyStyle(
-              buildContext: context,
-              fontSize: 14,
-            ),
+            style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
           ),
         ],
       ),
     );
   }
 
-  bool _isUnitTestUnlocked() {
-    if (mission == null) return false;
+  bool _isUnitTestUnlocked(
+    Mission? currentMission,
+    Object? currentLearningMode,
+  ) {
+    if (currentMission == null) return false;
 
     // 1. All videos in this mission must be completed
-    if (!mission!.videos.every((v) => v.isCompleted)) return false;
-    
+    if (!currentMission.videos.every((v) => v.isCompleted)) return false;
+
     // 2. All PDFs in this mission must be completed
-    if (!mission!.pdfs.every((p) => p.isCompleted)) return false;
-    
+    if (!currentMission.pdfs.every((p) => p.isCompleted)) return false;
+
     // 3. Practice Drill must have at least one question completed (or the whole thing)
-    final lm = learningMode;
+    final lm = currentLearningMode;
     if (lm is Map) {
       final skillKey = section.toLowerCase();
       final skillLm = lm[skillKey] ?? lm[section];
@@ -300,22 +366,26 @@ class MissionDetailScreen extends ConsumerWidget {
       } else if (skillLm is Map && skillLm['questions'] is List) {
         questions = skillLm['questions'];
       }
-      
+
       if (questions.isNotEmpty) {
         bool anyCompleted = false;
         for (var q in questions) {
-           if (q is Map && (q['isCompleted'] == true || q['is_completed'] == true)) {
-             anyCompleted = true;
-             break;
-           }
+          if (q is Map &&
+              (q['isCompleted'] == true || q['is_completed'] == true)) {
+            anyCompleted = true;
+            break;
+          }
         }
         if (!anyCompleted) return false;
-      } else if (skillLm is Map && (skillLm['prompt'] != null || skillLm['question'] != null)) {
+      } else if (skillLm is Map &&
+          (skillLm['prompt'] != null || skillLm['question'] != null)) {
         // For Writing/Speaking single prompts
-        if (!(skillLm['isCompleted'] == true || skillLm['is_completed'] == true)) return false;
+        if (!(skillLm['isCompleted'] == true ||
+            skillLm['is_completed'] == true))
+          return false;
       }
     }
-    
+
     return true;
   }
 
@@ -337,7 +407,9 @@ class MissionDetailScreen extends ConsumerWidget {
           children: [
             Icon(
               icon,
-              color: isLocked ? DesignSystem.labelText(context).withValues(alpha: 0.1) : DesignSystem.emerald,
+              color: isLocked
+                  ? DesignSystem.labelText(context).withValues(alpha: 0.1)
+                  : DesignSystem.emerald,
               size: 32,
             ),
             const SizedBox(height: 16),
@@ -346,7 +418,9 @@ class MissionDetailScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: DesignSystem.headingStyle(
                 buildContext: context,
-                color: isLocked ? DesignSystem.mainText(context).withValues(alpha: 0.24) : null,
+                color: isLocked
+                    ? DesignSystem.mainText(context).withValues(alpha: 0.24)
+                    : null,
                 fontSize: 14,
               ),
             ),

@@ -533,6 +533,27 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
   }
 
   Widget _buildHeader(BuildContext context) {
+    final state = ref.watch(learningPathProvider);
+    final path = state.activePath;
+    final activeExam = state.activeExam;
+    final primaryColor = activeExam == 'IELTS'
+        ? const Color(0xFF10B981)
+        : const Color(0xFF3B82F6);
+
+    // Determine level label and color
+    String levelLabel = 'Foundations';
+    Color levelColor = Colors.amber;
+    if (path != null) {
+      final lvl = path.proficiencyLevel.toLowerCase();
+      if (lvl == 'medium') {
+        levelLabel = 'Strategic';
+        levelColor = const Color(0xFF10B981);
+      } else if (lvl == 'hard') {
+        levelLabel = 'Refined';
+        levelColor = const Color(0xFF6366F1);
+      }
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -540,44 +561,225 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
           "Mastery Hub",
           style: DesignSystem.headingStyle(buildContext: context, fontSize: 24),
         ),
-        IconButton(
-          onPressed: () => _retakeAssessment(context),
-          icon: Icon(LucideIcons.refreshCcw, size: 20, color: DesignSystem.labelText(context).withValues(alpha: 0.5)),
-          tooltip: "Retake Assessment",
+        PopupMenuButton<String>(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: DesignSystem.surface(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: primaryColor.withValues(alpha: 0.15),
+              ),
+            ),
+            child: Icon(
+              LucideIcons.moreVertical,
+              size: 18,
+              color: DesignSystem.labelText(context),
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          color: DesignSystem.surface(context),
+          elevation: 8,
+          offset: const Offset(0, 48),
+          onSelected: (value) {
+            switch (value) {
+              case 'retake':
+                _retakeAssessment(context);
+                break;
+              case 'history':
+                _showAssessmentHistory(context);
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            // --- Current Learning Level (non-selectable header) ---
+            PopupMenuItem<String>(
+              enabled: false,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "CURRENT LEVEL",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                      color: DesignSystem.labelText(context).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          levelColor.withValues(alpha: 0.15),
+                          levelColor.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: levelColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.shield, size: 16, color: levelColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          levelLabel,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: levelColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "• $activeExam",
+                          style: GoogleFonts.plusJakartaSans(
+                            color: levelColor.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(height: 1),
+            // --- Retake Assessment ---
+            PopupMenuItem<String>(
+              value: 'retake',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(LucideIcons.refreshCcw, size: 16, color: Colors.orange.shade700),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Retake Assessment",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: DesignSystem.mainText(context),
+                        ),
+                      ),
+                      Text(
+                        "Reset & start fresh",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          color: DesignSystem.labelText(context).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // --- Assessment History ---
+            PopupMenuItem<String>(
+              value: 'history',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(LucideIcons.history, size: 16, color: primaryColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Assessment History",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: DesignSystem.mainText(context),
+                        ),
+                      ),
+                      Text(
+                        "View past results",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          color: DesignSystem.labelText(context).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
   void _retakeAssessment(BuildContext context) {
+    final activeExam = ref.read(learningPathProvider).activeExam;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: DesignSystem.surface(context),
-        title: Text(
-          "Retake Assessment?",
-          style: DesignSystem.headingStyle(buildContext: context, fontSize: 18),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DesignSystem.surface(ctx),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(LucideIcons.alertTriangle, size: 20, color: Colors.orange.shade700),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Retake Assessment?",
+              style: DesignSystem.headingStyle(buildContext: ctx, fontSize: 18),
+            ),
+          ],
         ),
         content: Text(
-          "This will reset your current learning path and all progress. Are you sure you want to start over?",
-          style: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
+          "This will reset your current learning path and all progress for $activeExam. Are you sure you want to start over?",
+          style: DesignSystem.labelStyle(buildContext: ctx, fontSize: 14),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("CANCEL", style: TextStyle(color: DesignSystem.labelText(context))),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("CANCEL", style: TextStyle(color: DesignSystem.labelText(ctx))),
           ),
           TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red.withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () async {
               try {
-                // 1. Reset backend assessment and path
                 await ref.read(assessmentApiServiceProvider).reset();
-                
-                // 2. Refresh local path state to empty
                 ref.invalidate(learningPathProvider);
-                
-                if (context.mounted) {
-                  Navigator.pop(context);
+
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -586,8 +788,8 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
                   );
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(content: Text("Error resetting assessment: $e")),
                   );
                 }
@@ -596,6 +798,96 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             child: const Text("RETAKE", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAssessmentHistory(BuildContext context) {
+    final state = ref.read(learningPathProvider);
+    final path = state.activePath;
+    final activeExam = state.activeExam;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = activeExam == 'IELTS'
+        ? const Color(0xFF10B981)
+        : const Color(0xFF3B82F6);
+
+    // Determine level info from path
+    String levelLabel = 'Foundations';
+    Color levelColor = Colors.amber;
+    IconData levelIcon = LucideIcons.sprout;
+    if (path != null) {
+      final levelStr = path.proficiencyLevel.toLowerCase();
+      if (levelStr == 'medium') {
+        levelLabel = 'Strategic';
+        levelColor = const Color(0xFF10B981);
+        levelIcon = LucideIcons.target;
+      } else if (levelStr == 'hard') {
+        levelLabel = 'Refined';
+        levelColor = const Color(0xFF6366F1);
+        levelIcon = LucideIcons.award;
+      }
+    }
+
+    // Gap analysis text
+    String gapInsight = "Your personalized path was generated based on diagnostic results.";
+    if (path != null) {
+      final gap = path.competencyGapAnalysis;
+      if (gap is Map) {
+        gapInsight = gap['proficiency_profile'] ??
+            gap.values.whereType<String>().firstWhere((_) => true, orElse: () => gapInsight);
+      } else if (gap is String && gap.isNotEmpty) {
+        gapInsight = gap;
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.92,
+        minChildSize: 0.4,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withValues(alpha: 0.15),
+                blurRadius: 30,
+                offset: const Offset(0, -10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: _AssessmentHistoryContent(
+                  scrollController: scrollController,
+                  activeExam: activeExam,
+                  primaryColor: primaryColor,
+                  isDark: isDark,
+                  levelLabel: levelLabel,
+                  levelColor: levelColor,
+                  levelIcon: levelIcon,
+                  gapInsight: gapInsight,
+                  path: path,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1357,5 +1649,391 @@ class _InteractivePathfinderTipState extends State<_InteractivePathfinderTip> {
         ),
       ),
     );
+  }
+}
+class _AssessmentHistoryContent extends ConsumerStatefulWidget {
+  final ScrollController scrollController;
+  final String activeExam;
+  final Color primaryColor;
+  final bool isDark;
+  final String levelLabel;
+  final Color levelColor;
+  final IconData levelIcon;
+  final String gapInsight;
+  final FormattedLearningPath? path;
+
+  const _AssessmentHistoryContent({
+    required this.scrollController,
+    required this.activeExam,
+    required this.primaryColor,
+    required this.isDark,
+    required this.levelLabel,
+    required this.levelColor,
+    required this.levelIcon,
+    required this.gapInsight,
+    this.path,
+  });
+
+  @override
+  ConsumerState<_AssessmentHistoryContent> createState() => _AssessmentHistoryContentState();
+}
+
+class _AssessmentHistoryContentState extends ConsumerState<_AssessmentHistoryContent> {
+  List<Map<String, dynamic>> _history = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final api = ref.read(assessmentApiServiceProvider);
+      final data = await api.getProgress();
+      final rawList = (data['data'] as List?) ?? [];
+      
+      if (mounted) {
+        setState(() {
+          _history = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      controller: widget.scrollController,
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+      children: [
+        // Title
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: widget.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(LucideIcons.history, color: widget.primaryColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Assessment History",
+                    style: DesignSystem.headingStyle(buildContext: context, fontSize: 20),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "Your ${widget.activeExam} Journey",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: widget.primaryColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 28),
+
+        // --- Current Level Card ---
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                widget.levelColor.withValues(alpha: 0.12),
+                widget.levelColor.withValues(alpha: 0.03),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: widget.levelColor.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: widget.levelColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(widget.levelIcon, color: widget.levelColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "PROFICIENCY LEVEL",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: DesignSystem.labelText(context).withValues(alpha: 0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.levelLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: widget.levelColor,
+                      ),
+                    ),
+                    if (widget.path != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        "${widget.path!.currentProgressPercentage}% overall progress",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: DesignSystem.labelText(context).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // --- Mock Exam History Section ---
+        Text(
+          "PAST ASSESSMENTS",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.5,
+            color: DesignSystem.labelText(context).withValues(alpha: 0.5),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        if (_isLoading)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: widget.primaryColor),
+            ),
+          )
+        else if (_error != null)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(
+                "Error loading history: $_error",
+                style: DesignSystem.labelStyle(buildContext: context),
+              ),
+            ),
+          )
+        else if (_history.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: widget.isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: DesignSystem.glassBorder(context)),
+            ),
+            child: Column(
+              children: [
+                Icon(LucideIcons.clipboardList, size: 40, color: widget.primaryColor.withValues(alpha: 0.2)),
+                const SizedBox(height: 12),
+                Text(
+                  "No past assessments found",
+                  style: DesignSystem.bodyStyle(buildContext: context, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Your mock exam results will appear here.",
+                  textAlign: TextAlign.center,
+                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._history.reversed.map((item) => _HistoryItemWidget(item: item, primaryColor: widget.primaryColor)),
+
+        const SizedBox(height: 32),
+
+        // --- Gap Analysis / Insight ---
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: widget.isDark
+                ? widget.primaryColor.withValues(alpha: 0.06)
+                : widget.primaryColor.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: widget.primaryColor.withValues(alpha: 0.15)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(LucideIcons.sparkles, color: widget.primaryColor, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    "Pathfinder Insight",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: widget.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.gapInsight,
+                style: GoogleFonts.inter(
+                  color: DesignSystem.mainText(context).withValues(alpha: 0.75),
+                  height: 1.6,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistoryItemWidget extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Color primaryColor;
+
+  const _HistoryItemWidget({required this.item, required this.primaryColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final band = _toDouble(item['overallBand']);
+    final examType = item['examType'] ?? 'IELTS';
+    final difficulty = item['difficulty'] ?? 'Medium';
+    final createdAt = item['createdAt'] as String? ?? '';
+    final isToefl = examType == 'TOEFL';
+
+    final diffColor = switch (difficulty) {
+      'Hard' => const Color(0xFFF87171),
+      'Easy' => const Color(0xFF10B981),
+      _ => const Color(0xFFF59E0B),
+    };
+
+    String dateStr = 'Recently';
+    try {
+      final dt = DateTime.parse(createdAt);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      dateStr = '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    } catch (_) {}
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? Colors.white.withValues(alpha: 0.04) 
+            : Colors.black.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DesignSystem.glassBorder(context)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      isToefl ? band.toStringAsFixed(0) : band.toStringAsFixed(1),
+                      style: GoogleFonts.plusJakartaSans(
+                          color: primaryColor, fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                    Text(
+                      isToefl ? 'SCORE' : 'BAND',
+                      style: GoogleFonts.plusJakartaSans(
+                          color: primaryColor.withValues(alpha: 0.5), fontWeight: FontWeight.w800, fontSize: 8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        examType,
+                        style: DesignSystem.bodyStyle(
+                            buildContext: context, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: diffColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          difficulty,
+                          style: GoogleFonts.inter(
+                              color: diffColor, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dateStr,
+                    style: DesignSystem.labelStyle(buildContext: context, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            Icon(LucideIcons.chevronRight, size: 18, color: DesignSystem.labelText(context).withValues(alpha: 0.3)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
   }
 }

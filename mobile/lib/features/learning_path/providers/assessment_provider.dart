@@ -143,6 +143,12 @@ class AssessmentNotifier extends StateNotifier<AssessmentState> {
           currentSkill: null,
         );
         return result;
+      } else if (result['status'] == 'failed') {
+        state = state.copyWith(
+          status: 'failed',
+          error: result['error']?.toString() ?? 'Assessment failed',
+        );
+        return result;
       } else if (result['status'] == 'active' ||
           result['status'] == 'evaluating') {
         final progress = result['progress'];

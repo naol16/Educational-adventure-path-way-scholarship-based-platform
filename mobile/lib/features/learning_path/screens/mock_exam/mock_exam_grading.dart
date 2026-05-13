@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
 
@@ -22,17 +21,27 @@ class MockExamGrading extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (state.error != null) ...[
-                const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.redAccent,
+                  size: 64,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'Grading Error',
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 22),
+                  style: DesignSystem.headingStyle(
+                    buildContext: context,
+                    fontSize: 22,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   state.error!,
                   textAlign: TextAlign.center,
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 SizedBox(
@@ -43,19 +52,28 @@ class MockExamGrading extends ConsumerWidget {
                       backgroundColor: primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('RETRY GRADING', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'RETRY GRADING',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 TextButton(
                   onPressed: () => notifier.backToDashboard(),
-                  child: Text('Back to Dashboard', style: TextStyle(color: DesignSystem.subText(context))),
+                  child: Text(
+                    'Back to Dashboard',
+                    style: TextStyle(color: DesignSystem.subText(context)),
+                  ),
                 ),
               ] else ...[
                 // Animated spinner
                 SizedBox(
-                  width: 72, height: 72,
+                  width: 72,
+                  height: 72,
                   child: CircularProgressIndicator(
                     color: primary,
                     strokeWidth: 3,
@@ -65,14 +83,19 @@ class MockExamGrading extends ConsumerWidget {
                 Text(
                   'AI Evaluator is grading your exam',
                   textAlign: TextAlign.center,
-                  style: DesignSystem.headingStyle(buildContext: context, fontSize: 20),
+                  style: DesignSystem.headingStyle(
+                    buildContext: context,
+                    fontSize: 20,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Analyzing your responses, assessing grammar, and matching against the marking rubric...',
                   textAlign: TextAlign.center,
-                  style: DesignSystem.labelStyle(buildContext: context, fontSize: 13)
-                      .copyWith(height: 1.5),
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 13,
+                  ).copyWith(height: 1.5),
                 ),
                 const SizedBox(height: 32),
                 // Animated dots
@@ -94,7 +117,8 @@ class _PulsingDots extends StatefulWidget {
   State<_PulsingDots> createState() => _PulsingDotsState();
 }
 
-class _PulsingDotsState extends State<_PulsingDots> with TickerProviderStateMixin {
+class _PulsingDotsState extends State<_PulsingDots>
+    with TickerProviderStateMixin {
   late final List<AnimationController> _controllers;
 
   @override
@@ -127,10 +151,13 @@ class _PulsingDotsState extends State<_PulsingDots> with TickerProviderStateMixi
           animation: _controllers[i],
           builder: (_, __) => Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 10, height: 10,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.color.withValues(alpha: 0.3 + _controllers[i].value * 0.7),
+              color: widget.color.withValues(
+                alpha: 0.3 + _controllers[i].value * 0.7,
+              ),
             ),
           ),
         );
