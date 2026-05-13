@@ -34,7 +34,8 @@ export const assessmentWorker = new Worker(
   },
   {
     connection: redisOptions,
-    concurrency: 1,
+    // Allow two assessments to run in parallel when Redis/Groq capacity allows.
+    concurrency: 2,
     lockDuration: 600000, 
     maxStalledCount: 3,
     stalledInterval: 30000

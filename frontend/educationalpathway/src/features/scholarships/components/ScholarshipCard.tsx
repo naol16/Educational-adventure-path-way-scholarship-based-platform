@@ -1,22 +1,40 @@
 import { Scholarship } from "../types";
 import { Card, CardBody, Badge, Button } from "@/components/ui";
-import { MapPin, ExternalLink, Info, Sparkles, Calendar, DollarSign, GraduationCap, Globe, Clock, Trophy } from "lucide-react";
+import {
+  MapPin,
+  ExternalLink,
+  Info,
+  Sparkles,
+  Calendar,
+  DollarSign,
+  GraduationCap,
+  Globe,
+  Clock,
+  Trophy,
+} from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
 interface ScholarshipCardProps {
   scholarship: Scholarship;
-  variant?: 'featured' | 'list' | 'grid';
+  variant?: "featured" | "list" | "grid";
 }
 
-export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCardProps) => {
+export const ScholarshipCard = ({
+  scholarship,
+  variant = "list",
+}: ScholarshipCardProps) => {
   const deadline = scholarship.deadline
-    ? new Date(scholarship.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(scholarship.deadline).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
     : "No deadline";
 
   const matchScore = scholarship.matchScore;
 
-  if (variant === 'featured') {
+  if (variant === "featured") {
     return (
       <motion.div
         layout
@@ -24,7 +42,7 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
         animate={{ opacity: 1, y: 0 }}
         className="group relative"
       >
-        <Card className="rounded-[32px] shadow-sm border-border bg-card hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden">
+        <Card className="rounded-2xl shadow-sm border-border bg-card hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden">
           <CardBody className="p-10">
             <div className="flex justify-between items-start mb-8">
               <div className="flex flex-wrap gap-2">
@@ -33,7 +51,10 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
                     ✨ {Math.round(matchScore)}% Precision Match
                   </Badge>
                 )}
-                <Badge variant="outline" className="border-border text-muted-foreground bg-muted/30 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                <Badge
+                  variant="outline"
+                  className="border-border text-muted-foreground bg-muted/30 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full"
+                >
                   {scholarship.fundType || "FULLY FUNDED"}
                 </Badge>
               </div>
@@ -50,36 +71,42 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
               </div>
               <div className="flex items-center gap-2">
                 <GraduationCap size={16} className="text-primary" />
-                <span>{scholarship.degreeLevels?.join(", ") || "Global Standard"}</span>
+                <span>
+                  {scholarship.degreeLevels?.join(", ") || "Global Standard"}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10 p-8 bg-muted/30 rounded-[24px] border border-border/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10 p-8 bg-muted/30 rounded-3xl border border-border/50">
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                   <DollarSign size={12} /> Funding Amount
                 </p>
-                <p className="text-xl font-black text-foreground tracking-tight">{scholarship.amount || "Variable Support"}</p>
+                <p className="text-xl font-black text-foreground tracking-tight">
+                  {scholarship.amount || "Variable Support"}
+                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                   <Clock size={12} /> Submission Window
                 </p>
-                <p className="text-xl font-black text-foreground tracking-tight">{deadline}</p>
+                <p className="text-xl font-black text-foreground tracking-tight">
+                  {deadline}
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Link 
+              <Link
                 href={`/dashboard/student/scholarships/${scholarship.id}`}
-                className="h-16 rounded-2xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[10px] flex items-center justify-center transition-all"
+                className="h-16 rounded-lg border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[10px] flex items-center justify-center transition-all"
               >
                 In-Depth Details
               </Link>
-              <a 
-                href={scholarship.applicationUrl || "#"} 
-                target="_blank" 
-                className="h-16 primary-gradient text-white rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-primary/20 hover:scale-[1.02]"
+              <a
+                href={scholarship.applicationUrl || "#"}
+                target="_blank"
+                className="h-16 primary-gradient text-white rounded-lg flex items-center justify-center gap-3 font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-primary/20 hover:scale-[1.02]"
               >
                 Launch Application <ExternalLink size={16} />
               </a>
@@ -90,7 +117,7 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
     );
   }
 
-  if (variant === 'grid') {
+  if (variant === "grid") {
     return (
       <motion.div
         layout
@@ -98,7 +125,7 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
         animate={{ opacity: 1, scale: 1 }}
         className="group relative h-full"
       >
-        <Card className="rounded-[28px] shadow-sm border-border/60 bg-card hover:shadow-xl transition-all duration-500 overflow-hidden h-full flex flex-col">
+        <Card className="rounded-2xl shadow-sm border-border/60 bg-card hover:shadow-xl transition-all duration-500 overflow-hidden h-full flex flex-col">
           <CardBody className="p-8 flex flex-col h-full">
             <div className="flex justify-between items-start mb-6">
               <Badge className="bg-muted/50 text-muted-foreground border-none px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest">
@@ -106,8 +133,8 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
               </Badge>
               {matchScore !== undefined && (
                 <div className="flex items-center gap-1.5 text-primary text-[10px] font-black">
-                   <Trophy size={14} />
-                   {Math.round(matchScore)}%
+                  <Trophy size={14} />
+                  {Math.round(matchScore)}%
                 </div>
               )}
             </div>
@@ -118,32 +145,42 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
 
             <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-8">
               <MapPin size={14} className="opacity-50" />
-              <span className="truncate">{scholarship.country || "Global"}</span>
+              <span className="truncate">
+                {scholarship.country || "Global"}
+              </span>
             </div>
 
             <div className="mt-auto space-y-8">
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-border/40">
                 <div>
-                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Support</p>
-                  <p className="text-xs font-black text-foreground truncate">{scholarship.amount || "Variable"}</p>
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                    Support
+                  </p>
+                  <p className="text-xs font-black text-foreground truncate">
+                    {scholarship.amount || "Variable"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Closes</p>
-                  <p className="text-xs font-black text-foreground">{deadline}</p>
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                    Closes
+                  </p>
+                  <p className="text-xs font-black text-foreground">
+                    {deadline}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Link 
+                <Link
                   href={`/dashboard/student/scholarships/${scholarship.id}`}
-                  className="h-12 rounded-xl border border-border text-foreground bg-muted/20 hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
+                  className="h-12 rounded-lg border border-border text-foreground bg-muted/20 hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
                 >
                   Details
                 </Link>
-                <a 
-                  href={scholarship.applicationUrl || "#"} 
-                  target="_blank" 
-                  className="h-12 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-lg"
+                <a
+                  href={scholarship.applicationUrl || "#"}
+                  target="_blank"
+                  className="h-12 primary-gradient text-white rounded-lg flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-lg"
                 >
                   Apply <ExternalLink size={14} />
                 </a>
@@ -163,15 +200,19 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
       animate={{ opacity: 1, y: 0 }}
       className="group"
     >
-      <Card className="rounded-[24px] shadow-xs border border-border/40 bg-card hover:bg-muted/20 hover:shadow-lg transition-all duration-500 overflow-hidden">
+      <Card className="rounded-2xl shadow-xs border border-border/40 bg-card hover:bg-muted/20 hover:shadow-lg transition-all duration-500 overflow-hidden">
         <CardBody className="p-0">
-          <div className="flex flex-col lg:flex-row items-stretch min-h-[120px]">
+          <div className="flex flex-col lg:flex-row items-stretch min-h-30">
             {/* Left: Score Indicator */}
             {matchScore !== undefined && (
               <div className="lg:w-20 bg-primary/5 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-border/40 group-hover:bg-primary/10 transition-colors">
                 <div className="text-center">
-                  <p className="text-[8px] font-black text-primary uppercase tracking-tighter mb-1">Match</p>
-                  <p className="text-lg font-black text-primary leading-none">{Math.round(matchScore)}%</p>
+                  <p className="text-[8px] font-black text-primary uppercase tracking-tighter mb-1">
+                    Match
+                  </p>
+                  <p className="text-lg font-black text-primary leading-none">
+                    {Math.round(matchScore)}%
+                  </p>
                 </div>
               </div>
             )}
@@ -186,7 +227,7 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
                   {scholarship.fundType || "Standard"}
                 </Badge>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
                   <MapPin size={12} className="text-primary/60" />
@@ -202,27 +243,35 @@ export const ScholarshipCard = ({ scholarship, variant = 'list' }: ScholarshipCa
             {/* Stats: Amount & Deadline */}
             <div className="lg:w-64 border-t lg:border-t-0 lg:border-l border-border/40 p-6 flex items-center justify-between lg:justify-center gap-12 bg-muted/10">
               <div className="text-center">
-                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Funding</p>
-                <p className="text-xs font-black text-foreground tracking-tight truncate max-w-[100px]">{scholarship.amount || "Variable"}</p>
+                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Funding
+                </p>
+                <p className="text-xs font-black text-foreground tracking-tight truncate max-w-25">
+                  {scholarship.amount || "Variable"}
+                </p>
               </div>
               <div className="text-center">
-                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Closes</p>
-                <p className="text-xs font-black text-foreground tracking-tight">{deadline}</p>
+                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Closes
+                </p>
+                <p className="text-xs font-black text-foreground tracking-tight">
+                  {deadline}
+                </p>
               </div>
             </div>
 
             {/* Right: Actions */}
             <div className="lg:w-72 border-t lg:border-t-0 lg:border-l border-border/40 p-6 flex items-center gap-3 bg-muted/5">
-              <Link 
+              <Link
                 href={`/dashboard/student/scholarships/${scholarship.id}`}
-                className="flex-1 h-11 rounded-xl border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
+                className="flex-1 h-11 rounded-lg border border-border text-foreground hover:bg-muted font-black uppercase tracking-widest text-[9px] flex items-center justify-center transition-all"
               >
                 Explore
               </Link>
-              <a 
-                href={scholarship.applicationUrl || "#"} 
-                target="_blank" 
-                className="flex-1 h-11 primary-gradient text-white rounded-xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-md shadow-primary/10"
+              <a
+                href={scholarship.applicationUrl || "#"}
+                target="_blank"
+                className="flex-1 h-11 primary-gradient text-white rounded-lg flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] transition-all shadow-md shadow-primary/10"
               >
                 Apply Now <ExternalLink size={12} />
               </a>

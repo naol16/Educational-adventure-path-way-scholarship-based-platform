@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { Conversation } from "../types";
-import { formatDistanceToNow, isToday, isYesterday, format } from "date-fns";
-import { User, MessageCircle, Search, Plus, MoreVertical } from "lucide-react";
+import { isToday, isYesterday, format } from "date-fns";
+import { Search, Plus, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { 
+  getConversationLastMessage, 
+  getDirectChatPeer, 
+  getConversationMembers 
+} from "../conversation-utils";
 
 interface ChatListProps {
   conversations: Conversation[];
@@ -14,137 +19,177 @@ interface ChatListProps {
   currentUserRole?: string;
   onNewChat?: () => void;
   onBookSession?: (userId: number) => void;
+  onlineUsers?: Set<number>;
 }
 
-export const ChatList = ({ conversations, activeConversationId, onSelect, currentUserId, currentUserRole, onNewChat, onBookSession }: ChatListProps) => {
+export const ChatList = ({
+  conversations,
+  activeConversationId,
+  onSelect,
+  currentUserId,
+  onNewChat,
+  onlineUsers,
+}: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"all" | "direct" | "groups">("all");
 
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = conversations.filter((conv) => {
     const isGroup = !!conv.isGroup;
-    const participants = conv.members || conv.users || [];
-    const otherUser = participants.find(u => u.id !== currentUserId);
-    const title = isGroup ? (conv.name || 'Unnamed Group') : (otherUser?.name || 'Unknown User');
+    if (activeTab === "direct" && isGroup) return false;
+    if (activeTab === "groups" && !isGroup) return false;
+
+    const otherUser = getDirectChatPeer(conv, currentUserId);
+    const title = isGroup ? conv.name || "Group" : otherUser?.name || "Chat";
     return title.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const renderConversation = (conv: Conversation, index: number) => {
     const isGroup = !!conv.isGroup;
-    const participants = conv.members || conv.users || [];
-    const otherUser = participants.find(u => u.id !== currentUserId);
-    const lastMessage = conv.chatMessages?.[0] || conv.messages?.[0] || conv.ChatMessages?.[0];
+    const otherUser = getDirectChatPeer(conv, currentUserId);
+    const members = getConversationMembers(conv);
+    const lastMessage = getConversationLastMessage(conv);
     const isActive = activeConversationId === conv.id;
-
-    const chatTitle = isGroup ? (conv.name || 'Unnamed Group') : (otherUser?.name || 'Unknown User');
-    const chatSubtitle = isGroup ? (conv.country || 'Group') : otherUser?.role;
+    const unread = Number(conv.unreadCount) || 0;
+    const chatTitle = isGroup ? conv.name || "Group" : otherUser?.name || "Chat";
+    const peerOnline = !isGroup && otherUser && onlineUsers?.has(otherUser.id);
 
     const formatTime = (dateStr: string) => {
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return "";
       if (isToday(date)) return format(date, "HH:mm");
       if (isYesterday(date)) return "Yesterday";
-      return format(date, "MMM d");
+      return format(date, "d.MM.yy");
     };
 
     return (
-      <motion.div
+      <motion.button
+        type="button"
         key={conv.id}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05 }}
+        transition={{ delay: index * 0.02 }}
         onClick={() => onSelect(conv)}
-        className={`relative group px-4 py-3 flex items-center gap-3 transition-all cursor-pointer ${isActive ? 'bg-primary/10 border-r-2 border-primary' : 'hover:bg-muted/50'}`}
+        className={`mx-2 mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
+          isActive
+            ? "bg-primary/10 dark:bg-primary/20 shadow-sm ring-1 ring-primary/20"
+            : "hover:bg-muted/60"
+        }`}
       >
         <div className="relative shrink-0">
-          <div className="h-12 w-12 rounded-full overflow-hidden bg-primary/5 flex items-center justify-center text-primary border border-border shadow-sm">
+          <div
+            className={`flex h-[52px] w-[52px] items-center justify-center rounded-full text-lg font-semibold text-white shadow-inner ${
+              isGroup ? "bg-primary" : "bg-muted text-primary dark:bg-muted dark:text-foreground"
+            }`}
+          >
             {isGroup ? (
-              <span className="font-black text-sm">{conv.country?.substring(0, 2).toUpperCase() || 'GP'}</span>
+              conv.name?.trim() ? (
+                <span>{conv.name.substring(0, 1).toUpperCase()}</span>
+              ) : (
+                <Users className="h-7 w-7 opacity-90" />
+              )
             ) : (
-              <User className="h-6 w-6" />
+              <span>{otherUser?.name?.substring(0, 1).toUpperCase() || "?"}</span>
             )}
           </div>
-          {!isGroup && (
-             <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-emerald-500 shadow-sm" />
+          {peerOnline && (
+            <span className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full border-[2.5px] border-background bg-primary" />
+          )}
+          {unread > 0 && !isActive && (
+            <span className="absolute -right-1 -top-1 flex min-h-[20px] min-w-[20px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white shadow-sm">
+              {unread > 99 ? "99+" : unread}
+            </span>
           )}
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <h4 className={`text-sm font-bold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
-              {chatTitle}
-            </h4>
+        <div className="min-w-0 flex-1 py-0.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-[15px] font-semibold text-foreground">{chatTitle}</span>
             {lastMessage && (
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">
                 {formatTime(lastMessage.createdAt)}
               </span>
             )}
           </div>
-          
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground truncate leading-tight">
-               {lastMessage ? (
-                 <span className="flex items-center gap-1">
-                   {lastMessage.senderId === currentUserId && <span className="text-[10px] text-primary font-bold shrink-0">You:</span>}
-                   {lastMessage.content.startsWith('[Attached File]') ? '📎 File' : lastMessage.content}
-                 </span>
-               ) : (
-                 <span className="italic opacity-60 uppercase text-[10px] tracking-widest">{chatSubtitle}</span>
-               )}
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <p className="min-w-0 flex-1 truncate text-[14px] leading-snug text-muted-foreground">
+              {lastMessage ? (
+                <>
+                  {lastMessage.senderId === currentUserId && (
+                    <span className="font-medium text-primary">You: </span>
+                  )}
+                  {lastMessage.content.startsWith("[Attached File]") ? "📎 File" : lastMessage.content}
+                </>
+              ) : isGroup ? (
+                <span>
+                  {members.length} {members.length === 1 ? "member" : "members"}
+                  {conv.country ? ` · ${conv.country}` : ""}
+                </span>
+              ) : (
+                <span className="italic opacity-70">{otherUser?.role ?? ""}</span>
+              )}
             </p>
-            {Number(conv.unreadCount) > 0 && (
-              <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center shadow-sm">
-                {conv.unreadCount}
-              </span>
-            )}
           </div>
         </div>
-      </motion.div>
+      </motion.button>
     );
   };
 
   return (
-    <div className="flex flex-col h-full bg-card/30">
-      {/* Search Header */}
-      <div className="p-4 space-y-4 border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black tracking-tight text-foreground/80">Messages</h2>
+    <div className="flex h-full flex-col bg-background">
+      <div className="sticky top-0 z-10 shrink-0 border-b border-border bg-background/95 px-3 pb-2 pt-3 backdrop-blur-md">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 w-full rounded-full border border-border bg-muted py-2 pl-9 pr-3 text-[14px] outline-none ring-0 placeholder:text-muted-foreground focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            />
+          </div>
           {onNewChat && (
-            <button 
-              onClick={onNewChat} 
-              className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all"
+            <button
+              type="button"
+              onClick={onNewChat}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-md transition-transform hover:scale-105 active:scale-95"
+              aria-label="New chat"
             >
-              <Plus size={18} />
+              <Plus className="h-5 w-5" strokeWidth={2.5} />
             </button>
           )}
         </div>
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input 
-            type="text"
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-muted/50 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-          />
+        <div className="flex gap-2 px-0.5">
+          {(["all", "direct", "groups"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+                activeTab === tab
+                  ? "bg-primary text-white"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {tab === "all" ? "All" : tab === "direct" ? "Personal" : "Groups"}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="custom-scrollbar flex-1 overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {filteredConversations.length === 0 ? (
-            <motion.div 
+            <motion.div
               key="empty"
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-12 text-center"
+              className="px-6 py-16 text-center"
             >
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 opacity-20">
-                <Search size={24} />
-              </div>
-              <p className="text-sm text-muted-foreground">No conversations found</p>
+              <p className="text-sm text-muted-foreground">No chats match your search.</p>
             </motion.div>
           ) : (
-            <div className="flex flex-col">
+            <div className="flex flex-col bg-background">
               {filteredConversations.map((conv, idx) => renderConversation(conv, idx))}
             </div>
           )}
@@ -153,5 +198,3 @@ export const ChatList = ({ conversations, activeConversationId, onSelect, curren
     </div>
   );
 };
-
-

@@ -95,9 +95,11 @@ export const CounselorProfile = () => {
   // Availability Slots State
   const [slots, setSlots] = useState<{day: string, startTime: string, endTime: string}[]>([]);
 
-  const { countries, loadingCountries, getCitiesForCountry } = useGeoData();
+  const { countries, loadingCountries, getCitiesForCountry, getUniversitiesForCountry } = useGeoData();
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [availableUniversities, setAvailableUniversities] = useState<any[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingUniversities, setLoadingUniversities] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -146,6 +148,12 @@ export const CounselorProfile = () => {
       getCitiesForCountry(profile.countryOfResidence).then(cities => {
         setAvailableCities(cities);
         setLoadingCities(false);
+      });
+
+      setLoadingUniversities(true);
+      getUniversitiesForCountry(profile.countryOfResidence).then(unis => {
+        setAvailableUniversities(unis);
+        setLoadingUniversities(false);
       });
     }
   }, [profile?.countryOfResidence]);
@@ -325,7 +333,7 @@ export const CounselorProfile = () => {
                             label: profile.countryOfResidence, 
                             flag: countries.find(c => c.name === profile.countryOfResidence)?.flag || "" 
                           } : null}
-                          onChange={(val: SingleValue<any>) => setProfile({ ...profile, countryOfResidence: val?.value || "", city: "" })}
+                          onChange={(val: SingleValue<any>) => setProfile({ ...profile, countryOfResidence: val?.value || "", city: "", universityName: "" })}
                           classNamePrefix="react-select"
                           placeholder={loadingCountries ? "Loading..." : "Select country"}
                           isDisabled={loadingCountries}
@@ -413,9 +421,38 @@ export const CounselorProfile = () => {
                             <option value="PhD">PhD</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
+                         <div className="space-y-2">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">University Name</label>
-                          <Input value={profile.universityName || ''} onChange={(e) => setProfile({ ...profile, universityName: e.target.value })} placeholder="University of..." className="h-14 bg-muted/30" />
+                          <Select
+                            options={availableUniversities.map((uni) => ({
+                              value: uni.name,
+                              label: uni.name,
+                            }))}
+                            value={profile.universityName ? { value: profile.universityName, label: profile.universityName } : null}
+                            isDisabled={!profile.countryOfResidence || loadingUniversities}
+                            onChange={(val: SingleValue<{ value: string; label: string }>) =>
+                              setProfile({ ...profile, universityName: val?.value || "" })
+                            }
+                            classNamePrefix="react-select"
+                            placeholder={
+                              loadingUniversities
+                                ? "Loading universities..."
+                                : !profile.countryOfResidence
+                                ? "Select country first"
+                                : "Search your university"
+                            }
+                            isClearable
+                            isSearchable
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                height: '56px',
+                                borderRadius: '12px',
+                                backgroundColor: 'rgba(var(--muted), 0.3)',
+                                borderColor: 'rgba(var(--border), 1)',
+                              })
+                            }}
+                          />
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Study Country</label>

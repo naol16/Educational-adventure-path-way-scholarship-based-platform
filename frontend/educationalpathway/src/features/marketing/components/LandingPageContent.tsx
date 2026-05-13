@@ -17,7 +17,9 @@ import {
   PlayCircle,
   CheckCircle2,
   HelpCircle,
-  Quote
+  Quote,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -27,6 +29,7 @@ import { useRef, useState, useEffect } from "react";
 import api from "@/lib/api";
 import useSWR from "swr";
 import { AIChatBot } from "@/components/AIChatBot";
+import { useTheme } from "@/providers/theme-context";
 
 interface LandingPageData {
   stats: { label: string; value: string }[];
@@ -102,6 +105,13 @@ export const LandingPageContent = () => {
   const opacity = useTransform(springScroll, [0, 0.2], [1, 0]);
 
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const { mode, setMode } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const isDark = mode === 'dark' || (mode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const { data: landingData, isLoading } = useSWR<LandingPageData>('/marketing/landing-page');
 
 
@@ -114,9 +124,9 @@ export const LandingPageContent = () => {
       
       {/* ─── DYNAMIC BACKGROUND ─── */}
       <div className="fixed inset-0 z-0 pointer-events-none mesh-gradient opacity-60">
-         <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-emerald-600/10 blur-[120px] mix-blend-screen animate-pulse-soft" />
-         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-teal-600/10 blur-[150px] mix-blend-screen" />
-         <div className="absolute top-[40%] left-[60%] w-[30vw] h-[30vw] rounded-full bg-indigo-500/5 blur-[100px] mix-blend-screen" />
+         <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-emerald-500/20 dark:bg-emerald-600/10 blur-[120px] animate-pulse-soft" />
+         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-teal-500/15 dark:bg-teal-600/10 blur-[150px]" />
+         <div className="absolute top-[40%] left-[60%] w-[30vw] h-[30vw] rounded-full bg-indigo-400/10 dark:bg-indigo-500/5 blur-[100px]" />
          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[radial-gradient(ellipse_at_center,white,transparent)] opacity-5" />
       </div>
 
@@ -143,20 +153,28 @@ export const LandingPageContent = () => {
         </Link>
 
         <nav className="ml-auto flex items-center gap-8">
-          <Link className="text-sm font-bold text-white/60 hover:text-white transition-colors hidden md:block" href="/#features">
+          <Link className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors hidden md:block" href="/#features">
             Features
           </Link>
-          <Link className="text-sm font-bold text-white/60 hover:text-white transition-colors hidden md:block" href="/#how">
+          <Link className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors hidden md:block" href="/#how">
             Methodology
           </Link>
-          <div className="h-6 w-px bg-card/10 hidden md:block" />
+          <div className="h-6 w-px bg-border hidden md:block" />
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setMode(isDark ? 'light' : 'dark')}
+            aria-label="Toggle theme"
+            className="w-9 h-9 rounded-xl flex items-center justify-center border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+          >
+            {mounted ? (isDark ? <Sun size={16} /> : <Moon size={16} />) : <Moon size={16} />}
+          </button>
           <Link href="/login">
             <button className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors px-4 py-2">
               Sign In
             </button>
           </Link>
           <Link href="/role-selection">
-            <button className="relative overflow-hidden group px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-card/5 border border-white/10 hover:border-emerald-500/50 transition-all shadow-lg hover:shadow-emerald-500/20">
+            <button className="relative overflow-hidden group px-6 py-2.5 rounded-xl font-bold text-sm text-foreground bg-card border border-border/50 hover:border-emerald-500/50 transition-all shadow-md hover:shadow-emerald-500/20">
               <span className="absolute inset-0 w-full h-full bg-linear-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-10 transition-opacity" />
               Get Started
             </button>
@@ -174,10 +192,10 @@ export const LandingPageContent = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, type: "spring" }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/5 border border-white/10 text-emerald-300 text-xs font-bold tracking-widest uppercase mx-auto backdrop-blur-md"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold tracking-widest uppercase mx-auto backdrop-blur-md"
             >
-              <Sparkles size={14} className="text-emerald-400 animate-pulse" />
-              <span className="bg-clip-text text-transparent bg-linear-to-r from-emerald-300 to-teal-200">
+              <Sparkles size={14} className="text-emerald-500 dark:text-emerald-400 animate-pulse" />
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-emerald-600 to-teal-500 dark:from-emerald-300 dark:to-teal-200">
                 A better way for students to succeed with AI
               </span>
             </motion.div>
@@ -186,10 +204,10 @@ export const LandingPageContent = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-foreground tracking-tighter leading-[0.95] font-serif"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground tracking-tighter leading-[0.95] font-serif whitespace-nowrap"
             >
-              Unlock Your <br className="hidden md:block" />
-              <span className="relative inline-block mt-2">
+              Unlock Your{" "}
+              <span className="relative inline-block">
                 <span className="absolute -inset-4 bg-linear-to-r from-emerald-500/30 to-teal-500/30 blur-3xl rounded-full opacity-50" />
                 <span className="relative text-transparent bg-clip-text bg-linear-to-r from-emerald-400 via-teal-300 to-cyan-400">
                   Global Future.

@@ -1,5 +1,23 @@
 import api from '@/lib/api';
 
+/** Canonical four skills for IELTS / TOEFL diagnostics and mock exams (matches backend). */
+export const EXAM_SKILL_ORDER = [
+  'reading',
+  'listening',
+  'writing',
+  'speaking',
+] as const;
+
+export type ExamSkillId = (typeof EXAM_SKILL_ORDER)[number];
+
+export interface StandardExamReport {
+  exam_type: 'IELTS' | 'TOEFL';
+  skills: readonly ExamSkillId[];
+  section_score_range: { min: number; max: number };
+  overall_score_range: { min: number; max: number };
+  overall_rule: string;
+}
+
 export interface AssessmentOptions {
   examType: string;
   difficulty: string;
@@ -42,8 +60,8 @@ export const getAssessmentProgress = async (examType?: string) => {
   return response.data;
 };
 
-export const getLearningPath = async () => {
-    const response = await api.get('/learning-path/my-path');
+export const getLearningPath = async (examType?: string) => {
+    const response = await api.get('/learning-path/my-path', { params: { examType } });
     return response.data;
 };
 

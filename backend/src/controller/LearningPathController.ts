@@ -41,7 +41,7 @@ export class LearningPathController {
     static async markComplete(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer } = req.body;
+            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer, examType } = req.body;
 
             if (!userId) {
                 return ResponseHelper.error(res, "Unauthorized", 401);
@@ -59,7 +59,8 @@ export class LearningPathController {
                     pdfId: pdfId ?? null,
                     questionIndex: questionIndex ?? null,
                     isNote: isNote ?? false,
-                    section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section
+                    section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section,
+                    examType: examType ? examType.toUpperCase() : 'IELTS'
                 },
                 defaults: {
                     isCompleted: isCompleted ?? true,
@@ -86,7 +87,7 @@ export class LearningPathController {
     static async markSectionComplete(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            const { section } = req.body; // e.g. "Reading"
+            const { section, examType } = req.body; // e.g. "Reading"
 
             if (!userId || !section) {
                 return ResponseHelper.error(res, "Missing userId or section", 400);
@@ -97,7 +98,7 @@ export class LearningPathController {
                 return ResponseHelper.error(res, "Student profile not found", 404);
             }
 
-            const path = await LearningPathRepository.findByStudentId(student.id);
+            const path = await LearningPathRepository.findByStudentId(student.id, examType);
             if (!path) {
                 return ResponseHelper.error(res, "Learning path not found", 404);
             }
@@ -105,6 +106,7 @@ export class LearningPathController {
             // Normalizing the section string to match keys in the JSON sections
             const lowerSection = section.toLowerCase();
             const normalizedSection = section.charAt(0).toUpperCase() + section.slice(1).toLowerCase();
+            const normExamType = examType ? examType.toUpperCase() : 'IELTS';
 
             // 1. Get all Video IDs for this section
             const videoIds = (path.videoSections as any)[lowerSection] || [];
@@ -119,7 +121,7 @@ export class LearningPathController {
             // Mark all videos
             for (const vId of videoIds) {
                 await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, videoId: vId, section: normalizedSection },
+                    where: { studentId: student.id, videoId: vId, section: normalizedSection, examType: normExamType },
                     defaults: { isCompleted: true }
                 }).then(([progress, created]) => {
                    if (!created) progress.update({ isCompleted: true });
@@ -129,7 +131,7 @@ export class LearningPathController {
             // Mark all questions
             for (let i = 0; i < questions.length; i++) {
                 await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, questionIndex: i, section: normalizedSection },
+                    where: { studentId: student.id, questionIndex: i, section: normalizedSection, examType: normExamType },
                     defaults: { isCompleted: true }
                 }).then(([progress, created]) => {
                    if (!created) progress.update({ isCompleted: true });
@@ -138,7 +140,7 @@ export class LearningPathController {
 
             // Mark the note
             await LearningPathProgress.findOrCreate({
-                where: { studentId: student.id, isNote: true, section: normalizedSection },
+                where: { studentId: student.id, isNote: true, section: normalizedSection, examType: normExamType },
                 defaults: { isCompleted: true }
             }).then(([progress, created]) => {
                 if (!created) progress.update({ isCompleted: true });
@@ -180,11 +182,14 @@ export class LearningPathController {
             // Normalizing file if it's an array
             const actualFile = Array.isArray(audioFile) ? audioFile[0] : audioFile;
 
+            const examType = req.body.examType as string;
+
             const result = await LearningPathService.evaluateSpeakingPractice(
                 student.id,
                 parseInt(questionIndex as string),
                 actualFile.data.toString("base64"),
-                actualFile.mimetype
+                actualFile.mimetype,
+                examType
             );
 
             return ResponseHelper.success(res, result);

@@ -9,6 +9,7 @@ import {
     CreatedAt,
     UpdatedAt,
     BelongsTo,
+    Default,
 } from "sequelize-typescript";
 import { User, type User as UserType } from "./User.js";
 import { Conversation, type Conversation as ConversationType } from "./Conversation.js";
@@ -45,6 +46,21 @@ export class ConversationParticipant extends Model {
         onDelete: 'CASCADE'
     })
     declare userId: number;
+
+    @Default('Member')
+    @Column({
+        type: DataType.ENUM('Admin', 'Moderator', 'Member'),
+        allowNull: false,
+    })
+    declare role: 'Admin' | 'Moderator' | 'Member';
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_muted'
+    })
+    declare isMuted: boolean;
 
     @CreatedAt
     @Column({

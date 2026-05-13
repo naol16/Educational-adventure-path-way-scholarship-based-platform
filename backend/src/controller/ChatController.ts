@@ -16,7 +16,11 @@ export class ChatController {
         }
 
         const conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
-        const message = await ChatService.sendMessage(conversation.id, senderId, content);
+        const message = await ChatService.sendMessage({ 
+            conversationId: conversation.id, 
+            senderId, 
+            content 
+        });
 
         res.status(201).json({
             status: "success",
@@ -107,6 +111,22 @@ export class ChatController {
     });
 
     /**
+     * PATCH /notifications/:conversationId - Toggle notifications (mute/unmute)
+     */
+    static toggleNotifications = catchAsync(async (req: Request, res: Response) => {
+        const { conversationId } = req.params;
+        const { enabled } = req.body;
+        const userId = (req as any).user.id;
+
+        await ChatService.toggleNotifications(Number(conversationId), userId, enabled);
+
+        res.status(200).json({
+            status: "success",
+            message: `Notifications ${enabled ? 'enabled' : 'disabled'}.`
+        });
+    });
+
+    /**
      * POST /upload - Upload a file to chat
      */
     static uploadFile = catchAsync(async (req: Request, res: Response) => {
@@ -178,5 +198,20 @@ export class ChatController {
             // fallback to redirecting the user directly to the URL so their browser can handle it.
             res.redirect(url);
         }
+    });
+    
+    /**
+     * DELETE /conversations/:conversationId - Delete a conversation (and all its messages)
+     */
+    static deleteConversation = catchAsync(async (req: Request, res: Response) => {
+        const { conversationId } = req.params;
+        const userId = (req as any).user.id;
+
+        await ChatService.deleteConversation(Number(conversationId), userId);
+
+        res.status(200).json({
+            status: "success",
+            message: "Conversation deleted successfully."
+        });
     });
 }

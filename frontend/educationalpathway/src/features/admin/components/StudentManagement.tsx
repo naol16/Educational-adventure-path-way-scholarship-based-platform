@@ -271,7 +271,11 @@ export const StudentManagement = () => {
                               <span className="text-[10px] font-black uppercase tracking-widest">{doc.name}</span>
                            </div>
                            {doc.url ? (
-                              <a href={doc.url} target="_blank" className="text-[10px] font-black text-primary hover:underline">VIEW</a>
+                              <div className="flex items-center gap-2">
+                                 <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-primary hover:underline">VIEW</a>
+                                 <span className="text-muted-foreground opacity-20">|</span>
+                                 <a href={doc.url} download target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-primary hover:underline">DOWNLOAD</a>
+                              </div>
                            ) : (
                               <span className="text-[9px] font-bold text-muted-foreground">MISSING</span>
                            )}

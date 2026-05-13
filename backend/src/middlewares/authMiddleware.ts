@@ -4,7 +4,9 @@ import { JwtPayload } from "../types/authTypes.js";
 import { UserRole } from "../types/userTypes.js";
 import configs from "../config/configs.js";
 
-export const authenticate = (
+import { User } from "../models/User.js";
+
+export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -28,8 +30,17 @@ export const authenticate = (
     }
 
     const decoded = jwt.verify(token, configs.JWT_SECRET!) as JwtPayload;
+    
+    // Immediate blocking check
+    const user = await User.findByPk(decoded.id);
+    if (!user || !user.isActive) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Account deactivated or blocked" 
+      });
+    }
+    
     req.user = decoded;
-
     next();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

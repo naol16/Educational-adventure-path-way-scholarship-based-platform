@@ -12,6 +12,15 @@ import { BookingModal } from "../counselor/components/BookingModal";
 import { StudentBookingModal } from "../counselor/components/StudentBookingModal";
 import { GroupMembers } from "./components/GroupMembers";
 import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChatDetails } from "./components/ChatDetails";
+import { 
+  getConversationMembers, 
+  getConversationLastMessage, 
+  getDirectChatPeer 
+} from "./conversation-utils";
+import { MessageSquare, X, User, Plus } from "lucide-react";
+import api from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -24,14 +33,43 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const [editingMessage, setEditingMessage] = useState<{ id: number; content: string } | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: number; content: string; senderName: string } | null>(null);
-
+  
   // Pagination
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const MESSAGES_PER_PAGE = 20;
 
+  // Sidebar Resizing
+  const [sidebarWidth, setSidebarWidth] = useState(384); // Default to w-96 roughly
+  const [isResizing, setIsResizing] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startWidth, setStartWidth] = useState(384);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const delta = e.clientX - startX;
+    const newWidth = Math.max(280, Math.min(startWidth + delta, 600)); // Min 280px, Max 600px
+    setSidebarWidth(newWidth);
+  }, [isResizing, startX, startWidth]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
   const searchParams = useSearchParams();
   const targetUserId = searchParams.get("userId");
+  const targetGroupId = searchParams.get("groupId");
 
   // Booking States
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -55,17 +93,17 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
         // If targetUserId is provided, try to find or start chat
         if (targetUserId) {
           const tid = parseInt(targetUserId);
-          const existing = convs.find((c: any) => 
-            !c.isGroup && (c.members || c.users || []).some((m: any) => m.id === tid)
+          const existing = convs.find((c: Conversation) => 
+            !c.isGroup && getConversationMembers(c).some((m) => m.id === tid)
           );
           if (existing) {
             setActiveConversation(existing);
           } else {
-            // Start new chat logic (reusing internal logic if possible or just calling API)
             try {
-              const startRes = await axios.post(`${API_BASE_URL}/chat/start`, { receiverId: tid }, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const startRes = await axios.post(`${API_BASE_URL}/chat/start`, 
+                { receiverId: tid }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
               const newConv = startRes.data.data;
               setConversations(prev => [newConv, ...prev]);
               setActiveConversation(newConv);
@@ -74,26 +112,37 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
             }
           }
         }
+
+        // If targetGroupId is provided, select it
+        if (targetGroupId) {
+          const gid = parseInt(targetGroupId);
+          const existing = convs.find((c: any) => c.isGroup && c.id === gid);
+          if (existing) {
+            setActiveConversation(existing);
+          }
+        }
       } catch (err) {
         console.error("Failed to fetch conversations", err);
       }
     };
+
     if (token) fetchConversations();
-  }, [token, targetUserId]);
+  }, [token, targetUserId, targetGroupId]);
 
   // 2. Fetch Messages with Pagination
   const fetchMessages = useCallback(async (isInitial = false) => {
     if (!activeConversation || (!hasMore && !isInitial)) return;
-
+    
     const currentPage = isInitial ? 0 : page;
     setLoading(true);
-
+    
     try {
-      const res = await axios.get(`${API_BASE_URL}/chat/${activeConversation.id}?limit=${MESSAGES_PER_PAGE}&offset=${currentPage * MESSAGES_PER_PAGE}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const res = await axios.get(
+        `${API_BASE_URL}/chat/${activeConversation.id}?limit=${MESSAGES_PER_PAGE}&offset=${currentPage * MESSAGES_PER_PAGE}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       const newMessages = res.data.data;
+      
       if (isInitial) {
         setMessages(newMessages);
         setPage(1);
@@ -101,7 +150,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
         
         // Mark as read
         if (socket) {
-            socket.emit("mark_read", { conversationId: activeConversation.id });
+          socket.emit("mark_read", { conversationId: activeConversation.id });
         }
       } else {
         setMessages(prev => [...prev, ...newMessages]);
@@ -120,7 +169,6 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       setHasMore(true);
       setPage(0);
       fetchMessages(true);
-      
       if (socket) {
         socket.emit("join_conversation", activeConversation.id);
       }
@@ -134,60 +182,68 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     socket.on("receive_message", (message: Message) => {
       if (activeConversation && message.conversationId === activeConversation.id) {
         setMessages((prev) => {
-          // Remove optimistic message if it exists (by matching content and senderId within a short time)
-          const filtered = prev.filter(m => !(m.senderId === message.senderId && m.content === message.content && (m.id > 1000000000000))); // Temp IDs are timestamps
+          const filtered = prev.filter(m => 
+            !(m.senderId === message.senderId && 
+              m.content === message.content && 
+              (m.id > 1000000000000))
+          );
           return [message, ...filtered];
         });
         socket.emit("mark_read", { conversationId: activeConversation.id });
       }
 
-      // Update conversations list for snippet
       setConversations((prev) => {
         const index = prev.findIndex((conv) => conv.id === message.conversationId);
         if (index === -1) return prev;
-
+        
         const newConversations = [...prev];
         const conv = newConversations[index];
         const isCurrentlyViewed = activeConversation?.id === conv.id;
-        const currentCount = typeof conv.unreadCount === 'string' ? parseInt(conv.unreadCount, 10) : (conv.unreadCount || 0);
-
+        const currentCount = typeof conv.unreadCount === 'string' ? 
+          parseInt(conv.unreadCount, 10) : (conv.unreadCount || 0);
+        
+        const priorPreview = getConversationLastMessage(conv);
+        
         newConversations[index] = {
           ...conv,
-          chatMessages: [message, ...(conv.chatMessages || conv.messages || conv.ChatMessages || [])],
+          chatMessages: [message, ...(priorPreview ? [priorPreview] : [])],
+          messages: [message, ...(priorPreview ? [priorPreview] : [])],
           updatedAt: new Date().toISOString(),
           unreadCount: isCurrentlyViewed ? 0 : currentCount + 1
         };
-
-        return newConversations.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        
+        return newConversations.sort((a, b) => 
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
       });
     });
 
     socket.on("message_delivered", (data: { messageId: number; conversationId: number; deliveredAt: string }) => {
       if (activeConversation?.id === data.conversationId) {
         setMessages(prev => prev.map(m => 
-            m.id === data.messageId ? { ...m, isDelivered: true, deliveredAt: data.deliveredAt } : m
+          m.id === data.messageId ? { ...m, isDelivered: true, deliveredAt: data.deliveredAt } : m
         ));
       }
     });
 
     socket.on("messages_read", (data: { conversationId: number; readerId: number }) => {
-        if (activeConversation?.id === data.conversationId && data.readerId !== currentUser.id) {
-            setMessages(prev => prev.map(m => 
-                m.senderId === currentUser.id ? { ...m, isRead: true } : m
-            ));
-        }
+      if (activeConversation?.id === data.conversationId && data.readerId !== currentUser.id) {
+        setMessages(prev => prev.map(m => 
+          m.senderId === currentUser.id ? { ...m, isRead: true } : m
+        ));
+      }
     });
 
     socket.on("user_online", (userId: number) => {
-        setOnlineUsers(prev => new Set([...prev, userId]));
+      setOnlineUsers(prev => new Set([...prev, userId]));
     });
 
     socket.on("user_offline", (userId: number) => {
-        setOnlineUsers(prev => {
-            const next = new Set(prev);
-            next.delete(userId);
-            return next;
-        });
+      setOnlineUsers(prev => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
     });
 
     socket.on("user_typing", (data: { userId: number; isTyping: boolean }) => {
@@ -196,9 +252,9 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
     socket.on("new_message_alert", (data: { conversationId: number; senderName: string; content: string }) => {
       if (!activeConversation || activeConversation.id !== data.conversationId) {
-        toast(`${data.senderName}: ${data.content}`, {
-          icon: '💬',
-          position: 'bottom-right'
+        toast(`${data.senderName}: ${data.content}`, { 
+          icon: '💬', 
+          position: 'bottom-right' 
         });
       }
     });
@@ -228,15 +284,13 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       socket.off("message_edited");
       socket.off("message_deleted");
     };
-  }, [socket, activeConversation, token]);
+  }, [socket, activeConversation, token, currentUser.id]);
 
-  const participants = activeConversation?.members || activeConversation?.users || [];
-  const otherUser = participants.find(u => u.id !== currentUser.id) || null;
+  const otherUser = activeConversation ? getDirectChatPeer(activeConversation, currentUser.id) : null;
 
   const handleSendMessage = useCallback((content: string) => {
     if (!activeConversation || !socket) return;
-    
-    // Optimistic UI update
+
     const tempId = Date.now();
     const optimisticMessage: Message = {
       id: tempId,
@@ -247,20 +301,21 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
       updatedAt: new Date().toISOString(),
       isRead: false,
       isDelivered: false,
-      parentId: replyingTo?.id || null,
-      sender: currentUser // Include sender info for immediate rendering
+      isEdited: false,
+      replyToId: replyingTo?.id || null,
+      repliedTo: replyingTo ? messages.find(m => m.id === replyingTo.id) : null,
+      sender: currentUser
     };
 
     setMessages(prev => [optimisticMessage, ...prev]);
-
     socket.emit("send_message", {
       conversationId: activeConversation.id,
-      receiverId: otherUser?.id || 0,
+      ...(otherUser ? { receiverId: otherUser.id } : {}),
       content,
-      parentId: replyingTo?.id || null
+      replyToId: replyingTo?.id || null
     });
     setReplyingTo(null);
-  }, [activeConversation, socket, currentUser.id, replyingTo, otherUser]);
+  }, [activeConversation, socket, currentUser, replyingTo, otherUser, messages]);
 
   const handleEditMessage = useCallback((messageId: number, content: string) => {
     setEditingMessage({ id: messageId, content });
@@ -268,31 +323,20 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   const handleUpdateMessage = useCallback((content: string) => {
     if (!editingMessage || !activeConversation || !socket) return;
-    
     socket.emit("edit_message", {
       conversationId: activeConversation.id,
       messageId: editingMessage.id,
       content
     });
-
-    setMessages(prev => prev.map(m => 
-      m.id === editingMessage.id ? { ...m, content } : m
-    ));
-
+    setMessages(prev => prev.map(m => m.id === editingMessage.id ? { ...m, content } : m));
     setEditingMessage(null);
     toast.success("Message synchronized");
   }, [activeConversation, socket, editingMessage]);
 
   const handleDeleteMessage = useCallback((messageId: number) => {
     if (!activeConversation || !socket) return;
-    
-    // Optimistically remove from UI to prevent ghost messages from getting stuck
     setMessages(prev => prev.filter(m => m.id !== messageId));
-    
-    socket.emit("delete_message", {
-      conversationId: activeConversation.id,
-      messageId
-    });
+    socket.emit("delete_message", { conversationId: activeConversation.id, messageId });
   }, [activeConversation, socket]);
 
   const handleReplyMessage = useCallback((message: Message) => {
@@ -306,12 +350,8 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   const handleTyping = useCallback((isTyping: boolean) => {
     if (!activeConversation || !socket) return;
-    socket.emit("typing", {
-      conversationId: activeConversation.id,
-      isTyping
-    });
+    socket.emit("typing", { conversationId: activeConversation.id, isTyping });
   }, [activeConversation, socket]);
-
 
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -330,9 +370,10 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   const handleStartChat = async (userId: number) => {
     try {
-      const res = await axios.post(`${API_BASE_URL}/chat/start`, { receiverId: userId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.post(`${API_BASE_URL}/chat/start`, 
+        { receiverId: userId }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       const newConv = res.data.data;
       setConversations(prev => {
         const exists = prev.find(c => c.id === newConv.id);
@@ -349,16 +390,10 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
 
   const handleOpenBooking = async () => {
     if (!otherUser) return;
-    
     if (currentUser.role === 'counselor') {
-      // Counselor mode: otherUser is the student
-      setActiveCounselorData({ 
-        id: -1, // Placeholder as we use /counselors/slots anyway
-        name: currentUser.name 
-      });
+      setActiveCounselorData({ id: -1, name: currentUser.name });
       setIsBookingModalOpen(true);
     } else if (otherUser.role === 'counselor') {
-      // Student mode: otherUser is the counselor
       setFetchingCounselor(true);
       try {
         const res = await axios.get(`${API_BASE_URL}/counselors/by-user/${otherUser.id}`, {
@@ -375,114 +410,157 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
     }
   };
 
+  const [showDetails, setShowDetails] = useState(false);
+
+  const handleLeaveGroup = async () => {
+    if (!activeConversation) return;
+    try {
+      await api.post(`/groups/${activeConversation.id}/leave`);
+      toast.success("Left group successfully");
+      setConversations(prev => prev.filter(c => c.id !== activeConversation.id));
+      setActiveConversation(null);
+      setShowDetails(false);
+    } catch (err) {
+      console.error("Failed to leave group", err);
+      toast.error("Failed to leave group");
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!activeConversation) return;
+    if (!confirm("Are you sure you want to delete this chat? This action cannot be undone.")) return;
+    try {
+      await axios.delete(`${API_BASE_URL}/chat/conversations/${activeConversation.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Chat deleted");
+      setConversations(prev => prev.filter(c => c.id !== activeConversation.id));
+      setActiveConversation(null);
+      setShowDetails(false);
+    } catch (err) {
+      console.error("Failed to delete chat", err);
+      toast.error("Failed to delete chat");
+    }
+  };
+
   return (
-    <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden bg-background/50 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl mt-4 relative">
-      {/* Sidebar - Hidden on mobile when a chat is active */}
-      <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 h-full border-r border-border/50 shrink-0 flex-col transition-all duration-300 ease-in-out`}>
-        <ChatList
-          conversations={conversations}
-          activeConversationId={activeConversation?.id || null}
-          onSelect={setActiveConversation}
-          currentUserId={currentUser.id}
-          currentUserRole={currentUser.role}
-          onNewChat={handleOpenNewChat}
-          onBookSession={async (userId) => {
-            if (currentUser.role === 'counselor') {
-              setActiveCounselorData({ id: -1, name: currentUser.name });
-              setIsBookingModalOpen(true);
-            } else {
-              setFetchingCounselor(true);
-              try {
-                const res = await axios.get(`${API_BASE_URL}/counselors/by-user/${userId}`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                });
-                setActiveCounselorData(res.data.data);
-                setIsBookingModalOpen(true);
-              } catch (err) {
-                toast.error("Could not fetch counselor details");
-              } finally {
-                setFetchingCounselor(false);
-              }
-            }
-          }}
+    <div className={`relative flex h-[calc(100vh-80px)] w-full overflow-hidden border-b border-border/60 bg-background shadow-sm dark:border-white/10 dark:bg-background ${isResizing ? 'select-none' : ''}`}>
+      {/* Sidebar */}
+      <div 
+        style={{ width: sidebarWidth }}
+        className={`${activeConversation ? 'hidden md:flex' : 'flex'} h-full shrink-0 flex-col bg-background transition-all duration-75 ease-out`}
+      >
+        <ChatList 
+          conversations={conversations} 
+          activeConversationId={activeConversation?.id || null} 
+          onSelect={setActiveConversation} 
+          currentUserId={currentUser.id} 
+          currentUserRole={currentUser.role} 
+          onNewChat={handleOpenNewChat} 
+          onlineUsers={onlineUsers} 
         />
       </div>
 
-      {/* Main Chat Area */}
-      <div className={`${!activeConversation ? 'hidden md:flex' : 'flex'} flex-1 flex flex-col h-full overflow-hidden bg-muted/5 relative`}>
-        {activeConversation ? (
-          showMembers && activeConversation.isGroup ? (
-            <GroupMembers 
-              conversationId={activeConversation.id}
-              currentUserId={currentUser.id}
-              currentUserRole={currentUser.role}
-              onClose={() => setShowMembers(false)}
-              onStartPrivateChat={handleStartChat}
-            />
-          ) : (
-            <>
-              <ChatWindow
-                messages={messages}
-                currentUserId={currentUser.id}
-                otherUser={otherUser}
-                loading={loading}
-                typingUser={typingStatus}
-                currentUserRole={currentUser.role}
-                isGroup={activeConversation.isGroup}
-                conversationId={activeConversation.id}
-                onBookSession={handleOpenBooking}
-                onShowMembers={() => setShowMembers(!showMembers)}
-                onStartPrivateChat={handleStartChat}
-                groupName={activeConversation.name}
-                bookingLoading={fetchingCounselor}
-                onlineUsers={onlineUsers}
-                onLoadMore={() => fetchMessages(false)}
-                hasMore={hasMore}
-                onEditMessage={handleEditMessage}
-                onDeleteMessage={handleDeleteMessage}
-                onReplyMessage={handleReplyMessage}
-                onBack={() => setActiveConversation(null)}
-              />
+      {/* Resize Handle */}
+      <div 
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setStartX(e.clientX);
+          setStartWidth(sidebarWidth);
+          setIsResizing(true);
+        }}
+        className={`hidden md:flex relative z-20 w-1 shrink-0 cursor-col-resize items-center justify-center transition-all hover:w-1.5 hover:bg-primary/20 ${isResizing ? 'w-1.5 bg-primary/30' : 'bg-border/40'}`}
+      >
+        <div className="flex h-10 w-full items-center justify-center rounded-full">
+          <div className={`w-0.5 h-10 rounded-full transition-colors ${isResizing ? 'bg-primary' : 'bg-border/60 hover:bg-primary/70'}`} />
+        </div>
+      </div>
 
-              <ChatInput
-                onSend={handleSendMessage}
-                onTyping={handleTyping}
-                onSchedule={handleOpenBooking}
-                disabled={!activeConversation}
-                editingMessage={editingMessage}
-                replyingTo={replyingTo}
-                onUpdate={handleUpdateMessage}
-                onCancelEdit={() => setEditingMessage(null)}
-                onCancelReply={() => setReplyingTo(null)}
-              />
-            </>
-          )
+      {/* Main Chat Area */}
+      <div className={`${!activeConversation ? 'hidden md:flex' : 'flex'} relative h-full flex-1 flex-col overflow-hidden bg-muted/20 dark:bg-muted/10`}>
+        {activeConversation ? (
+          <>
+            <ChatWindow 
+              messages={messages} 
+              currentUserId={currentUser.id} 
+              otherUser={otherUser} 
+              loading={loading} 
+              typingUser={typingStatus} 
+              currentUserRole={currentUser.role} 
+              isGroup={activeConversation.isGroup} 
+              conversationId={activeConversation.id} 
+              onBookSession={handleOpenBooking} 
+              onShowMembers={() => setShowDetails(!showDetails)} 
+              onStartPrivateChat={handleStartChat} 
+              groupName={activeConversation.name} 
+              groupMemberCount={activeConversation.isGroup ? getConversationMembers(activeConversation).length : undefined} 
+              bookingLoading={fetchingCounselor} 
+              onlineUsers={onlineUsers} 
+              onLoadMore={() => fetchMessages(false)} 
+              hasMore={hasMore} 
+              onEditMessage={handleEditMessage} 
+              onDeleteMessage={handleDeleteMessage} 
+              onReplyMessage={handleReplyMessage} 
+              onBack={() => setActiveConversation(null)} 
+            />
+            <ChatInput 
+              onSend={handleSendMessage} 
+              onTyping={handleTyping} 
+              onSchedule={handleOpenBooking} 
+              disabled={!activeConversation} 
+              editingMessage={editingMessage} 
+              replyingTo={replyingTo} 
+              onUpdate={handleUpdateMessage} 
+              onCancelEdit={() => setEditingMessage(null)} 
+              onCancelReply={() => setReplyingTo(null)} 
+            />
+          </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary/40"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+          <div className="flex h-full flex-col items-center justify-center bg-muted/30 dark:bg-muted/10">
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-2xl bg-card p-8 text-center shadow-sm border border-border">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessageSquare className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-foreground">Your Messages</h3>
+                <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
+                  Select a chat from the sidebar to view your conversation.
+                </p>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Select a chat to start messaging</h3>
-            <p className="max-w-xs text-sm opacity-60">Choose from your existing conversations or start a new one with a counselor or peer.</p>
           </div>
         )}
       </div>
 
+      {/* Details Panel */}
+      <AnimatePresence>
+        {showDetails && activeConversation && (
+          <ChatDetails 
+            conversation={activeConversation} 
+            currentUser={currentUser} 
+            messages={messages}
+            onClose={() => setShowDetails(false)} 
+            onLeaveGroup={handleLeaveGroup} 
+            onDeleteChat={handleDeleteChat} 
+          />
+        )}
+      </AnimatePresence>
+
       {/* New Chat Modal */}
       {isModalOpen && (
-        <div className="absolute inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-md rounded-2xl p-6 flex flex-col max-h-[80vh] shadow-2xl border border-border animate-in zoom-in-95 duration-200">
+        <div className="absolute inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card w-full max-w-md rounded-2xl p-6 flex flex-col max-h-[80vh] shadow-2xl border border-border">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">New Chat</h2>
               <button onClick={() => setIsModalOpen(false)} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <X size={18} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
               {availableUsers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <User className="text-muted-foreground" size={24} />
                   </div>
                   <p className="text-sm text-muted-foreground">No users available to chat.</p>
                 </div>
@@ -503,7 +581,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
                       </div>
                     </div>
                     <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7"/></svg>
+                      <Plus size={16} />
                     </div>
                   </div>
                 ))
@@ -512,21 +590,14 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
           </div>
         </div>
       )}
+
       {isBookingModalOpen && activeCounselorData && (
         currentUser.role === 'counselor' ? (
-          <BookingModal
-            counselor={activeCounselorData}
-            studentUserId={otherUser?.id}
-            onClose={() => setIsBookingModalOpen(false)}
-          />
+          <BookingModal counselor={activeCounselorData} studentUserId={otherUser?.id} onClose={() => setIsBookingModalOpen(false)} />
         ) : (
-          <StudentBookingModal
-            counselor={activeCounselorData}
-            onClose={() => setIsBookingModalOpen(false)}
-          />
+          <StudentBookingModal counselor={activeCounselorData} onClose={() => setIsBookingModalOpen(false)} />
         )
       )}
     </div>
   );
 };
-

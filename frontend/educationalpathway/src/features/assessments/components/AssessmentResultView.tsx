@@ -133,12 +133,14 @@ export function AssessmentResultView({
     );
   }
 
-  const isTOEFL = examType === "TOEFL";
+  const evaluation = resultData.evaluation || resultData;
+  const examReport = evaluation.exam_report;
+  const isTOEFL =
+    examType === "TOEFL" || examReport?.exam_type === "TOEFL";
   const maxScore = isTOEFL ? 120 : 9;
   const maxSectionScore = isTOEFL ? 30 : 9;
   const threshold = isTOEFL ? 90 : 6.5;
 
-  const evaluation = resultData.evaluation || resultData;
   const subs = evaluation.score_breakdown || evaluation.subscores || {};
   const band = parseFloat(evaluation.overall_band || evaluation.overallBand || 0);
   const bandPercent = Math.min(100, (band / maxScore) * 100);
@@ -228,6 +230,11 @@ export function AssessmentResultView({
                   <div className="size-1 bg-muted-foreground/40 rounded-full" />
                   <span className="text-[9px] font-black uppercase tracking-widest text-foreground">Peak {maxScore}</span>
                 </div>
+                {examReport?.overall_rule && (
+                  <p className="text-[10px] text-muted-foreground/80 max-w-sm mt-4 leading-relaxed text-center font-medium">
+                    {examReport.overall_rule}
+                  </p>
+                )}
 
                 <div className="w-full mt-12 space-y-4">
                   <div className="w-full bg-muted/40 h-4 rounded-full overflow-hidden p-1 border border-border/10 shadow-inner">

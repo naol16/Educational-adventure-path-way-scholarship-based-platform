@@ -53,13 +53,34 @@ export class Conversation extends Model {
     })
     declare country?: string;
 
-    @ForeignKey(() => User)
     @Column({
-        type: DataType.INTEGER,
-        allowNull: true,
-        field: 'created_by'
+        type: DataType.STRING(255),
+        allowNull: true
     })
-    declare createdBy?: number;
+    declare avatar?: string;
+
+    @Default(true)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_active'
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.ENUM('Public', 'Private'),
+        allowNull: false,
+        defaultValue: 'Public',
+        field: 'group_type'
+    })
+    declare groupType: 'Public' | 'Private';
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: true,
+        defaultValue: 'General'
+    })
+    declare category: string;
 
     @CreatedAt
     @Column({
@@ -86,6 +107,14 @@ export class Conversation extends Model {
         as: 'members'
     })
     declare members: UserType[];
+
+    @ForeignKey(() => User)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'created_by'
+    })
+    declare createdBy?: number;
 
     @BelongsTo(() => User, {
         foreignKey: 'created_by',

@@ -146,9 +146,14 @@ export function CounselorSidebar() {
 
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 100 : 300 }}
-        transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-        className="hidden lg:flex sticky top-0 h-screen border-r border-border bg-card flex-col overflow-x-hidden z-30"
+        animate={{ width: collapsed ? 90 : 280 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 400, 
+          damping: 40,
+          restDelta: 0.1
+        }}
+        className="hidden lg:flex sticky top-0 h-screen border-r border-border bg-card flex-col overflow-x-hidden z-30 shadow-sm"
       >
         <SidebarContent />
       </motion.aside>

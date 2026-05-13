@@ -214,10 +214,10 @@ export function LearningPathView() {
   const [loadingUnitTestIndex, setLoadingUnitTestIndex] = useState<number | null>(null);
   const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
 
-  const load = async () => {
+  const load = async (mode: string) => {
     try {
       setLoading(true);
-      const res = await getLearningPath();
+      const res = await getLearningPath(mode);
       const pathData = res?.skills ? res : (res?.data?.skills ? res.data : null);
       if (pathData) {
         setData(pathData);
@@ -252,7 +252,7 @@ export function LearningPathView() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(envMode); }, [envMode]);
 
   const handleToggleVideo = async (videoId: number) => {
     setData(prev => {
@@ -264,7 +264,7 @@ export function LearningPathView() {
     });
     try {
       const currentVideoStatus = data?.skills[activeTab]?.videos.find(v => v.id === videoId)?.isCompleted;
-      await trackProgress({ videoId, section: activeTab, isCompleted: !currentVideoStatus });
+      await trackProgress({ videoId, section: activeTab, isCompleted: !currentVideoStatus, examType: envMode });
     } catch (error) {}
   };
 
@@ -281,7 +281,7 @@ export function LearningPathView() {
       return newData;
     });
     try {
-      await trackProgress({ section: activeTab, isNote: true, isCompleted: !data.skills[activeTab].isNoteCompleted });
+      await trackProgress({ section: activeTab, isNote: true, isCompleted: !data.skills[activeTab].isNoteCompleted, examType: envMode });
     } catch (error) {}
   };
 
@@ -297,14 +297,14 @@ export function LearningPathView() {
       return newData;
     });
     try {
-      await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer });
+      await trackProgress({ questionIndex: qIndex, section: skill, isCompleted: true, answer: answer, examType: envMode });
     } catch (error) {}
   };
 
   const handleEvaluateSpeaking = async (qIndex: number, blob: Blob) => {
     try {
       setEvaluating(prev => ({ ...prev, [qIndex]: true }));
-      const result = await evaluateSpeakingPractice(qIndex, blob);
+      const result = await evaluateSpeakingPractice(qIndex, blob, envMode);
       const normalizedResult = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
       if (normalizedResult) {
         setEvaluationResults(prev => ({ ...prev, [qIndex]: normalizedResult }));
@@ -344,7 +344,7 @@ export function LearningPathView() {
        setIsSubmittingTest(true);
        const res = await submitUnitTest({ skill: activeTab, responses, missionIndex: activeMission });
        setUnitTestResults(res?.data || res);
-       if (res?.data?.passed || res?.passed) await load();
+       if (res?.data?.passed || res?.passed) await load(envMode);
     } catch (err) {} finally {
        setIsSubmittingTest(false);
     }
@@ -353,9 +353,9 @@ export function LearningPathView() {
   const handleCompleteSection = async (section: string) => {
     try {
       setCompleting(true);
-      await completeSection(section);
+      await completeSection(section, envMode);
       setCompletedSections(prev => ({ ...prev, [section]: true }));
-      await load(); 
+      await load(envMode); 
       toast.success(`${section.toUpperCase()} phase synchronized.`);
     } catch (err) {} finally {
       setCompleting(false);

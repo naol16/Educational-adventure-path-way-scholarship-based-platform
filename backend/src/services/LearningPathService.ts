@@ -391,8 +391,9 @@ export class LearningPathService {
     examType: "IELTS" | "TOEFL"
   ): "easy" | "medium" | "hard" {
     if (examType === "TOEFL") {
-      if (overallScore < 15) return "easy";
-      if (overallScore < 24) return "medium";
+      // Overall is 0–120 (sum of four sections scored 0–30 each)
+      if (overallScore < 72) return "easy";
+      if (overallScore < 96) return "medium";
       return "hard";
     } else {
       if (overallScore < 5.0) return "easy";
@@ -506,9 +507,11 @@ export class LearningPathService {
     let totalItems = 0;
     let completedItems = 0;
 
-    // Faster optimization: fetch all progress records at once for this student
     const allProgress = await LearningPathProgress.findAll({
-      where: { studentId }
+      where: { 
+        studentId,
+        examType: (examType || 'IELTS').toUpperCase()
+      }
     });
 
     for (const skill of skills) {
@@ -760,8 +763,9 @@ export class LearningPathService {
     questionIndex: number,
     audioBase64: string,
     mimeType: string,
+    examType?: string
   ) {
-    const path = await LearningPathRepository.findByStudentId(studentId);
+    const path = await LearningPathRepository.findByStudentId(studentId, examType);
     if (!path) throw new Error("Learning path not found.");
 
     const speakingData = (path.learningModeSections as any).speaking;

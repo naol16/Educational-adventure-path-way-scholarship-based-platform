@@ -9,7 +9,6 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
-import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/counselor/widgets/document_preview_dialog.dart';
 import 'package:go_router/go_router.dart';

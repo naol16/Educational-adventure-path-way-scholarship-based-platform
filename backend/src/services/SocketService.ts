@@ -50,17 +50,42 @@ export class SocketService {
                 socket.join(`conversation_${conversationId}`);
             });
 
-            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string }) => {
+            socket.on("send_message", async (data: { 
+                conversationId: number; 
+                receiverId?: number; 
+                content: string;
+                attachmentUrl?: string;
+                attachmentType?: string;
+                replyToId?: number;
+            }) => {
                 try {
-                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content);
+                    const message = await ChatService.sendMessage({
+                        conversationId: data.conversationId,
+                        senderId: userId,
+                        content: data.content,
+                        attachmentUrl: data.attachmentUrl,
+                        attachmentType: data.attachmentType,
+                        replyToId: data.replyToId
+                    });
                     if (!message) return;
 
                     // Broadcast to conversation room
                     this.io.to(`conversation_${data.conversationId}`).emit("receive_message", message);
                     
-                    // Mark as delivered for the receiver (if online)
-                    const receiverSockets = this.userSockets.get(data.receiverId);
-                    if (receiverSockets && receiverSockets.length > 0) {
+                    let recipientIds = await ChatService.getRecipientUserIdsExcludingSender(
+                        data.conversationId,
+                        userId
+                    );
+                    if (recipientIds.length === 0 && data.receiverId) {
+                        recipientIds = [data.receiverId];
+                    }
+
+                    const anyRecipientOnline = recipientIds.some((rid) => {
+                        const socks = this.userSockets.get(rid);
+                        return socks && socks.length > 0;
+                    });
+
+                    if (anyRecipientOnline) {
                         await ChatService.markAsDelivered(message.id);
                         this.io.to(`conversation_${data.conversationId}`).emit("message_delivered", {
                             messageId: message.id,
@@ -69,16 +94,18 @@ export class SocketService {
                         });
                     }
 
-                    // Direct alert for mobile/outside-room notifications
-                    if (receiverSockets) {
-                        receiverSockets.forEach(sid => {
+                    recipientIds.forEach((rid) => {
+                        const receiverSockets = this.userSockets.get(rid);
+                        if (!receiverSockets?.length) return;
+                        receiverSockets.forEach((sid) => {
                             this.io.to(sid).emit("new_message_alert", {
                                 conversationId: data.conversationId,
                                 senderName: (message as any).sender?.name || "Someone",
-                                content: data.content
+                                content: data.content,
+                                attachmentType: data.attachmentType
                             });
                         });
-                    }
+                    });
                 } catch (err) {
                     console.error("[Socket] send_message error:", err);
                 }

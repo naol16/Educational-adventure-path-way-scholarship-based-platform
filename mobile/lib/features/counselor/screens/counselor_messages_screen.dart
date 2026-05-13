@@ -8,7 +8,6 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/chat/providers/chat_providers.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
-import 'package:mobile/models/user.dart';
 
 class CounselorMessagesScreen extends ConsumerWidget {
   const CounselorMessagesScreen({super.key});
