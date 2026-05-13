@@ -209,6 +209,13 @@ CREATE TABLE IF NOT EXISTS counselor_messages (
 -- Conversations table (new chat system)
 CREATE TABLE IF NOT EXISTS conversations (
     id SERIAL PRIMARY KEY,
+    is_group BOOLEAN NOT NULL DEFAULT false,
+    name VARCHAR(100),
+    description TEXT,
+    country VARCHAR(100),
+    avatar VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -218,6 +225,7 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
     id SERIAL PRIMARY KEY,
     conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) DEFAULT 'member',
     UNIQUE(conversation_id, user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -230,6 +238,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT false,
+    reply_to_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

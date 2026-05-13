@@ -40,7 +40,7 @@ export class LearningPathRepository {
             // 1. Delete only the progress records tied to this exam type's path.
             //    We identify them via the path's video/pdf IDs so we don't destroy
             //    progress from the other exam's path.
-            await LearningPathProgress.destroy({ where: { studentId } });
+            await LearningPathProgress.destroy({ where: { studentId, examType } });
 
             // 2. Update the path content and reset progress to 0
             await existing.update({

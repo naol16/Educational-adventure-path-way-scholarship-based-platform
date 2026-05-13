@@ -1,4 +1,13 @@
 import { UserRole } from "./userTypes.js";
+import { Request } from "express";
+
+export interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    email: string;
+    role: UserRole;
+  };
+}
 
 export interface LoginCredentials {
   email: string;

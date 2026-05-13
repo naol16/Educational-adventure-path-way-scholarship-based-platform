@@ -14,6 +14,19 @@ function normalizeUrl(url?: string) {
   return url.trim().replace(/\/+$/, "");
 }
 
+function isUpstashHost(host?: string) {
+  if (!host) return false;
+
+  try {
+    const normalizedHost = host.includes("://") ? host : `https://${host}`;
+    const hostname = new URL(normalizedHost).hostname.toLowerCase();
+    return hostname === "upstash.io" || hostname.endsWith(".upstash.io");
+  } catch {
+    const normalized = host.toLowerCase();
+    return normalized === "upstash.io" || normalized.endsWith(".upstash.io");
+  }
+}
+
 function setConfigs() {
   return {
     // Server Config
@@ -95,7 +108,9 @@ function setConfigs() {
     REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",
     REDIS_PORT: parseInt(process.env.REDIS_PORT || "6379"),
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || "",
-    REDIS_TLS: process.env.REDIS_TLS === "true" || (process.env.REDIS_HOST?.includes("upstash.io") ?? false),
+    REDIS_TLS:
+      process.env.REDIS_TLS === "true" ||
+      isUpstashHost(process.env.REDIS_HOST),
 
     VAPI_API_KEY: normalizeSecret(
       process.env.VAPI_API_KEY ||

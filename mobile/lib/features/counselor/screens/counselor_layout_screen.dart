@@ -9,8 +9,6 @@ import 'package:mobile/features/counselor/screens/counselor_sessions_screen.dart
 import 'package:mobile/features/counselor/screens/counselor_students_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_schedule_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_messages_screen.dart';
-import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
-import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
 
 final counselorNavigationIndexProvider = StateProvider<int>((ref) => 0);
 

@@ -1,12 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import useSWR from 'swr';
-import { Filter, Sparkles, RefreshCcw, Search, ChevronDown, X } from 'lucide-react';
-import { Button } from '@/components/ui';
-import { ScholarshipList } from './ScholarshipList';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ScholarshipFilters } from '../types';
+import { useState, useMemo } from "react";
+import useSWR from "swr";
+import {
+  Filter,
+  Sparkles,
+  RefreshCcw,
+  Search,
+  ChevronDown,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui";
+import { ScholarshipList } from "./ScholarshipList";
+import { motion, AnimatePresence } from "framer-motion";
+import { ScholarshipFilters } from "../types";
 
 const container = {
   hidden: { opacity: 0 },
@@ -14,9 +21,9 @@ const container = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.1
-    }
-  }
+      delayChildren: 0.1,
+    },
+  },
 };
 
 const item = {
@@ -25,152 +32,25 @@ const item = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
-  }
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 },
+  },
 };
 
 export const ScholarshipExplorer = () => {
-  const [activeTab, setActiveTab] = useState('explore');
+  const [activeTab, setActiveTab] = useState("matched");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
-  
-  const { data: countriesResponse } = useSWR<any>('/scholarships/countries');
-  
-  const getFullCountryName = (code: string) => {
-    const mapping: Record<string, string> = {
-      "AE": "United Arab Emirates",
-      "AF": "Afghanistan",
-      "AL": "Albania",
-      "AM": "Armenia",
-      "AR": "Argentina",
-      "AT": "Austria",
-      "AU": "Australia",
-      "AZ": "Azerbaijan",
-      "BD": "Bangladesh",
-      "BE": "Belgium",
-      "BG": "Bulgaria",
-      "BH": "Bahrain",
-      "BR": "Brazil",
-      "CA": "Canada",
-      "CH": "Switzerland",
-      "CN": "China",
-      "CO": "Colombia",
-      "CZ": "Czech Republic",
-      "DE": "Germany",
-      "DK": "Denmark",
-      "DZ": "Algeria",
-      "EE": "Estonia",
-      "EG": "Egypt",
-      "ES": "Spain",
-      "ET": "Ethiopia",
-      "EU": "Europe (Region)",
-      "FI": "Finland",
-      "FR": "France",
-      "GB": "United Kingdom",
-      "GE": "Georgia",
-      "GH": "Ghana",
-      "GR": "Greece",
-      "HK": "Hong Kong",
-      "HU": "Hungary",
-      "ID": "Indonesia",
-      "IE": "Ireland",
-      "IL": "Israel",
-      "IN": "India",
-      "IQ": "Iraq",
-      "IR": "Iran",
-      "IS": "Iceland",
-      "IT": "Italy",
-      "JO": "Jordan",
-      "JP": "Japan",
-      "KE": "Kenya",
-      "KR": "South Korea",
-      "KW": "Kuwait",
-      "KZ": "Kazakhstan",
-      "LB": "Lebanon",
-      "LK": "Sri Lanka",
-      "LT": "Lithuania",
-      "LU": "Luxembourg",
-      "LV": "Latvia",
-      "LY": "Libya",
-      "MA": "Morocco",
-      "MC": "Monaco",
-      "MD": "Moldova",
-      "ME": "Montenegro",
-      "MG": "Madagascar",
-      "MK": "North Macedonia",
-      "ML": "Mali",
-      "MM": "Myanmar",
-      "MN": "Mongolia",
-      "MT": "Malta",
-      "MX": "Mexico",
-      "MY": "Malaysia",
-      "NG": "Nigeria",
-      "NL": "Netherlands",
-      "NO": "Norway",
-      "NZ": "New Zealand",
-      "OM": "Oman",
-      "PH": "Philippines",
-      "PK": "Pakistan",
-      "PL": "Poland",
-      "PT": "Portugal",
-      "QA": "Qatar",
-      "RO": "Romania",
-      "RS": "Serbia",
-      "RU": "Russia",
-      "SA": "Saudi Arabia",
-      "SE": "Sweden",
-      "SG": "Singapore",
-      "SI": "Slovenia",
-      "SK": "Slovakia",
-      "TH": "Thailand",
-      "TR": "Turkey",
-      "TW": "Taiwan",
-      "UA": "Ukraine",
-      "UG": "Uganda",
-      "UK": "United Kingdom",
-      "US": "United States",
-      "USA": "United States",
-      "VN": "Vietnam",
-      "ZA": "South Africa"
-    };
-    
-    const upperCode = code.toUpperCase();
-    if (mapping[upperCode]) return mapping[upperCode];
-    
-    // Handle sub-regions like DE-NW
-    if (upperCode.includes('-')) {
-      const baseCode = upperCode.split('-')[0];
-      if (mapping[baseCode]) return mapping[baseCode];
-    }
-    
-    return code;
-  };
+  const [showFilters, setShowFilters] = useState(false);
 
-  const countries = useMemo(() => {
-    // Handle cases where api.ts interceptor might have unwrapped the data or not
-    const raw = Array.isArray(countriesResponse) ? countriesResponse : (countriesResponse?.data || []);
-    
-    const uniqueMap = new Map();
-    raw.forEach((c: string) => {
-      const name = getFullCountryName(c);
-      if (!uniqueMap.has(name)) {
-        uniqueMap.set(name, c);
-      }
-    });
-
-    return Array.from(uniqueMap.entries()).map(([name, code]) => ({
-      code,
-      name
-    })).sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [countriesResponse]);
+  const { data: countriesResponse } = useSWR<any>("/scholarships/countries");
+  const countries = Array.isArray(countriesResponse) ? countriesResponse : countriesResponse?.data || [];
 
   const [filters, setFilters] = useState<ScholarshipFilters>({
-    query: '',
-    country: '',
-    degree_level: '',
-    fund_type: '',
+    query: "",
+    country: "",
+    degree_level: "",
+    fund_type: "",
     page: 1,
-    pageSize: 12
+    pageSize: 12,
   });
 
   const handleRefresh = () => {
@@ -180,26 +60,31 @@ export const ScholarshipExplorer = () => {
   };
 
   const updateFilter = (key: keyof ScholarshipFilters, value: any) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [key]: value,
-      page: key === 'page' ? value : 1 // Reset to page 1 if any filter other than page changes
+      page: key === "page" ? value : 1, // Reset to page 1 if any filter other than page changes
     }));
   };
 
   const clearFilters = () => {
     setFilters({
-      query: '',
-      country: '',
-      degree_level: '',
-      fund_type: '',
+      query: "",
+      country: "",
+      degree_level: "",
+      fund_type: "",
       page: 1,
-      pageSize: 12
+      pageSize: 12,
     });
   };
 
   const hasActiveFilters = useMemo(() => {
-    return filters.query || filters.country || filters.degree_level || filters.fund_type;
+    return (
+      filters.query ||
+      filters.country ||
+      filters.degree_level ||
+      filters.fund_type
+    );
   }, [filters]);
 
   return (
@@ -219,7 +104,6 @@ export const ScholarshipExplorer = () => {
           variants={item}
           className="relative py-10 md:py-16 group"
         >
-
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-12">
             <div className="max-w-2xl space-y-8">
               <div className="flex items-center gap-4">
@@ -228,15 +112,21 @@ export const ScholarshipExplorer = () => {
                   Curated Intelligence
                 </div>
                 <div className="h-4 w-px bg-border/40" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">International Protocol</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
+                  International Protocol
+                </span>
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
-                  Scholarship <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Explorer</span>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-foreground tracking-tighter uppercase leading-none whitespace-nowrap">
+                  Scholarship{" "}
+                  <span className="text-muted-foreground/20 dark:text-zinc-800 ml-2">
+                    Explorer
+                  </span>
                 </h1>
-                <p className="text-lg text-muted-foreground font-medium leading-relaxed max-w-xl">
-                  Discover global academic opportunities synchronized with your specific proficiency profile and financial trajectory.
+                <p className="text-sm md:text-base text-muted-foreground font-medium leading-relaxed max-w-xl">
+                  Discover global academic opportunities synchronized with your
+                  specific proficiency profile and financial trajectory.
                 </p>
               </div>
             </div>
@@ -248,7 +138,9 @@ export const ScholarshipExplorer = () => {
                 variant="outline"
                 className="h-16 w-16 rounded-2xl hover:bg-muted text-muted-foreground border border-border/60 bg-card transition-all active:scale-95 shadow-sm"
               >
-                <RefreshCcw className={`h-6 w-6 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCcw
+                  className={`h-6 w-6 ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </Button>
               <Button className="h-16 px-10 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">
                 Global Search Strategy
@@ -259,16 +151,15 @@ export const ScholarshipExplorer = () => {
 
         {/* Standardized Toolbar */}
         <motion.div variants={item} className="flex flex-col gap-10">
-
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 py-4 border-b border-border/10">
             {/* Tabs */}
             <div className="flex gap-10">
-              {['explore', 'matched', 'saved', 'applied'].map((id) => (
+              {["explore", "matched", "saved", "applied"].map((id) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
                   className={`group pb-6 text-xs font-black uppercase tracking-[0.2em] relative transition-all
-                    ${activeTab === id ? 'text-primary' : 'text-muted-foreground/40 hover:text-foreground'}
+                    ${activeTab === id ? "text-primary" : "text-muted-foreground/40 hover:text-foreground"}
                   `}
                 >
                   {id}
@@ -282,38 +173,29 @@ export const ScholarshipExplorer = () => {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 flex-1 lg:max-w-4xl">
+            <div className="flex flex-col sm:flex-row items-center gap-4 flex-1 lg:max-w-2xl">
               {/* Search Integrated Bar */}
               <div className="relative group flex-1 w-full">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                <input 
+                <input
                   value={filters.query}
-                  onChange={(e) => updateFilter('query', e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRefresh()}
-                  placeholder="Query title, institution, or region..." 
+                  onChange={(e) => updateFilter("query", e.target.value)}
+                  placeholder="Query title, institution, or region..."
                   className="w-full h-14 pl-14 pr-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all shadow-xs"
                 />
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg ${showFilters ? 'bg-primary text-white' : 'bg-card border border-border/60 text-foreground hover:bg-muted'}`}
-                >
-                  <Filter size={14} />
-                  Filters
-                  <ChevronDown size={14} className={`transition-transform duration-500 ${showFilters ? 'rotate-180' : ''}`} />
-                </Button>
-
-                <Button 
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="h-14 px-10 rounded-2xl primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  {isRefreshing ? <RefreshCcw size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  Start Discovery
-                </Button>
-              </div>
+              <Button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg ${showFilters ? "bg-primary text-white" : "bg-card border border-border/60 text-foreground hover:bg-muted"}`}
+              >
+                <Filter size={14} />
+                Filters
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-500 ${showFilters ? "rotate-180" : ""}`}
+                />
+              </Button>
             </div>
           </div>
 
@@ -322,25 +204,30 @@ export const ScholarshipExplorer = () => {
             {showFilters && (
               <motion.div
                 initial={{ height: 0, opacity: 0, y: -20 }}
-                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, y: -20 }}
                 transition={{ duration: 0.5, ease: "circOut" }}
-                className="overflow-hidden bg-card/30 backdrop-blur-sm border border-border/40 rounded-[32px] px-10 py-10 shadow-inner"
+                className="overflow-hidden bg-card/30 backdrop-blur-sm border border-border/40 rounded-4xl px-10 py-10 shadow-inner"
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-primary" />
-                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Target Country</span>
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">
+                        Regional Scope
+                      </span>
                     </div>
                     <select
                       value={filters.country}
-                      onChange={(e) => updateFilter('country', e.target.value)}
+                      onChange={(e) => updateFilter("country", e.target.value)}
+                      aria-label="Scholarship country filter"
                       className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
                     >
                       <option value="">Global Coverage</option>
-                      {countries.map((c: any) => (
-                        <option key={c.code} value={c.code}>{c.name}</option>
+                      {countries.map((c: string) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -348,11 +235,16 @@ export const ScholarshipExplorer = () => {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-primary" />
-                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Academic Status</span>
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">
+                        Academic Tier
+                      </span>
                     </div>
                     <select
                       value={filters.degree_level}
-                      onChange={(e) => updateFilter('degree_level', e.target.value)}
+                      onChange={(e) =>
+                        updateFilter("degree_level", e.target.value)
+                      }
+                      aria-label="Scholarship degree level filter"
                       className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
                     >
                       <option value="">Any Degree level</option>
@@ -365,11 +257,16 @@ export const ScholarshipExplorer = () => {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-primary" />
-                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Funding Matrix</span>
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">
+                        Funding Matrix
+                      </span>
                     </div>
                     <select
                       value={filters.fund_type}
-                      onChange={(e) => updateFilter('fund_type', e.target.value)}
+                      onChange={(e) =>
+                        updateFilter("fund_type", e.target.value)
+                      }
+                      aria-label="Scholarship funding type filter"
                       className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
                     >
                       <option value="">All Funding Types</option>
@@ -401,12 +298,10 @@ export const ScholarshipExplorer = () => {
           <ScholarshipList
             filters={filters}
             activeTab={activeTab}
-            onPageChange={(page) => updateFilter('page', page)}
+            onPageChange={(page) => updateFilter("page", page)}
           />
         </motion.div>
-
       </motion.div>
     </div>
   );
 };
-

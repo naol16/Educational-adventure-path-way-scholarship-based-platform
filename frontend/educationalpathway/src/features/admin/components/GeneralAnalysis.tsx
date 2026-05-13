@@ -61,22 +61,6 @@ export const GeneralAnalysis = () => {
       description: 'Active accounts on platform'
     },
     { 
-      label: 'STUDENTS', 
-      value: stats?.students.toString() || '0', 
-      icon: GraduationCap, 
-      color: 'success',
-      trend: '89% completion',
-      description: 'Educational path seekers'
-    },
-    { 
-      label: 'COUNSELORS', 
-      value: stats?.counselors.toString() || '0', 
-      icon: ShieldCheck, 
-      color: 'info',
-      trend: pendingCounselors + ' pending',
-      description: 'Verified industry experts'
-    },
-    { 
       label: 'NET REVENUE', 
       value: stats?.totalRevenue.toLocaleString() || '0', 
       icon: Banknote, 
@@ -105,18 +89,7 @@ export const GeneralAnalysis = () => {
       <div className="pt-12 pb-12">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 border-b border-border pb-12">
           <div className="space-y-4">
-             <motion.div 
-               initial={{ opacity: 0, x: -20 }}
-               animate={{ opacity: 1, x: 0 }}
-               className="flex items-center gap-3 text-primary"
-             >
-                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Live Platform Intelligence</span>
-             </motion.div>
-             <h1 className="text-5xl lg:text-8xl font-black text-foreground uppercase tracking-tighter leading-none">Admin Home</h1>
-             <p className="text-muted-foreground max-w-xl text-sm font-medium leading-relaxed">
-               Welcome back. Use this page to manage users, counselors, and platform payments in real-time.
-             </p>
+             {/* Header text removed for simple look */}
           </div>
 
           <div className="flex gap-4">
@@ -204,10 +177,10 @@ export const GeneralAnalysis = () => {
                   >
                      <div className="flex items-center gap-6">
                         <div className="h-12 w-12 rounded-xl bg-card border border-border flex items-center justify-center text-primary font-black group-hover:bg-primary group-hover:text-white transition-all">
-                           {user.name.charAt(0)}
+                           {(user.name || user.fullName || 'U').charAt(0)}
                         </div>
                         <div>
-                           <p className="text-sm font-black text-foreground uppercase tracking-tight">{user.name}</p>
+                           <p className="text-sm font-black text-foreground uppercase tracking-tight">{user.name || user.fullName}</p>
                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest flex items-center gap-2">
                               <Clock size={10} /> Joined as <span className="text-primary font-black">{user.role}</span> • 2 mins ago
                            </p>
@@ -269,31 +242,6 @@ export const GeneralAnalysis = () => {
                </Card>
             </section>
 
-            <section className="space-y-6">
-               <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-3">
-                  <TrendingUp size={16} /> Registry Access
-               </h3>
-               <div className="grid grid-cols-2 gap-4">
-                  <Link href="/dashboard/admin/students">
-                     <div className="p-6 bg-muted/30 border border-border/50 rounded-2xl hover:border-primary/50 transition-all group">
-                        <div className="h-10 w-10 rounded-xl bg-success/10 text-success flex items-center justify-center mb-4 group-hover:bg-success group-hover:text-white transition-all">
-                           <Users size={18} />
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Manage</p>
-                        <p className="text-lg font-black uppercase tracking-tighter">Scholars</p>
-                     </div>
-                  </Link>
-                  <Link href="/dashboard/admin/counselors">
-                     <div className="p-6 bg-muted/30 border border-border/50 rounded-2xl hover:border-primary/50 transition-all group">
-                        <div className="h-10 w-10 rounded-xl bg-info/10 text-info flex items-center justify-center mb-4 group-hover:bg-info group-hover:text-white transition-all">
-                           <ShieldCheck size={18} />
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Manage</p>
-                        <p className="text-lg font-black uppercase tracking-tighter">Experts</p>
-                     </div>
-                  </Link>
-               </div>
-            </section>
          </div>
       </div>
     </div>

@@ -28,17 +28,14 @@ const menuItems = [
   {
     group: "OVERVIEW",
     items: [
-      { name: 'Admin Home', icon: LayoutDashboard, href: '/dashboard/admin' },
-      { name: 'Analytics', icon: BarChart3, href: '/dashboard/admin/analytics' },
+      { name: 'Home', icon: LayoutDashboard, href: '/dashboard/admin' },
     ]
   },
   {
     group: "MANAGEMENT",
     items: [
-      { name: 'Students', icon: Users, href: '/dashboard/admin/students' },
-      { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
-      { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
       { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
+      { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
     ]
   },
   {
@@ -67,18 +64,20 @@ export const AdminSidebar = () => {
     <motion.aside 
       initial={false}
       animate={{ width: collapsed ? 88 : 288 }}
-      className="flex flex-col h-screen bg-card border-r border-border/50 pt-12 pb-8 px-4 overflow-x-hidden overflow-y-auto scrollbar-hide z-50 relative"
+      transition={{ 
+        type: "spring", 
+        stiffness: 400, 
+        damping: 40,
+        restDelta: 0.1
+      }}
+      className="flex flex-col h-screen bg-card border-r border-border pt-12 pb-8 px-4 overflow-x-hidden overflow-y-auto scrollbar-hide z-50 relative shadow-sm"
     >
       {/* Brand / Logo Section & Collapse Toggle */}
       <div className={cn(
-        "mb-16 px-2 flex items-center justify-between",
+        "mb-8 px-2 flex items-center justify-between",
         collapsed && "flex-col gap-8 justify-center"
       )}>
-        <div className={cn("flex items-center gap-3 group cursor-pointer", collapsed && "justify-center w-full")}>
-          <div className="h-10 w-10 shrink-0 primary-gradient rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-            <Globe className="text-white" size={20} />
-          </div>
-        </div>
+        {/* Logo removed for minimalist layout */}
         
         <button 
           onClick={() => setCollapsed(!collapsed)}
@@ -94,19 +93,7 @@ export const AdminSidebar = () => {
       {/* Navigation Groups */}
       <div className="flex-1 space-y-10">
         {menuItems.map((group, idx) => (
-          <div key={idx} className="space-y-4">
-             {!collapsed ? (
-                <motion.h3 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.4 }}
-                  className="px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]"
-                >
-                  {group.group}
-                </motion.h3>
-             ) : (
-                <div className="h-px bg-border/40 mx-4" />
-             )}
-             <nav className="space-y-1">
+             <nav key={idx} className="space-y-1">
                {group.items.map((item) => {
                  const isActive = pathname === item.href;
                  return (
@@ -150,7 +137,6 @@ export const AdminSidebar = () => {
                  );
                })}
              </nav>
-          </div>
         ))}
       </div>
 

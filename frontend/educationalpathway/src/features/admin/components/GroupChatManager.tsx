@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import api from '@/lib/api';
+import api, { getErrorMessage } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface Group {
@@ -13,11 +13,29 @@ interface Group {
     isGroup: boolean;
 }
 
+interface Report {
+    id: number;
+    reason: string;
+    messageId: number;
+    message?: {
+        content: string;
+        senderId: number;
+        sender?: {
+            name: string;
+        };
+    };
+    reporter?: {
+        name: string;
+    };
+}
+
 export const GroupChatManager: React.FC = () => {
     const [groups, setGroups] = useState<Group[]>([]);
     const [name, setName] = useState('');
     const [country, setCountry] = useState('');
     const [description, setDescription] = useState('');
+    const [category, setCategory] = useState('General');
+    const [groupType, setGroupType] = useState('Public');
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'groups' | 'moderation' | 'reports'>('groups');
     
@@ -25,21 +43,22 @@ export const GroupChatManager: React.FC = () => {
     const [targetUserId, setTargetUserId] = useState('');
     const [warningReason, setWarningReason] = useState('');
     const [suspendUserId, setSuspendUserId] = useState('');
-    const [reports, setReports] = useState<any[]>([]);
+    const [reports, setReports] = useState<Report[]>([]);
 
     const fetchGroups = async () => {
         try {
             const response = await api.get('/groups');
-            setGroups(response.data);
+            setGroups(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch groups:', error);
+            toast.error(getErrorMessage(error, 'Failed to fetch groups'));
         }
     };
 
     const fetchReports = async () => {
         try {
             const response = await api.get('/moderation/reports');
-            setReports(response.data);
+            setReports(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch reports:', error);
         }
@@ -59,7 +78,7 @@ export const GroupChatManager: React.FC = () => {
 
         try {
             setLoading(true);
-            await api.post('/groups', { name, country, description });
+            await api.post('/groups', { name, country, description, category, groupType });
             toast.success('Group created successfully!');
             setName('');
             setCountry('');
@@ -67,7 +86,7 @@ export const GroupChatManager: React.FC = () => {
             fetchGroups();
         } catch (error) {
             console.error('Failed to create group:', error);
-            toast.error('Failed to create group');
+            toast.error(getErrorMessage(error, 'Failed to create group'));
         } finally {
             setLoading(false);
         }
@@ -84,7 +103,7 @@ export const GroupChatManager: React.FC = () => {
             toast.success('User warned successfully');
             setTargetUserId('');
             setWarningReason('');
-        } catch (error) {
+        } catch {
             toast.error('Failed to warn user');
         }
     };
@@ -98,14 +117,13 @@ export const GroupChatManager: React.FC = () => {
             await api.post(`/moderation/suspend/${suspendUserId}`);
             toast.success('User suspended successfully');
             setSuspendUserId('');
-        } catch (error) {
+        } catch {
             toast.error('Failed to suspend user');
         }
     };
 
     return (
         <div className="p-6">
-            <h1 className="text-3xl font-bold mb-6">Community & Moderation</h1>
 
             <div className="flex gap-4 mb-8 border-b">
                 <button 
@@ -157,6 +175,36 @@ export const GroupChatManager: React.FC = () => {
                                             onChange={(e) => setCountry(e.target.value)} 
                                             placeholder="e.g. Canada"
                                         />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="groupCategory" className="block text-sm font-medium text-foreground/80 mb-1">Category</label>
+                                        <select 
+                                            id="groupCategory"
+                                            title="Category"
+                                            aria-label="Category"
+                                            className="w-full border rounded-md p-2 bg-background"
+                                            value={category}
+                                            onChange={(e) => setCategory(e.target.value)}
+                                        >
+                                            <option value="Scholarship">Scholarship</option>
+                                            <option value="University">University</option>
+                                            <option value="Counseling">Counseling</option>
+                                            <option value="General">General</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="groupType" className="block text-sm font-medium text-foreground/80 mb-1">Group Type</label>
+                                        <select 
+                                            id="groupType"
+                                            title="Group Type"
+                                            aria-label="Group Type"
+                                            className="w-full border rounded-md p-2 bg-background"
+                                            value={groupType}
+                                            onChange={(e) => setGroupType(e.target.value)}
+                                        >
+                                            <option value="Public">Public (Anyone can join)</option>
+                                            <option value="Private">Private (Invite only)</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div>
@@ -232,7 +280,7 @@ export const GroupChatManager: React.FC = () => {
                                     placeholder="User ID"
                                 />
                                 <p className="text-sm text-amber-600 italic">
-                                    Warning: This will immediately deactivate the user's account.
+                                    Warning: This will immediately deactivate the user&apos;s account.
                                 </p>
                                 <Button type="submit" variant="destructive">Suspend Account</Button>
                             </form>
@@ -263,7 +311,7 @@ export const GroupChatManager: React.FC = () => {
                                             </span>
                                         </div>
                                         <div className="bg-muted p-3 rounded text-sm mb-4 italic">
-                                            "{report.message?.content}"
+                                            &quot;{report.message?.content}&quot;
                                         </div>
                                         <div className="flex gap-2">
                                             <Button 
@@ -286,7 +334,7 @@ export const GroupChatManager: React.FC = () => {
                                                 size="sm" 
                                                 variant="secondary"
                                                 onClick={() => {
-                                                    api.post('/moderation/warn', { userId: report.message.senderId, reason: report.reason })
+                                                    api.post('/moderation/warn', { userId: report.message?.senderId, reason: report.reason })
                                                         .then(() => toast.success('Sender warned'));
                                                 }}
                                             >

@@ -18,6 +18,10 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3001",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "http://localhost:4000",
   "http://127.0.0.1:4000",
   "http://localhost:5000",
@@ -76,7 +80,13 @@ app.use(express.json({
   }
 }));
 app.use(cookieParser());
-app.use(expressupload());
+app.use(expressupload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+  createParentPath: true,
+  parseNested: true
+}));
 
 // 4. Rate Limiting
 app.use(apiLimiter);

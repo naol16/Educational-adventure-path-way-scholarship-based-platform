@@ -92,13 +92,35 @@ export class ChatMessage extends Model {
     })
     declare moderationReason?: string;
 
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'attachment_url'
+    })
+    declare attachmentUrl?: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: true,
+        field: 'attachment_type'
+    })
+    declare attachmentType?: string;
+
     @ForeignKey(() => ChatMessage)
     @Column({
         type: DataType.INTEGER,
         allowNull: true,
-        field: 'parent_id'
+        field: 'reply_to_id'
     })
-    declare parentId: number | null;
+    declare replyToId?: number;
+
+    @Default(false)
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        field: 'is_edited'
+    })
+    declare isEdited: boolean;
 
     @CreatedAt
     @Column({
@@ -117,9 +139,9 @@ export class ChatMessage extends Model {
     @BelongsTo(() => Conversation)
     conversation!: ConversationType;
 
-    @BelongsTo(() => User)
-    sender!: UserType;
+    @BelongsTo(() => User, { as: 'sender' })
+    declare sender: UserType;
 
-    @BelongsTo(() => ChatMessage, 'parentId')
-    parent!: ChatMessage;
+    @BelongsTo(() => ChatMessage, { foreignKey: 'reply_to_id', as: 'repliedTo' })
+    repliedTo?: ChatMessage;
 }

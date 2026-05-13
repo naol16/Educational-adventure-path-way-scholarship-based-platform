@@ -73,10 +73,6 @@ export default function AdminLogsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 border-b border-border pb-10">
         <div className="space-y-4">
-          <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Activity Logs</h2>
-          <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
-             <Database size={14} className="text-primary" /> Monitor platform activity and system health
-          </p>
         </div>
         
         <div className="flex items-center gap-4">

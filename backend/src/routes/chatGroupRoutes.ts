@@ -11,14 +11,17 @@ const router = Router();
  */
 router.post("/", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
     try {
+        console.log('[chatGroupRoutes] POST /api/groups request by user:', req.user);
+        console.log('[chatGroupRoutes] POST /api/groups body:', req.body);
         const { name, country, description } = req.body;
         if (!name || !country) {
-            return res.status(400).json({ success: false, error: "Name and Country are required" });
+            return res.status(400).json({ status: "error", message: "Name and Country are required" });
         }
         const group = await ChatService.createGroupConversation(req.user!.id, { name, country, description });
-        res.status(201).json({ success: true, data: group });
+        res.status(201).json({ status: "success", data: group });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in POST /api/groups ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -29,9 +32,10 @@ router.post("/", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
 router.get("/", authenticate, async (req, res) => {
     try {
         const groups = await ChatService.getGroupConversations(req.user!.id);
-        res.status(200).json({ success: true, data: groups });
+        res.status(200).json({ status: "success", data: groups });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in GET /api/groups ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -43,12 +47,13 @@ router.post("/:id/join", authenticate, async (req, res) => {
     try {
         const conversationId = parseInt(req.params.id as string);
         if (isNaN(conversationId)) {
-            return res.status(400).json({ success: false, error: "Invalid Group ID" });
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
         }
         const participant = await ChatService.joinGroup(req.user!.id, conversationId);
-        res.status(200).json({ success: true, data: participant });
+        res.status(200).json({ status: "success", data: participant });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in POST /api/groups/:id/join ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -60,12 +65,27 @@ router.delete("/:id/leave", authenticate, async (req, res) => {
     try {
         const conversationId = parseInt(req.params.id as string);
         if (isNaN(conversationId)) {
-            return res.status(400).json({ success: false, error: "Invalid Group ID" });
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
         }
         await ChatService.leaveGroup(req.user!.id, conversationId);
-        res.status(200).json({ success: true, message: "Left group successfully" });
+        res.status(200).json({ status: "success", message: "Left group successfully" });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in DELETE /api/groups/:id/leave ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+router.post("/:id/leave", authenticate, async (req, res) => {
+    try {
+        const conversationId = parseInt(req.params.id as string);
+        if (isNaN(conversationId)) {
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
+        }
+        await ChatService.leaveGroup(req.user!.id, conversationId);
+        res.status(200).json({ status: "success", message: "Left group successfully" });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in POST /api/groups/:id/leave ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -77,12 +97,13 @@ router.get("/:id/members", authenticate, async (req, res) => {
     try {
         const conversationId = parseInt(req.params.id as string);
         if (isNaN(conversationId)) {
-            return res.status(400).json({ success: false, error: "Invalid Group ID" });
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
         }
         const members = await ChatService.getConversationMembers(conversationId);
-        res.status(200).json({ success: true, data: members });
+        res.status(200).json({ status: "success", data: members });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in GET /api/groups/:id/members ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -95,18 +116,65 @@ router.post("/:id/members", authenticate, async (req, res) => {
         const conversationId = parseInt(req.params.id as string);
         const { userId } = req.body;
         if (isNaN(conversationId) || !userId) {
-            return res.status(400).json({ success: false, error: "Invalid Data" });
+            return res.status(400).json({ status: "error", message: "Invalid Data" });
         }
         
         // Simple authorization: check if current user is admin
         if (req.user!.role !== UserRole.ADMIN) {
-             return res.status(403).json({ success: false, error: "Only admins can add members" });
+             return res.status(403).json({ status: "error", message: "Only admins can add members" });
         }
 
         const participant = await ChatService.addMemberToGroup(conversationId, userId);
-        res.status(200).json({ success: true, data: participant });
+        res.status(200).json({ status: "success", data: participant });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in POST /api/groups/:id/members ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
+ * @route GET /api/groups/:id
+ * @desc Get group details
+ */
+router.get("/:id", authenticate, async (req, res) => {
+    try {
+        const conversationId = parseInt(req.params.id as string);
+        if (isNaN(conversationId)) {
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
+        }
+        const group = await ChatService.getConversationById(conversationId);
+        if (!group || !group.isGroup) {
+            return res.status(404).json({ status: "error", message: "Group not found" });
+        }
+        
+        // Check if user is a member
+        const isMember = await ChatService.checkMembership(req.user!.id, conversationId);
+        
+        res.status(200).json({ 
+            status: "success", 
+            data: { ...group.get({ plain: true }), isMember } 
+        });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in GET /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
+ * @route GET /api/groups/:id/membership
+ * @desc Check if current user is a member
+ */
+router.get("/:id/membership", authenticate, async (req, res) => {
+    try {
+        const conversationId = parseInt(req.params.id as string);
+        if (isNaN(conversationId)) {
+            return res.status(400).json({ status: "error", message: "Invalid Group ID" });
+        }
+        const isMember = await ChatService.checkMembership(req.user!.id, conversationId);
+        res.status(200).json({ status: "success", data: { isMember } });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in GET /api/groups/:id/membership ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 
@@ -120,18 +188,19 @@ router.delete("/:id/members/:userId", authenticate, async (req, res) => {
         const userId = parseInt(req.params.userId as string);
         
         if (isNaN(conversationId) || isNaN(userId)) {
-            return res.status(400).json({ success: false, error: "Invalid IDs" });
+            return res.status(400).json({ status: "error", message: "Invalid IDs" });
         }
 
         // Simple authorization: check if current user is admin
         if (req.user!.role !== UserRole.ADMIN) {
-             return res.status(403).json({ success: false, error: "Only admins can remove members" });
+             return res.status(403).json({ status: "error", message: "Only admins can remove members" });
         }
 
         await ChatService.leaveGroup(userId, conversationId);
-        res.status(200).json({ success: true, message: "Member removed successfully" });
+        res.status(200).json({ status: "success", message: "Member removed successfully" });
     } catch (err: any) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('[chatGroupRoutes] Error in DELETE /api/groups/:id/members/:userId ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
     }
 });
 

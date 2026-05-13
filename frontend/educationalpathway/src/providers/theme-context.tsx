@@ -12,16 +12,18 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(() => {
+  const [mode, setModeState] = useState<ThemeMode>("system");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        return (localStorage.getItem("theme") as ThemeMode) || "system";
-      } catch {
-        // ignore
+        const saved = localStorage.getItem("theme") as ThemeMode;
+        if (saved) setModeState(saved);
+      } catch (e) {
+        console.error("Failed to load theme from localStorage", e);
       }
     }
-    return "system";
-  });
+  }, []);
 
   // apply theme whenever mode changes
   useEffect(() => {

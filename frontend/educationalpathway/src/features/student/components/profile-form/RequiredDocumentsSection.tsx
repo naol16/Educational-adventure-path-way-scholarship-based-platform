@@ -60,15 +60,29 @@ export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> =
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Click to replace</span>
               {typeof file === 'string' && (
-                <a 
-                  href={file} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View
-                </a>
+                <>
+                  <span className="text-muted-foreground opacity-30">|</span>
+                  <a 
+                    href={file} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View
+                  </a>
+                  <span className="text-muted-foreground opacity-30">|</span>
+                  <a 
+                    href={file} 
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer" 
+                    className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Download
+                  </a>
+                </>
               )}
             </div>
           </div>

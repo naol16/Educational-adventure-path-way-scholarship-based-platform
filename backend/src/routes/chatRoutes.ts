@@ -10,7 +10,9 @@ router.get("/conversations", authenticate as any, ChatController.getConversation
 router.get("/available-users", authenticate as any, ChatController.getAvailableUsers);
 router.get("/download", authenticate as any, ChatController.downloadFile);
 router.get("/:conversationId", authenticate as any, ChatController.getMessages);
+router.patch("/notifications/:conversationId", authenticate as any, ChatController.toggleNotifications);
 router.patch("/read/:conversationId", authenticate as any, ChatController.markAsRead);
+router.delete("/conversations/:conversationId", authenticate as any, ChatController.deleteConversation);
 router.post("/upload", authenticate as any, ChatController.uploadFile);
 
 export default router;
