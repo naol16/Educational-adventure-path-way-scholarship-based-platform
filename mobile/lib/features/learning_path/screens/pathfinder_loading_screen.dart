@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/learning_path/providers/assessment_provider.dart';
+import 'package:mobile/features/learning_path/providers/toefl_task_provider.dart';
+import 'package:mobile/core/providers/dependencies.dart';
+import 'package:mobile/features/learning_path/screens/assessment_result_screen.dart';
 
 class PathfinderLoadingScreen extends ConsumerStatefulWidget {
   const PathfinderLoadingScreen({super.key});
@@ -18,9 +21,12 @@ class _PathfinderLoadingScreenState extends ConsumerState<PathfinderLoadingScree
   int _messageIndex = 0;
   Timer? _timer;
   Timer? _pollTimer;
+  int _pollCount = 0;
+  static const int _maxPolls = 60; // 3 min max (60 × 3s)
+  bool _navigating = false;
 
   final List<String> _messages = [
-    "Analyzing your speaking fluency...",
+    "Analyzing your responses...",
     "Comparing profile with 5,000+ scholarships...",
     "Generating your custom Mission Roadmap...",
     "Finalizing adaptive learning path...",
@@ -42,16 +48,89 @@ class _PathfinderLoadingScreenState extends ConsumerState<PathfinderLoadingScree
       }
     });
 
-    // Start polling for results
     _startPolling();
   }
 
   void _startPolling() {
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      final state = ref.read(assessmentProvider);
-      final testId = state.testId;
-      if (testId != null) {
-        await ref.read(assessmentProvider.notifier).pollResult(testId);
+      if (!mounted || _navigating) return;
+      _pollCount++;
+
+      // ── Check TOEFL provider first ──────────────────────────────────────────
+      final toeflState = ref.read(toeflTaskProvider);
+      if (toeflState.testId != null) {
+        try {
+          final assessApi = ref.read(assessmentApiServiceProvider);
+          final result = await assessApi.getResult(toeflState.testId!);
+          final status = result['status'];
+
+          if (status == 'success' && mounted && !_navigating) {
+            _navigating = true;
+            timer.cancel();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const AssessmentResultScreen()),
+            );
+            return;
+          } else if (status == 'failed') {
+            timer.cancel();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Grading failed: ${result['error'] ?? 'Unknown error'}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              Navigator.pop(context);
+            }
+            return;
+          }
+          // Still 'processing' — keep waiting
+          return;
+        } catch (_) {}
+      }
+
+      // ── Check IELTS provider ────────────────────────────────────────────────
+      final ieltsState = ref.read(assessmentProvider);
+      if (ieltsState.testId != null) {
+        await ref.read(assessmentProvider.notifier).pollResult(ieltsState.testId!);
+        final updatedState = ref.read(assessmentProvider);
+
+        if (updatedState.status == 'success' && mounted && !_navigating) {
+          _navigating = true;
+          timer.cancel();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AssessmentResultScreen()),
+          );
+          return;
+        }
+        if (updatedState.status == 'failed') {
+          timer.cancel();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Grading failed: ${updatedState.error ?? 'Unknown error'}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            Navigator.pop(context);
+          }
+          return;
+        }
+      }
+
+      // ── Timeout ─────────────────────────────────────────────────────────────
+      if (_pollCount >= _maxPolls && mounted) {
+        timer.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Grading is taking longer than expected. Check your history later.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+        Navigator.pop(context);
       }
     });
   }
@@ -114,6 +193,14 @@ class _PathfinderLoadingScreenState extends ConsumerState<PathfinderLoadingScree
                 backgroundColor: DesignSystem.surface(context),
                 valueColor: const AlwaysStoppedAnimation(DesignSystem.emerald),
                 borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'This may take up to 60 seconds...',
+              style: GoogleFonts.inter(
+                color: DesignSystem.subText(context),
+                fontSize: 12,
               ),
             ),
           ],

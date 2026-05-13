@@ -100,11 +100,7 @@ class _CounselorWalletScreenState extends ConsumerState<CounselorWalletScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primary, primary.withValues(alpha: 0.8), const Color(0xFF06B6D4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: DesignSystem.cardGradient(context),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -125,10 +121,31 @@ class _CounselorWalletScreenState extends ConsumerState<CounselorWalletScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '${NumberFormat('#,##0').format(profile?.pendingBalance ?? 0)} ETB',
-            style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '${NumberFormat('#,##0').format(profile?.pendingBalance ?? 0)}',
+                style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(width: 4),
+              Text('ETB', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w700)),
+            ],
           ),
+          if ((profile?.pendingBalanceUsd ?? 0) > 0) ...[
+             const SizedBox(height: 4),
+             Row(
+                children: [
+                  const Icon(LucideIcons.trendingUp, color: Color(0xFF10B981), size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    '≈ \$${(profile?.pendingBalanceUsd ?? 0).toStringAsFixed(2)} USD',
+                    style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ],
+             ),
+          ],
           const SizedBox(height: 24),
           Row(
             children: [
@@ -187,7 +204,7 @@ class _CounselorWalletScreenState extends ConsumerState<CounselorWalletScreen> {
 
   Widget _buildTransactionCard(BuildContext context, WalletTransaction t) {
     final isCredit = t.type == 'credit';
-    final color = isCredit ? const Color(0xFF10B981) : Colors.red;
+    final color = isCredit ? DesignSystem.success(context) : DesignSystem.error(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -237,9 +254,9 @@ class _CounselorWalletScreenState extends ConsumerState<CounselorWalletScreen> {
   Widget _buildPayoutCard(BuildContext context, CounselorPayout p) {
     Color statusColor;
     switch (p.status) {
-      case 'completed': statusColor = const Color(0xFF10B981); break;
-      case 'pending': statusColor = const Color(0xFFF59E0B); break;
-      default: statusColor = Colors.red;
+      case 'completed': statusColor = DesignSystem.success(context); break;
+      case 'pending': statusColor = DesignSystem.warning(context); break;
+      default: statusColor = DesignSystem.error(context);
     }
 
     return Padding(

@@ -34,6 +34,7 @@ export class GeminiIngestionService {
             - requirements (string | null): The detailed eligibility criteria or requirements.
             - intakeSeason (string | null): The expected start season or intake (e.g., "Fall 2026", "Spring 2026").
             - country (string | null): The country or region where the scholarship is applicable or where the study takes place.
+            - university (string | null): The name of the host university or institution offering the scholarship, if applicable.
             Text:
             ${text.substring(0, 10000)} -- Truncated to avoid token limits if necessary
         `;

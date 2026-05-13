@@ -39,6 +39,21 @@ export class CounselorPayout extends Model {
     declare amount: number;
 
     @Column({
+        type: DataType.STRING(10),
+        allowNull: false,
+        defaultValue: 'ETB',
+        field: 'currency'
+    })
+    declare currency: 'ETB' | 'USD';
+
+    @Column({
+        type: DataType.DECIMAL(10, 4),
+        allowNull: true,
+        field: 'exchange_rate'
+    })
+    declare exchangeRate: number;
+
+    @Column({
         type: DataType.STRING(100),
         allowNull: false,
         unique: true,

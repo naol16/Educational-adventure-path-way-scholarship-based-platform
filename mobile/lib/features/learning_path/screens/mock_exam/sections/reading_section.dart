@@ -506,7 +506,8 @@ class _SummaryRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = (state.answers['R_${q.id}'] as List?)?.cast<String>() ?? [];
+    final rawSelected = (state.answers['R_${q.id}'] as List?) ?? [];
+    final selected = rawSelected.map((e) => e.toString()).toList();
     final accent = state.primaryAccent;
 
     return Column(

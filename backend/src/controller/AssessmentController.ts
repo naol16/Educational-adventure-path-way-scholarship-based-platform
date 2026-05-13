@@ -20,6 +20,7 @@ export class AssessmentController {
 
       const examTypeUpper = examType.toUpperCase();
       const difficultyLower = difficulty.toLowerCase();
+      const difficultyProper = (difficultyLower.charAt(0).toUpperCase() + difficultyLower.slice(1)) as "Easy" | "Medium" | "Hard";
       if (!["IELTS", "TOEFL"].includes(examTypeUpper)) {
         res.status(400).json({ error: "examType must be IELTS or TOEFL" });
         return;
@@ -57,8 +58,8 @@ export class AssessmentController {
       }
 
       const result = await AssessmentService.generateExam(
-        examType as "IELTS" | "TOEFL", 
-        difficulty as "Easy" | "Medium" | "Hard", 
+        examTypeUpper as "IELTS" | "TOEFL", 
+        difficultyProper, 
         undefined, 
         studentId, 
         isDiagnostic

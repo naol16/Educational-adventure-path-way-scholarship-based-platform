@@ -80,7 +80,9 @@ class CounselorProfile {
   final double ratingPercentage;
   final int totalSessions;
   final double pendingBalance;
+  final double pendingBalanceUsd;
   final double totalEarned;
+  final double totalEarnedUsd;
   final String? profileImageUrl;
   final String? currentPosition;
   final String? organization;
@@ -138,6 +140,8 @@ class CounselorProfile {
     this.idCardUrl,
     this.selfieUrl,
     this.weeklySchedule,
+    this.pendingBalanceUsd = 0.0,
+    this.totalEarnedUsd = 0.0,
   });
 
   factory CounselorProfile.fromJson(Map<String, dynamic> json) {
@@ -191,6 +195,8 @@ class CounselorProfile {
       idCardUrl: json['idCardUrl'],
       selfieUrl: json['selfieUrl'],
       weeklySchedule: json['weeklySchedule'],
+      pendingBalanceUsd: double.tryParse(json['pendingBalanceUsd']?.toString() ?? '0') ?? 0.0,
+      totalEarnedUsd: double.tryParse(json['totalEarnedUsd']?.toString() ?? '0') ?? 0.0,
     );
   }
 }
@@ -317,6 +323,8 @@ class CounselorPayout {
   final String status;
   final String? bankName;
   final String? accountNumber;
+  final String currency;
+  final double? exchangeRate;
   final DateTime createdAt;
 
   const CounselorPayout({
@@ -325,6 +333,8 @@ class CounselorPayout {
     required this.status,
     this.bankName,
     this.accountNumber,
+    this.currency = 'ETB',
+    this.exchangeRate,
     required this.createdAt,
   });
 
@@ -336,6 +346,8 @@ class CounselorPayout {
       status: json['status'] ?? 'pending',
       bankName: details?['bankName'] ?? json['bankName'] ?? json['bank_name'],
       accountNumber: details?['accountNumber'] ?? json['accountNumber'] ?? json['account_number'],
+      currency: json['currency'] ?? 'ETB',
+      exchangeRate: double.tryParse(json['exchangeRate']?.toString() ?? ''),
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }

@@ -34,11 +34,17 @@ class CounselorMessagesScreen extends ConsumerWidget {
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: conversations.length,
-                      itemBuilder: (ctx, i) => _buildChatTile(context, conversations[i], currentUser?.id ?? 0),
+                      itemBuilder: (ctx, i) => _buildChatTile(
+                        context,
+                        conversations[i],
+                        currentUser?.id ?? 0,
+                      ),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error loading messages')),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) =>
+                      Center(child: Text('Error loading messages')),
                 ),
               ),
             ),
@@ -57,18 +63,39 @@ class CounselorMessagesScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Messages', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 24, fontWeight: FontWeight.w800)),
-                Text('Active student conversations', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+                Text(
+                  'Messages',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: DesignSystem.mainText(context),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'Active student conversations',
+                  style: GoogleFonts.inter(
+                    color: DesignSystem.labelText(context),
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
-          Icon(LucideIcons.messageSquare, color: DesignSystem.primary(context), size: 24),
+          Icon(
+            LucideIcons.messageSquare,
+            color: DesignSystem.primary(context),
+            size: 24,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildChatTile(BuildContext context, Conversation conv, int currentUserId) {
+  Widget _buildChatTile(
+    BuildContext context,
+    Conversation conv,
+    int currentUserId,
+  ) {
     final primary = DesignSystem.primary(context);
     final lastMsg = conv.lastMessage;
     final otherUser = conv.getOtherParticipant(currentUserId);
@@ -77,9 +104,15 @@ class CounselorMessagesScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => MentorChatScreen(conversationId: conv.id, otherUser: otherUser),
-          ));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MentorChatScreen(
+                conversationId: conv.id,
+                otherUser: otherUser,
+              ),
+            ),
+          );
         },
         child: GlassContainer(
           padding: const EdgeInsets.all(16),
@@ -89,9 +122,18 @@ class CounselorMessagesScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 26,
                 backgroundColor: primary.withValues(alpha: 0.1),
-                backgroundImage: otherUser.avatarUrl != null ? NetworkImage(otherUser.avatarUrl!) : null,
+                backgroundImage: otherUser.avatarUrl != null
+                    ? NetworkImage(otherUser.avatarUrl!)
+                    : null,
                 child: otherUser.avatarUrl == null
-                    ? Text(otherUser.name.substring(0, 1).toUpperCase(), style: GoogleFonts.plusJakartaSans(color: primary, fontWeight: FontWeight.w800, fontSize: 18))
+                    ? Text(
+                        otherUser.name.substring(0, 1).toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      )
                     : null,
               ),
               const SizedBox(width: 14),
@@ -99,8 +141,23 @@ class CounselorMessagesScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(otherUser.name, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w700, fontSize: 15)),
-                    Text(lastMsg?.content ?? 'No messages yet', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      otherUser.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: DesignSystem.mainText(context),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      lastMsg?.content ?? 'No messages yet',
+                      style: GoogleFonts.inter(
+                        color: DesignSystem.labelText(context),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -108,13 +165,32 @@ class CounselorMessagesScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   if (lastMsg != null)
-                    Text(DateFormat('h:mm a').format(lastMsg.createdAt), style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10)),
+                    Text(
+                      DateFormat('h:mm a').format(lastMsg.createdAt),
+                      style: GoogleFonts.inter(
+                        color: DesignSystem.labelText(context),
+                        fontSize: 10,
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   if (conv.unreadCount > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(10)),
-                      child: Text('${conv.unreadCount}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${conv.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -130,10 +206,27 @@ class CounselorMessagesScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(LucideIcons.messageSquare, color: DesignSystem.labelText(context), size: 56),
+          Icon(
+            LucideIcons.messageSquare,
+            color: DesignSystem.labelText(context),
+            size: 56,
+          ),
           const SizedBox(height: 16),
-          Text('No messages yet', style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 18, fontWeight: FontWeight.w700)),
-          Text('Conversations will appear here.', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+          Text(
+            'No messages yet',
+            style: GoogleFonts.plusJakartaSans(
+              color: DesignSystem.mainText(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            'Conversations will appear here.',
+            style: GoogleFonts.inter(
+              color: DesignSystem.labelText(context),
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );

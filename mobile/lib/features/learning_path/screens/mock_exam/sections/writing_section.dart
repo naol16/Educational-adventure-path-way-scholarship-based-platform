@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
-import 'package:mobile/features/learning_path/models/assessment_model.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/mock_exam_haptics.dart';
 
 class WritingSectionWidget extends ConsumerStatefulWidget {
   const WritingSectionWidget({super.key});
 
   @override
-  ConsumerState<WritingSectionWidget> createState() => _WritingSectionWidgetState();
+  ConsumerState<WritingSectionWidget> createState() =>
+      _WritingSectionWidgetState();
 }
 
-class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> with SingleTickerProviderStateMixin {
+class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late TextEditingController _task1Controller;
   late TextEditingController _task2Controller;
@@ -48,7 +48,8 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
     final accent = state.primaryAccent;
     final isToefl = state.examType == 'TOEFL';
 
-    if (section == null) return const Center(child: CircularProgressIndicator());
+    if (section == null)
+      return const Center(child: CircularProgressIndicator());
 
     return Stack(
       children: [
@@ -62,7 +63,10 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
               ),
               child: TabBar(
                 controller: _tabController,
-                indicator: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(12)),
+                indicator: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.white54,
                 dividerColor: Colors.transparent,
@@ -78,15 +82,21 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
                 controller: _tabController,
                 children: [
                   _IntegratedTaskEditor(
-                    title: isToefl ? "Integrated Writing Task" : "Writing Task 1",
+                    title: isToefl
+                        ? "Integrated Writing Task"
+                        : "Writing Task 1",
                     prompt: section.task1Prompt,
                     imageUrl: section.task1ImageUrl,
                     controller: _task1Controller,
                     targetWords: isToefl ? 150 : 150,
                     accent: accent,
-                    onTogglePassage: () => setState(() => _showPassageOverlay = !_showPassageOverlay),
+                    onTogglePassage: () => setState(
+                      () => _showPassageOverlay = !_showPassageOverlay,
+                    ),
                     onChanged: (val) {
-                      ref.read(mockExamProvider.notifier).updateAnswer('writing_task1', val);
+                      ref
+                          .read(mockExamProvider.notifier)
+                          .updateAnswer('writing_task1', val);
                       _checkHaptic(val, 150);
                     },
                   ),
@@ -99,7 +109,9 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
                     targetWords: isToefl ? 100 : 250,
                     accent: accent,
                     onChanged: (val) {
-                      ref.read(mockExamProvider.notifier).updateAnswer('writing_task2', val);
+                      ref
+                          .read(mockExamProvider.notifier)
+                          .updateAnswer('writing_task2', val);
                       _checkHaptic(val, isToefl ? 100 : 250);
                     },
                   ),
@@ -129,12 +141,34 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("READING REFERENCE", style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.bold, fontSize: 11)),
-                    IconButton(onPressed: () => setState(() => _showPassageOverlay = false), icon: const Icon(Icons.close, color: Colors.white38)),
+                    Text(
+                      "READING REFERENCE",
+                      style: GoogleFonts.plusJakartaSans(
+                        color: accent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () =>
+                          setState(() => _showPassageOverlay = false),
+                      icon: const Icon(Icons.close, color: Colors.white38),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Expanded(child: SingleChildScrollView(child: Text(passage, style: GoogleFonts.lora(color: Colors.white, fontSize: 15, height: 1.6)))),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      passage,
+                      style: GoogleFonts.lora(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,7 +178,9 @@ class _WritingSectionWidgetState extends ConsumerState<WritingSectionWidget> wit
   }
 
   void _checkHaptic(String text, int target) {
-    final count = text.trim().isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
+    final count = text.trim().isEmpty
+        ? 0
+        : text.trim().split(RegExp(r'\s+')).length;
     if (count == target) MockExamHaptics.success();
   }
 }
@@ -159,14 +195,21 @@ class _IntegratedTaskEditor extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   const _IntegratedTaskEditor({
-    required this.title, required this.prompt, this.imageUrl,
-    required this.controller, required this.targetWords, required this.accent,
-    required this.onTogglePassage, required this.onChanged,
+    required this.title,
+    required this.prompt,
+    this.imageUrl,
+    required this.controller,
+    required this.targetWords,
+    required this.accent,
+    required this.onTogglePassage,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final wordCount = controller.text.trim().isEmpty ? 0 : controller.text.trim().split(RegExp(r'\s+')).length;
+    final wordCount = controller.text.trim().isEmpty
+        ? 0
+        : controller.text.trim().split(RegExp(r'\s+')).length;
     final isTargetMet = wordCount >= targetWords;
 
     return SingleChildScrollView(
@@ -177,11 +220,26 @@ class _IntegratedTaskEditor extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1)),
+              Text(
+                title.toUpperCase(),
+                style: GoogleFonts.plusJakartaSans(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
               TextButton.icon(
                 onPressed: onTogglePassage,
                 icon: Icon(LucideIcons.eye, size: 14, color: accent),
-                label: Text("VIEW PASSAGE", style: GoogleFonts.plusJakartaSans(color: accent, fontSize: 11, fontWeight: FontWeight.bold)),
+                label: Text(
+                  "VIEW PASSAGE",
+                  style: GoogleFonts.plusJakartaSans(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -206,14 +264,21 @@ class _AcademicDiscussionEditor extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   const _AcademicDiscussionEditor({
-    required this.title, required this.prompt, this.professorPost, this.studentPosts,
-    required this.controller, required this.targetWords, required this.accent,
+    required this.title,
+    required this.prompt,
+    this.professorPost,
+    this.studentPosts,
+    required this.controller,
+    required this.targetWords,
+    required this.accent,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final wordCount = controller.text.trim().isEmpty ? 0 : controller.text.trim().split(RegExp(r'\s+')).length;
+    final wordCount = controller.text.trim().isEmpty
+        ? 0
+        : controller.text.trim().split(RegExp(r'\s+')).length;
     final isTargetMet = wordCount >= targetWords;
 
     return SingleChildScrollView(
@@ -221,43 +286,100 @@ class _AcademicDiscussionEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1)),
+          Text(
+            title.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+              color: accent,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 16),
           if (professorPost != null) ...[
-            _buildChatBubble("Professor Dr. Smith", professorPost!, accent, true),
+            _buildChatBubble(
+              "Professor Dr. Smith",
+              professorPost!,
+              accent,
+              true,
+            ),
             const SizedBox(height: 12),
           ],
           if (studentPosts != null)
-            ...studentPosts!.map((s) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildChatBubble(s['name']!, s['post']!, Colors.white38, false),
-            )),
+            ...studentPosts!.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildChatBubble(
+                  s['name']!,
+                  s['post']!,
+                  Colors.white38,
+                  false,
+                ),
+              ),
+            ),
           const SizedBox(height: 24),
           _buildCounter(wordCount, targetWords, accent, isTargetMet),
           const SizedBox(height: 12),
-          _buildEditor(controller, onChanged, hint: "Contribute to the discussion..."),
+          _buildEditor(
+            controller,
+            onChanged,
+            hint: "Contribute to the discussion...",
+          ),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildChatBubble(String author, String text, Color color, bool isProfessor) {
+  Widget _buildChatBubble(
+    String author,
+    String text,
+    Color color,
+    bool isProfessor,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(radius: 16, backgroundColor: color.withOpacity(0.2), child: Text(author[0], style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold))),
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: color.withOpacity(0.2),
+          child: Text(
+            author[0],
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(author, style: GoogleFonts.plusJakartaSans(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+                Text(
+                  author,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(text, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.4)),
+                Text(
+                  text,
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),
@@ -271,20 +393,49 @@ Widget _buildCounter(int count, int target, Color accent, bool isMet) {
   final color = isMet ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withOpacity(0.3))),
-    child: Text("$count / $target words", style: GoogleFonts.jetBrainsMono(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: color.withOpacity(0.3)),
+    ),
+    child: Text(
+      "$count / $target words",
+      style: GoogleFonts.jetBrainsMono(
+        color: color,
+        fontWeight: FontWeight.bold,
+        fontSize: 11,
+      ),
+    ),
   );
 }
 
-Widget _buildEditor(TextEditingController controller, ValueChanged<String> onChanged, {String hint = "Start writing here..."}) {
+Widget _buildEditor(
+  TextEditingController controller,
+  ValueChanged<String> onChanged, {
+  String hint = "Start writing here...",
+}) {
   return Container(
     constraints: const BoxConstraints(minHeight: 300),
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.1))),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.03),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withOpacity(0.1)),
+    ),
     child: TextField(
-      controller: controller, onChanged: onChanged, maxLines: null,
-      style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 15, height: 1.6),
-      decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.white24), border: InputBorder.none),
+      controller: controller,
+      onChanged: onChanged,
+      maxLines: null,
+      style: GoogleFonts.jetBrainsMono(
+        color: Colors.white,
+        fontSize: 15,
+        height: 1.6,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white24),
+        border: InputBorder.none,
+      ),
     ),
   );
 }

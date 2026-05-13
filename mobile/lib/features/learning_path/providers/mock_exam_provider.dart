@@ -141,7 +141,7 @@ class MockExamState {
   int get answeredObjectiveQuestions {
     final prefix = isListening ? 'L_' : (isReading ? 'R_' : '');
     if (prefix.isEmpty) return 0;
-    return answers.keys.where((k) => k.startsWith(prefix)).length;
+    return answers.keys.where((String k) => k.startsWith(prefix)).length;
   }
 
   Map<String, dynamic> toJson() => {
@@ -169,7 +169,7 @@ class MockExamState {
       currentSectionIndex: json['currentSectionIndex'] ?? 0,
       currentQuestionIndex: json['currentQuestionIndex'] ?? 0,
       answers: Map<String, dynamic>.from(json['answers'] ?? {}),
-      flaggedQuestions: (json['flaggedQuestions'] as Map?)?.map((k, v) => MapEntry(int.parse(k), v as bool)) ?? {},
+      flaggedQuestions: (json['flaggedQuestions'] as Map?)?.map((k, v) => MapEntry(int.parse(k.toString()), v as bool)) ?? <int, bool>{},
       highlights: (json['highlights'] as List?)?.map((e) => Map<String, int>.from(e)).toList() ?? [],
       notes: json['notes'],
       timeRemaining: Duration(seconds: json['timeRemaining'] ?? 0),
@@ -222,7 +222,8 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
     state = state.copyWith(isLoadingHistory: true);
     try {
       final data = await _api.getProgress();
-      final list = (data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final rawList = (data['data'] as List?) ?? [];
+      final list = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       state = state.copyWith(progressHistory: list, isLoadingHistory: false);
     } catch (_) {
       state = state.copyWith(isLoadingHistory: false);
@@ -381,7 +382,7 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
   }
 
   Future<void> submitExam() async {
-    state = state.copyWith(view: MockExamView.grading, isSubmitting: true);
+    state = state.copyWith(view: MockExamView.grading, isSubmitting: true, clearError: true);
     _timer?.cancel();
     _persistTimer?.cancel();
 
@@ -392,11 +393,39 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
         'attemptId': state.attemptId,
         'examType': state.examType,
       };
-      final result = await _api.submit(testId: state.blueprint!.testId, responses: responses);
-      state = state.copyWith(view: MockExamView.result, result: result, isSubmitting: false);
-      await _storage.delete(key: 'mock_exam_state_v2');
+      
+      // 1. Initial Submission
+      final initialResponse = await _api.submit(testId: state.blueprint!.testId, responses: responses);
+      final testId = initialResponse['testId'] ?? state.blueprint!.testId;
+      
+      // 2. Poll for results (Max 30 attempts = 150 seconds)
+      int attempts = 0;
+      while (attempts < 30) {
+        attempts++;
+        final poll = await _api.getResult(testId);
+        final status = poll['status'];
+
+        if (status == 'success') {
+          state = state.copyWith(view: MockExamView.result, result: poll['data'], isSubmitting: false);
+          await _storage.delete(key: 'mock_exam_state_v2');
+          return;
+        } else if (status == 'failed') {
+          final err = poll['error']?.toString() ?? "Grading failed.";
+          state = state.copyWith(view: MockExamView.grading, error: err, isSubmitting: false);
+          return;
+        } else if (status == 'not_found' && attempts > 1) {
+          // This happens if the backend cleared a failed 403 job
+          state = state.copyWith(view: MockExamView.grading, error: "AI service temporarily unavailable. Please retry.", isSubmitting: false);
+          return;
+        }
+
+        // Wait 5 seconds before next poll
+        await Future.delayed(const Duration(seconds: 5));
+      }
+
+      state = state.copyWith(view: MockExamView.grading, error: "Grading is taking longer than expected. Check back in your history later.", isSubmitting: false);
     } catch (e) {
-      state = state.copyWith(isSubmitting: false);
+      state = state.copyWith(view: MockExamView.grading, error: "Submission failed: ${e.toString()}", isSubmitting: false);
     }
   }
 

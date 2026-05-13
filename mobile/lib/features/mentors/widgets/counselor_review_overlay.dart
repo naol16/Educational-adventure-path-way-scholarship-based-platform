@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/mentors/models/booking_models.dart';
 import 'package:mobile/features/mentors/providers/mentors_providers.dart';
 
@@ -17,23 +16,27 @@ class CounselorReviewOverlay extends ConsumerStatefulWidget {
     required this.onSuccess,
   });
 
-  static void show(BuildContext context, Booking booking, VoidCallback onSuccess) {
+  static void show(
+    BuildContext context,
+    Booking booking,
+    VoidCallback onSuccess,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CounselorReviewOverlay(
-        booking: booking,
-        onSuccess: onSuccess,
-      ),
+      builder: (context) =>
+          CounselorReviewOverlay(booking: booking, onSuccess: onSuccess),
     );
   }
 
   @override
-  ConsumerState<CounselorReviewOverlay> createState() => _CounselorReviewOverlayState();
+  ConsumerState<CounselorReviewOverlay> createState() =>
+      _CounselorReviewOverlayState();
 }
 
-class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay> {
+class _CounselorReviewOverlayState
+    extends ConsumerState<CounselorReviewOverlay> {
   int _rating = 5;
   final _commentController = TextEditingController();
   bool _isSubmitting = false;
@@ -59,7 +62,7 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
             color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 40,
             spreadRadius: 10,
-          )
+          ),
         ],
       ),
       child: Column(
@@ -84,7 +87,10 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: _emerald.withValues(alpha: 0.3), width: 2),
+                  border: Border.all(
+                    color: _emerald.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
                   image: counselor?.profileImageUrl != null
                       ? DecorationImage(
                           image: NetworkImage(counselor!.profileImageUrl!),
@@ -126,7 +132,9 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
                 icon: const Icon(LucideIcons.x),
                 style: IconButton.styleFrom(
                   backgroundColor: DesignSystem.surface(context),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -150,7 +158,9 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
                     'Confirming will release the escrow funds to the counselor.',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: DesignSystem.mainText(context).withValues(alpha: 0.7),
+                      color: DesignSystem.mainText(
+                        context,
+                      ).withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -182,9 +192,15 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(
-                    isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                    isSelected
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
                     size: 44,
-                    color: isSelected ? _emerald : DesignSystem.labelText(context).withValues(alpha: 0.2),
+                    color: isSelected
+                        ? _emerald
+                        : DesignSystem.labelText(
+                            context,
+                          ).withValues(alpha: 0.2),
                   ),
                 ),
               );
@@ -245,7 +261,7 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
                   color: _emerald.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
-                )
+                ),
               ],
             ),
             child: ElevatedButton(
@@ -253,7 +269,9 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
               ),
               child: _isSubmitting
                   ? const SizedBox(
@@ -284,10 +302,14 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
     setState(() => _isSubmitting = true);
 
     try {
-      final success = await ref.read(counselorServiceProvider).reviewAndConfirmBooking(
+      final success = await ref
+          .read(counselorServiceProvider)
+          .reviewAndConfirmBooking(
             widget.booking.id,
             _rating,
-            _commentController.text.trim().isNotEmpty ? _commentController.text.trim() : null,
+            _commentController.text.trim().isNotEmpty
+                ? _commentController.text.trim()
+                : null,
           );
 
       if (!mounted) return;
@@ -304,7 +326,9 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
             ),
             backgroundColor: _emerald,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       } else {
@@ -321,7 +345,9 @@ class _CounselorReviewOverlayState extends ConsumerState<CounselorReviewOverlay>
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }

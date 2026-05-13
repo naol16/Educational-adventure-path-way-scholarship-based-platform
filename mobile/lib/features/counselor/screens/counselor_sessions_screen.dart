@@ -129,7 +129,9 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
                     child: Text(
                       tabs[i],
                       style: GoogleFonts.inter(
-                        color: active ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white) : DesignSystem.labelText(context),
+                        color: active 
+                          ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white) 
+                          : DesignSystem.labelText(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -264,10 +266,10 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
     Color color;
     String label;
     switch (status) {
-      case 'confirmed': color = const Color(0xFF10B981); label = 'Confirmed'; break;
-      case 'pending':   color = const Color(0xFFF59E0B); label = 'Pending'; break;
-      case 'completed': color = Colors.blue; label = 'Done'; break;
-      case 'cancelled': color = Colors.red; label = 'Cancelled'; break;
+      case 'confirmed': color = DesignSystem.success(context); label = 'Confirmed'; break;
+      case 'pending':   color = DesignSystem.warning(context); label = 'Pending'; break;
+      case 'completed': color = DesignSystem.info(context); label = 'Done'; break;
+      case 'cancelled': color = DesignSystem.error(context); label = 'Cancelled'; break;
       default:          color = DesignSystem.labelText(context); label = status;
     }
     return Container(
@@ -283,6 +285,7 @@ class _CounselorSessionsScreenState extends ConsumerState<CounselorSessionsScree
 
     PreFlightDialog.show(context, () {
       MeetingService.joinMeeting(
+        context: context,
         roomName: booking.meetingLink!,
         user: user,
         counselorName: user.name,

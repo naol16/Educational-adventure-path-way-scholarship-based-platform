@@ -8,6 +8,8 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/learning_path/screens/assessment_result_screen.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
+import 'package:mobile/core/providers/dependencies.dart';
+import 'package:mobile/features/learning_path/providers/assessment_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -196,29 +198,56 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
   }
 
   void _checkResult() async {
-    while (mounted) {
-      final state = ref.read(toeflTaskProvider);
-      if (state.result != null) {
-        // ignore: use_build_context_synchronously
-        Navigator.pop(context); // Close dialog
-        Navigator.pushReplacement(
+    final testId = ref.read(toeflTaskProvider).testId;
+    if (testId == null) return;
+
+    final api = ref.read(assessmentApiServiceProvider);
+    int attempts = 0;
+
+    while (mounted && attempts < 40) {
+      attempts++;
+      try {
+        final result = await api.getResult(testId);
+        final status = result['status'];
+
+        if (status == 'success' && mounted) {
+          // Store result in provider so AssessmentResultScreen can read it
+          ref.read(assessmentProvider.notifier).pollResult(testId);
           // ignore: use_build_context_synchronously
-          context,
-          MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
-        );
-        break;
+          Navigator.pop(context); // Close dialog
+          Navigator.pushReplacement(
+            // ignore: use_build_context_synchronously
+            context,
+            MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
+          );
+          return;
+        } else if (status == 'failed' && mounted) {
+          // ignore: use_build_context_synchronously
+          Navigator.pop(context);
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Grading failed: ${result['error'] ?? 'Unknown error'}")),
+          );
+          return;
+        }
+      } catch (e) {
+        // Network error — keep retrying
       }
-      if (state.error != null) {
-        // ignore: use_build_context_synchronously
-        Navigator.pop(context);
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${state.error}")));
-        break;
-      }
-      // Poll every 500ms instead of 2s — result is usually already ready.
-      await Future.delayed(const Duration(milliseconds: 500));
+
+      await Future.delayed(const Duration(seconds: 3));
+    }
+
+    // Timeout
+    if (mounted) {
+      // ignore: use_build_context_synchronously
+      Navigator.pop(context);
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Grading is taking longer than expected. Check your history later.")),
+      );
     }
   }
+
 
   @override
   void dispose() {

@@ -122,17 +122,17 @@ class CounselorDashboardScreen extends ConsumerWidget {
     String label;
     switch (status) {
       case 'verified':
-        color = const Color(0xFF10B981);
+        color = DesignSystem.success(context);
         icon = Icons.verified;
         label = 'Verified Expert';
         break;
       case 'rejected':
-        color = Colors.red;
+        color = DesignSystem.error(context);
         icon = LucideIcons.alertCircle;
         label = 'Application Rejected';
         break;
       default:
-        color = const Color(0xFFF59E0B);
+        color = DesignSystem.warning(context);
         icon = LucideIcons.clock;
         label = 'Pending Approval';
     }
@@ -204,11 +204,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: DesignSystem.cardGradient(context),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8))],
         ),
@@ -347,6 +343,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
                   if (user == null) return;
                   PreFlightDialog.show(context, () {
                     MeetingService.joinMeeting(
+                      context: context,
                       roomName: booking.meetingLink!,
                       user: user,
                       counselorName: user.name,
@@ -372,8 +369,8 @@ class CounselorDashboardScreen extends ConsumerWidget {
     Color color;
     String label;
     switch (status) {
-      case 'confirmed': color = const Color(0xFF10B981); label = 'Confirmed'; break;
-      case 'pending':   color = const Color(0xFFF59E0B); label = 'Pending'; break;
+      case 'confirmed': color = DesignSystem.success(context); label = 'Confirmed'; break;
+      case 'pending':   color = DesignSystem.warning(context); label = 'Pending'; break;
       case 'completed': color = DesignSystem.primary(context); label = 'Completed'; break;
       default:          color = DesignSystem.labelText(context); label = status;
     }

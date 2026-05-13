@@ -15,6 +15,7 @@ import { NotificationService } from "./NotificationService.js";
 import { User } from "../models/User.js";
 import { Student } from "../models/Student.js";
 import { ScholarshipNotificationService } from "./ScholarshipNotificationService.js";
+import { GeocodingService } from "./GeocodingService.js";
 
 export class ScholarshipDiscoveryService {
   private static isRunning = false;
@@ -201,6 +202,7 @@ export class ScholarshipDiscoveryService {
       const manualRequirements = this.extractRequirementsContextual(cleanText);
       const manualIntakeSeason = this.extractIntakeSeasonContextual(cleanText);
       const manualCountry = this.extractCountryContextual(cleanText, url);
+      const manualUniversity = this.extractUniversityContextual(cleanText, title);
       const regexData = this.quickRegex(cleanText);
 
       const title = (
@@ -236,10 +238,18 @@ export class ScholarshipDiscoveryService {
         requirements: metadata.requirements || manualRequirements || null,
         intakeSeason: metadata.intakeSeason || manualIntakeSeason || null,
         country: metadata.country || manualCountry || null,
+        university: metadata.university || manualUniversity || null,
         originalUrl: url,
         applicationUrl: await this.extractApplicationUrl($, url, strategyManager, browser),
         contentHash,
       };
+
+      // 4. Geocoding
+      const coords = await GeocodingService.geocodeLocation(scholarshipData.university, scholarshipData.country);
+      if (coords) {
+        scholarshipData.latitude = coords.latitude;
+        scholarshipData.longitude = coords.longitude;
+      }
 
       // Embedding
       const vector =
@@ -652,5 +662,22 @@ export class ScholarshipDiscoveryService {
       amount: amountMatch ? amountMatch[0] : null,
       title: text.split("\n")[0],
     };
+  }
+
+  private static extractUniversityContextual(text: string, title: string): string | null {
+    // Basic logic: If the title contains "University" or "College" or "Institute", use it.
+    const patterns = [
+        /(?:University|College|Institute|Polytechnic|School) of [^.\n,]{1,50}/gi,
+        /[^.\n,]{1,50} (?:University|College|Institute|Polytechnic|School)/gi
+    ];
+
+    for (const p of patterns) {
+        const titleMatch = title.match(p);
+        if (titleMatch) return titleMatch[0].trim();
+        
+        const textMatch = text.match(p);
+        if (textMatch) return textMatch[0].trim();
+    }
+    return null;
   }
 }
