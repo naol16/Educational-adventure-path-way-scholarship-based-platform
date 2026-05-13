@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/mentors/models/booking_models.dart';
 import 'package:mobile/features/mentors/providers/mentors_providers.dart';
@@ -32,17 +31,18 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
     if (_selectedSlot == null) return;
     setState(() => _isBooking = true);
 
-    final result = await ref.read(counselorServiceProvider).createBooking(
-      widget.counselorId,
-      _selectedSlot!.id,
-    );
+    final result = await ref
+        .read(counselorServiceProvider)
+        .createBooking(widget.counselorId, _selectedSlot!.id);
 
     if (!mounted) return;
     setState(() => _isBooking = false);
 
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create booking. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to create booking. Please try again.'),
+        ),
       );
       return;
     }
@@ -52,7 +52,11 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
       // No payment needed — booking confirmed directly
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking confirmed for ${DateFormat('MMM d, jm').format(_selectedSlot!.startTime)}')),
+        SnackBar(
+          content: Text(
+            'Booking confirmed for ${DateFormat('MMM d, jm').format(_selectedSlot!.startTime)}',
+          ),
+        ),
       );
       return;
     }
@@ -85,23 +89,40 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Book a Session',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20, fontWeight: FontWeight.bold, color: DesignSystem.mainText(context))),
-              IconButton(icon: const Icon(LucideIcons.x), onPressed: () => Navigator.pop(context)),
+              Text(
+                'Book a Session',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: DesignSystem.mainText(context),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.x),
+                onPressed: () => Navigator.pop(context),
+              ),
             ],
           ),
-          Text('Select an available slot with ${widget.counselorName}',
-              style: GoogleFonts.inter(fontSize: 14, color: DesignSystem.labelText(context))),
+          Text(
+            'Select an available slot with ${widget.counselorName}',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: DesignSystem.labelText(context),
+            ),
+          ),
           const SizedBox(height: 24),
           ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
             child: slotsAsync.when(
               data: (slots) {
                 if (slots.isEmpty) {
                   return Center(
-                    child: Text('No available slots found.',
-                        style: TextStyle(color: DesignSystem.labelText(context))),
+                    child: Text(
+                      'No available slots found.',
+                      style: TextStyle(color: DesignSystem.labelText(context)),
+                    ),
                   );
                 }
                 return ListView.builder(
@@ -117,7 +138,9 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? DesignSystem.primary(context).withValues(alpha: 0.1)
+                              ? DesignSystem.primary(
+                                  context,
+                                ).withValues(alpha: 0.1)
                               : DesignSystem.surface(context),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
@@ -128,28 +151,42 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
                         ),
                         child: Row(
                           children: [
-                            Icon(LucideIcons.calendar,
-                                color: isSelected
-                                    ? DesignSystem.primary(context)
-                                    : DesignSystem.labelText(context),
-                                size: 20),
+                            Icon(
+                              LucideIcons.calendar,
+                              color: isSelected
+                                  ? DesignSystem.primary(context)
+                                  : DesignSystem.labelText(context),
+                              size: 20,
+                            ),
                             const SizedBox(width: 16),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(DateFormat('EEEE, MMM d').format(slot.startTime),
-                                    style: GoogleFonts.inter(
-                                        fontWeight: FontWeight.bold,
-                                        color: DesignSystem.mainText(context))),
-                                Text(DateFormat('jm').format(slot.startTime),
-                                    style: GoogleFonts.inter(
-                                        fontSize: 12, color: DesignSystem.labelText(context))),
+                                Text(
+                                  DateFormat(
+                                    'EEEE, MMM d',
+                                  ).format(slot.startTime),
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    color: DesignSystem.mainText(context),
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat('jm').format(slot.startTime),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: DesignSystem.labelText(context),
+                                  ),
+                                ),
                               ],
                             ),
                             const Spacer(),
                             if (isSelected)
-                              Icon(LucideIcons.checkCircle,
-                                  color: DesignSystem.primary(context), size: 20),
+                              Icon(
+                                LucideIcons.checkCircle,
+                                color: DesignSystem.primary(context),
+                                size: 20,
+                              ),
                           ],
                         ),
                       ),
@@ -158,13 +195,19 @@ class _BookingBottomSheetState extends ConsumerState<BookingBottomSheet> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) =>
-                  Center(child: Text('Error loading slots', style: TextStyle(color: Colors.red))),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Error loading slots',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
           PrimaryButton(
-            onPressed: _selectedSlot != null && !_isBooking ? _confirmBooking : null,
+            onPressed: _selectedSlot != null && !_isBooking
+                ? _confirmBooking
+                : null,
             text: _isBooking ? 'Confirming...' : 'Confirm & Pay',
             isLoading: _isBooking,
           ),
@@ -189,31 +232,31 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
 
-  static const String _deepLinkScheme = 'edupath://payment/success';
-
   @override
   void initState() {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => _isLoading = true),
-        onPageFinished: (_) => setState(() => _isLoading = false),
-        onNavigationRequest: (request) {
-          final url = request.url;
-          // Intercept the web success page redirect from Chapa
-          // Backend returns to: FRONTEND_URL/dashboard/student/bookings/success?bookingId=...&tx_ref=...
-          if (url.contains('/dashboard/student/bookings/success') ||
-              url.contains('bookings/success')) {
-            _handlePaymentReturn(url);
-            return NavigationDecision.prevent;
-          }
-          return NavigationDecision.navigate;
-        },
-        onWebResourceError: (error) {
-          // Ignore SSL/redirect errors that are normal during Chapa flow
-        },
-      ))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) => setState(() => _isLoading = true),
+          onPageFinished: (_) => setState(() => _isLoading = false),
+          onNavigationRequest: (request) {
+            final url = request.url;
+            // Intercept the web success page redirect from Chapa
+            // Backend returns to: FRONTEND_URL/dashboard/student/bookings/success?bookingId=...&tx_ref=...
+            if (url.contains('/dashboard/student/bookings/success') ||
+                url.contains('bookings/success')) {
+              _handlePaymentReturn(url);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+          onWebResourceError: (error) {
+            // Ignore SSL/redirect errors that are normal during Chapa flow
+          },
+        ),
+      )
       ..loadRequest(Uri.parse(widget.checkoutUrl));
   }
 
@@ -227,7 +270,8 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _PaymentResultScreen(txRef: txRef, bookingId: bookingId),
+        builder: (_) =>
+            _PaymentResultScreen(txRef: txRef, bookingId: bookingId),
       ),
     );
   }
@@ -244,9 +288,14 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
               context: context,
               builder: (_) => AlertDialog(
                 title: const Text('Cancel Payment?'),
-                content: const Text('Are you sure you want to cancel the payment?'),
+                content: const Text(
+                  'Are you sure you want to cancel the payment?',
+                ),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('No'),
+                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context); // close dialog
@@ -263,8 +312,7 @@ class _ChapaPaymentScreenState extends State<_ChapaPaymentScreen> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
@@ -295,26 +343,38 @@ class _PaymentResultScreen extends StatelessWidget {
                   color: const Color(0xFF10B981).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF10B981), size: 48),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF10B981),
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
-              Text('Payment Submitted!',
-                  style: GoogleFonts.plusJakartaSans(
-                      color: DesignSystem.mainText(context),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800)),
+              Text(
+                'Payment Submitted!',
+                style: GoogleFonts.plusJakartaSans(
+                  color: DesignSystem.mainText(context),
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 12),
               Text(
                 'Your payment is being verified. You can now track your session status in the sessions dashboard.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                    color: DesignSystem.labelText(context), fontSize: 15, height: 1.5),
+                  color: DesignSystem.labelText(context),
+                  fontSize: 15,
+                  height: 1.5,
+                ),
               ),
               if (txRef != null) ...[
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignSystem.surface(context),
                     borderRadius: BorderRadius.circular(10),
@@ -322,9 +382,10 @@ class _PaymentResultScreen extends StatelessWidget {
                   child: Text(
                     'Reference: $txRef',
                     style: GoogleFonts.inter(
-                        color: DesignSystem.labelText(context),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold),
+                      color: DesignSystem.labelText(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -333,19 +394,27 @@ class _PaymentResultScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Pop back to the root shell. 
+                    // Pop back to the root shell.
                     // From there, the student can navigate to the Sessions tab/screen.
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DesignSystem.primary(context),
-                    foregroundColor: Colors.black, // Dark text on amber/yellow background
+                    foregroundColor:
+                        Colors.black, // Dark text on amber/yellow background
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  child: Text('View My Sessions',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(
+                    'View My Sessions',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
             ],

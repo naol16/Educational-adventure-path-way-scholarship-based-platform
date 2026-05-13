@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,7 +12,6 @@ import 'package:mobile/features/mentors/widgets/booking_bottom_sheet.dart';
 import 'package:mobile/features/mentors/providers/mentors_providers.dart';
 import 'package:mobile/features/mentors/models/booking_models.dart';
 import 'package:intl/intl.dart';
-import 'package:mobile/models/user.dart';
 
 class MentorProfileScreen extends ConsumerWidget {
   final Counselor mentor;
@@ -30,14 +28,16 @@ class MentorProfileScreen extends ConsumerWidget {
 
     final chatService = ref.read(chatServiceProvider);
     final conversation = await chatService.startChat(mentor.userId);
-    
+
     if (context.mounted) {
       Navigator.pop(context); // Pop loading
 
       if (conversation != null) {
         final currentUser = ref.read(currentUserProvider);
-        final otherUser = conversation.getOtherParticipant(currentUser?.id ?? 0);
-        
+        final otherUser = conversation.getOtherParticipant(
+          currentUser?.id ?? 0,
+        );
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -74,8 +74,15 @@ class MentorProfileScreen extends ConsumerWidget {
       body: Stack(
         children: [
           // Background Depth
-          Positioned(top: -100, right: -100, child: DesignSystem.buildBlurCircle(const Color(0xFF10B981).withValues(alpha: 0.1), 300)),
-          
+          Positioned(
+            top: -100,
+            right: -100,
+            child: DesignSystem.buildBlurCircle(
+              const Color(0xFF10B981).withValues(alpha: 0.1),
+              300,
+            ),
+          ),
+
           CustomScrollView(
             slivers: [
               _buildAppBar(context),
@@ -91,7 +98,13 @@ class MentorProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text(
                         mentor.bio,
-                        style: GoogleFonts.inter(color: DesignSystem.mainText(context).withValues(alpha: 0.8), height: 1.6, fontSize: 15),
+                        style: GoogleFonts.inter(
+                          color: DesignSystem.mainText(
+                            context,
+                          ).withValues(alpha: 0.8),
+                          height: 1.6,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 32),
                       _buildSectionTitle(context, "Expertise"),
@@ -99,16 +112,28 @@ class MentorProfileScreen extends ConsumerWidget {
                       Wrap(
                         spacing: 10,
                         runSpacing: 10,
-                        children: mentor.areasOfExpertise.map((e) => _buildExpertiseChip(context, e)).toList(),
+                        children: mentor.areasOfExpertise
+                            .map((e) => _buildExpertiseChip(context, e))
+                            .toList(),
                       ),
                       const SizedBox(height: 32),
                       _buildSectionTitle(context, "Education"),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(LucideIcons.graduationCap, color: DesignSystem.primary(context), size: 18),
+                          Icon(
+                            LucideIcons.graduationCap,
+                            color: DesignSystem.primary(context),
+                            size: 18,
+                          ),
                           const SizedBox(width: 12),
-                          Text(mentor.universityName ?? "Top Tier University", style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 15)),
+                          Text(
+                            mentor.universityName ?? "Top Tier University",
+                            style: GoogleFonts.inter(
+                              color: DesignSystem.mainText(context),
+                              fontSize: 15,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 32),
@@ -117,7 +142,9 @@ class MentorProfileScreen extends ConsumerWidget {
                       Wrap(
                         spacing: 10,
                         runSpacing: 10,
-                        children: mentor.specializedCountries.map((c) => _buildCountryChip(context, c)).toList(),
+                        children: mentor.specializedCountries
+                            .map((c) => _buildCountryChip(context, c))
+                            .toList(),
                       ),
                       _buildSectionTitle(context, "Student Reviews"),
                       const SizedBox(height: 12),
@@ -129,7 +156,7 @@ class MentorProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-          
+
           _buildBottomActions(context, ref),
         ],
       ),
@@ -142,7 +169,10 @@ class MentorProfileScreen extends ConsumerWidget {
       pinned: true,
       backgroundColor: DesignSystem.themeBackground(context),
       leading: IconButton(
-        icon: Icon(LucideIcons.chevronLeft, color: DesignSystem.mainText(context)),
+        icon: Icon(
+          LucideIcons.chevronLeft,
+          color: DesignSystem.mainText(context),
+        ),
         onPressed: () => Navigator.pop(context),
       ),
       flexibleSpace: FlexibleSpaceBar(
@@ -152,8 +182,15 @@ class MentorProfileScreen extends ConsumerWidget {
             if (mentor.profileImageUrl != null)
               Image.network(mentor.profileImageUrl!, fit: BoxFit.cover)
             else
-              Container(color: DesignSystem.surfaceMediumColor(context), child: Icon(LucideIcons.user, size: 80, color: DesignSystem.labelText(context))),
-            
+              Container(
+                color: DesignSystem.surfaceMediumColor(context),
+                child: Icon(
+                  LucideIcons.user,
+                  size: 80,
+                  color: DesignSystem.labelText(context),
+                ),
+              ),
+
             // Gradient Overlay
             Container(
               decoration: BoxDecoration(
@@ -162,13 +199,15 @@ class MentorProfileScreen extends ConsumerWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    DesignSystem.themeBackground(context).withValues(alpha: 0.8),
+                    DesignSystem.themeBackground(
+                      context,
+                    ).withValues(alpha: 0.8),
                     DesignSystem.themeBackground(context),
                   ],
                 ),
               ),
             ),
-            
+
             Positioned(
               bottom: 20,
               left: 24,
@@ -179,23 +218,51 @@ class MentorProfileScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(mentor.currentPosition ?? "Expert Mentor", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w800, fontSize: 26), overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          mentor.currentPosition ?? "Expert Mentor",
+                          style: GoogleFonts.plusJakartaSans(
+                            color: DesignSystem.mainText(context),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 26,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (mentor.verificationStatus == 'verified') ...[
                         const SizedBox(width: 8),
-                        const Icon(Icons.verified, color: Colors.blue, size: 22),
-                      ]
+                        const Icon(
+                          Icons.verified,
+                          color: Colors.blue,
+                          size: 22,
+                        ),
+                      ],
                     ],
                   ),
-                  Text(mentor.organization ?? "Global Education Consultant", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 16), overflow: TextOverflow.ellipsis),
+                  Text(
+                    mentor.organization ?? "Global Education Consultant",
+                    style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context),
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _buildMatchBadge("${(mentor.matchScore ?? 0).toStringAsFixed(0)}% Match Profile"),
+                      _buildMatchBadge(
+                        "${(mentor.matchScore ?? 0).toStringAsFixed(0)}% Match Profile",
+                      ),
                       const SizedBox(width: 12),
                       Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 4),
-                      Text("${mentor.rating.toStringAsFixed(1)} (120+ Reviews)", style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(
+                        "${mentor.rating.toStringAsFixed(1)} (120+ Reviews)",
+                        style: GoogleFonts.inter(
+                          color: DesignSystem.mainText(context),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -210,14 +277,34 @@ class MentorProfileScreen extends ConsumerWidget {
   Widget _buildMainStats(BuildContext context) {
     return Row(
       children: [
-        _buildStatItem(context, LucideIcons.briefcase, "${mentor.yearsOfExperience}y", "Experience"),
-        _buildStatItem(context, LucideIcons.users, "${mentor.totalSessions}", "Sessions"),
-        _buildStatItem(context, LucideIcons.dollarSign, "${mentor.hourlyRate.toInt()}", "Per Hour"),
+        _buildStatItem(
+          context,
+          LucideIcons.briefcase,
+          "${mentor.yearsOfExperience}y",
+          "Experience",
+        ),
+        _buildStatItem(
+          context,
+          LucideIcons.users,
+          "${mentor.totalSessions}",
+          "Sessions",
+        ),
+        _buildStatItem(
+          context,
+          LucideIcons.dollarSign,
+          "${mentor.hourlyRate.toInt()}",
+          "Per Hour",
+        ),
       ],
     );
   }
 
-  Widget _buildStatItem(BuildContext context, IconData icon, String value, String label) {
+  Widget _buildStatItem(
+    BuildContext context,
+    IconData icon,
+    String value,
+    String label,
+  ) {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -227,8 +314,21 @@ class MentorProfileScreen extends ConsumerWidget {
             children: [
               Icon(icon, color: DesignSystem.primary(context), size: 20),
               const SizedBox(height: 8),
-              Text(value, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 18)),
-              Text(label, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11)),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  color: DesignSystem.mainText(context),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: DesignSystem.labelText(context),
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         ),
@@ -237,27 +337,59 @@ class MentorProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(title, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 18));
+    return Text(
+      title,
+      style: GoogleFonts.plusJakartaSans(
+        color: DesignSystem.mainText(context),
+        fontWeight: FontWeight.bold,
+        fontSize: 18,
+      ),
+    );
   }
 
   Widget _buildExpertiseChip(BuildContext context, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(color: DesignSystem.surface(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: DesignSystem.glassBorder(context))),
-      child: Text(text, style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 13, fontWeight: FontWeight.w500)),
+      decoration: BoxDecoration(
+        color: DesignSystem.surface(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DesignSystem.glassBorder(context)),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          color: DesignSystem.mainText(context),
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
   Widget _buildCountryChip(BuildContext context, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(color: DesignSystem.primary(context).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: DesignSystem.primary(context).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.mapPin, color: DesignSystem.primary(context), size: 14),
+          Icon(
+            LucideIcons.mapPin,
+            color: DesignSystem.primary(context),
+            size: 14,
+          ),
           const SizedBox(width: 6),
-          Text(text, style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 13, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              color: DesignSystem.primary(context),
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -269,10 +401,17 @@ class MentorProfileScreen extends ConsumerWidget {
       left: 0,
       right: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          20,
+          24,
+          MediaQuery.of(context).padding.bottom + 20,
+        ),
         decoration: BoxDecoration(
           color: DesignSystem.themeBackground(context).withValues(alpha: 0.95),
-          border: Border(top: BorderSide(color: DesignSystem.glassBorder(context))),
+          border: Border(
+            top: BorderSide(color: DesignSystem.glassBorder(context)),
+          ),
         ),
         child: Row(
           children: [
@@ -299,7 +438,11 @@ class MentorProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildReviewsList(BuildContext context, WidgetRef ref, int counselorId) {
+  Widget _buildReviewsList(
+    BuildContext context,
+    WidgetRef ref,
+    int counselorId,
+  ) {
     final reviewsAsync = ref.watch(counselorReviewsProvider(counselorId));
 
     return reviewsAsync.when(
@@ -308,7 +451,13 @@ class MentorProfileScreen extends ConsumerWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text("No reviews yet.", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+              child: Text(
+                "No reviews yet.",
+                style: GoogleFonts.inter(
+                  color: DesignSystem.labelText(context),
+                  fontSize: 13,
+                ),
+              ),
             ),
           );
         }
@@ -317,7 +466,8 @@ class MentorProfileScreen extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text("Error loading reviews", style: TextStyle(color: Colors.red)),
+      error: (e, _) =>
+          Text("Error loading reviews", style: TextStyle(color: Colors.red)),
     );
   }
 
@@ -332,16 +482,46 @@ class MentorProfileScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(review.studentName ?? "Anonymous Student", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: DesignSystem.mainText(context))),
+                Text(
+                  review.studentName ?? "Anonymous Student",
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    color: DesignSystem.mainText(context),
+                  ),
+                ),
                 Row(
-                  children: List.generate(5, (i) => Icon(Icons.star, size: 12, color: i < review.rating ? Colors.amber : DesignSystem.labelText(context).withValues(alpha: 0.3))),
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      Icons.star,
+                      size: 12,
+                      color: i < review.rating
+                          ? Colors.amber
+                          : DesignSystem.labelText(
+                              context,
+                            ).withValues(alpha: 0.3),
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(review.comment ?? "No comment provided.", style: GoogleFonts.inter(color: DesignSystem.mainText(context).withValues(alpha: 0.7), fontSize: 13, height: 1.4)),
+            Text(
+              review.comment ?? "No comment provided.",
+              style: GoogleFonts.inter(
+                color: DesignSystem.mainText(context).withValues(alpha: 0.7),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(DateFormat('MMM d, yyyy').format(review.createdAt), style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 10)),
+            Text(
+              DateFormat('MMM d, yyyy').format(review.createdAt),
+              style: GoogleFonts.inter(
+                color: DesignSystem.labelText(context),
+                fontSize: 10,
+              ),
+            ),
           ],
         ),
       ),
@@ -351,8 +531,18 @@ class MentorProfileScreen extends ConsumerWidget {
   Widget _buildMatchBadge(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-      child: Text(text, style: GoogleFonts.inter(color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          color: const Color(0xFF10B981),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

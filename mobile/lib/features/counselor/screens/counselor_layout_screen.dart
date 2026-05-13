@@ -9,8 +9,6 @@ import 'package:mobile/features/counselor/screens/counselor_sessions_screen.dart
 import 'package:mobile/features/counselor/screens/counselor_students_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_schedule_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_messages_screen.dart';
-import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
-import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
 
 final counselorNavigationIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -18,7 +16,8 @@ class CounselorLayoutScreen extends ConsumerStatefulWidget {
   const CounselorLayoutScreen({super.key});
 
   @override
-  ConsumerState<CounselorLayoutScreen> createState() => _CounselorLayoutScreenState();
+  ConsumerState<CounselorLayoutScreen> createState() =>
+      _CounselorLayoutScreenState();
 }
 
 class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
@@ -36,7 +35,9 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? DesignSystem.background : DesignSystem.backgroundLight,
+      backgroundColor: isDark
+          ? DesignSystem.background
+          : DesignSystem.backgroundLight,
       resizeToAvoidBottomInset: false,
       body: IndexedStack(index: currentIndex, children: _screens),
       bottomNavigationBar: _buildBottomNav(currentIndex),
@@ -45,40 +46,89 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
 
   Widget _buildBottomNav(int currentIndex) {
     return ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaY: 10, sigmaX: 10),
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: DesignSystem.themeBackground(context).withValues(alpha: 0.95),
-              border: Border(
-                top: BorderSide(
-                  color: DesignSystem.surface(context).withValues(alpha: 0.1),
-                  width: 1,
-                ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaY: 10, sigmaX: 10),
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: DesignSystem.themeBackground(
+              context,
+            ).withValues(alpha: 0.95),
+            border: Border(
+              top: BorderSide(
+                color: DesignSystem.surface(context).withValues(alpha: 0.1),
+                width: 1,
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(child: _buildNavItem(LucideIcons.home, Icons.home_rounded, "Home", 0, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.calendarCheck, Icons.event_available_rounded, "Sessions", 1, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.calendar, Icons.calendar_month_rounded, "Schedule", 2, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.users, Icons.people_rounded, "Students", 3, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.messageSquare, Icons.message_rounded, "Messages", 4, currentIndex)),
-              ],
-            ),
           ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.home,
+                  Icons.home_rounded,
+                  "Home",
+                  0,
+                  currentIndex,
+                ),
+              ),
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.calendarCheck,
+                  Icons.event_available_rounded,
+                  "Sessions",
+                  1,
+                  currentIndex,
+                ),
+              ),
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.calendar,
+                  Icons.calendar_month_rounded,
+                  "Schedule",
+                  2,
+                  currentIndex,
+                ),
+              ),
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.users,
+                  Icons.people_rounded,
+                  "Students",
+                  3,
+                  currentIndex,
+                ),
+              ),
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.messageSquare,
+                  Icons.message_rounded,
+                  "Messages",
+                  4,
+                  currentIndex,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData inactiveIcon, IconData activeIcon, String label, int index, int currentIndex) {
+  Widget _buildNavItem(
+    IconData inactiveIcon,
+    IconData activeIcon,
+    String label,
+    int index,
+    int currentIndex,
+  ) {
     bool isActive = currentIndex == index;
     final primaryColor = DesignSystem.primary(context);
     final color = isActive ? primaryColor : DesignSystem.labelText(context);
 
     return GestureDetector(
-      onTap: () => ref.read(counselorNavigationIndexProvider.notifier).state = index,
+      onTap: () =>
+          ref.read(counselorNavigationIndexProvider.notifier).state = index,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -87,10 +137,16 @@ class _CounselorLayoutScreenState extends ConsumerState<CounselorLayoutScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? primaryColor.withValues(alpha: 0.2) : Colors.transparent,
+              color: isActive
+                  ? primaryColor.withValues(alpha: 0.2)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(isActive ? activeIcon : inactiveIcon, color: color, size: 22),
+            child: Icon(
+              isActive ? activeIcon : inactiveIcon,
+              color: color,
+              size: 22,
+            ),
           ),
           const SizedBox(height: 4),
           Text(

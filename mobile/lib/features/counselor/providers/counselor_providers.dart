@@ -15,45 +15,70 @@ final counselorProfileProvider = FutureProvider<CounselorProfile?>((ref) async {
   return ref.watch(counselorAppServiceProvider).getMyProfile();
 });
 
-final counselorDashboardProvider = FutureProvider<CounselorDashboardOverview?>((ref) async {
+final counselorDashboardProvider = FutureProvider<CounselorDashboardOverview?>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getDashboardOverview();
 });
 
-final counselorUpcomingBookingsProvider = FutureProvider<List<CounselorBooking>>((ref) async {
-  return ref.watch(counselorAppServiceProvider).getUpcomingBookings();
-});
+final counselorUpcomingBookingsProvider =
+    FutureProvider<List<CounselorBooking>>((ref) async {
+      return ref.watch(counselorAppServiceProvider).getUpcomingBookings();
+    });
 
-final counselorStudentsProvider = FutureProvider<List<StudentSummary>>((ref) async {
+final counselorStudentsProvider = FutureProvider<List<StudentSummary>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getStudents();
 });
 
-final studentProgressProvider = FutureProvider.family<Map<String, dynamic>?, int>((ref, studentId) async {
-  return ref.watch(counselorAppServiceProvider).getStudentProgress(studentId);
-});
+final studentProgressProvider =
+    FutureProvider.family<Map<String, dynamic>?, int>((ref, studentId) async {
+      return ref
+          .watch(counselorAppServiceProvider)
+          .getStudentProgress(studentId);
+    });
 
-final counselorSlotsProvider = FutureProvider<List<AvailabilitySlot>>((ref) async {
+final counselorSlotsProvider = FutureProvider<List<AvailabilitySlot>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getMySlots();
 });
 
-final walletLedgerProvider = FutureProvider<List<WalletTransaction>>((ref) async {
+final walletLedgerProvider = FutureProvider<List<WalletTransaction>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getWalletLedger();
 });
 
-final counselorPayoutsProvider = FutureProvider<List<CounselorPayout>>((ref) async {
+final counselorPayoutsProvider = FutureProvider<List<CounselorPayout>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getMyPayouts();
 });
 
-final counselorBanksProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final counselorBanksProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getBanks();
 });
 
-final counselorDocumentsProvider = FutureProvider<List<SharedDocument>>((ref) async {
+final counselorDocumentsProvider = FutureProvider<List<SharedDocument>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getDashboardDocuments();
 });
 
-final counselorReviewsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final counselorReviewsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   return ref.watch(counselorAppServiceProvider).getReviews();
 });
+
+final counselorRecommendationsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      return ref.watch(counselorAppServiceProvider).getRecommendedCounselors();
+    });
 
 class CounselorGoalsNotifier extends StateNotifier<List<CounselorGoal>> {
   CounselorGoalsNotifier() : super([]) {
@@ -96,7 +121,9 @@ class CounselorGoalsNotifier extends StateNotifier<List<CounselorGoal>> {
   }
 
   void toggleGoal(String id) {
-    state = state.map((g) => g.id == id ? g.copyWith(isCompleted: !g.isCompleted) : g).toList();
+    state = state
+        .map((g) => g.id == id ? g.copyWith(isCompleted: !g.isCompleted) : g)
+        .toList();
     _saveGoals();
   }
 
@@ -106,6 +133,7 @@ class CounselorGoalsNotifier extends StateNotifier<List<CounselorGoal>> {
   }
 }
 
-final counselorGoalsProvider = StateNotifierProvider<CounselorGoalsNotifier, List<CounselorGoal>>((ref) {
-  return CounselorGoalsNotifier();
-});
+final counselorGoalsProvider =
+    StateNotifierProvider<CounselorGoalsNotifier, List<CounselorGoal>>((ref) {
+      return CounselorGoalsNotifier();
+    });

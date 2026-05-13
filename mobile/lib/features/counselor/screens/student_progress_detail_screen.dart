@@ -21,7 +21,14 @@ class StudentProgressDetailScreen extends ConsumerWidget {
       backgroundColor: DesignSystem.themeBackground(context),
       body: Stack(
         children: [
-          Positioned(top: -50, right: -50, child: DesignSystem.buildBlurCircle(primary.withValues(alpha: 0.05), 200)),
+          Positioned(
+            top: -50,
+            right: -50,
+            child: DesignSystem.buildBlurCircle(
+              primary.withValues(alpha: 0.05),
+              200,
+            ),
+          ),
           CustomScrollView(
             slivers: [
               SliverAppBar(
@@ -29,14 +36,20 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                 expandedHeight: 240,
                 backgroundColor: DesignSystem.themeBackground(context),
                 leading: IconButton(
-                  icon: Icon(LucideIcons.chevronLeft, color: DesignSystem.mainText(context)),
+                  icon: Icon(
+                    LucideIcons.chevronLeft,
+                    color: DesignSystem.mainText(context),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [primary.withValues(alpha: 0.12), DesignSystem.themeBackground(context)],
+                        colors: [
+                          primary.withValues(alpha: 0.12),
+                          DesignSystem.themeBackground(context),
+                        ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -47,14 +60,36 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: primary.withValues(alpha: 0.15),
-                          backgroundImage: student.avatarUrl != null ? NetworkImage(student.avatarUrl!) : null,
+                          backgroundImage: student.avatarUrl != null
+                              ? NetworkImage(student.avatarUrl!)
+                              : null,
                           child: student.avatarUrl == null
-                              ? Text(student.name.substring(0, 1).toUpperCase(), style: GoogleFonts.plusJakartaSans(color: primary, fontWeight: FontWeight.w800, fontSize: 28))
+                              ? Text(
+                                  student.name.substring(0, 1).toUpperCase(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 28,
+                                  ),
+                                )
                               : null,
                         ),
                         const SizedBox(height: 12),
-                        Text(student.name, style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontSize: 22, fontWeight: FontWeight.w800)),
-                        Text(student.email, style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+                        Text(
+                          student.name,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: DesignSystem.mainText(context),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          student.email,
+                          style: GoogleFonts.inter(
+                            color: DesignSystem.labelText(context),
+                            fontSize: 13,
+                          ),
+                        ),
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -70,9 +105,20 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                       _buildIdentityHub(context),
                       const SizedBox(height: 32),
                       progressAsync.when(
-                        data: (progress) => _buildConsultationHistory(context, progress),
-                        loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
-                        error: (e, _) => Center(child: Text('Failed to load consultation history', style: TextStyle(color: Colors.red))),
+                        data: (progress) =>
+                            _buildConsultationHistory(context, progress),
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (e, _) => Center(
+                          child: Text(
+                            'Failed to load consultation history',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -86,37 +132,71 @@ class StudentProgressDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildIdentityHub(BuildContext context) {
-    final primary = DesignSystem.primary(context);
-    final labelColor = DesignSystem.labelText(context);
-    final valueColor = DesignSystem.mainText(context);
+    DesignSystem.primary(context);
+    DesignSystem.labelText(context);
+    DesignSystem.mainText(context);
 
-    bool isMastersOrPhD = student.currentDegree?.toLowerCase().contains('master') == true || 
-                          student.currentDegree?.toLowerCase().contains('phd') == true ||
-                          student.fieldOfStudy?.toLowerCase().contains('graduate') == true;
+    bool isMastersOrPhD =
+        student.currentDegree?.toLowerCase().contains('master') == true ||
+        student.currentDegree?.toLowerCase().contains('phd') == true ||
+        student.fieldOfStudy?.toLowerCase().contains('graduate') == true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("ACADEMIC IDENTITY", style: DesignSystem.labelStyle(buildContext: context)),
+        Text(
+          "ACADEMIC IDENTITY",
+          style: DesignSystem.labelStyle(buildContext: context),
+        ),
         const SizedBox(height: 16),
         GlassContainer(
           padding: const EdgeInsets.all(20),
           borderRadius: 24,
           child: Column(
             children: [
-              _infoRow(context, LucideIcons.graduationCap, "Current Degree", student.currentDegree ?? "Not specified"),
+              _infoRow(
+                context,
+                LucideIcons.graduationCap,
+                "Current Degree",
+                student.currentDegree ?? "Not specified",
+              ),
               _divider(context),
-              _infoRow(context, LucideIcons.bookOpen, "Field of Study", student.fieldOfStudy ?? "Not specified"),
+              _infoRow(
+                context,
+                LucideIcons.bookOpen,
+                "Field of Study",
+                student.fieldOfStudy ?? "Not specified",
+              ),
               _divider(context),
-              _infoRow(context, LucideIcons.award, "Proficiency Score", student.proficiencyScore ?? "Pending/None"),
+              _infoRow(
+                context,
+                LucideIcons.award,
+                "Proficiency Score",
+                student.proficiencyScore ?? "Pending/None",
+              ),
               _divider(context),
               if (isMastersOrPhD) ...[
-                _infoRow(context, LucideIcons.microscope, "Research Area", student.researchArea ?? "To be defined"),
+                _infoRow(
+                  context,
+                  LucideIcons.microscope,
+                  "Research Area",
+                  student.researchArea ?? "To be defined",
+                ),
                 _divider(context),
               ],
-              _infoRow(context, LucideIcons.banknote, "Desired Funding", student.desiredFunding ?? "Open to all"),
+              _infoRow(
+                context,
+                LucideIcons.banknote,
+                "Desired Funding",
+                student.desiredFunding ?? "Open to all",
+              ),
               _divider(context),
-              _infoRow(context, LucideIcons.mapPin, "Target Country", student.targetCountry ?? "International"),
+              _infoRow(
+                context,
+                LucideIcons.mapPin,
+                "Target Country",
+                student.targetCountry ?? "International",
+              ),
             ],
           ),
         ),
@@ -124,17 +204,30 @@ class StudentProgressDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildConsultationHistory(BuildContext context, Map<String, dynamic>? progress) {
+  Widget _buildConsultationHistory(
+    BuildContext context,
+    Map<String, dynamic>? progress,
+  ) {
     final sessions = (progress?['sessions'] as List?) ?? [];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("CONSULTATION HISTORY", style: DesignSystem.labelStyle(buildContext: context)),
-            Text("${sessions.length} Sessions", style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 12, fontWeight: FontWeight.w700)),
+            Text(
+              "CONSULTATION HISTORY",
+              style: DesignSystem.labelStyle(buildContext: context),
+            ),
+            Text(
+              "${sessions.length} Sessions",
+              style: GoogleFonts.inter(
+                color: DesignSystem.primary(context),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -144,24 +237,36 @@ class StudentProgressDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(
                 children: [
-                  Icon(LucideIcons.calendarX2, color: DesignSystem.glassBorder(context), size: 48),
+                  Icon(
+                    LucideIcons.calendarX2,
+                    color: DesignSystem.glassBorder(context),
+                    size: 48,
+                  ),
                   const SizedBox(height: 12),
-                  Text("No sessions recorded with you yet.", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 13)),
+                  Text(
+                    "No sessions recorded with you yet.",
+                    style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context),
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
           )
         else
-          ...sessions.map((s) => _sessionCard(context, s)).toList(),
+          ...sessions.map((s) => _sessionCard(context, s)),
       ],
     );
   }
 
   Widget _sessionCard(BuildContext context, dynamic session) {
     final primary = DesignSystem.primary(context);
-    final date = session['date'] != null ? DateTime.tryParse(session['date']) : null;
+    final date = session['date'] != null
+        ? DateTime.tryParse(session['date'])
+        : null;
     final status = session['status'] ?? 'completed';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassContainer(
@@ -171,7 +276,10 @@ class StudentProgressDetailScreen extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Icon(LucideIcons.video, color: primary, size: 20),
             ),
             const SizedBox(width: 16),
@@ -180,12 +288,21 @@ class StudentProgressDetailScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    date != null ? DateFormat('MMMM d, yyyy').format(date) : "Recent Session",
-                    style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 14),
+                    date != null
+                        ? DateFormat('MMMM d, yyyy').format(date)
+                        : "Recent Session",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: DesignSystem.mainText(context),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                   Text(
                     session['topic'] ?? "General Counseling",
-                    style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12),
+                    style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -193,13 +310,17 @@ class StudentProgressDetailScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: status == 'completed' ? DesignSystem.success(context).withValues(alpha: 0.1) : DesignSystem.warning(context).withValues(alpha: 0.1),
+                color: status == 'completed'
+                    ? DesignSystem.success(context).withValues(alpha: 0.1)
+                    : DesignSystem.warning(context).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 status.toUpperCase(),
                 style: GoogleFonts.inter(
-                  color: status == 'completed' ? DesignSystem.success(context) : DesignSystem.warning(context),
+                  color: status == 'completed'
+                      ? DesignSystem.success(context)
+                      : DesignSystem.warning(context),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                 ),
@@ -211,19 +332,43 @@ class StudentProgressDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
+  Widget _infoRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, color: DesignSystem.primary(context).withValues(alpha: 0.7), size: 18),
+          Icon(
+            icon,
+            color: DesignSystem.primary(context).withValues(alpha: 0.7),
+            size: 18,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: DesignSystem.labelText(context), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                Text(value, style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: DesignSystem.labelText(context),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    color: DesignSystem.mainText(context),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
