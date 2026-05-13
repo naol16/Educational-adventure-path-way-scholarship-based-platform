@@ -97,8 +97,8 @@ class CounselorProfileScreen extends ConsumerWidget {
                   onTap: () => _editProfile(context),
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: DesignSystem.primary(context), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                    child: const Icon(LucideIcons.camera, color: Colors.white, size: 16),
+                    decoration: BoxDecoration(color: DesignSystem.primary(context), shape: BoxShape.circle, border: Border.all(color: DesignSystem.themeBackground(context), width: 2)),
+                    child: Icon(LucideIcons.camera, color: DesignSystem.themeBackground(context), size: 16),
                   ),
                 ),
               ),

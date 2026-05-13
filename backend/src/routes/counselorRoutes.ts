@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CounselorController } from '../controller/CounselorController.js';
-import { authenticate, authorize } from '../middlewares/authMiddleware.js';
+import { authenticate, authorize, optionalAuthenticate } from '../middlewares/authMiddleware.js';
 import { checkCounselorRole, requireActiveCounselor } from '../middlewares/counselorMiddleware.js';
 import { validate } from '../validators/validationMiddleware.js';
 import {
@@ -24,8 +24,8 @@ import { UserRole } from '../types/userTypes.js';
 const router = Router();
 
 router.get('/ping', (_req, res) => res.status(200).send('pong'));
-router.get('/directory', validate(counselorDirectoryValidation), CounselorController.publicDirectory);
-router.get('/directory/:id', validate(idParamValidation), CounselorController.getById);
+router.get('/directory', optionalAuthenticate, validate(counselorDirectoryValidation), CounselorController.publicDirectory);
+router.get('/directory/:id', optionalAuthenticate, validate(idParamValidation), CounselorController.getById);
 router.get('/banks', CounselorController.getBanks);
 
 router.use(authenticate);
@@ -34,7 +34,7 @@ router.post('/apply', validate(applyAsCounselorValidation), CounselorController.
 router.get('/recommendations/me', authorize(UserRole.STUDENT), CounselorController.recommendForMe);
 router.get('/:id/available-sessions', CounselorController.getAvailableSessions); // New endpoint for students
 router.get('/:id/reviews', CounselorController.getReviews);
-router.get('/by-user/:userId', CounselorController.getByUserId);
+router.get('/by-user/:userId', optionalAuthenticate, CounselorController.getByUserId);
 router.get('/student/bookings', authorize(UserRole.STUDENT, UserRole.COUNSELOR), CounselorController.getStudentBookings);
 
 router.post('/bookings', authorize(UserRole.STUDENT), validate(createBookingValidation), CounselorController.createBooking);

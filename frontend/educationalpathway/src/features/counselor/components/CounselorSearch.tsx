@@ -10,9 +10,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any) => void }) => {
+  console.log('Counselor data:', { id: counselor.id, match: counselor.match_score });
   return (
-    <Card className="rounded-2xl shadow-sm border border-border/40 bg-card/40 backdrop-blur-md hover:border-primary/40 hover:shadow-xl transition-all duration-500 overflow-hidden group">
+    <Card className="rounded-2xl shadow-sm border border-border/40 bg-card/40 backdrop-blur-md hover:border-primary/40 hover:shadow-xl transition-all duration-500 overflow-hidden group relative">
       <CardBody className="p-8">
+        {/* Match Score Badge */}
+        {counselor.match_score > 0 && (
+          <div className="absolute top-4 right-4">
+            <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-3 py-1 rounded-full flex items-center gap-1.5">
+              <Sparkles size={10} className="fill-primary" />
+              {Math.round(counselor.match_score)}% Match
+            </Badge>
+          </div>
+        )}
         <div className="flex flex-col items-center text-center space-y-6">
           <Link href={`/dashboard/counselors/${counselor.id}`} className="relative shrink-0">
             <Avatar className="size-24 rounded-2xl border-2 border-background shadow-lg group-hover:border-primary/30 transition-all">

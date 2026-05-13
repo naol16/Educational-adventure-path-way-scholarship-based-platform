@@ -10,7 +10,9 @@ export class EmailService {
       user: configs.SMTP_USER,
       pass: configs.SMTP_PASS,
     },
-  });
+    // Force IPv4 to avoid ENETUNREACH issues with IPv6 on some networks
+    family: 4,
+  } as any);
 
   static async sendPasswordResetEmail(
     to: string,

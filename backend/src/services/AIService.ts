@@ -89,7 +89,7 @@ export class AIService {
   /**
    * AI-powered scholarship ranking using Gemini.
    */
-  static async rankScholarships(studentData: any, scholarships: any[]) {
+  static async rankScholarships(studentData: any, scholarships: any[], counselors: any[] = []) {
     if (!scholarships.length) return [];
 
     // TOKEN OPTIMIZATION: Prune student profile down to essential matching fields
@@ -108,10 +108,18 @@ export class AIService {
     const prunedScholarships = scholarships.map((s: any) => ({
       id: s.id,
       title: s.title,
-      description: s.description?.slice(0, 1000), // Larger window for better matching
+      description: s.description?.slice(0, 1000),
       requirements: s.requirements?.slice(0, 800),
       country: s.country,
       degree_levels: s.degreeLevels || s.degree_levels,
+      has_application_link: !!(s.applicationUrl || s.application_url || s.originalUrl || s.original_url)
+    }));
+
+    // TOKEN OPTIMIZATION: Prune counselor data to essential expertise
+    const prunedCounselors = counselors.slice(0, 3).map((c: any) => ({
+      name: c.name,
+      expertise: c.areasOfExpertise || (Array.isArray(c.specializations) ? c.specializations.join(", ") : ""),
+      country: c.countryOfResidence || c.studyCountry
     }));
 
     const prompt = `
@@ -122,6 +130,9 @@ export class AIService {
             
             Scholarships:
             ${JSON.stringify(prunedScholarships, null, 2)}
+
+            Relevant Counselors:
+            ${JSON.stringify(prunedCounselors, null, 2)}
             
             Task:
             1. Evaluate each scholarship independently based on how well it matches the student's background, interests, and goals.
@@ -131,6 +142,8 @@ export class AIService {
                - 80: Strong match; good field overlap or a high-quality "Any Major" scholarship for the correct degree level.
                - 50: Partial match; correct degree level but field/country is only tangentially related.
                - 20: Weak match; significant degree or field mismatch.
+               - IMPORTANT: If 'has_application_link' is false, penalize the score significantly (max score 30) and clearly state that the application link is missing in the match_reason.
+               - IMPORTANT: If a counselor matches the scholarship's field or country, mention them in the 'match_reason' (e.g., "Counselor X is an expert in this field and can guide your application.").
                - IMPORTANT: If a scholarship is open to "ALL FIELDS" or "ANY MAJOR", do NOT penalize it for lacking a specific major name match. Give it a high score if other criteria fit.
             3. Return the results as a JSON object with a 'matches' key containing an array of ALL processed scholarship IDs. Preserve the exact numerical format of the IDs.
             
@@ -158,7 +171,7 @@ export class AIService {
         `[AIService] Gemini Response for ${scholarships.length} scholarships:`,
         responseText,
       );
-      
+
       const parsed = JSON.parse(responseText);
 
       // Extract the array from the normalized Gemini response
@@ -255,7 +268,7 @@ export class AIService {
       return JSON.parse(content);
     } catch (error: any) {
       console.error("[AIService] Groq JSON Error, falling back to Gemini:", error.message);
-      
+
       try {
         console.log("[AIService] Attempting fallback to Gemini...");
         const model = genAI.getGenerativeModel({
@@ -268,7 +281,7 @@ export class AIService {
         return JSON.parse(text);
       } catch (geminiError: any) {
         console.error("[AIService] Primary Gemini Fallback Error:", geminiError.message);
-        
+
         // Try a secondary Gemini model if the primary one is rate-limited
         try {
           console.warn("[AIService] Attempting secondary Gemini model (gemini-flash-latest)...");
@@ -280,44 +293,44 @@ export class AIService {
           return JSON.parse(secondaryResult.response.text());
         } catch (secondaryError: any) {
           console.error("[AIService] Secondary Gemini Error:", secondaryError.message);
-          
+
           // --- LAST RESORT: MOCK DATA TO PREVENT 500 ERRORS ---
           console.warn("[AIService] ALL AI PROVIDERS FAILED. Returning mock safety data.");
-        
-        if (prompt.includes("Unit Test") || prompt.includes("questions") || prompt.includes("Mission")) {
-          return {
-            title: "Safety Mastery Mission",
-            level: "Standard",
-            skill: "Skill Mastery",
-            passage: "This is a safety-mode academic passage provided because the AI service is currently unavailable. Please check your API keys.",
-            script: "This is a safety-mode listening script provided because the AI service is currently unavailable.",
-            practiceDrill: {
-              type: "MCQ",
-              questions: [
-                { q: "What should you check if this message appears?", options: ["API keys", "CSS", "Database"], answer: "API keys", feedbackTip: "Check your .env file." }
-              ]
-            },
-            unitTest: {
-              type: "MCQ",
-              questions: [
-                { q: "Is the server still running?", options: ["Yes", "No"], answer: "Yes", feedbackTip: "The server is running in safety mode." }
-              ]
-            },
-            questions: [
-              {
-                question: "Which of the following is the primary purpose of this safety-mode content?",
-                options: ["To prevent server errors", "To simulate a real exam", "To provide difficult challenges", "To test the UI"],
-                correct_answer: 0,
-                explanation: "The system provides this mock data as a fallback when AI providers fail."
-              }
-            ]
-          };
-        }
 
-        // Default empty structure if no pattern matches
-        return { status: "fallback", message: "AI services are temporarily unavailable.", data: {} };
+          if (prompt.includes("Unit Test") || prompt.includes("questions") || prompt.includes("Mission")) {
+            return {
+              title: "Safety Mastery Mission",
+              level: "Standard",
+              skill: "Skill Mastery",
+              passage: "This is a safety-mode academic passage provided because the AI service is currently unavailable. Please check your API keys.",
+              script: "This is a safety-mode listening script provided because the AI service is currently unavailable.",
+              practiceDrill: {
+                type: "MCQ",
+                questions: [
+                  { q: "What should you check if this message appears?", options: ["API keys", "CSS", "Database"], answer: "API keys", feedbackTip: "Check your .env file." }
+                ]
+              },
+              unitTest: {
+                type: "MCQ",
+                questions: [
+                  { q: "Is the server still running?", options: ["Yes", "No"], answer: "Yes", feedbackTip: "The server is running in safety mode." }
+                ]
+              },
+              questions: [
+                {
+                  question: "Which of the following is the primary purpose of this safety-mode content?",
+                  options: ["To prevent server errors", "To simulate a real exam", "To provide difficult challenges", "To test the UI"],
+                  correct_answer: 0,
+                  explanation: "The system provides this mock data as a fallback when AI providers fail."
+                }
+              ]
+            };
+          }
+
+          // Default empty structure if no pattern matches
+          return { status: "fallback", message: "AI services are temporarily unavailable.", data: {} };
+        }
       }
     }
   }
-}
 }

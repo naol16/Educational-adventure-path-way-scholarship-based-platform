@@ -530,26 +530,64 @@ export class ScholarshipDiscoveryService {
     text: string,
     baseUrl: string,
   ): string | null {
+    const countryMapping: Record<string, string> = {
+      "ET": "Ethiopia",
+      "UK": "United Kingdom",
+      "GB": "United Kingdom",
+      "US": "United States",
+      "USA": "United States",
+      "CA": "Canada",
+      "AU": "Australia",
+      "DE": "Germany",
+      "FR": "France",
+      "JP": "Japan",
+      "CN": "China",
+      "IN": "India",
+      "IT": "Italy",
+      "ES": "Spain",
+      "NL": "Netherlands",
+      "SE": "Sweden",
+      "NO": "Norway",
+      "FI": "Finland",
+      "DK": "Denmark",
+      "CH": "Switzerland",
+      "AT": "Austria",
+      "BE": "Belgium",
+      "IE": "Ireland",
+      "NZ": "New Zealand",
+      "RU": "Russia",
+      "BR": "Brazil",
+      "ZA": "South Africa",
+      "TR": "Turkey",
+      "SA": "Saudi Arabia",
+      "AE": "United Arab Emirates",
+      "KR": "South Korea",
+      "SG": "Singapore",
+      "MY": "Malaysia",
+      "TH": "Thailand",
+      "VN": "Vietnam",
+      "ID": "Indonesia",
+      "PH": "Philippines",
+      "PK": "Pakistan",
+      "BD": "Bangladesh",
+      "EG": "Egypt",
+      "NG": "Nigeria",
+      "KE": "Kenya",
+      "GH": "Ghana",
+    };
+
     try {
       const url = new URL(baseUrl);
       const domainParts = url.hostname.split(".");
-      const tld = domainParts[domainParts.length - 1];
-      if (
-        tld &&
-        tld.length === 2 &&
-        tld !== "com" &&
-        tld !== "org" &&
-        tld !== "net" &&
-        tld !== "edu"
-      ) {
-        return tld.toUpperCase();
+      const tld = domainParts[domainParts.length - 1]?.toUpperCase();
+      
+      if (tld && countryMapping[tld]) {
+        return countryMapping[tld];
       }
     } catch {}
 
     const countryKeywords = [
-      "USA",
       "United States",
-      "UK",
       "United Kingdom",
       "Canada",
       "Australia",
@@ -558,10 +596,16 @@ export class ScholarshipDiscoveryService {
       "Japan",
       "China",
       "Ethiopia",
+      "USA",
+      "UK",
     ];
-    for (const country of countryKeywords) {
-      if (text.includes(country)) return country;
+
+    for (const keyword of countryKeywords) {
+      if (text.includes(keyword)) {
+        return countryMapping[keyword] || keyword;
+      }
     }
+
     return null;
   }
 

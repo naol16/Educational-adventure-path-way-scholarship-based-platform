@@ -108,7 +108,14 @@ export class VectorService {
             });
         }
 
-        // Return the vector string for use in matching queries
-        return student.counselorEmbedding;
+        // Ensure it's returned as a pgvector-compatible string '[0.1, 0.2, ...]'
+        const embed = student.counselorEmbedding;
+        if (Array.isArray(embed)) {
+            return `[${embed.join(",")}]`;
+        }
+        if (typeof embed === "string" && !embed.startsWith("[")) {
+            return `[${embed}]`;
+        }
+        return embed;
     }
 }

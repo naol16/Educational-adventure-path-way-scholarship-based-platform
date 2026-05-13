@@ -1,4 +1,5 @@
-import { Op, Transaction } from "sequelize";
+import { Op, Transaction, Sequelize } from "sequelize";
+import crypto from "crypto";
 import { sequelize } from "../config/sequelize.js";
 import { notificationQueue, isRedisAvailable } from "../config/redis.js";
 import { Counselor } from "../models/Counselor.js";
@@ -28,7 +29,6 @@ import { GoogleMeetService } from "./GoogleMeetService.js";
 import { EmailService } from "./EmailService.js";
 import { FileService } from "./FileService.js";
 import { VectorService } from "./VectorService.js";
-import crypto from "crypto";
 import configs from "../config/configs.js";
 import {
   AdminVerificationDto,
@@ -222,7 +222,7 @@ export class CounselorService {
     return await this.formatCounselorResponse(counselor, user);
   }
 
-  static async getPublicDirectory(query: CounselorDirectoryQuery): Promise<{
+  static async getPublicDirectory(query: CounselorDirectoryQuery, studentId?: number): Promise<{
     rows: CounselorResponse[];
     count: number;
     page: number;
@@ -230,6 +230,19 @@ export class CounselorService {
   }> {
     const page = query.page || 1;
     const limit = query.limit || 10;
+
+    let vectorStr: string | undefined = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+        } catch (err) {
+          console.error("[CounselorService] Error generating student counselor embedding for directory:", err);
+        }
+      }
+    }
+
     const { rows, count } = await CounselorRepository.findVerifiedDirectory({
       search: query.search,
       ...(query.specialization ? { specialization: query.specialization } : {}),
@@ -238,6 +251,7 @@ export class CounselorService {
       ...(query.minRating !== undefined ? { minRating: query.minRating } : {}),
       page,
       limit,
+      vectorStr
     });
 
     const filteredRows = rows.filter((counselor) => {
@@ -272,6 +286,7 @@ export class CounselorService {
       const availableSlots = slotsByCounselor.get(c.id) || [];
       return {
         ...base,
+        match_score: (c as any).match_score ? parseFloat((c as any).match_score.toString()) : undefined,
         availabilitySummary:
           base.availabilitySummary ||
           (availableSlots.length > 0 ? `${availableSlots.length} open slots` : null),
@@ -301,7 +316,7 @@ export class CounselorService {
     if (!vectorStr) {
         console.log("[CounselorService] No vector available, falling back to basic directory list");
         const { rows } = await CounselorRepository.findVerifiedDirectory({ page: 1, limit: 10 });
-        return rows.map(c => ({ ...c, recommendationScore: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
+        return rows.map(c => ({ ...c, match_score: 0, matchReasons: ["Complete your profile for AI matching"] } as any));
     }
 
     // 2. Fetch vector matches
@@ -342,7 +357,7 @@ export class CounselorService {
       const base = await this.formatCounselorResponse(counselor, counselor.user || null);
       return { 
         ...base, 
-        recommendationScore: vectorScore, 
+        match_score: vectorScore, 
         matchReasons 
       };
     }));
@@ -627,22 +642,33 @@ export class CounselorService {
       reservedStudentId: student.id,
     });
 
-    // Notify counselor about new request
-    try {
-      await NotificationService.createNotification(
-        counselor.userId,
-        "New Booking Request",
-        `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
-        "booking",
-        booking.id
-      );
-    } catch (notifyError) {
-      console.error("[CounselorService] Failed to send initial booking notification:", notifyError);
+    // Notify counselor about new request (Non-blocking to prevent frontend timeouts)
+    NotificationService.createNotification(
+      counselor.userId,
+      "New Booking Request",
+      `A student (${user?.name || 'Student'}) has requested a session for ${slot.startTime.toLocaleString()}`,
+      "booking",
+      booking.id
+    ).catch(notifyError => {
+      console.error("[CounselorService] Background notification failed:", notifyError);
+    });
+
+    if (chapaResponse.status !== 'success') {
+      console.error(`[CounselorService] Chapa initialization failed:`, chapaResponse);
+      throw httpError(400, chapaResponse.message || "Failed to initialize payment with Chapa");
     }
+
+    const checkoutUrl = chapaResponse.data?.checkout_url;
+    if (!checkoutUrl) {
+      console.error(`[CounselorService] Chapa response missing checkout_url:`, chapaResponse);
+      throw httpError(500, "Payment gateway did not provide a checkout URL");
+    }
+
+    console.log(`[CounselorService] Payment initialized successfully. Redirect URL: ${checkoutUrl}`);
 
     return {
       booking: this.formatBookingResponse(booking),
-      checkoutUrl: chapaResponse.data.checkout_url
+      checkoutUrl: checkoutUrl
     };
   }
 
@@ -669,7 +695,7 @@ export class CounselorService {
     return { booking, message: "Session invitation sent to student. They need to pay to confirm." };
   }
 
-  static async confirmBooking(tx_ref: string): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
+  static async confirmBooking(tx_ref: string, chapaVerifyResult?: any): Promise<{ success: boolean; status: string; message: string; booking?: any }> {
     const payment = await Payment.findOne({ where: { tx_ref } });
 
     if (!payment) {
@@ -683,8 +709,11 @@ export class CounselorService {
     }
 
     try {
-      console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
-      const chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      let chapaVerify = chapaVerifyResult;
+      if (!chapaVerify) {
+        console.log(`[ConfirmBooking] Verifying with Chapa for tx_ref: ${tx_ref}`);
+        chapaVerify = await PaymentService.verifyPayment(tx_ref);
+      }
 
       // Chapa's response structure: { status: "success", message: "...", data: { status: "success", ... } }
       const apiSuccess = chapaVerify.status === 'success';
@@ -778,7 +807,7 @@ export class CounselorService {
                   }
                   console.log(`[ConfirmBooking] Email tasks added to background queue for: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
                 } else {
-                  // FALLBACK: Synchronous (Slow) if Redis is down
+                  // FALLBACK: Synchronous (Parallelized) if Redis is down
                   const sendEmailTasks: Promise<void>[] = [];
                   if (studentEmail) {
                     sendEmailTasks.push(EmailService.sendSessionInviteEmail({
@@ -794,8 +823,11 @@ export class CounselorService {
                       startTime: slot.startTime, endTime,
                     }));
                   }
-                  await Promise.all(sendEmailTasks);
-                  console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                  
+                  // Start emails in parallel and continue
+                  Promise.all(sendEmailTasks).then(() => {
+                    console.log(`[ConfirmBooking] Direct invite emails sent (fallback) to: ${[studentEmail, counselorEmail].filter(Boolean).join(', ')}`);
+                  }).catch(e => console.error("[ConfirmBooking] Parallel email fallback error:", e));
                 }
               } catch (emailError) {
                 console.error("[ConfirmBooking] Failed to send direct invite emails:", emailError);
@@ -803,21 +835,19 @@ export class CounselorService {
 
               // Funds remain held in escrow until student milestone confirmation.
               const counselor = await CounselorRepository.findById(booking.counselorId);
-              if (counselor) {
-                // Notify counselor about confirmed booking
-                try {
-                  await NotificationService.createNotification(
+                if (counselor) {
+                  // Notify counselor about confirmed booking (Fire and forget to speed up response)
+                  NotificationService.createNotification(
                     counselor.userId,
                     "Booking Confirmed",
                     `Payment received and held in escrow. Your session for ${slot.startTime.toLocaleString()} is confirmed.`,
                     "booking",
                     booking.id,
                     false
-                  );
-                } catch (notifyError) {
-                  console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                  ).catch(notifyError => {
+                    console.error("[CounselorService] Failed to send confirmation notification:", notifyError);
+                  });
                 }
-              }
 
               this.queueSessionReminder(booking.id, slot.startTime);
             }
@@ -1587,22 +1617,92 @@ export class CounselorService {
     return PaymentService.getBanks();
   }
 
-  static async getPublicProfileByUserId(userId: number): Promise<any> {
+  static async getPublicProfileByUserId(userId: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findByUserId(userId);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile by userId:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
-  static async getPublicProfileById(id: number): Promise<any> {
+  static async getPublicProfileById(id: number, studentId?: number): Promise<any> {
     const counselor = await CounselorRepository.findById(id);
     if (!counselor || !counselor.isActive) {
       throw httpError(404, "Counselor profile not found or inactive");
     }
+
+    let match_score = undefined;
+    if (studentId) {
+      const student = await Student.findOne({ where: { userId: studentId } });
+      if (student) {
+        try {
+          // 1. Ensure counselor has embedding
+          if (!counselor.embedding) {
+            await VectorService.generateCounselorEmbedding(counselor);
+          }
+
+          const vectorStr = await VectorService.generateStudentForCounselorEmbedding(student);
+          
+          if (counselor.embedding && vectorStr) {
+            const result = await Counselor.findOne({
+              where: { id: counselor.id },
+              attributes: [
+                [
+                  Sequelize.literal(`GREATEST(0, LEAST(100, (1 - (COALESCE(embedding, '[0,0,0]'::vector) <=> '${vectorStr}'::vector)) * 100))`),
+                  'match_score'
+                ]
+              ],
+              raw: true
+            });
+            if (result && (result as any).match_score !== null) {
+              match_score = Math.round(parseFloat((result as any).match_score.toString()));
+            }
+          }
+        } catch (err) {
+          console.error("[CounselorService] Error calculating match score for profile by ID:", err);
+        }
+      }
+    }
+
     const user = await User.findByPk(counselor.userId);
-    return await this.formatCounselorResponse(counselor, user);
+    const response = await this.formatCounselorResponse(counselor, user);
+    return { ...response, match_score };
   }
 
   static async getStudentBookings(userId: number, role: UserRole = UserRole.STUDENT): Promise<any[]> {

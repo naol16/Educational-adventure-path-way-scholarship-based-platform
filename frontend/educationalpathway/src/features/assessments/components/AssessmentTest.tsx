@@ -226,11 +226,29 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      const getSupportedMimeType = () => {
+        const types = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+          "audio/ogg;codecs=opus"
+        ];
+        for (const type of types) {
+          if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
+            return type;
+          }
+        }
+        return "";
+      };
+      
+      const mimeType = getSupportedMimeType();
+      mediaRecorderRef.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
       mediaRecorderRef.current.ondataavailable = (e) => chunksRef.current.push(e.data);
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const finalMimeType = mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: finalMimeType });
         setAudioBlob(blob);
         stream.getTracks().forEach((track) => track.stop());
       };

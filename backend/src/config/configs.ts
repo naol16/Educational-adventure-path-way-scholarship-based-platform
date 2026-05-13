@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ override: true });
 
 function normalizeSecret(value?: string) {
   if (!value) return undefined;
@@ -44,11 +44,14 @@ function setConfigs() {
       process.env.JWT_REFRESH_EXPIRATION ||
       process.env.JWT_REFRESH_EXPIRES_IN ||
       "7d",
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
+    GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
     GOOGLE_AUTH_AUDIENCES: [
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_ANDROID_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
+      process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
+      // Bulletproof IDs as requested by Senior Architect
+      "57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com",
+      "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com"
     ].filter((id): id is string => !!id),
     
     // Google Calendar / Meet Configs
@@ -92,6 +95,7 @@ function setConfigs() {
     REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",
     REDIS_PORT: parseInt(process.env.REDIS_PORT || "6379"),
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || "",
+    REDIS_TLS: process.env.REDIS_TLS === "true" || (process.env.REDIS_HOST?.includes("upstash.io") ?? false),
 
     VAPI_API_KEY: normalizeSecret(
       process.env.VAPI_API_KEY ||

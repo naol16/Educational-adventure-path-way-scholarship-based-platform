@@ -31,7 +31,7 @@ export class CounselorController {
 
   static async publicDirectory(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getPublicDirectory(req.query as any);
+      const data = await CounselorService.getPublicDirectory(req.query as any, req.user?.id);
       return ResponseHelper.success(res, data);
     } catch (error) {
       next(error);
@@ -354,7 +354,7 @@ export class CounselorController {
 
   static async getByUserId(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getPublicProfileByUserId(Number(req.params.userId));
+      const data = await CounselorService.getPublicProfileByUserId(Number(req.params.userId), req.user?.id);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -363,7 +363,7 @@ export class CounselorController {
 
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getPublicProfileById(Number(req.params.id));
+      const data = await CounselorService.getPublicProfileById(Number(req.params.id), req.user?.id);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

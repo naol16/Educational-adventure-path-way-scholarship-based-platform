@@ -30,7 +30,8 @@ export class PaymentController {
       // 2. HANDLE DIFFERENT OUTCOMES FOR THE FRONTEND
       if (paymentStatus === 'success') {
           // Payment is good! Now we confirm the booking in your database
-          const dbResult = await CounselorService.confirmBooking(tx_ref as string);
+          // PASS the already fetched chapaResponse to avoid a second slow API call
+          const dbResult = await CounselorService.confirmBooking(tx_ref as string, chapaResponse);
           
           console.log(`[Verify] Manual success for ${tx_ref}`);
           return res.status(200).json({

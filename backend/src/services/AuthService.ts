@@ -181,6 +181,11 @@ export class AuthService {
       throw new Error("Google ID Token is required");
     }
 
+    // Diagnostic log to check for invisible newline characters injected by Render
+    console.log(`[Diagnostic] GOOGLE_CLIENT_ID length: ${process.env.GOOGLE_CLIENT_ID?.length || 0}`);
+    console.log(`[Diagnostic] GOOGLE_ANDROID_CLIENT_ID length: ${process.env.GOOGLE_ANDROID_CLIENT_ID?.length || 0}`);
+    console.log(`[Diagnostic] Active Audiences array:`, configs.GOOGLE_AUTH_AUDIENCES);
+
     const ticket = await client.verifyIdToken({
       idToken,
       audience: configs.GOOGLE_AUTH_AUDIENCES,

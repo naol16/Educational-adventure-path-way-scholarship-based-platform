@@ -16,6 +16,7 @@ const app: Application = express();
 // 1. CORS MUST BE FIRST to ensure all responses (including errors/rate-limits) have headers
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001",
   "http://127.0.0.1:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3001",

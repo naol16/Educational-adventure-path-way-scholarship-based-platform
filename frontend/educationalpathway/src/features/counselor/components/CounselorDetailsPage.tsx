@@ -122,6 +122,12 @@ export const CounselorDetailsPage = () => {
                     <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
                       <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Verified Expert
                     </Badge>
+                    {counselor.match_score > 0 && (
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
+                        <Sparkles className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} />
+                        {Math.round(counselor.match_score)}% Precision Match
+                      </Badge>
+                    )}
                   </div>
                   <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">
                     {counselor.name}
@@ -142,10 +148,16 @@ export const CounselorDetailsPage = () => {
             {/* Tactical Stat Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { label: "Precision", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
+                { 
+                  label: "AI Compatibility", 
+                  value: counselor.match_score ? `${counselor.match_score}%` : "---", 
+                  icon: Sparkles, 
+                  color: "text-primary", 
+                  bgColor: "bg-primary/10" 
+                },
+                { label: "Precision Rating", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
                 { label: "Tactical Exp", value: `${counselor.yearsOfExperience || 0}+ Yrs`, icon: Clock, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-                { label: "Successful", value: "500+", icon: GraduationCap, color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
-                { label: "Frequency", value: counselor.languages?.split(',')[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+                { label: "Frequency", value: counselor.supportedLanguages?.[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
               ].map((stat, i) => (
                 <motion.div 
                   key={i}
@@ -344,6 +356,7 @@ export const CounselorDetailsPage = () => {
                     variant="outline"
                     size="lg" 
                     className="w-full h-18 rounded-xl border-2 border-border/60 hover:bg-muted text-foreground text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95"
+                    onClick={() => router.push(`/dashboard/student/chat?userId=${counselor.userId}`)}
                   >
                     <MessageCircle className="h-5 w-5 text-primary" strokeWidth={2.5} />
                     Secure Channel
