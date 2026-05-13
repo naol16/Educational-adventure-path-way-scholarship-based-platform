@@ -144,12 +144,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(messages: [...state.messages, optimistic]);
 
     // 2. Persist via HTTP
-    final ChatMessage? saved;
-    if (conversationId != null) {
-      saved = await _chatService.sendMessageToConversation(conversationId, content.trim());
-    } else {
-      saved = await _chatService.sendMessage(receiverId, content.trim());
-    }
+    final saved = conversationId != null
+        ? await _chatService.sendMessageToConversation(conversationId, content.trim())
+        : await _chatService.sendMessage(receiverId, content.trim());
 
     if (saved != null) {
       // Replace optimistic bubble with the confirmed server message
