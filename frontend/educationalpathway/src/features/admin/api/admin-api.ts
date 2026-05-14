@@ -58,7 +58,7 @@ export const getAllCounselors = async (): Promise<any[]> => {
   return response.data || [];
 };
 
-export const updateCounselorVerification = async (id: number, status: 'verified' | 'rejected'): Promise<void> => {
+export const updateCounselorVerification = async (id: number, status: 'approved' | 'rejected'): Promise<void> => {
   await api.patch(`/counselors/admin/${id}/verification`, { verificationStatus: status });
 };
 
