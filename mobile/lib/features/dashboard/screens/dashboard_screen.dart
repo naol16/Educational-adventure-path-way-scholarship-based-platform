@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/features/chat/screens/pathfinder_chat_screen.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/counselor/providers/counselor_providers.dart';
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
 import 'package:mobile/features/scholarships/screens/tracked_scholarships_screen.dart';
@@ -23,7 +24,9 @@ class DashboardScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? DesignSystem.background : DesignSystem.backgroundLight,
+      backgroundColor: isDark
+          ? DesignSystem.background
+          : DesignSystem.backgroundLight,
       body: Stack(
         children: [
           // Subtle background glow for AI feel
@@ -41,7 +44,11 @@ class DashboardScreen extends ConsumerWidget {
           ),
           SafeArea(
             child: state.isLoading
-                ? Center(child: CircularProgressIndicator(color: DesignSystem.primary(context)))
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: DesignSystem.primary(context),
+                    ),
+                  )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -52,7 +59,10 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 30),
                         _buildWelcomeText(context, state.user?.name),
                         const SizedBox(height: 25),
-                        _buildPathfinderCard(context, state.recommendations.length),
+                        _buildPathfinderCard(
+                          context,
+                          state.recommendations.length,
+                        ),
                         const SizedBox(height: 25),
                         _buildStatsRow(
                           context,
@@ -64,51 +74,70 @@ class DashboardScreen extends ConsumerWidget {
                         InkWell(
                           onTap: () => context.push('/onboarding'),
                           borderRadius: BorderRadius.circular(28),
-                          child: _buildProfileStrength(context, state.profileStrength),
+                          child: _buildProfileStrength(
+                            context,
+                            state.profileStrength,
+                          ),
                         ),
                         const SizedBox(height: 25),
                         _buildUpcomingSession(context),
                         const SizedBox(height: 25),
-                        _buildSectionHeader(context, ref, "Top Recommendations", showViewAll: true),
-                        ...state.recommendations.map((sch) => InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ScholarshipDetailScreen(scholarshipId: sch.id),
-                                ),
-                              ),
-                                child: _buildScholarshipCard(
-                                  context,
-                                  sch.title,
-                                  sch.country ?? "Global Opportunity",
-                                  sch.fundType ?? "Funding Available",
-                                  "${sch.matchScore}% Match",
-                                ),
-                              )),
-                          if (state.recommendations.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: Text(
-                                  "No matches found yet. Complete your profile!",
-                                  style: DesignSystem.labelStyle(buildContext: context),
+                        _buildSectionHeader(
+                          context,
+                          ref,
+                          "Top Recommendations",
+                          showViewAll: true,
+                        ),
+                        ...state.recommendations.map(
+                          (sch) => InkWell(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ScholarshipDetailScreen(
+                                  scholarshipId: sch.id,
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 25),
-                          _buildSectionHeader(context, ref, "Expert Mentors"),
-                          _buildMentorsRow(context),
-                          const SizedBox(height: 100), // Space for bottom nav
-                        ],
-                      ),
+                            child: _buildScholarshipCard(
+                              context,
+                              sch.title,
+                              sch.country ?? "Global Opportunity",
+                              sch.fundType ?? "Funding Available",
+                              "${sch.matchScore}% Match",
+                            ),
+                          ),
+                        ),
+                        if (state.recommendations.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                "No matches found yet. Complete your profile!",
+                                style: DesignSystem.labelStyle(
+                                  buildContext: context,
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 25),
+                        _buildSectionHeader(context, ref, "Expert Mentors"),
+                        _buildMentorsRow(context),
+                        const SizedBox(height: 100), // Space for bottom nav
+                      ],
                     ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildGlassCard({required BuildContext context, required Widget child, Color? borderColor, double? borderRadius}) {
+  Widget _buildGlassCard({
+    required BuildContext context,
+    required Widget child,
+    Color? borderColor,
+    double? borderRadius,
+  }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius ?? 28),
       child: BackdropFilter(
@@ -118,7 +147,11 @@ class DashboardScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: DesignSystem.glassBackground(context),
             borderRadius: BorderRadius.circular(borderRadius ?? 28),
-            border: Border.all(color: borderColor ?? DesignSystem.surface(context).withValues(alpha: 0.1)),
+            border: Border.all(
+              color:
+                  borderColor ??
+                  DesignSystem.surface(context).withValues(alpha: 0.1),
+            ),
           ),
           child: child,
         ),
@@ -138,10 +171,15 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               CircleAvatar(
                 radius: 26,
-                backgroundColor: DesignSystem.primary(context).withValues(alpha: 0.1),
-                backgroundImage: user?.avatarUrl != null 
-                  ? NetworkImage(user!.avatarUrl!) 
-                  : NetworkImage('https://api.dicebear.com/7.x/avataaars/png?seed=$avatarSeed') as ImageProvider,
+                backgroundColor: DesignSystem.primary(
+                  context,
+                ).withValues(alpha: 0.1),
+                backgroundImage: user?.avatarUrl != null
+                    ? NetworkImage(user!.avatarUrl!)
+                    : NetworkImage(
+                            'https://api.dicebear.com/7.x/avataaars/png?seed=$avatarSeed',
+                          )
+                          as ImageProvider,
               ),
               Positioned(
                 right: 0,
@@ -152,10 +190,13 @@ class DashboardScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 2,
+                    ),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -166,7 +207,11 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               Text(
                 "Path Finder",
-                style: DesignSystem.headingStyle(buildContext: context, fontSize: 18, color: DesignSystem.primary(context)),
+                style: DesignSystem.headingStyle(
+                  buildContext: context,
+                  fontSize: 18,
+                  color: DesignSystem.primary(context),
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -178,7 +223,11 @@ class DashboardScreen extends ConsumerWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Icon(LucideIcons.bell, color: DesignSystem.labelText(context), size: 22),
+              Icon(
+                LucideIcons.bell,
+                color: DesignSystem.labelText(context),
+                size: 22,
+              ),
               if (ref.watch(unreadNotificationCountProvider) > 0)
                 Positioned(
                   top: -2,
@@ -201,7 +250,11 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(width: 15),
         GestureDetector(
           onTap: () => context.push('/settings'),
-          child: Icon(LucideIcons.settings, color: DesignSystem.labelText(context), size: 22),
+          child: Icon(
+            LucideIcons.settings,
+            color: DesignSystem.labelText(context),
+            size: 22,
+          ),
         ),
       ],
     );
@@ -212,7 +265,10 @@ class DashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Welcome back", style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14)),
+        Text(
+          "Welcome back",
+          style: DesignSystem.bodyStyle(buildContext: context, fontSize: 14),
+        ),
         Text(
           "Level up your future,\n$firstName",
           style: DesignSystem.headingStyle(buildContext: context, fontSize: 28),
@@ -243,56 +299,75 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Icon(LucideIcons.sparkles, color: primaryColor, size: 20),
                 const SizedBox(width: 8),
-                Text("AI INSIGHT", style: GoogleFonts.plusJakartaSans(color: primaryColor, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                Text(
+                  "AI INSIGHT",
+                  style: GoogleFonts.plusJakartaSans(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              matchCount > 0 
-                ? "$matchCount New Scholarships match your profile perfectly today."
-                : "Ask Pathfinder to find the perfect scholarship for you.",
-              style: DesignSystem.bodyStyle(buildContext: context, fontSize: 16).copyWith(fontWeight: FontWeight.w500),
+              matchCount > 0
+                  ? "$matchCount New Scholarships match your profile perfectly today."
+                  : "Ask Pathfinder to find the perfect scholarship for you.",
+              style: DesignSystem.bodyStyle(
+                buildContext: context,
+                fontSize: 16,
+              ).copyWith(fontWeight: FontWeight.w500),
             ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-            decoration: BoxDecoration(
-              color: DesignSystem.surface(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: DesignSystem.surface(context).withValues(alpha: 0.1)),
-            ),
-            child: TextField(
-              style: DesignSystem.bodyStyle(buildContext: context),
-              textInputAction: TextInputAction.send,
-              onSubmitted: (val) {
-                if(val.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PathfinderChatScreen(initialMessage: val),
-                    ),
-                  );
-                }
-              },
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-                border: InputBorder.none,
-                hintText: "Ask Pathfinder anything...",
-                hintStyle: DesignSystem.labelStyle(buildContext: context, fontSize: 14),
-                suffixIcon: GestureDetector(
-                  onTap: () {
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: DesignSystem.surface(context),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: DesignSystem.surface(context).withValues(alpha: 0.1),
+                ),
+              ),
+              child: TextField(
+                style: DesignSystem.bodyStyle(buildContext: context),
+                textInputAction: TextInputAction.send,
+                onSubmitted: (val) {
+                  if (val.isNotEmpty) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const PathfinderChatScreen(),
+                        builder: (context) =>
+                            PathfinderChatScreen(initialMessage: val),
                       ),
                     );
-                  },
-                  child: Icon(LucideIcons.mic, color: primaryColor, size: 20),
+                  }
+                },
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 12,
+                  ),
+                  border: InputBorder.none,
+                  hintText: "Ask Pathfinder anything...",
+                  hintStyle: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 14,
+                  ),
+                  suffixIcon: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PathfinderChatScreen(),
+                        ),
+                      );
+                    },
+                    child: Icon(LucideIcons.mic, color: primaryColor, size: 20),
+                  ),
                 ),
               ),
             ),
-          )
           ],
         ),
       ),
@@ -300,7 +375,12 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   // --- STATS ROW ---
-  Widget _buildStatsRow(BuildContext context, int saved, int applied, int dueSoon) {
+  Widget _buildStatsRow(
+    BuildContext context,
+    int saved,
+    int applied,
+    int dueSoon,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -313,7 +393,8 @@ class DashboardScreen extends ConsumerWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TrackedScholarshipsScreen(initialStatus: 'SAVED'),
+              builder: (context) =>
+                  const TrackedScholarshipsScreen(initialStatus: 'SAVED'),
             ),
           ),
         ),
@@ -326,7 +407,8 @@ class DashboardScreen extends ConsumerWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TrackedScholarshipsScreen(initialStatus: 'APPLIED'),
+              builder: (context) =>
+                  const TrackedScholarshipsScreen(initialStatus: 'APPLIED'),
             ),
           ),
         ),
@@ -339,7 +421,8 @@ class DashboardScreen extends ConsumerWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const TrackedScholarshipsScreen(showDueSoonOnly: true),
+              builder: (context) =>
+                  const TrackedScholarshipsScreen(showDueSoonOnly: true),
             ),
           ),
         ),
@@ -363,14 +446,28 @@ class DashboardScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: DesignSystem.surface(context),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: DesignSystem.surface(context).withValues(alpha: 0.1)),
+          border: Border.all(
+            color: DesignSystem.surface(context).withValues(alpha: 0.1),
+          ),
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 8),
-            Text(value, style: DesignSystem.headingStyle(buildContext: context, fontSize: 22)),
-            Text(label, style: DesignSystem.labelStyle(buildContext: context, fontSize: 10)),
+            Text(
+              value,
+              style: DesignSystem.headingStyle(
+                buildContext: context,
+                fontSize: 22,
+              ),
+            ),
+            Text(
+              label,
+              style: DesignSystem.labelStyle(
+                buildContext: context,
+                fontSize: 10,
+              ),
+            ),
           ],
         ),
       ),
@@ -384,8 +481,9 @@ class DashboardScreen extends ConsumerWidget {
     String level = "Beginner";
     if (percentage > 80) {
       level = "Expert";
-    // ignore: curly_braces_in_flow_control_structures
-    } else if (percentage > 40) level = "Intermediate";
+      // ignore: curly_braces_in_flow_control_structures
+    } else if (percentage > 40)
+      level = "Intermediate";
 
     return _buildGlassCard(
       context: context,
@@ -395,12 +493,27 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Profile Strength", style: DesignSystem.labelStyle(buildContext: context)),
-              Text("$percentage%", style: GoogleFonts.plusJakartaSans(color: primaryColor, fontWeight: FontWeight.bold)),
+              Text(
+                "Profile Strength",
+                style: DesignSystem.labelStyle(buildContext: context),
+              ),
+              Text(
+                "$percentage%",
+                style: GoogleFonts.plusJakartaSans(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(level, style: DesignSystem.headingStyle(buildContext: context, fontSize: 20)),
+          Text(
+            level,
+            style: DesignSystem.headingStyle(
+              buildContext: context,
+              fontSize: 20,
+            ),
+          ),
           const SizedBox(height: 15),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -425,12 +538,15 @@ class DashboardScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     "Pro Tip: Add your transcript to unlock 95% matches.",
-                    style: DesignSystem.bodyStyle(buildContext: context, fontSize: 12),
+                    style: DesignSystem.bodyStyle(
+                      buildContext: context,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -445,27 +561,58 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-            child: Text("LIVE", style: GoogleFonts.inter(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              "LIVE",
+              style: GoogleFonts.inter(
+                color: Colors.green,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("UPCOMING SESSION", style: DesignSystem.labelStyle(buildContext: context, fontSize: 10)),
-                Text("Mastering Scholarships", style: DesignSystem.headingStyle(buildContext: context, fontSize: 16)),
+                Text(
+                  "UPCOMING SESSION",
+                  style: DesignSystem.labelStyle(
+                    buildContext: context,
+                    fontSize: 10,
+                  ),
+                ),
+                Text(
+                  "Mastering Scholarships",
+                  style: DesignSystem.headingStyle(
+                    buildContext: context,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
           ),
-          Icon(LucideIcons.chevronRight, color: DesignSystem.labelText(context)),
+          Icon(
+            LucideIcons.chevronRight,
+            color: DesignSystem.labelText(context),
+          ),
         ],
       ),
     );
   }
 
   // --- SCHOLARSHIP CARD ---
-  Widget _buildScholarshipCard(BuildContext context, String title, String subtitle, String tag, String match) {
+  Widget _buildScholarshipCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    String tag,
+    String match,
+  ) {
     final primaryColor = DesignSystem.primary(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -476,7 +623,10 @@ class DashboardScreen extends ConsumerWidget {
             Container(
               width: 50,
               height: 50,
-              decoration: BoxDecoration(color: Colors.blue.shade900, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade900,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: const Icon(LucideIcons.graduationCap, color: Colors.white),
             ),
             const SizedBox(width: 15),
@@ -484,33 +634,72 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: DesignSystem.headingStyle(buildContext: context, fontSize: 14)),
-                  Text(subtitle, style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
+                  Text(
+                    title,
+                    style: DesignSystem.headingStyle(
+                      buildContext: context,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: DesignSystem.labelStyle(
+                      buildContext: context,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(match, style: GoogleFonts.inter(color: primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
-            )
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                match,
+                style: GoogleFonts.inter(
+                  color: primaryColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, WidgetRef ref, String title, {bool showViewAll = false}) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    WidgetRef ref,
+    String title, {
+    bool showViewAll = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: DesignSystem.headingStyle(buildContext: context, fontSize: 18)),
-          if (showViewAll) 
+          Text(
+            title,
+            style: DesignSystem.headingStyle(
+              buildContext: context,
+              fontSize: 18,
+            ),
+          ),
+          if (showViewAll)
             GestureDetector(
               onTap: () => ref.read(navigationIndexProvider.notifier).state = 1,
-              child: Text("View all", style: GoogleFonts.inter(color: DesignSystem.primary(context), fontSize: 12)),
+              child: Text(
+                "View all",
+                style: GoogleFonts.inter(
+                  color: DesignSystem.primary(context),
+                  fontSize: 12,
+                ),
+              ),
             ),
         ],
       ),
@@ -518,38 +707,74 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildMentorsRow(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildMentorItem(context, "Dr. Sarah"),
-          _buildMentorItem(context, "James K."),
-          _buildMentorItem(context, "Elena R."),
-          _buildMentorItem(context, "Yusuf A."),
-        ],
-      ),
+    return Consumer(
+      builder: (context, ref, child) {
+        final recommendationsAsync = ref.watch(
+          counselorRecommendationsProvider,
+        );
+
+        return SizedBox(
+          height: 100,
+          child: recommendationsAsync.when(
+            data: (recommendations) {
+              if (recommendations.isEmpty) {
+                return Center(
+                  child: Text(
+                    "No recommendations available",
+                    style: DesignSystem.labelStyle(buildContext: context),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: recommendations.length,
+                itemBuilder: (context, index) {
+                  final counselor = recommendations[index];
+                  final name = counselor['name'] ?? 'Unknown';
+                  final avatarUrl = counselor['avatarUrl'];
+                  return _buildMentorItem(context, name, avatarUrl);
+                },
+              );
+            },
+            loading: () => Center(
+              child: CircularProgressIndicator(
+                color: DesignSystem.primary(context),
+              ),
+            ),
+            error: (error, stack) => Center(
+              child: Text(
+                "Failed to load recommendations",
+                style: DesignSystem.labelStyle(buildContext: context),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildMentorItem(BuildContext context, String name) {
+  Widget _buildMentorItem(
+    BuildContext context,
+    String name, [
+    String? avatarUrl,
+  ]) {
     return Padding(
       padding: const EdgeInsets.only(right: 20),
       child: Column(
         children: [
-          CircleAvatar(radius: 30, backgroundColor: DesignSystem.surface(context)),
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: DesignSystem.surface(context),
+            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+          ),
           const SizedBox(height: 8),
-          Text(name, style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
+          Text(
+            name,
+            style: DesignSystem.labelStyle(buildContext: context, fontSize: 12),
+          ),
         ],
       ),
     );
   }
-
 }
-
-
-
-
-
-
-

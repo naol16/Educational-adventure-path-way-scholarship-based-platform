@@ -155,16 +155,16 @@ export const CounselorDashboard = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="lg:col-span-3 rounded-2xl border border-border bg-card p-6 flex items-center justify-between relative overflow-hidden shadow-sm"
+          className="lg:col-span-3 rounded-2xl border border-border bg-card p-4 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm"
         >
-          <div className="flex flex-wrap gap-4 relative z-10">
-            <Link href="/dashboard/counselor/bookings">
-              <Button className="primary-gradient text-white shadow-lg shadow-primary/20 h-12 px-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 relative z-10 w-full sm:w-auto">
+            <Link href="/dashboard/counselor/bookings" className="w-full sm:w-auto">
+              <Button className="primary-gradient text-white shadow-lg shadow-primary/20 h-12 px-6 w-full sm:w-auto">
                 <CalendarCheck className="mr-2 h-4 w-4" /> Manage Bookings
               </Button>
             </Link>
-            <Link href="/dashboard/counselor/chat">
-              <Button variant="outline" className="border-border hover:bg-muted text-sm px-6 h-12">
+            <Link href="/dashboard/counselor/chat" className="w-full sm:w-auto">
+              <Button variant="outline" className="border-border hover:bg-muted text-sm px-6 h-12 w-full sm:w-auto">
                 <MessageSquare className="mr-2 h-4 w-4" /> Active Chats
               </Button>
             </Link>
@@ -209,31 +209,31 @@ export const CounselorDashboard = () => {
       </div>
 
         {/* Earning & Payout Card Row */}
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6 w-full">
+        <div className="grid grid-cols-1 gap-6 w-full">
           <Card className="border-border bg-slate-900 text-white shadow-xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardBody className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="flex items-center gap-6 w-full md:w-auto">
-                <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto text-center sm:text-left">
+                <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                   <Wallet size={32} />
                 </div>
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400">Available Balance</p>
                   </div>
-                  <h3 className="text-4xl font-black">{Number(counselorProfile?.pendingBalance || 0).toLocaleString()} <span className="text-sm text-slate-400">ETB</span></h3>
+                  <h3 className="text-3xl md:text-4xl font-black">{Number(counselorProfile?.pendingBalance || 0).toLocaleString()} <span className="text-sm text-slate-400">ETB</span></h3>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="border-l border-slate-700 h-12 hidden md:block mx-4" />
-                <div className="flex-1 md:flex-none text-center md:text-right mr-6">
+                <div className="flex-1 md:flex-none text-center md:text-right sm:mr-6">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Lifetime Earnings</p>
                   <p className="text-lg font-bold">{Number(counselorProfile?.totalEarned || 0).toLocaleString()} ETB</p>
                 </div>
                 <Button 
                    onClick={() => setIsWithdrawalOpen(true)}
-                   className="h-12 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
+                   className="h-12 w-full sm:w-auto px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20"
                 >
                   Withdraw <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>

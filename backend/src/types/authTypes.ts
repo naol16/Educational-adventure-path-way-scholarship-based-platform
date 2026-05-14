@@ -1,4 +1,9 @@
 import { UserRole } from "./userTypes.js";
+import { Request } from "express";
+
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 
 export interface LoginCredentials {
   email: string;

@@ -9,7 +9,6 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:mobile/features/counselor/providers/counselor_providers.dart';
-import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
 import 'package:mobile/features/counselor/widgets/document_preview_dialog.dart';
 import 'package:go_router/go_router.dart';
@@ -19,10 +18,12 @@ class CounselorOnboardingScreen extends ConsumerStatefulWidget {
   const CounselorOnboardingScreen({super.key, this.isEditMode = false});
 
   @override
-  ConsumerState<CounselorOnboardingScreen> createState() => _CounselorOnboardingScreenState();
+  ConsumerState<CounselorOnboardingScreen> createState() =>
+      _CounselorOnboardingScreenState();
 }
 
-class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingScreen> {
+class _CounselorOnboardingScreenState
+    extends ConsumerState<CounselorOnboardingScreen> {
   int _currentStep = 1;
   bool _isSaving = false;
 
@@ -133,7 +134,9 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
         color: DesignSystem.surface(context),
-        border: Border(bottom: BorderSide(color: DesignSystem.glassBorder(context))),
+        border: Border(
+          bottom: BorderSide(color: DesignSystem.glassBorder(context)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,7 +144,11 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
           final id = s['id'] as int;
           final active = _currentStep == id;
           final done = _currentStep > id;
-          final color = active ? DesignSystem.primary(context) : (done ? const Color(0xFF10B981) : DesignSystem.labelText(context));
+          final color = active
+              ? DesignSystem.primary(context)
+              : (done
+                    ? const Color(0xFF10B981)
+                    : DesignSystem.labelText(context));
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -152,12 +159,25 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withValues(alpha: active ? 0.5 : 0.2)),
+                  border: Border.all(
+                    color: color.withValues(alpha: active ? 0.5 : 0.2),
+                  ),
                 ),
-                child: Icon(done ? LucideIcons.check : s['icon'] as IconData, color: color, size: 20),
+                child: Icon(
+                  done ? LucideIcons.check : s['icon'] as IconData,
+                  color: color,
+                  size: 20,
+                ),
               ),
               const SizedBox(height: 4),
-              Text(s['title'] as String, style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+              Text(
+                s['title'] as String,
+                style: GoogleFonts.inter(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           );
         }).toList(),
@@ -167,11 +187,16 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
 
   Widget _buildCurrentStep() {
     switch (_currentStep) {
-      case 1: return _buildStep1();
-      case 2: return _buildStep2();
-      case 3: return _buildStep3();
-      case 4: return _buildStep4();
-      default: return const SizedBox.shrink();
+      case 1:
+        return _buildStep1();
+      case 2:
+        return _buildStep2();
+      case 3:
+        return _buildStep3();
+      case 4:
+        return _buildStep4();
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -182,21 +207,57 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         _buildSectionTitle('Identity & Bio', LucideIcons.user),
         const SizedBox(height: 24),
         _buildLabel('Professional Bio'),
-        _buildTextArea(_bioController, 'Tell students about your expertise...', minLines: 5),
+        _buildTextArea(
+          _bioController,
+          'Tell students about your expertise...',
+          minLines: 5,
+        ),
         const SizedBox(height: 20),
         _buildLabel('Phone Number'),
         _buildTextField(_phoneController, '+251...', icon: LucideIcons.phone),
         const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildLabel('Country'), _buildTextField(null, 'Ethiopia', icon: LucideIcons.globe, value: _country, onChanged: (v) => setState(() => _country = v))])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Country'),
+                  _buildTextField(
+                    null,
+                    'Ethiopia',
+                    icon: LucideIcons.globe,
+                    value: _country,
+                    onChanged: (v) => setState(() => _country = v),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildLabel('City'), _buildTextField(null, 'Addis Ababa', icon: LucideIcons.mapPin, value: _city, onChanged: (v) => setState(() => _city = v))])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('City'),
+                  _buildTextField(
+                    null,
+                    'Addis Ababa',
+                    icon: LucideIcons.mapPin,
+                    value: _city,
+                    onChanged: (v) => setState(() => _city = v),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
         _buildLabel('Languages'),
-        _buildTextField(_languagesController, 'English, Amharic...', icon: LucideIcons.languages),
+        _buildTextField(
+          _languagesController,
+          'English, Amharic...',
+          icon: LucideIcons.languages,
+        ),
       ],
     );
   }
@@ -208,16 +269,38 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         _buildSectionTitle('Professional Background', LucideIcons.briefcase),
         const SizedBox(height: 24),
         _buildLabel('Highest Education Level'),
-        _buildDropdown(['Bachelors', 'Masters', 'PhD'], _educationLevel, (v) => setState(() => _educationLevel = v)),
+        _buildDropdown(
+          ['Bachelors', 'Masters', 'PhD'],
+          _educationLevel,
+          (v) => setState(() => _educationLevel = v),
+        ),
         const SizedBox(height: 20),
         _buildLabel('University Name'),
-        _buildTextField(_universityController, 'Harvard University...', icon: LucideIcons.graduationCap),
+        _buildTextField(
+          _universityController,
+          'Harvard University...',
+          icon: LucideIcons.graduationCap,
+        ),
         const SizedBox(height: 20),
         _buildLabel('Current Position'),
-        _buildDropdown(['Higher Education Consultant', 'Scholarship Specialist', 'Career Coach', 'Admissions Officer'], _position, (v) => setState(() => _position = v)),
+        _buildDropdown(
+          [
+            'Higher Education Consultant',
+            'Scholarship Specialist',
+            'Career Coach',
+            'Admissions Officer',
+          ],
+          _position,
+          (v) => setState(() => _position = v),
+        ),
         const SizedBox(height: 20),
         _buildLabel('Years of Experience'),
-        _buildTextField(_expController, '5', icon: LucideIcons.activity, keyboardType: TextInputType.number),
+        _buildTextField(
+          _expController,
+          '5',
+          icon: LucideIcons.activity,
+          keyboardType: TextInputType.number,
+        ),
       ],
     );
   }
@@ -238,7 +321,16 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
           activeColor: DesignSystem.primary(context),
           onChanged: (v) => setState(() => _hourlyRate = v),
         ),
-        Center(child: Text('${_hourlyRate.toInt()} ETB / hour', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: DesignSystem.primary(context)))),
+        Center(
+          child: Text(
+            '${_hourlyRate.toInt()} ETB / hour',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: DesignSystem.primary(context),
+            ),
+          ),
+        ),
         const SizedBox(height: 32),
         _buildLabel('Consultation Modes'),
         Wrap(
@@ -250,11 +342,15 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
               selected: active,
               onSelected: (s) {
                 setState(() {
-                  if (s) _consultationModes.add(m);
-                  else _consultationModes.remove(m);
+                  if (s)
+                    _consultationModes.add(m);
+                  else
+                    _consultationModes.remove(m);
                 });
               },
-              selectedColor: DesignSystem.primary(context).withValues(alpha: 0.2),
+              selectedColor: DesignSystem.primary(
+                context,
+              ).withValues(alpha: 0.2),
               checkmarkColor: DesignSystem.primary(context),
             );
           }).toList(),
@@ -271,10 +367,22 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: active ? DesignSystem.primary(context) : DesignSystem.surface(context),
+                    color: active
+                        ? DesignSystem.primary(context)
+                        : DesignSystem.surface(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(child: Text('$d min', style: GoogleFonts.inter(color: active ? Colors.white : DesignSystem.mainText(context), fontWeight: FontWeight.w700))),
+                  child: Center(
+                    child: Text(
+                      '$d min',
+                      style: GoogleFonts.inter(
+                        color: active
+                            ? Colors.white
+                            : DesignSystem.mainText(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
@@ -290,11 +398,27 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
       children: [
         _buildSectionTitle('Verification Documents', LucideIcons.shieldCheck),
         const SizedBox(height: 24),
-        _buildFilePicker('Profile Photo', _profileImage, () => _pickImage(), isImage: true, networkUrl: _profileImageUrl),
+        _buildFilePicker(
+          'Profile Photo',
+          _profileImage,
+          () => _pickImage(),
+          isImage: true,
+          networkUrl: _profileImageUrl,
+        ),
         const SizedBox(height: 20),
-        _buildFilePicker('Curriculum Vitae (CV)', _cvFile, () => _pickFile('cv'), networkUrl: _cvUrl),
+        _buildFilePicker(
+          'Curriculum Vitae (CV)',
+          _cvFile,
+          () => _pickFile('cv'),
+          networkUrl: _cvUrl,
+        ),
         const SizedBox(height: 20),
-        _buildFilePicker('Academic Certificates', _certFile, () => _pickFile('cert'), networkUrl: _certUrl),
+        _buildFilePicker(
+          'Academic Certificates',
+          _certFile,
+          () => _pickFile('cert'),
+          networkUrl: _certUrl,
+        ),
       ],
     );
   }
@@ -302,9 +426,23 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
   Widget _buildSectionTitle(String title, IconData icon) {
     return Row(
       children: [
-        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: DesignSystem.primary(context).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: DesignSystem.primary(context), size: 20)),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: DesignSystem.primary(context).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: DesignSystem.primary(context), size: 20),
+        ),
         const SizedBox(width: 12),
-        Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: DesignSystem.mainText(context))),
+        Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: DesignSystem.mainText(context),
+          ),
+        ),
       ],
     );
   }
@@ -312,11 +450,25 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: DesignSystem.labelText(context))),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: DesignSystem.labelText(context),
+        ),
+      ),
     );
   }
 
-  Widget _buildTextField(TextEditingController? controller, String hint, {IconData? icon, String? value, ValueChanged<String>? onChanged, TextInputType? keyboardType}) {
+  Widget _buildTextField(
+    TextEditingController? controller,
+    String hint, {
+    IconData? icon,
+    String? value,
+    ValueChanged<String>? onChanged,
+    TextInputType? keyboardType,
+  }) {
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       borderRadius: 16,
@@ -325,13 +477,27 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         initialValue: controller == null ? value : null,
         onChanged: onChanged,
         keyboardType: keyboardType,
-        style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14),
-        decoration: InputDecoration(hintText: hint, hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context)), icon: icon != null ? Icon(icon, size: 18, color: DesignSystem.labelText(context)) : null, border: InputBorder.none),
+        style: GoogleFonts.inter(
+          color: DesignSystem.mainText(context),
+          fontSize: 14,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context)),
+          icon: icon != null
+              ? Icon(icon, size: 18, color: DesignSystem.labelText(context))
+              : null,
+          border: InputBorder.none,
+        ),
       ),
     );
   }
 
-  Widget _buildTextArea(TextEditingController controller, String hint, {int minLines = 3}) {
+  Widget _buildTextArea(
+    TextEditingController controller,
+    String hint, {
+    int minLines = 3,
+  }) {
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       borderRadius: 16,
@@ -339,13 +505,25 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         controller: controller,
         maxLines: null,
         minLines: minLines,
-        style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14, height: 1.5),
-        decoration: InputDecoration(hintText: hint, hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context)), border: InputBorder.none),
+        style: GoogleFonts.inter(
+          color: DesignSystem.mainText(context),
+          fontSize: 14,
+          height: 1.5,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context)),
+          border: InputBorder.none,
+        ),
       ),
     );
   }
 
-  Widget _buildDropdown(List<String> items, String? value, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(
+    List<String> items,
+    String? value,
+    ValueChanged<String?> onChanged,
+  ) {
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       borderRadius: 16,
@@ -353,8 +531,27 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          hint: Text('Select...', style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 14)),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14)))).toList(),
+          hint: Text(
+            'Select...',
+            style: GoogleFonts.inter(
+              color: DesignSystem.labelText(context),
+              fontSize: 14,
+            ),
+          ),
+          items: items
+              .map(
+                (i) => DropdownMenuItem(
+                  value: i,
+                  child: Text(
+                    i,
+                    style: GoogleFonts.inter(
+                      color: DesignSystem.mainText(context),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
           onChanged: onChanged,
           dropdownColor: DesignSystem.overlayBackground(context),
         ),
@@ -362,7 +559,13 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
     );
   }
 
-  Widget _buildFilePicker(String label, File? file, VoidCallback onTap, {bool isImage = false, String? networkUrl}) {
+  Widget _buildFilePicker(
+    String label,
+    File? file,
+    VoidCallback onTap, {
+    bool isImage = false,
+    String? networkUrl,
+  }) {
     final hasFile = file != null || networkUrl != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,14 +581,26 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                 if (isImage && (file != null || networkUrl != null))
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: file != null 
-                      ? Image.file(file, width: 50, height: 50, fit: BoxFit.cover)
-                      : Image.network(networkUrl!, width: 50, height: 50, fit: BoxFit.cover),
+                    child: file != null
+                        ? Image.file(
+                            file,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.network(
+                            networkUrl!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
                   )
                 else
                   Icon(
                     isImage ? LucideIcons.image : LucideIcons.fileText,
-                    color: hasFile ? const Color(0xFF10B981) : DesignSystem.primary(context),
+                    color: hasFile
+                        ? const Color(0xFF10B981)
+                        : DesignSystem.primary(context),
                     size: 32,
                   ),
                 const SizedBox(width: 16),
@@ -395,20 +610,33 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                     children: [
                       Text(
                         hasFile ? 'File selected' : 'Upload file',
-                        style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontWeight: FontWeight.w700, fontSize: 14),
+                        style: GoogleFonts.inter(
+                          color: DesignSystem.mainText(context),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
                       ),
                       Text(
-                        file != null 
-                          ? file.path.split('/').last 
-                          : (networkUrl != null ? 'Existing document' : 'PDF, JPG or PNG (max 5MB)'),
-                        style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11),
+                        file != null
+                            ? file.path.split('/').last
+                            : (networkUrl != null
+                                  ? 'Existing document'
+                                  : 'PDF, JPG or PNG (max 5MB)'),
+                        style: GoogleFonts.inter(
+                          color: DesignSystem.labelText(context),
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 if (hasFile) ...[
                   IconButton(
-                    icon: Icon(LucideIcons.eye, color: DesignSystem.primary(context), size: 20),
+                    icon: Icon(
+                      LucideIcons.eye,
+                      color: DesignSystem.primary(context),
+                      size: 20,
+                    ),
                     onPressed: () => DocumentPreviewDialog.show(
                       context,
                       file: file,
@@ -416,7 +644,11 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
                       title: 'Preview $label',
                     ),
                   ),
-                  const Icon(LucideIcons.checkCircle, color: Color(0xFF10B981), size: 20),
+                  const Icon(
+                    LucideIcons.checkCircle,
+                    color: Color(0xFF10B981),
+                    size: 20,
+                  ),
                 ],
               ],
             ),
@@ -433,11 +665,16 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
   }
 
   Future<void> _pickFile(String type) async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'doc', 'docx']);
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
     if (res != null) {
       setState(() {
-        if (type == 'cv') _cvFile = File(res.files.single.path!);
-        else _certFile = File(res.files.single.path!);
+        if (type == 'cv')
+          _cvFile = File(res.files.single.path!);
+        else
+          _certFile = File(res.files.single.path!);
       });
     }
   }
@@ -445,17 +682,32 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
   Widget _buildNavButtons() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: DesignSystem.surface(context), border: Border(top: BorderSide(color: DesignSystem.glassBorder(context)))),
+      decoration: BoxDecoration(
+        color: DesignSystem.surface(context),
+        border: Border(
+          top: BorderSide(color: DesignSystem.glassBorder(context)),
+        ),
+      ),
       child: Row(
         children: [
-          if (_currentStep > 1) Expanded(child: PrimaryButton(text: 'Previous', isOutlined: true, onPressed: () => setState(() => _currentStep--)))
-          else const Spacer(),
+          if (_currentStep > 1)
+            Expanded(
+              child: PrimaryButton(
+                text: 'Previous',
+                isOutlined: true,
+                onPressed: () => setState(() => _currentStep--),
+              ),
+            )
+          else
+            const Spacer(),
           const SizedBox(width: 16),
           Expanded(
             child: PrimaryButton(
               text: _currentStep == 4 ? 'Finish' : 'Next',
               isLoading: _isSaving,
-              onPressed: _currentStep == 4 ? _finish : () => setState(() => _currentStep++),
+              onPressed: _currentStep == 4
+                  ? _finish
+                  : () => setState(() => _currentStep++),
             ),
           ),
         ],
@@ -471,7 +723,10 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
         'phoneNumber': _phoneController.text,
         'countryOfResidence': _country,
         'city': _city,
-        'languages': _languagesController.text.split(',').map((e) => e.trim()).toList(),
+        'languages': _languagesController.text
+            .split(',')
+            .map((e) => e.trim())
+            .toList(),
         'highestEducationLevel': _educationLevel,
         'universityName': _universityController.text,
         'studyCountry': _studyCountryController.text,
@@ -506,7 +761,10 @@ class _CounselorOnboardingScreenState extends ConsumerState<CounselorOnboardingS
           }
         }
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to save. Check fields.')));
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to save. Check fields.')),
+          );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

@@ -29,6 +29,7 @@ import { GoogleMeetService } from "./GoogleMeetService.js";
 import { EmailService } from "./EmailService.js";
 import { FileService } from "./FileService.js";
 import { VectorService } from "./VectorService.js";
+import { ExchangeRateService } from "./ExchangeRateService.js";
 import configs from "../config/configs.js";
 import {
   AdminVerificationDto,
@@ -951,6 +952,13 @@ export class CounselorService {
           name: studentUser?.name || "Unknown",
           email: studentUser?.email || "Unknown",
           avatarUrl: studentUser?.avatarUrl || null,
+          fieldOfStudy: student.fieldOfStudy || null,
+          countryInterest: student.countryInterest || null,
+          currentDegree: student.academicStatus || null,
+          proficiencyScore: student.languageScore || null,
+          researchArea: student.researchArea || null,
+          desiredFunding: student.needsFinancialSupport ? "Financial Support Needed" : "Self-Funded",
+          sessionCount: bookings.filter(b => b.studentId === student.id).length,
           lastBookingDate: booking.createdAt,
           lastBookingStatus: booking.status,
         });
@@ -1423,7 +1431,9 @@ export class CounselorService {
       cvUrl: counselor.cvUrl,
       certificateUrls: counselor.certificateUrls,
       pendingBalance: counselor.pendingBalance,
+      pendingBalanceUsd: counselor.pendingBalanceUsd,
       totalEarned: counselor.totalEarned,
+      totalEarnedUsd: counselor.totalEarnedUsd,
       createdAt: counselor.createdAt,
       updatedAt: counselor.updatedAt,
     };
@@ -1580,37 +1590,32 @@ export class CounselorService {
   }
 
   static async getChapaMerchantTransactions() {
-    try {
-      return await PaymentService.getTransactions();
-    } catch (error) {
-      console.error("[CounselorService] Chapa API transaction fetch failed, falling back to local database:", error);
-      // Fallback: return our local payments table records
-      const localPayments = await Payment.findAll({
-        include: [
-          {
-            association: 'student',
-            include: [{ association: 'user', attributes: ['name', 'email'] }]
-          }
-        ],
-        order: [['createdAt', 'DESC']],
-        limit: 50
-      });
+    // We use local database records because Chapa does not provide a public API endpoint for listing transactions.
+    const localPayments = await Payment.findAll({
+      include: [
+        {
+          association: 'student',
+          include: [{ association: 'user', attributes: ['name', 'email'] }]
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 50
+    });
 
-      return {
-        status: 'success',
-        message: 'Local records fetched (Chapa API unavailable)',
-        data: localPayments.map(p => ({
-          tx_ref: p.tx_ref,
-          amount: p.amount,
-          currency: p.currency,
-          status: p.status,
-          created_at: p.createdAt,
-          first_name: p.student?.user?.name?.split(' ')[0] || 'Student',
-          last_name: p.student?.user?.name?.split(' ')[1] || 'User',
-          email: p.student?.user?.email
-        }))
-      };
-    }
+    return {
+      status: 'success',
+      message: 'Merchant transactions retrieved from database',
+      data: localPayments.map(p => ({
+        tx_ref: p.tx_ref,
+        amount: p.amount,
+        currency: p.currency,
+        status: p.status,
+        created_at: p.createdAt,
+        first_name: p.student?.user?.name?.split(' ')[0] || 'Student',
+        last_name: p.student?.user?.name?.split(' ')[1] || 'User',
+        email: p.student?.user?.email
+      }))
+    };
   }
 
   static async getChapaBanks() {
@@ -1804,24 +1809,49 @@ export class CounselorService {
     if (!counselor) throw httpError(404, "Counselor profile not found");
 
     const amount = Number(dto.amount);
-    if (isNaN(amount) || amount < 100) {
-      throw httpError(400, "Minimum payout amount is 100 ETB");
+    const currency = dto.currency || 'ETB';
+    
+    if (isNaN(amount) || amount <= 0) {
+      throw httpError(400, "Invalid payout amount");
+    }
+
+    // Logic: 
+    // 1. If currency is ETB, deduct from pendingBalance.
+    // 2. If currency is USD, calculate ETB equivalent and deduct from pendingBalance.
+    // This assumes pendingBalance is the "Source of Truth" in ETB.
+    
+    let etbToDeduct = amount;
+    let exchangeRate = 1.0;
+
+    if (currency === 'USD') {
+      const conversion = await ExchangeRateService.convertUsdToEtb(amount);
+      etbToDeduct = conversion.etbAmount;
+      exchangeRate = conversion.rate;
+      
+      console.log(`[PayoutRequest] USD ${amount} requested. Converting to ETB ${etbToDeduct} at rate ${exchangeRate}`);
+    }
+
+    const minAmountEtb = 100;
+    if (etbToDeduct < minAmountEtb) {
+      throw httpError(400, `Minimum payout is equivalent to ${minAmountEtb} ETB`);
     }
 
     const currentBalance = Number(counselor.pendingBalance || 0);
-    if (currentBalance < amount) {
-      throw httpError(400, "Insufficient pending balance for payout");
+    if (currentBalance < etbToDeduct) {
+      throw httpError(400, "Insufficient balance for this payout request");
     }
 
     return await sequelize.transaction(async (t) => {
       // 1. DEDUCT IMMEDIATELY (Locking)
-      const newBalance = Number((currentBalance - amount).toFixed(2));
+      const newBalance = Number((currentBalance - etbToDeduct).toFixed(2));
       await counselor.update({ pendingBalance: newBalance }, { transaction: t });
 
       // 2. Create payout entry
       const payout = await CounselorPayout.create({
         counselorId: counselor.id,
         amount: amount,
+        currency: currency,
+        exchangeRate: currency === 'USD' ? exchangeRate : null,
         status: 'pending',
         payoutMethod: dto.payoutMethod,
         payoutDetails: dto.payoutDetails,
@@ -1832,10 +1862,10 @@ export class CounselorService {
       await CounselorWalletTransaction.create({
         counselorId: counselor.id,
         entryType: "withdrawal",
-        amount: -amount,
+        amount: -etbToDeduct,
         balanceAfter: newBalance,
         reference: payout.transactionReference,
-        note: `Payout request initiated. Funds held pending admin approval.`,
+        note: `Payout request initiated for ${amount} ${currency}. Funds held pending approval.`,
       }, { transaction: t });
 
       return payout;
@@ -1870,7 +1900,7 @@ export class CounselorService {
             account_name: payout.payoutDetails?.accountHolderName || "Counselor Payout",
             account_number: sanitizedAccountNumber,
             amount: Number(payout.amount),
-            currency: "ETB",
+            currency: payout.currency || "ETB",
             beneficiary_name: payout.payoutDetails?.accountHolderName || "Counselor",
             reference: transferReference,
             // Use provided bankCode if valid (not empty or "000"), otherwise fallback to method-specific defaults
@@ -1888,7 +1918,7 @@ export class CounselorService {
           await NotificationService.createNotification(
             counselor.userId,
             "Payout Processed",
-            `Your payout of ${payout.amount} ETB has been processed successfully via ${payout.payoutMethod}. Reference: ${chapaResult.data?.reference || transferReference}`,
+            `Your payout of ${payout.amount} ${payout.currency || 'ETB'} has been processed successfully via ${payout.payoutMethod}. Reference: ${chapaResult.data?.reference || transferReference}`,
             "payout",
             payout.id
           );

@@ -11,7 +11,7 @@ import { AssessmentService } from "../services/AssessmentService.js";
 export const assessmentWorker = new Worker(
   "assessment-queue",
   async (job) => {
-    const { testId, blueprint, responses, studentId, audioData } = job.data;
+    const { testId, blueprint, responses, studentId, audioData, isDiagnostic, transcribedText } = job.data;
     console.log(`[AssessmentWorker] 🚀 Picking up job ${job.id} for test_id: ${testId}`);
 
     try {
@@ -22,6 +22,8 @@ export const assessmentWorker = new Worker(
         studentId,
         job, // Pass job for incremental progress updates
         audioData,
+        isDiagnostic,
+        transcribedText
       );
       console.log(`✅ Evaluation complete for test_id: ${testId}`);
       return evaluation;
@@ -34,7 +36,8 @@ export const assessmentWorker = new Worker(
   },
   {
     connection: redisOptions,
-    concurrency: 1,
+    // Allow two assessments to run in parallel when Redis/Groq capacity allows.
+    concurrency: 2,
     lockDuration: 600000, 
     maxStalledCount: 3,
     stalledInterval: 30000

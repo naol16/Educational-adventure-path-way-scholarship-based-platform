@@ -55,12 +55,18 @@ class CounselorAppService {
   }
 
   Future<bool> updateBookingStatus(int bookingId, String status) async {
-    final res = await _api.patch('/api/counselors/bookings/$bookingId/status', body: {'status': status});
+    final res = await _api.patch(
+      '/api/counselors/bookings/$bookingId/status',
+      body: {'status': status},
+    );
     return res.statusCode == 200;
   }
 
   Future<Map<String, dynamic>?> joinSession(int bookingId) async {
-    final res = await _api.post('/api/counselors/bookings/$bookingId/join', body: {});
+    final res = await _api.post(
+      '/api/counselors/bookings/$bookingId/join',
+      body: {},
+    );
     if (res.statusCode == 200) {
       return jsonDecode(res.body)['data'];
     }
@@ -100,7 +106,10 @@ class CounselorAppService {
   }
 
   Future<bool> createSlots(List<Map<String, dynamic>> slots) async {
-    final res = await _api.post('/api/counselors/slots', body: {'slots': slots});
+    final res = await _api.post(
+      '/api/counselors/slots',
+      body: {'slots': slots},
+    );
     return res.statusCode == 201 || res.statusCode == 200;
   }
 
@@ -133,24 +142,21 @@ class CounselorAppService {
 
   Future<bool> requestPayout({
     required double amount,
-    required String bankCode,
-    required String accountNumber,
-    required String accountName,
-    String? bankName,
+    required String currency,
+    required String payoutMethod,
+    required Map<String, dynamic> payoutDetails,
   }) async {
-    final res = await _api.post('/api/counselors/me/payouts/request', body: {
-      'amount': amount,
-      'payoutMethod': 'bank_transfer',
-      'payoutDetails': {
-        'accountNumber': accountNumber,
-        'bankName': bankName ?? 'Bank',
-        'accountHolderName': accountName,
-        'bankCode': bankCode,
+    final res = await _api.post(
+      '/api/counselors/me/payouts/request',
+      body: {
+        'amount': amount,
+        'currency': currency,
+        'payoutMethod': payoutMethod,
+        'payoutDetails': payoutDetails,
       },
-    });
+    );
     return res.statusCode == 201 || res.statusCode == 200;
   }
-
 
   Future<List<Map<String, dynamic>>> getBanks() async {
     final res = await _api.get('/api/counselors/banks');
@@ -173,16 +179,16 @@ class CounselorAppService {
     }
     return [];
   }
+
   Future<bool> shareDocument({
     required String title,
     required String url,
     int? studentId,
   }) async {
-    final res = await _api.post('/api/counselors/dashboard/documents/share', body: {
-      'title': title,
-      'url': url,
-      if (studentId != null) 'studentId': studentId,
-    });
+    final res = await _api.post(
+      '/api/counselors/dashboard/documents/share',
+      body: {'title': title, 'url': url, 'studentId': ?studentId},
+    );
     return res.statusCode == 201 || res.statusCode == 200;
   }
 
@@ -196,12 +202,32 @@ class CounselorAppService {
     }
     return [];
   }
+
+  // ── Student Recommendations ───────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getRecommendedCounselors() async {
+    final res = await _api.get('/api/counselors/recommendations/me');
+    if (res.statusCode == 200) {
+      final body = jsonDecode(res.body);
+      final List data = body['data'] ?? body ?? [];
+      return data.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
   Future<bool> rescheduleBooking(int bookingId, int slotId) async {
-    final res = await _api.patch('/api/counselors/bookings/$bookingId/reschedule', body: {'slotId': slotId});
+    final res = await _api.patch(
+      '/api/counselors/bookings/$bookingId/reschedule',
+      body: {'slotId': slotId},
+    );
     return res.statusCode == 200;
   }
+
   Future<bool> updateBookingNotes(int bookingId, String notes) async {
-    final res = await _api.patch('/api/counselors/bookings/$bookingId/notes', body: {'notes': notes});
+    final res = await _api.patch(
+      '/api/counselors/bookings/$bookingId/notes',
+      body: {'notes': notes},
+    );
     return res.statusCode == 200;
   }
 }

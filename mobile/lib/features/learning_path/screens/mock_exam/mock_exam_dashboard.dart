@@ -91,7 +91,7 @@ class _StatsRow extends StatelessWidget {
     final isToefl = state.examType == 'TOEFL';
     final maxScore = isToefl ? 120.0 : 9.0;
     final threshold = isToefl ? 90.0 : 6.5;
-    final filtered = state.progressHistory.where((h) => (h['examType'] ?? '') == state.examType).toList();
+    final filtered = state.progressHistory.map((h) => Map<String, dynamic>.from(h as Map)).where((h) => (h['examType'] ?? '') == state.examType).toList();
     final bands = filtered.map((h) => _toDouble(h['overallBand'])).toList();
     final avg = bands.isEmpty ? 0.0 : bands.reduce((a, b) => a + b) / bands.length;
     final best = bands.isEmpty ? 0.0 : bands.reduce((a, b) => a > b ? a : b);

@@ -126,7 +126,9 @@ export interface CounselorResponse {
     cvUrl: string | null;
     certificateUrls: string | null;
     pendingBalance?: number | string | null;
+    pendingBalanceUsd?: number | string | null;
     totalEarned?: number | string | null;
+    totalEarnedUsd?: number | string | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -215,12 +217,17 @@ export interface AdminVisibilityDto {
 
 export interface CounselorPayoutRequestDto {
     amount: number;
-    payoutMethod: 'bank_transfer' | 'fana' | 'telebirr';
+    currency: 'ETB' | 'USD';
+    payoutMethod: 'bank_transfer' | 'fana' | 'telebirr' | 'paypal' | 'international_card';
     payoutDetails: {
         accountNumber?: string;
         bankName?: string;
+        bankCode?: string;
         accountHolderName?: string;
         phoneNumber?: string; // for mobile money
+        email?: string; // for paypal
+        swiftCode?: string; // for international
+        iban?: string; // for international
     };
 }
 

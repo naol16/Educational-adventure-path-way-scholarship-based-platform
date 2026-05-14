@@ -8,15 +8,34 @@ export class ChatController {
      * POST /messages - Send a message to a user (starts conversation if doesn't exist)
      */
     static sendMessage = catchAsync(async (req: Request, res: Response) => {
-        const { receiverId, content } = req.body;
+        const { receiverId, conversationId, content } = req.body;
         const senderId = (req as any).user.id;
 
-        if (!receiverId || !content) {
-            throw new AppError("Invalid request. Missing receiverId or content.", 400);
+        if ((!receiverId && !conversationId) || !content) {
+            throw new AppError("Invalid request. Missing receiverId/conversationId or content.", 400);
         }
 
-        const conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
-        const message = await ChatService.sendMessage(conversation.id, senderId, content);
+        let conversation;
+        if (conversationId) {
+            conversation = await ChatService.getConversationById(Number(conversationId));
+            if (!conversation) throw new AppError("Conversation not found", 404);
+
+            // If it's a group, check membership
+            if (conversation.isGroup) {
+                const isMember = await ChatService.checkMembership(senderId, conversation.id);
+                if (!isMember) {
+                    throw new AppError("You must join this group to send messages.", 403);
+                }
+            }
+        } else {
+            conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
+        }
+
+        const message = await ChatService.sendMessage({ 
+            conversationId: conversation.id, 
+            senderId, 
+            content 
+        });
 
         res.status(201).json({
             status: "success",
@@ -78,6 +97,16 @@ export class ChatController {
     static getMessages = catchAsync(async (req: Request, res: Response) => {
         const { conversationId } = req.params;
         const { limit, offset } = req.query;
+        const userId = (req as any).user.id;
+
+        const conversation = await ChatService.getConversationById(Number(conversationId));
+        if (!conversation) throw new AppError("Conversation not found", 404);
+
+        // If not a group, check if user is a participant
+        if (!conversation.isGroup) {
+            const isParticipant = await ChatService.checkMembership(userId, conversation.id);
+            if (!isParticipant) throw new AppError("Access denied", 403);
+        }
 
         const messages = await ChatService.getMessages(
             Number(conversationId),
@@ -107,11 +136,41 @@ export class ChatController {
     });
 
     /**
+     * PATCH /notifications/:conversationId - Toggle notifications (mute/unmute)
+     */
+    static toggleNotifications = catchAsync(async (req: Request, res: Response) => {
+        const { conversationId } = req.params;
+        const { enabled } = req.body;
+        const userId = (req as any).user.id;
+
+        await ChatService.toggleNotifications(Number(conversationId), userId, enabled);
+
+        res.status(200).json({
+            status: "success",
+            message: `Notifications ${enabled ? 'enabled' : 'disabled'}.`
+        });
+    });
+
+    /**
      * POST /upload - Upload a file to chat
      */
     static uploadFile = catchAsync(async (req: Request, res: Response) => {
+        const { conversationId } = req.body;
+        const userId = (req as any).user.id;
+
         if (!req.files || !req.files.file) {
             throw new AppError("No file uploaded", 400);
+        }
+
+        // If conversationId is provided, check membership
+        if (conversationId) {
+            const conversation = await ChatService.getConversationById(Number(conversationId));
+            if (conversation && conversation.isGroup) {
+                const isMember = await ChatService.checkMembership(userId, conversation.id);
+                if (!isMember) {
+                    throw new AppError("You must join this group to upload files.", 403);
+                }
+            }
         }
 
         try {
@@ -178,5 +237,51 @@ export class ChatController {
             // fallback to redirecting the user directly to the URL so their browser can handle it.
             res.redirect(url);
         }
+    });
+    
+    /**
+     * DELETE /conversations/:conversationId - Delete a conversation (and all its messages)
+     */
+    static deleteConversation = catchAsync(async (req: Request, res: Response) => {
+        const { conversationId } = req.params;
+        const userId = (req as any).user.id;
+
+        await ChatService.deleteConversation(Number(conversationId), userId);
+
+        res.status(200).json({
+            status: "success",
+            message: "Conversation deleted successfully."
+        });
+    });
+
+    /**
+     * PATCH /messages/:messageId - Edit a message
+     */
+    static editMessage = catchAsync(async (req: Request, res: Response) => {
+        const { messageId } = req.params;
+        const { content } = req.body;
+        const userId = (req as any).user.id;
+
+        const message = await ChatService.editMessage(Number(messageId), userId, content);
+
+        res.status(200).json({
+            status: "success",
+            data: message
+        });
+    });
+
+    /**
+     * DELETE /messages/:messageId - Delete a message
+     */
+    static deleteMessage = catchAsync(async (req: Request, res: Response) => {
+        const { messageId } = req.params;
+        const userId = (req as any).user.id;
+
+        await ChatService.deleteMessage(Number(messageId), userId);
+
+        res.status(200).json({
+            status: "success",
+            message: "Message deleted successfully."
+        });
     });
 }

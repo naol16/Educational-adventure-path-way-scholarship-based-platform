@@ -115,7 +115,7 @@ class _CounselorScheduleScreenState extends ConsumerState<CounselorScheduleScree
             selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
             defaultTextStyle: GoogleFonts.inter(color: DesignSystem.mainText(context)),
             weekendTextStyle: GoogleFonts.inter(color: DesignSystem.labelText(context)),
-            markerDecoration: BoxDecoration(color: const Color(0xFF10B981), shape: BoxShape.circle),
+            markerDecoration: BoxDecoration(color: DesignSystem.success(context), shape: BoxShape.circle),
           ),
           headerStyle: HeaderStyle(
             formatButtonVisible: false,
@@ -169,7 +169,7 @@ class _CounselorScheduleScreenState extends ConsumerState<CounselorScheduleScree
 
   Widget _buildSlotCard(BuildContext context, WidgetRef ref, AvailabilitySlot slot) {
     final isBooked = slot.status == 'booked';
-    final color = isBooked ? const Color(0xFFF59E0B) : const Color(0xFF10B981);
+    final color = isBooked ? DesignSystem.warning(context) : DesignSystem.success(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GlassContainer(

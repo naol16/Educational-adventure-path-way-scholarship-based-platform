@@ -38,7 +38,7 @@ export class Student extends Model {
     })
     declare userId: number;
     @Column({
-        type: DataType.DECIMAL(3, 2),
+        type: DataType.FLOAT,
         allowNull: true,
         field: 'calculated_gpa'
     })
@@ -129,6 +129,34 @@ export class Student extends Model {
         field: 'language_certificate_url'
     })
     declare languageCertificateUrl: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+        field: 'recommendation_letters_url'
+    })
+    declare recommendationLettersUrl: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+        field: 'sop_url'
+    })
+    declare sopUrl: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+        field: 'research_proposal_url'
+    })
+    declare researchProposalUrl: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+        field: 'publications_url'
+    })
+    declare publicationsUrl: string;
 
     @Column({
         type: DataType.STRING,

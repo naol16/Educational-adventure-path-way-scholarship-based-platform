@@ -53,9 +53,7 @@ export const updateCounselorProfile = async (payload: any) => {
     }
   });
 
-  const response = await api.put('/counselors/profile', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.put('/counselors/profile', formData);
   return response.data;
 };
 
@@ -91,9 +89,7 @@ export const applyAsCounselor = async (payload: any) => {
     }
   });
 
-  const response = await api.post('/counselors/apply', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.post('/counselors/apply', formData);
   return response.data;
 };
 

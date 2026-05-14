@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Eye } from "lucide-react";
 import { DOCUMENT_REQUIREMENTS, EducationLevel } from "../../constants/document-requirements";
+import { Modal } from "@/components/ui/Modal";
 
 interface RequiredDocumentsSectionProps {
   degreeSeeking: string;
@@ -9,13 +10,30 @@ interface RequiredDocumentsSectionProps {
 
 export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> = ({ degreeSeeking }) => {
   const { watch, setValue, formState: { errors } } = useFormContext();
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; type: string } | null>(null);
   
-  // Cast degreeSeeking to EducationLevel or fallback to a default
   const level = (degreeSeeking as EducationLevel) || "Bachelor's";
   const requirements = DOCUMENT_REQUIREMENTS[level] || DOCUMENT_REQUIREMENTS["Bachelor's"];
 
   const mandatoryDocs = requirements.filter(doc => doc.required);
   const optionalDocs = requirements.filter(doc => !doc.required);
+
+  const handlePreview = (file: any, name: string) => {
+    let url = "";
+    let type = "image";
+
+    if (typeof file === 'string') {
+      url = file;
+      type = file.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image';
+    } else if (file instanceof File) {
+      url = URL.createObjectURL(file);
+      type = file.type.includes('pdf') ? 'pdf' : 'image';
+    }
+
+    if (url) {
+      setPreviewDoc({ url, name, type });
+    }
+  };
 
   const renderDocCard = (doc: any) => {
     const fieldName = `documents.${doc.id}`;
@@ -58,18 +76,30 @@ export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> =
             </p>
             
             <div className="mt-2 flex items-center justify-center gap-2">
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Click to replace</span>
-              {typeof file === 'string' && (
-                <a 
-                  href={file} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View
-                </a>
-              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePreview(file, doc.name);
+                }}
+                className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase flex items-center gap-1"
+              >
+                <Eye size={10} />
+                Preview
+              </button>
+              
+              <span className="text-muted-foreground opacity-30">|</span>
+              
+              <a 
+                href={typeof file === 'string' ? file : URL.createObjectURL(file)} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[10px] text-primary hover:underline pointer-events-auto relative z-20 font-bold uppercase"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Download
+              </a>
             </div>
           </div>
         ) : (
@@ -134,6 +164,30 @@ export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> =
           </div>
         </div>
       )}
+
+      {/* Preview Modal */}
+      <Modal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        title={previewDoc?.name}
+        size="xl"
+      >
+        <div className="w-full h-[70vh] flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden">
+          {previewDoc?.type === 'pdf' ? (
+            <iframe 
+              src={previewDoc.url} 
+              className="w-full h-full border-none" 
+              title="PDF Preview"
+            />
+          ) : (
+            <img 
+              src={previewDoc?.url} 
+              alt="Document Preview" 
+              className="max-w-full max-h-full object-contain"
+            />
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

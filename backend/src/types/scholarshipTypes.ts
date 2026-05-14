@@ -8,6 +8,9 @@ export interface ExtractedScholarshipData {
     requirements?: string | null;
     intakeSeason?: string | null;
     country?: string | null;
+    university?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
 }
 
 export interface ScrapedPageContent {
@@ -26,6 +29,9 @@ export interface MatchedScholarship {
     fundType: string | null;
     degreeLevels: string[];
     country: string | null;
+    university: string | null;
+    latitude: number | null;
+    longitude: number | null;
     originalUrl: string;
     applicationUrl: string | null;
     match_score: number;

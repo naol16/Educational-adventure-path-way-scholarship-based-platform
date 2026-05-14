@@ -195,14 +195,29 @@ export class CounselorReviewRepository {
             5: number;
         };
     }> {
-        const totalReviews = await this.countByCounselor(counselorId);
-        const averageRating = await this.getAverageRating(counselorId);
-        const ratingDistribution = await this.getRatingDistribution(counselorId);
+        const reviews = await CounselorReview.findAll({
+            where: { counselorId },
+            attributes: ['rating']
+        });
+
+        const totalReviews = reviews.length;
+        const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        let sum = 0;
+
+        reviews.forEach(review => {
+            const r = review.rating;
+            sum += r;
+            if (r >= 1 && r <= 5) {
+                distribution[r as keyof typeof distribution]++;
+            }
+        });
+
+        const averageRating = totalReviews > 0 ? sum / totalReviews : 0;
 
         return {
             totalReviews,
             averageRating: Number(averageRating.toFixed(2)),
-            ratingDistribution
+            ratingDistribution: distribution
         };
     }
 }

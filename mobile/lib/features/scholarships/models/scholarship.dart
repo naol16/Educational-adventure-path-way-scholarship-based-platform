@@ -17,6 +17,9 @@ class MatchedScholarship {
     this.requirements,
     this.intakeSeason,
     this.sourceId,
+    this.university,
+    this.latitude,
+    this.longitude,
   });
 
   final int id;
@@ -33,6 +36,9 @@ class MatchedScholarship {
   final String? requirements;
   final String? intakeSeason;
   final int? sourceId;
+  final String? university;
+  final double? latitude;
+  final double? longitude;
 
   factory MatchedScholarship.fromJson(Map<String, dynamic> json) {
     final id = readInt(json, const ['id']);
@@ -58,6 +64,9 @@ class MatchedScholarship {
       requirements: readValue<String>(json, const ['requirements']),
       intakeSeason: readValue<String>(json, const ['intakeSeason', 'intake_season']),
       sourceId: readInt(json, const ['sourceId', 'source_id']),
+      university: readValue<String>(json, const ['university']),
+      latitude: readDouble(json, const ['latitude']),
+      longitude: readDouble(json, const ['longitude']),
     );
   }
 }

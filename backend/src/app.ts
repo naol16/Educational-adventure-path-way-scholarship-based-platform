@@ -18,6 +18,10 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3001",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "http://localhost:4000",
   "http://127.0.0.1:4000",
   "http://localhost:5000",
@@ -37,18 +41,7 @@ if (configs.BACKEND_URL && configs.BACKEND_URL !== configs.SERVER_URL) {
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.startsWith("http://localhost:") ||
-        origin.startsWith("http://127.0.0.1:")
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -59,13 +52,16 @@ app.use(
       "Cache-Control",
       "Pragma",
     ],
-  }),
+  })
 );
 
 // 2. Logging
 app.use((req, res, next) => {
   // Skip logging for high-frequency polling endpoints like notifications
-  if (req.path === '/api/notifications' || req.path === '/api/notifications/unread-count') {
+  if (
+    req.path === "/api/notifications" ||
+    req.path === "/api/notifications/unread-count"
+  ) {
     return next();
   }
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -76,14 +72,24 @@ app.use((req, res, next) => {
 app.use(helmet());
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ 
-  limit: "1mb",
-  verify: (req: any, res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+app.use(
+  express.json({
+    limit: "1mb",
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(cookieParser());
-app.use(expressupload());
+app.use(
+  expressupload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    createParentPath: true,
+    parseNested: true,
+  }),
+);
 
 // 4. Rate Limiting
 app.use(apiLimiter);

@@ -29,12 +29,12 @@ import {
   Pdf,
   CounselorPayout,
   CounselorWalletTransaction,
-  AIChatMessage,
   MarketingTestimonial,
   MarketingFaq,
   MarketingStat,
   UserWarning,
   MessageReport,
+  AIChatMessage,
 } from "../models/index.js";
 import configs from "./configs.js";
 
@@ -99,12 +99,12 @@ export const sequelize = new Sequelize({
     Pdf,
     CounselorPayout,
     CounselorWalletTransaction,
-    AIChatMessage,
     MarketingTestimonial,
     MarketingFaq,
     MarketingStat,
     UserWarning,
     MessageReport,
+    AIChatMessage,
   ], // Add all models here
 } as SequelizeOptions);
 
@@ -112,7 +112,9 @@ export let hasVectorExtension = false;
 
 export const connectSequelize = async () => {
   try {
+    console.log(`🔍 Attempting to authenticate with Database at ${configs.DB_HOST}:${configs.DB_PORT}/${configs.DB_NAME}...`);
     await sequelize.authenticate();
+    console.log(`✅ Database authenticated successfully: ${configs.DB_HOST}/${configs.DB_NAME}`);
 
 
     // Enable pgvector extension

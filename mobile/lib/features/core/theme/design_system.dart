@@ -54,7 +54,35 @@ class DesignSystem {
     Color(0xFF06B6D4), // Cyan
   ];
 
+  // Semantic colors
+  static Color success(BuildContext context) => const Color(0xFF10B981);
+  static Color warning(BuildContext context) => const Color(0xFFF59E0B);
+  static Color error(BuildContext context) => Colors.red;
+  static Color info(BuildContext context) => const Color(0xFF3B82F6);
+
+  static Color dividerColor(BuildContext context) => 
+    Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1);
+
   // --- GRADIENTS ---
+  static LinearGradient cardGradient(BuildContext context, {Color? color}) {
+    final primary = color ?? DesignSystem.primary(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    if (isDark) {
+      return LinearGradient(
+        colors: [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    } else {
+      return LinearGradient(
+        colors: [primary, primary.withValues(alpha: 0.8), const Color(0xFF06B6D4)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    }
+  }
+
   static const LinearGradient easyPhaseGradient = LinearGradient(
     colors: [Color(0xFF0D9488), Color(0xFF3B82F6)], // Emerald to Blue
     begin: Alignment.topLeft,

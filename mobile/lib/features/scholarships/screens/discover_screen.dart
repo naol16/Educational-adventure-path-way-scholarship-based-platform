@@ -13,6 +13,7 @@ import '../widgets/scholarship_match_card.dart';
 import 'package:mobile/features/scholarships/screens/scholarship_detail_screen.dart';
 import 'package:mobile/features/chat/screens/pathfinder_chat_screen.dart';
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
+import 'package:mobile/features/scholarships/screens/scholarship_map_screen.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -127,17 +128,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              "Discover",
-              style: GoogleFonts.plusJakartaSans(
-                color: DesignSystem.primary(context),
-                fontWeight: FontWeight.w800,
-                fontSize: 24,
-              ),
-            ),
-          ],
+        Text(
+          "Discover",
+          style: GoogleFonts.plusJakartaSans(
+            color: DesignSystem.primary(context),
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ScholarshipMapScreen()),
+            );
+          },
+          child: GlassContainer(
+            padding: const EdgeInsets.all(10),
+            borderRadius: 14,
+            child: Icon(LucideIcons.map, color: DesignSystem.primary(context), size: 20),
+          ),
         ),
       ],
     );

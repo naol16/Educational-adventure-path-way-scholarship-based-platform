@@ -370,7 +370,7 @@ export const CounselorManagement = () => {
                                  <div className="flex items-center gap-2">
                                     <a href={doc.url} target="_blank" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View</a>
                                     <span className="text-muted-foreground opacity-20">|</span>
-                                    <a href={doc.url} download className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Download</a>
+                                    <a href={doc.url} download target=" _blank\ rel=\noopener noreferrer\ className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Download</a>
                                  </div>
                               </div>
                               <span className="text-xs font-black uppercase tracking-widest mt-4">{doc.label}</span>

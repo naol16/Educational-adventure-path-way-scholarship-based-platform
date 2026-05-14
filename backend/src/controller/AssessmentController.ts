@@ -20,6 +20,7 @@ export class AssessmentController {
 
       const examTypeUpper = examType.toUpperCase();
       const difficultyLower = difficulty.toLowerCase();
+      const difficultyProper = (difficultyLower.charAt(0).toUpperCase() + difficultyLower.slice(1)) as "Easy" | "Medium" | "Hard";
       if (!["IELTS", "TOEFL"].includes(examTypeUpper)) {
         res.status(400).json({ error: "examType must be IELTS or TOEFL" });
         return;
@@ -57,8 +58,8 @@ export class AssessmentController {
       }
 
       const result = await AssessmentService.generateExam(
-        examType as "IELTS" | "TOEFL", 
-        difficulty as "Easy" | "Medium" | "Hard", 
+        examTypeUpper as "IELTS" | "TOEFL", 
+        difficultyProper, 
         undefined, 
         studentId, 
         isDiagnostic
@@ -114,11 +115,23 @@ export class AssessmentController {
       }
 
 
+      let transcribedText: string | undefined;
+      if (audioData) {
+        console.log(`[AssessmentController] 🎙️ Transcribing audio immediately...`);
+        transcribedText = await AssessmentService.transcribeSpeakingAudio({
+          base64: audioData.buffer.toString("base64"),
+          mimetype: audioData.mimetype
+        });
+        console.log(`[AssessmentController] ✅ Transcription complete: "${transcribedText.substring(0, 50)}..."`);
+      }
+
       const result = await AssessmentService.submitAssessment(
         test_id,
         parsedResponses,
         student.id,
-        audioData,
+        undefined, // Don't pass audioData buffer to save space in Redis
+        false,
+        transcribedText
       );
       console.log(`[AssessmentController] ✅ Job added to queue for test_id: ${test_id}`);
       res.json(result);
@@ -146,12 +159,22 @@ export class AssessmentController {
         return;
       }
 
+      let transcribedText: string | undefined;
+      if (audioData) {
+        console.log(`[AssessmentController] 🎙️ Transcribing audio for section...`);
+        transcribedText = await AssessmentService.transcribeSpeakingAudio({
+          base64: audioData.buffer.toString("base64"),
+          mimetype: audioData.mimetype
+        });
+      }
+
       const result = await AssessmentService.evaluateSkillSection(
         test_id,
         skill,
         parsedResponses,
         student.id,
-        audioData
+        undefined, // Pass undefined to avoid redundant transcription
+        transcribedText
       );
       res.json(result);
     } catch (error) {
@@ -210,8 +233,8 @@ export class AssessmentController {
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
-
-      await AssessmentService.resetAssessment(student.id as number);
+      const examType = (req.body?.examType || req.query?.examType) as string | undefined;
+      await AssessmentService.resetAssessment(student.id as number, examType);
       res.json({
         status: "success",
         message: "Assessment and learning path reset successfully.",

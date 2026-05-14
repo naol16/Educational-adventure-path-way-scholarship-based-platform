@@ -6,9 +6,7 @@ export const extractData = async (document: File, role: string) => {
   formData.append('document', document);
   formData.append('role', role);
 
-  const response = await api.post('/onboarding/extract', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.post('/onboarding/extract', formData);
   return response.data.extractedData as ExtractedData;
 };
 
@@ -17,9 +15,7 @@ export const verifyIdentity = async (idCard: File, selfie: File) => {
   formData.append('idCard', idCard);
   formData.append('selfie', selfie);
 
-  const response = await api.post('/onboarding/verify-identity', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.post('/onboarding/verify-identity', formData);
   return response.data;
 };
 
@@ -50,8 +46,6 @@ export const updateProfile = async (payload: any) => {
     });
   }
 
-  const response = await api.put('/onboarding/update-profile', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.put('/onboarding/update-profile', formData);
   return response.data;
 };

@@ -41,10 +41,6 @@ export default function AdminSettingsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 border-b border-border pb-10">
         <div className="space-y-4">
-          <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Settings</h2>
-          <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
-             <Settings size={14} className="text-primary" /> Manage platform settings and controls
-          </p>
         </div>
         
         <div className="flex items-center gap-4">

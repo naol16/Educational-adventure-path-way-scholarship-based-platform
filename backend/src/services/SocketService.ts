@@ -3,6 +3,8 @@ import { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import configs from "../config/configs.js";
 import { ChatService } from "./ChatService.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { redisConnection } from "../config/redis.js";
 
 export class SocketService {
     private static io: SocketIOServer;
@@ -16,16 +18,24 @@ export class SocketService {
             }
         });
 
-        // NOTE: Redis adapter is commented out due to missing @socket.io/redis-adapter package
-        // To enable, install: npm install @socket.io/redis-adapter
-        // and uncomment the lines below:
-        /*
-        import { createAdapter } from "@socket.io/redis-adapter";
-        import { redisConnection } from "../config/redis.js";
-        const pubClient = redisConnection;
-        const subClient = pubClient.duplicate();
-        this.io.adapter(createAdapter(pubClient, subClient));
-        */
+        // Redis Adapter for scaling - only if Redis is actually available
+        if (redisConnection.status === 'ready' || redisConnection.status === 'connecting') {
+            try {
+                const pubClient = redisConnection;
+                const subClient = pubClient.duplicate();
+                
+                subClient.on('error', (err) => {
+                    console.warn('⚠️ Socket.io Redis subClient error:', err.message);
+                });
+
+                this.io.adapter(createAdapter(pubClient, subClient));
+                console.log('✅ Socket.io Redis adapter initialized');
+            } catch (err) {
+                console.warn('⚠️ Failed to initialize Socket.io Redis adapter, falling back to local adapter');
+            }
+        } else {
+            console.log('ℹ️ Redis not available, using local Socket.io adapter');
+        }
 
         this.io.use((socket, next) => {
             const token = socket.handshake.auth.token || socket.handshake.query.token;
@@ -50,21 +60,65 @@ export class SocketService {
             // Broadcast online status
             this.io.emit("user_online", userId);
 
-            socket.on("join_conversation", (conversationId: number) => {
+            socket.on("join_conversation", async (conversationId: number) => {
+                const conversation = await ChatService.getConversationById(conversationId);
+                if (!conversation) return;
+
+                // If it's not a group, allow join (standard 1:1 chat handled by participants check)
+                // If it's a group, strictly enforce membership for real-time room
+                if (conversation.isGroup) {
+                    const isMember = await ChatService.checkMembership(userId, conversationId);
+                    if (!isMember) {
+                        console.warn(`[Socket] User ${userId} attempted to join group ${conversationId} without membership.`);
+                        return;
+                    }
+                }
+                
                 socket.join(`conversation_${conversationId}`);
+                console.log(`[Socket] User ${userId} joined room conversation_${conversationId}`);
             });
 
-            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string }) => {
+            socket.on("leave_conversation", (conversationId: number) => {
+                socket.leave(`conversation_${conversationId}`);
+                console.log(`[Socket] User ${userId} left room conversation_${conversationId}`);
+            });
+
+            socket.on("send_message", async (data: { 
+                conversationId: number; 
+                receiverId?: number; 
+                content: string;
+                attachmentUrl?: string;
+                attachmentType?: string;
+                replyToId?: number;
+            }) => {
                 try {
-                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content);
+                    const message = await ChatService.sendMessage({
+                        conversationId: data.conversationId,
+                        senderId: userId,
+                        content: data.content,
+                        attachmentUrl: data.attachmentUrl,
+                        attachmentType: data.attachmentType,
+                        replyToId: data.replyToId
+                    });
                     if (!message) return;
 
                     // Broadcast to conversation room
                     this.io.to(`conversation_${data.conversationId}`).emit("receive_message", message);
                     
-                    // Mark as delivered for the receiver (if online)
-                    const receiverSockets = this.userSockets.get(data.receiverId);
-                    if (receiverSockets && receiverSockets.length > 0) {
+                    let recipientIds = await ChatService.getRecipientUserIdsExcludingSender(
+                        data.conversationId,
+                        userId
+                    );
+                    if (recipientIds.length === 0 && data.receiverId) {
+                        recipientIds = [data.receiverId];
+                    }
+
+                    const anyRecipientOnline = recipientIds.some((rid) => {
+                        const socks = this.userSockets.get(rid);
+                        return socks && socks.length > 0;
+                    });
+
+                    if (anyRecipientOnline) {
                         await ChatService.markAsDelivered(message.id);
                         this.io.to(`conversation_${data.conversationId}`).emit("message_delivered", {
                             messageId: message.id,
@@ -73,16 +127,18 @@ export class SocketService {
                         });
                     }
 
-                    // Direct alert for mobile/outside-room notifications
-                    if (receiverSockets) {
-                        receiverSockets.forEach(sid => {
+                    recipientIds.forEach((rid) => {
+                        const receiverSockets = this.userSockets.get(rid);
+                        if (!receiverSockets?.length) return;
+                        receiverSockets.forEach((sid) => {
                             this.io.to(sid).emit("new_message_alert", {
                                 conversationId: data.conversationId,
                                 senderName: (message as any).sender?.name || "Someone",
-                                content: data.content
+                                content: data.content,
+                                attachmentType: data.attachmentType
                             });
                         });
-                    }
+                    });
                 } catch (err) {
                     console.error("[Socket] send_message error:", err);
                 }

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/features/core/theme/design_system.dart';
-import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/learning_path/providers/mock_exam_provider.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/listening_section.dart';
 import 'package:mobile/features/learning_path/screens/mock_exam/sections/reading_section.dart';
@@ -17,7 +15,6 @@ class MockExamActive extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(mockExamProvider);
     final accent = state.primaryAccent;
-    final isToefl = state.examType == 'TOEFL';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),

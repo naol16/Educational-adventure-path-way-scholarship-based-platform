@@ -1,96 +1,131 @@
 import {
-    Table,
-    Column,
-    Model,
-    DataType,
-    PrimaryKey,
-    AutoIncrement,
-    CreatedAt,
-    UpdatedAt,
-    HasMany,
-    BelongsToMany,
-    Default,
-    ForeignKey,
-    BelongsTo,
+  Table,
+  Column,
+  Model,
+  DataType,
+  PrimaryKey,
+  AutoIncrement,
+  CreatedAt,
+  UpdatedAt,
+  HasMany,
+  BelongsToMany,
+  Default,
+  ForeignKey,
+  BelongsTo,
 } from "sequelize-typescript";
 import { User, type User as UserType } from "./User.js";
-import { ConversationParticipant, type ConversationParticipant as ConversationParticipantType } from "./ConversationParticipant.js";
-import { ChatMessage, type ChatMessage as ChatMessageType } from "./ChatMessage.js";
+import {
+  ConversationParticipant,
+  type ConversationParticipant as ConversationParticipantType,
+} from "./ConversationParticipant.js";
+import {
+  ChatMessage,
+  type ChatMessage as ChatMessageType,
+} from "./ChatMessage.js";
 
 @Table({
-    tableName: "conversations",
-    timestamps: true,
+  tableName: "conversations",
+  timestamps: true,
 })
 export class Conversation extends Model {
-    @PrimaryKey
-    @AutoIncrement
-    @Column(DataType.INTEGER)
-    declare id: number;
+  @PrimaryKey
+  @AutoIncrement
+  @Column(DataType.INTEGER)
+  declare id: number;
 
-    @Default(false)
-    @Column({
-        type: DataType.BOOLEAN,
-        allowNull: false,
-        field: 'is_group'
-    })
-    declare isGroup: boolean;
+  @Default(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    field: "is_group",
+  })
+  declare isGroup: boolean;
 
-    @Column({
-        type: DataType.STRING(100),
-        allowNull: true
-    })
-    declare name?: string;
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare name?: string;
 
-    @Column({
-        type: DataType.TEXT,
-        allowNull: true
-    })
-    declare description?: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare description?: string;
 
-    @Column({
-        type: DataType.STRING(100),
-        allowNull: true
-    })
-    declare country?: string;
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare country?: string;
 
-    @ForeignKey(() => User)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: true,
-        field: 'created_by'
-    })
-    declare createdBy?: number;
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+    field: "avatar_url",
+  })
+  declare avatarUrl?: string;
 
-    @CreatedAt
-    @Column({
-        type: DataType.DATE,
-        field: 'created_at'
-    })
-    declare createdAt: Date;
+  @Default(true)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    field: "is_active",
+  })
+  declare isActive: boolean;
 
-    @UpdatedAt
-    @Column({
-        type: DataType.DATE,
-        field: 'updated_at'
-    })
-    declare updatedAt: Date;
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: false,
+    defaultValue: "Public",
+    field: "group_type",
+  })
+  declare groupType: "Public" | "Private";
 
-    @HasMany(() => ChatMessage)
-    declare messages: ChatMessageType[];
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+    defaultValue: "General",
+  })
+  declare category: string;
 
-    @HasMany(() => ConversationParticipant)
-    declare participants: ConversationParticipantType[];
+  @CreatedAt
+  @Column({
+    type: DataType.DATE,
+    field: "created_at",
+  })
+  declare createdAt: Date;
 
-    @BelongsToMany(() => User, {
-        through: () => ConversationParticipant,
-        as: 'members'
-    })
-    declare members: UserType[];
+  @UpdatedAt
+  @Column({
+    type: DataType.DATE,
+    field: "updated_at",
+  })
+  declare updatedAt: Date;
 
-    @BelongsTo(() => User, {
-        foreignKey: 'created_by',
-        as: 'creator'
-    })
-    creator?: UserType;
+  @HasMany(() => ChatMessage, { as: "messages" })
+  declare messages: ChatMessageType[];
+
+  @HasMany(() => ConversationParticipant, { as: "participants" })
+  declare participants: ConversationParticipantType[];
+
+  @BelongsToMany(() => User, {
+    through: () => ConversationParticipant,
+    as: "members",
+  })
+  declare members: UserType[];
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    field: "created_by",
+  })
+  declare createdBy?: number;
+
+  @BelongsTo(() => User, {
+    foreignKey: "created_by",
+    as: "creator",
+  })
+  creator?: UserType;
 }
-

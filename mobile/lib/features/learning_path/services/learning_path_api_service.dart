@@ -46,8 +46,8 @@ class LearningPathApiService {
       '/api/learning-path/track',
       auth: true,
       body: {
-        'videoId': ?videoId,
-        'pdfId': ?pdfId,
+        'videoId': videoId,
+        'pdfId': pdfId,
         'section': section,
         'isCompleted': isCompleted,
         'isNote': isNote,

@@ -38,8 +38,7 @@ export function StudentSidebar() {
     },
     { name: "Counselors", href: "/dashboard/counselors", icon: Users },
     { name: "My Sessions", href: "/dashboard/student/bookings", icon: Clock },
-    { name: "Messages", href: "/dashboard/student/chat", icon: MessageSquare },
-    { name: "Community", href: "/dashboard/student/community", icon: Users },
+    { name: "Chat", href: "/dashboard/student/chat", icon: MessageSquare },
     { name: "Interview", href: "/dashboard/interview", icon: HelpCircle },
     { name: "Assessment", href: "/dashboard/learning-path/diagnostic/assessment", icon: ClipboardList },
     { name: "Learning Path", href: "/dashboard/learning-path", icon: Compass },
@@ -187,8 +186,16 @@ export function StudentSidebar() {
       {/* Desktop sidebar — hidden on mobile */}
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 80 : 260 }}
-        className="hidden lg:flex sticky top-0 h-screen bg-card flex-col overflow-hidden z-100 transition-all duration-300 ease-in-out shadow-sm"
+        animate={{ 
+          width: collapsed ? 80 : 260,
+        }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 400, 
+          damping: 40,
+          restDelta: 0.1
+        }}
+        className="hidden lg:flex sticky top-0 h-screen bg-card flex-col overflow-hidden z-100 shadow-sm border-r border-border/50"
       >
         <SidebarContent />
       </motion.aside>

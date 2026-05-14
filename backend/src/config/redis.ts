@@ -10,6 +10,7 @@ const standardRedisOptions: RedisOptions = {
   family: 4, // Enforce IPv4 to avoid IPv6 timeout bugs on Node 18+ with cloud redis
   maxRetriesPerRequest: 0, // Fail fast for standard connections to avoid blocking
   connectTimeout: 5000,
+  tls: configs.REDIS_TLS ? { rejectUnauthorized: false } : undefined,
   retryStrategy(times) {
     if (times > 2) {
       return null; // stop retrying after 2 attempts

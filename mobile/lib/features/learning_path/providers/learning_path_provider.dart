@@ -17,7 +17,8 @@ class LearningPathState {
     this.isLoading = false,
   });
 
-  FormattedLearningPath? get activePath => activeExam == 'IELTS' ? ieltsPath : toeflPath;
+  FormattedLearningPath? get activePath =>
+      activeExam == 'IELTS' ? ieltsPath : toeflPath;
 
   LearningPathState copyWith({
     FormattedLearningPath? ieltsPath,
@@ -35,13 +36,13 @@ class LearningPathState {
 }
 
 class LearningPathNotifier extends StateNotifier<LearningPathState> {
-  LearningPathNotifier({required LearningPathApiService api, required TokenStorage storage})
-      : _api = api,
-        _storage = storage,
-        super(LearningPathState());
+  LearningPathNotifier({
+    required LearningPathApiService api,
+    required TokenStorage storage,
+  }) : _api = api,
+       super(LearningPathState());
 
   final LearningPathApiService _api;
-  final TokenStorage _storage;
 
   /// Loads both IELTS and TOEFL paths in parallel on startup.
   Future<void> init() async {
@@ -143,7 +144,11 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
   }
 
   Future<void> completeResource(int resourceId, String section) async {
-    await markProgress(videoId: resourceId, section: section, isCompleted: true);
+    await markProgress(
+      videoId: resourceId,
+      section: section,
+      isCompleted: true,
+    );
   }
 
   Future<void> completePdf(int pdfId, String section) async {
@@ -153,14 +158,7 @@ class LearningPathNotifier extends StateNotifier<LearningPathState> {
 
 final learningPathProvider =
     StateNotifierProvider<LearningPathNotifier, LearningPathState>((ref) {
-  final api = ref.watch(learningPathApiServiceProvider);
-  final storage = ref.watch(tokenStorageProvider);
-  return LearningPathNotifier(api: api, storage: storage)..init();
-});
-
-
-
-
-
-
-
+      final api = ref.watch(learningPathApiServiceProvider);
+      final storage = ref.watch(tokenStorageProvider);
+      return LearningPathNotifier(api: api, storage: storage)..init();
+    });

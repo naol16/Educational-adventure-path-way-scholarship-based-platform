@@ -246,7 +246,7 @@ export class BookingRepository {
                         {
                             model: User,
                             as: 'user',
-                            attributes: ['id', 'name', 'email']
+                            attributes: ['id', 'name', 'email', 'avatarUrl']
                         }
                     ]
                 }
