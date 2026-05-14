@@ -66,3 +66,8 @@ export const adminPayoutCounselor = async (id: number, amount: number) => {
   const response = await api.post(`/counselors/admin/${id}/payout`, { amount });
   return response.data;
 };
+
+export const getPendingCounselors = async (): Promise<any[]> => {
+  const response = await api.get('/counselors/admin/pending');
+  return response.data || [];
+};

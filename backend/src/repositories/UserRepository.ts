@@ -19,14 +19,15 @@ export class UserRepository {
     }
 
     static async createIfNotExists(
-        userData: CreateUserDto & { is_active?: boolean },
+        userData: CreateUserDto & { isActive?: boolean; isVerified?: boolean },
     ): Promise<void> {
         const {
             name,
             email,
             password,
             role = UserRole.STUDENT,
-            is_active = true,
+            isActive = true,
+            isVerified = true,
         } = userData;
 
         await User.findOrCreate({
@@ -35,7 +36,8 @@ export class UserRepository {
                 name,
                 password,
                 role,
-                isActive: is_active,
+                isActive,
+                isVerified,
             } as any
         });
     }

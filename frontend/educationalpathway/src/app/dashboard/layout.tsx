@@ -26,8 +26,14 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    // Redirect counselor to onboarding if profile is incomplete
+    if (!loading && user && user.role === 'counselor' && !user.isOnboarded && !pathname.startsWith('/dashboard/counselor/profile')) {
+      router.replace('/dashboard/counselor/profile');
+    }
+  }, [user, loading, router, pathname]);
 
   if (loading || !user) {
     return (

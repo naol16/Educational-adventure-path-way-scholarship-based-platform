@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { CounselorController } from '../controller/CounselorController.js';
 import { authenticate, authorize, optionalAuthenticate } from '../middlewares/authMiddleware.js';
-import { checkCounselorRole, requireActiveCounselor } from '../middlewares/counselorMiddleware.js';
+import { checkCounselorRole, requireActiveCounselor, requireOnboardedCounselor } from '../middlewares/counselorMiddleware.js';
 import { validate } from '../validators/validationMiddleware.js';
 import {
   adminVerificationValidation,
@@ -48,6 +48,7 @@ router.post('/messages', validate(sendMessageValidation), CounselorController.se
 router.get('/messages/threads/:userId', CounselorController.getThread);
 
 router.get('/admin/list', authorize(UserRole.ADMIN), CounselorController.adminList);
+router.get('/admin/pending', authorize(UserRole.ADMIN), CounselorController.listPendingApplications);
 router.patch('/admin/:id/verification', authorize(UserRole.ADMIN), validate(idParamValidation), validate(adminVerificationValidation), CounselorController.adminUpdateVerification);
 router.patch('/admin/:id/visibility', authorize(UserRole.ADMIN), validate(idParamValidation), validate(adminVisibilityValidation), CounselorController.adminUpdateVisibility);
 router.patch('/admin/payouts/:id/status', authorize(UserRole.ADMIN), validate(idParamValidation), CounselorController.adminUpdatePayoutStatus);
@@ -59,6 +60,11 @@ router.use(checkCounselorRole);
 router.use(requireActiveCounselor);
 
 router.get('/me', authorize(UserRole.COUNSELOR), CounselorController.getMyProfile);
+router.put('/profile', validate(updateCounselorProfileValidation), CounselorController.updateProfile);
+
+// Routes below this require full profile completion
+router.use(requireOnboardedCounselor);
+
 router.get('/dashboard/overview', authorize(UserRole.COUNSELOR), CounselorController.getDashboardOverview);
 
 router.get('/me/payouts', authorize(UserRole.COUNSELOR), CounselorController.listPayouts);
@@ -66,7 +72,6 @@ router.post('/me/payouts/request', authorize(UserRole.COUNSELOR), CounselorContr
 router.get('/me/wallet/ledger', authorize(UserRole.COUNSELOR), CounselorController.getMyWalletLedger);
 
 router.get('/me/reviews', CounselorController.getReviews);
-router.put('/profile', validate(updateCounselorProfileValidation), CounselorController.updateProfile);
 router.delete('/me', CounselorController.deleteProfile);
 
 router.post('/slots', validate(createSlotsValidation), CounselorController.createSlots);

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
+  User as UserIcon,
   Settings, 
   ShieldAlert, 
   BarChart3, 
@@ -37,6 +38,8 @@ const menuItems = [
     group: "MANAGEMENT",
     items: [
       { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
+      { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
+      { name: 'Approval Queue', icon: UserIcon, href: '/dashboard/admin/counselors/approvals' },
       { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
     ]
   },

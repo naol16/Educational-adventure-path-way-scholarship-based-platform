@@ -433,4 +433,12 @@ export class CounselorController {
       next(error);
     }
   }
+  static async listPendingApplications(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CounselorService.getPendingApplications();
+      return ResponseHelper.success(res, data);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
