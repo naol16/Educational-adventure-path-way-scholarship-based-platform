@@ -3,8 +3,6 @@ import { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import configs from "../config/configs.js";
 import { ChatService } from "./ChatService.js";
-import { createAdapter } from "@socket.io/redis-adapter";
-import { redisConnection } from "../config/redis.js";
 
 export class SocketService {
     private static io: SocketIOServer;
@@ -18,10 +16,16 @@ export class SocketService {
             }
         });
 
-        // Redis Adapter for scaling
+        // NOTE: Redis adapter is commented out due to missing @socket.io/redis-adapter package
+        // To enable, install: npm install @socket.io/redis-adapter
+        // and uncomment the lines below:
+        /*
+        import { createAdapter } from "@socket.io/redis-adapter";
+        import { redisConnection } from "../config/redis.js";
         const pubClient = redisConnection;
         const subClient = pubClient.duplicate();
         this.io.adapter(createAdapter(pubClient, subClient));
+        */
 
         this.io.use((socket, next) => {
             const token = socket.handshake.auth.token || socket.handshake.query.token;
@@ -50,9 +54,9 @@ export class SocketService {
                 socket.join(`conversation_${conversationId}`);
             });
 
-            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string; parentId?: number }) => {
+            socket.on("send_message", async (data: { conversationId: number; receiverId: number; content: string }) => {
                 try {
-                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content, data.parentId);
+                    const message = await ChatService.sendMessage(data.conversationId, userId, data.content);
                     if (!message) return;
 
                     // Broadcast to conversation room
