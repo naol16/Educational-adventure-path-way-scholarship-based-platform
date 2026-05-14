@@ -39,7 +39,8 @@ export const seedAdminUser = async () => {
       email: "josefdagne5@gmail.com",
       password: admin1Password,
       role: UserRole.ADMIN,
-      is_active: true
+      isActive: true,
+      isVerified: true
     });
 
     // Seed Naol
@@ -48,7 +49,8 @@ export const seedAdminUser = async () => {
       email: "lemesanaol16@gmail.com",
       password: admin2Password,
       role: UserRole.ADMIN,
-      is_active: true
+      isActive: true,
+      isVerified: true
     });
   } catch (error) {
     console.error("Error seeding admin users:", error);

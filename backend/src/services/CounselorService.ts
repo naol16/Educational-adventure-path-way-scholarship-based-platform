@@ -72,6 +72,8 @@ const httpError = (statusCode: number, message: string) =>
 
 export class CounselorService {
   static async applyAsCounselor(userId: number, dto: CreateCounselorDto, files?: any): Promise<CounselorResponse> {
+    try {
+      console.log(`[applyAsCounselor] Starting application for userId: ${userId}`);
     const existingCounselor = await CounselorRepository.findByUserId(userId);
 
     // If already exists and already onboarded, prevent re-application
@@ -87,11 +89,11 @@ export class CounselorService {
     let selfieUrl = dto.selfieUrl;
 
     if (files) {
-      if (files.profileImageUrl) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
-      if (files.cvUrl) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
-      if (files.certificateUrls) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
-      if (files.idCardUrl) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
-      if (files.selfieUrl) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
+      if (files.profileImageUrl && (Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0].size > 0 : files.profileImageUrl.size > 0)) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
+      if (files.cvUrl && (Array.isArray(files.cvUrl) ? files.cvUrl[0].size > 0 : files.cvUrl.size > 0)) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
+      if (files.certificateUrls && (Array.isArray(files.certificateUrls) ? files.certificateUrls[0].size > 0 : files.certificateUrls.size > 0)) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
+      if (files.idCardUrl && (Array.isArray(files.idCardUrl) ? files.idCardUrl[0].size > 0 : files.idCardUrl.size > 0)) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
+      if (files.selfieUrl && (Array.isArray(files.selfieUrl) ? files.selfieUrl[0].size > 0 : files.selfieUrl.size > 0)) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
     }
 
     let counselor;
@@ -102,7 +104,7 @@ export class CounselorService {
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || existingCounselor.areasOfExpertise),
         hourlyRate: Number(dto.hourlyRate) || existingCounselor.hourlyRate,
         yearsOfExperience: Number(dto.yearsOfExperience) || existingCounselor.yearsOfExperience,
-        verificationStatus: "verified", // Auto-verify for dev
+        verificationStatus: "pending", // Default to pending for admin approval
         isOnboarded: dto.isOnboarded || false,
         phoneNumber: dto.phoneNumber || existingCounselor.phoneNumber,
         countryOfResidence: dto.countryOfResidence || existingCounselor.countryOfResidence,
@@ -125,14 +127,14 @@ export class CounselorService {
         selfieUrl: selfieUrl || existingCounselor.selfieUrl,
       });
     } else {
-      // Create new profile
+      console.log("[applyAsCounselor] Creating new counselor profile...");
       counselor = await CounselorRepository.create({
         userId,
         bio: dto.bio || "",
         areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") || ""),
         hourlyRate: Number(dto.hourlyRate) || 0,
         yearsOfExperience: Number(dto.yearsOfExperience) || 0,
-        verificationStatus: "verified", // Auto-verify for dev
+        verificationStatus: "pending", // Default to pending for admin approval
         isActive: true,
         isOnboarded: dto.isOnboarded || false,
         idCardUrl: idCardUrl || null,
@@ -159,11 +161,36 @@ export class CounselorService {
     }
 
     if (!counselor) {
+      console.error("[applyAsCounselor] Critical: counselor object is null after create/update");
       throw httpError(500, "Failed to create or update counselor profile");
     }
 
+    console.log("[applyAsCounselor] Profile created/updated, generating embedding...");
+    try {
+      await VectorService.generateCounselorEmbedding(counselor);
+      console.log("[applyAsCounselor] Counselor embedding generated successfully");
+    } catch (embErr) {
+      console.error("[applyAsCounselor] Counselor embedding generation failed (non-blocking):", embErr);
+    }
+
+    console.log("[applyAsCounselor] Fetching user data to format response...");
     const user = await User.findByPk(userId);
-    return await this.formatCounselorResponse(counselor, user);
+    
+    try {
+      const response = await this.formatCounselorResponse(counselor, user);
+      console.log("[applyAsCounselor] Application flow completed successfully for counselor:", counselor.id);
+      return response;
+    } catch (formatErr) {
+      console.error("[applyAsCounselor] Error during final response formatting:", formatErr);
+      throw formatErr;
+    }
+    } catch (error) {
+      console.error("[applyAsCounselor] Critical error in counselor application flow:", error);
+      if (error instanceof Error) {
+        console.error("[applyAsCounselor] Stack trace:", error.stack);
+      }
+      throw error;
+    }
   }
 
   static async getMyProfile(userId: number): Promise<CounselorResponse> {
@@ -436,20 +463,19 @@ export class CounselorService {
     let selfieUrl = dto.selfieUrl;
 
     if (files) {
-      if (files.profileImageUrl) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
-      if (files.cvUrl) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
-      if (files.certificateUrls) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
-      if (files.idCardUrl) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
-      if (files.selfieUrl) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
+      if (files.profileImageUrl && (Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0].size > 0 : files.profileImageUrl.size > 0)) profileImageUrl = await FileService.uploadFile((Array.isArray(files.profileImageUrl) ? files.profileImageUrl[0] : files.profileImageUrl).data, "counselors/profiles");
+      if (files.cvUrl && (Array.isArray(files.cvUrl) ? files.cvUrl[0].size > 0 : files.cvUrl.size > 0)) cvUrl = await FileService.uploadFile((Array.isArray(files.cvUrl) ? files.cvUrl[0] : files.cvUrl).data, "counselors/cvs");
+      if (files.certificateUrls && (Array.isArray(files.certificateUrls) ? files.certificateUrls[0].size > 0 : files.certificateUrls.size > 0)) certificateUrls = await FileService.uploadFile((Array.isArray(files.certificateUrls) ? files.certificateUrls[0] : files.certificateUrls).data, "counselors/certificates");
+      if (files.idCardUrl && (Array.isArray(files.idCardUrl) ? files.idCardUrl[0].size > 0 : files.idCardUrl.size > 0)) idCardUrl = await FileService.uploadFile((Array.isArray(files.idCardUrl) ? files.idCardUrl[0] : files.idCardUrl).data, "counselors/identity/ids");
+      if (files.selfieUrl && (Array.isArray(files.selfieUrl) ? files.selfieUrl[0].size > 0 : files.selfieUrl.size > 0)) selfieUrl = await FileService.uploadFile((Array.isArray(files.selfieUrl) ? files.selfieUrl[0] : files.selfieUrl).data, "counselors/identity/selfies");
     }
 
-    await counselor.update({
+    const updatedFields: any = {
       bio: dto.bio ?? counselor.bio,
       areasOfExpertise: dto.areasOfExpertise ? (typeof dto.areasOfExpertise === 'string' ? dto.areasOfExpertise : JSON.stringify(dto.areasOfExpertise)) : (dto.specializations?.join(", ") ?? counselor.areasOfExpertise),
       hourlyRate: dto.hourlyRate !== undefined ? (Number(dto.hourlyRate) || 0) : counselor.hourlyRate,
       yearsOfExperience: dto.yearsOfExperience !== undefined ? (Number(dto.yearsOfExperience) || 0) : counselor.yearsOfExperience,
       extractedData: JSON.stringify(this.mergeMetadata(counselor.extractedData, dto)),
-      isOnboarded: dto.isOnboarded ?? counselor.isOnboarded,
       documentUrl: dto.documentUrl ?? counselor.documentUrl,
       idCardUrl: idCardUrl ?? counselor.idCardUrl,
       selfieUrl: selfieUrl ?? counselor.selfieUrl,
@@ -470,7 +496,23 @@ export class CounselorService {
       profileImageUrl: profileImageUrl ?? counselor.profileImageUrl,
       cvUrl: cvUrl ?? counselor.cvUrl,
       certificateUrls: certificateUrls ?? counselor.certificateUrls,
-    });
+    };
+
+    // Auto-onboard logic: Check if core fields are filled
+    const isProfileComplete = !!(
+      updatedFields.bio && 
+      updatedFields.areasOfExpertise && 
+      updatedFields.highestEducationLevel && 
+      updatedFields.yearsOfExperience > 0 &&
+      updatedFields.phoneNumber &&
+      updatedFields.profileImageUrl
+    );
+
+    if (isProfileComplete) {
+      updatedFields.isOnboarded = true;
+    }
+
+    await counselor.update(updatedFields);
 
     const user = await User.findByPk(userId);
     return await this.formatCounselorResponse(counselor, user);
@@ -1399,58 +1441,66 @@ export class CounselorService {
       console.error(`[formatCounselorResponse] Error fetching stats for counselor ${counselor.id}:`, error);
     }
 
-    return {
-      id: counselor.id,
-      userId: counselor.userId,
-      name: user?.name || "Unknown User",
-      email: user?.email || "N/A",
-      bio: counselor.bio,
-      areasOfExpertise: counselor.areasOfExpertise,
-      hourlyRate: counselor.hourlyRate,
-      yearsOfExperience: counselor.yearsOfExperience,
-      verificationStatus: counselor.verificationStatus,
-      isActive: counselor.isActive,
-      rating: (stats && stats.totalReviews > 0) ? stats.averageRating : Number(counselor.rating || 0),
-      ratingPercentage: (stats && stats.totalReviews > 0)
-        ? Number(((stats.averageRating / 5) * 100).toFixed(2))
-        : Number(((Number(counselor.rating || 0) / 5) * 100).toFixed(2)),
-      totalReviews: stats ? stats.totalReviews : 0,
-      ratingDistribution: stats ? stats.ratingDistribution : null,
-      totalSessions: counselor.totalSessions || 0,
-      qualifications: metadata.qualifications || [],
-      specializations: metadata.specializations || [],
-      supportedLanguages: metadata.supportedLanguages || [],
-      consultationModes: metadata.consultationModes || [],
-      currentUniversity: metadata.currentUniversity || null,
-      currentDegreeLevel: metadata.currentDegreeLevel || null,
-      availabilitySummary: metadata.availabilitySummary || null,
-      isOnboarded: counselor.isOnboarded,
-      documentUrl: counselor.documentUrl,
-      idCardUrl: counselor.idCardUrl,
-      selfieUrl: counselor.selfieUrl,
-      phoneNumber: counselor.phoneNumber,
-      countryOfResidence: counselor.countryOfResidence,
-      city: counselor.city,
-      specializedCountries: counselor.specializedCountries,
-      currentPosition: counselor.currentPosition,
-      organization: counselor.organization,
-      highestEducationLevel: counselor.highestEducationLevel,
-      universityName: counselor.universityName,
-      studyCountry: counselor.studyCountry,
-      languages: counselor.languages,
-      fieldsOfStudy: counselor.fieldsOfStudy,
-      weeklySchedule: counselor.weeklySchedule,
-      sessionDuration: counselor.sessionDuration,
-      profileImageUrl: counselor.profileImageUrl,
-      cvUrl: counselor.cvUrl,
-      certificateUrls: counselor.certificateUrls,
-      pendingBalance: counselor.pendingBalance,
-      pendingBalanceUsd: counselor.pendingBalanceUsd,
-      totalEarned: counselor.totalEarned,
-      totalEarnedUsd: counselor.totalEarnedUsd,
-      createdAt: counselor.createdAt,
-      updatedAt: counselor.updatedAt,
-    };
+    console.log(`[formatCounselorResponse] Formatting response for counselor ${counselor.id}, userId: ${counselor.userId}`);
+    try {
+      const response: CounselorResponse = {
+        id: counselor.id,
+        userId: counselor.userId,
+        name: user?.name || "Unknown User",
+        email: user?.email || "N/A",
+        bio: counselor.bio,
+        areasOfExpertise: counselor.areasOfExpertise,
+        hourlyRate: counselor.hourlyRate,
+        yearsOfExperience: counselor.yearsOfExperience,
+        verificationStatus: counselor.verificationStatus,
+        isActive: counselor.isActive,
+        rating: (stats && stats.totalReviews > 0) ? stats.averageRating : Number(counselor.rating || 0),
+        ratingPercentage: (stats && stats.totalReviews > 0)
+          ? Number(((stats.averageRating / 5) * 100).toFixed(2))
+          : Number(((Number(counselor.rating || 0) / 5) * 100).toFixed(2)),
+        totalReviews: stats ? stats.totalReviews : 0,
+        ratingDistribution: stats ? stats.ratingDistribution : null,
+        totalSessions: counselor.totalSessions || 0,
+        qualifications: metadata.qualifications || [],
+        specializations: metadata.specializations || [],
+        supportedLanguages: metadata.supportedLanguages || [],
+        consultationModes: metadata.consultationModes || [],
+        currentUniversity: metadata.currentUniversity || null,
+        currentDegreeLevel: metadata.currentDegreeLevel || null,
+        availabilitySummary: metadata.availabilitySummary || null,
+        isOnboarded: counselor.isOnboarded,
+        documentUrl: counselor.documentUrl,
+        idCardUrl: counselor.idCardUrl,
+        selfieUrl: counselor.selfieUrl,
+        phoneNumber: counselor.phoneNumber,
+        countryOfResidence: counselor.countryOfResidence,
+        city: counselor.city,
+        specializedCountries: counselor.specializedCountries,
+        currentPosition: counselor.currentPosition,
+        organization: counselor.organization,
+        highestEducationLevel: counselor.highestEducationLevel,
+        universityName: counselor.universityName,
+        studyCountry: counselor.studyCountry,
+        languages: counselor.languages,
+        fieldsOfStudy: counselor.fieldsOfStudy,
+        weeklySchedule: counselor.weeklySchedule,
+        sessionDuration: counselor.sessionDuration,
+        profileImageUrl: counselor.profileImageUrl,
+        cvUrl: counselor.cvUrl,
+        certificateUrls: counselor.certificateUrls,
+        pendingBalance: counselor.pendingBalance,
+        pendingBalanceUsd: counselor.pendingBalanceUsd,
+        totalEarned: counselor.totalEarned,
+        totalEarnedUsd: counselor.totalEarnedUsd,
+        createdAt: counselor.createdAt,
+        updatedAt: counselor.updatedAt,
+      };
+      console.log(`[formatCounselorResponse] Successfully formatted response for counselor ${counselor.id}`);
+      return response;
+    } catch (formatErr) {
+      console.error(`[formatCounselorResponse] Error formatting counselor response:`, formatErr);
+      throw formatErr;
+    }
   }
 
   private static formatSlotResponse(slot: any): SlotResponse {
@@ -1997,5 +2047,46 @@ export class CounselorService {
     
     await booking.update({ notes });
     return booking;
+  }
+  static async getPendingApplications(): Promise<any[]> {
+    const counselors = await Counselor.findAll({
+      where: { verificationStatus: 'pending' },
+      include: [{ model: User, as: 'user', attributes: ['name', 'email', 'avatarUrl'] }]
+    });
+
+    return counselors.map(c => ({
+      id: c.id,
+      userId: c.userId,
+      name: c.user?.name,
+      email: c.user?.email,
+      avatarUrl: c.user?.avatarUrl,
+      currentPosition: c.currentPosition,
+      organization: c.organization,
+      yearsOfExperience: c.yearsOfExperience,
+      areasOfExpertise: c.areasOfExpertise,
+      cvUrl: c.cvUrl,
+      idCardUrl: c.idCardUrl,
+      selfieUrl: c.selfieUrl,
+      createdAt: c.createdAt
+    }));
+  }
+
+  static async adminUpdateVerification(id: number, status: 'verified' | 'rejected'): Promise<Counselor> {
+    const counselor = await Counselor.findByPk(id, {
+      include: [{ model: User, as: 'user' }]
+    });
+    
+    if (!counselor) throw httpError(404, "Counselor application not found");
+
+    await counselor.update({ verificationStatus: status });
+
+    // If approved, you might want to send a notification or email here
+    if (status === 'verified') {
+      console.log(`Counselor ${counselor.user?.name} approved.`);
+    } else {
+      console.log(`Counselor ${counselor.user?.name} rejected.`);
+    }
+
+    return counselor;
   }
 }

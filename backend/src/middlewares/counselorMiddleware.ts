@@ -119,3 +119,38 @@ export const requireActiveCounselor = async (
     });
   }
 };
+
+/**
+ * Middleware to check if counselor has completed onboarding
+ */
+export const requireOnboardedCounselor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const counselor = (req as any).counselor;
+
+    if (!counselor) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+      });
+    }
+
+    if (!counselor.isOnboarded) {
+      return res.status(403).json({
+        success: false,
+        code: 'ONBOARDING_REQUIRED',
+        error: 'Please complete your profile onboarding to access this feature.',
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+};

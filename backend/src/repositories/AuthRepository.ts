@@ -25,6 +25,13 @@ export class AuthRepository {
     return RefreshToken.destroy({ where: { token } });
   }
 
+  static async revokeRefreshToken(token: string): Promise<[number]> {
+    return RefreshToken.update(
+      { revokedAt: new Date() },
+      { where: { token } }
+    );
+  }
+
   static async deleteAllRefreshTokensForUser(userId: number): Promise<number> {
     return RefreshToken.destroy({ where: { userId } });
   }

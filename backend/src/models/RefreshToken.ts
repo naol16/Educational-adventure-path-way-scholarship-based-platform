@@ -49,6 +49,13 @@ export class RefreshToken extends Model {
     })
     declare expiresAt: Date;
 
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'revoked_at'
+    })
+    declare revokedAt: Date | null;
+
     @CreatedAt
     @Column({
         type: DataType.DATE,
