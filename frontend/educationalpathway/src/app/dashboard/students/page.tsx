@@ -15,7 +15,7 @@ export default function AssignedStudentsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-white">Mentorship Roster</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white font-serif tracking-tight">
-              Assigned Students
+              My Students
             </h1>
             <p className="text-white/70 max-w-lg font-medium leading-relaxed">
               Manage and track the progress of students under your direct mentorship and guidance.

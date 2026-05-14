@@ -36,7 +36,7 @@ export function SystemArchitectureOverlay({ isOpen, onClose }: SystemArchitectur
         >
           {/* Header */}
           <div className="p-8 md:p-10 border-b border-border/40 bg-muted/20 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-purple-500" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 via-emerald-500 to-purple-500" />
             <div className="flex justify-between items-start relative z-10">
               <div className="space-y-2">
                 <div className="flex items-center gap-3 text-emerald-500 mb-4">

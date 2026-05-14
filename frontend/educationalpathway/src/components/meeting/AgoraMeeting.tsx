@@ -25,11 +25,17 @@ export default function AgoraMeeting({ appId, channel, uid, userName, onLeave }:
   const localVideoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const init = async () => {
-      clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    let isMounted = true;
 
-      clientRef.current.on('user-published', async (user, mediaType) => {
-        await clientRef.current?.subscribe(user, mediaType);
+    const init = async () => {
+      if (clientRef.current) return; // Already initialized
+      
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      clientRef.current = client;
+
+      client.on('user-published', async (user, mediaType) => {
+        if (!isMounted) return;
+        await client.subscribe(user, mediaType);
         if (mediaType === 'video') {
           setRemoteUsers(prev => [...prev.filter(u => u.uid !== user.uid), user]);
         }
@@ -38,19 +44,30 @@ export default function AgoraMeeting({ appId, channel, uid, userName, onLeave }:
         }
       });
 
-      clientRef.current.on('user-unpublished', (user) => {
+      client.on('user-unpublished', (user) => {
+        if (!isMounted) return;
         setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
       });
 
       try {
-        // Sanitize channel name (Agora needs alphanumeric)
         const sanitizedChannel = channel.replace(/[^a-zA-Z0-9]/g, '');
+        await client.join(appId, sanitizedChannel, null, uid || null);
         
-        await clientRef.current.join(appId, sanitizedChannel, null, uid || null);
-        
+        if (!isMounted) {
+          await client.leave();
+          return;
+        }
+
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         const videoTrack = await AgoraRTC.createCameraVideoTrack();
         
+        if (!isMounted) {
+          audioTrack.close();
+          videoTrack.close();
+          await client.leave();
+          return;
+        }
+
         setLocalAudioTrack(audioTrack);
         setLocalVideoTrack(videoTrack);
         
@@ -58,21 +75,38 @@ export default function AgoraMeeting({ appId, channel, uid, userName, onLeave }:
           videoTrack.play(localVideoRef.current);
         }
         
-        await clientRef.current.publish([audioTrack, videoTrack]);
+        await client.publish([audioTrack, videoTrack]);
         setIsJoined(true);
-      } catch (error) {
-        console.error('Agora Init Error:', error);
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Agora Init Error:', error);
+        }
       }
     };
 
     init();
 
     return () => {
-      localAudioTrack?.close();
-      localVideoTrack?.close();
-      clientRef.current?.leave();
+      isMounted = false;
+      const cleanup = async () => {
+        if (clientRef.current) {
+          const client = clientRef.current;
+          clientRef.current = null;
+          
+          // These might still be in the middle of being set, so we use the state values carefully
+          setLocalAudioTrack(prev => { prev?.close(); return null; });
+          setLocalVideoTrack(prev => { prev?.close(); return null; });
+          
+          try {
+            await client.leave();
+          } catch (e) {
+            // Ignore leave errors on unmount
+          }
+        }
+      };
+      cleanup();
     };
-  }, [appId, channel]);
+  }, [appId, channel, uid]);
 
   const toggleMute = () => {
     if (localAudioTrack) {
