@@ -649,7 +649,7 @@ export class CounselorService {
     const slot = await AvailabilitySlotRepository.findById(dto.slotId);
     if (!slot || slot.status !== "available") throw httpError(409, "Slot is not available");
     const counselor = await CounselorRepository.findById(slot.counselorId);
-    if (!counselor || counselor.verificationStatus !== "verified" || !counselor.isActive) {
+    if (!counselor || counselor.verificationStatus !== "approved" || !counselor.isActive) {
       throw httpError(403, "Counselor is not available for booking");
     }
 
@@ -729,7 +729,7 @@ export class CounselorService {
 
   static async initiateBookingByCounselor(counselorUserId: number, studentUserId: number, slotId: number): Promise<any> {
     const counselor = await CounselorRepository.findByUserId(counselorUserId);
-    if (!counselor || counselor.verificationStatus !== "verified" || !counselor.isActive) {
+    if (!counselor || counselor.verificationStatus !== "approved" || !counselor.isActive) {
       throw httpError(403, "Counselor profile not active or verified");
     }
 
@@ -2071,7 +2071,7 @@ export class CounselorService {
     }));
   }
 
-  static async adminUpdateVerification(id: number, status: 'verified' | 'rejected'): Promise<Counselor> {
+  static async adminUpdateVerification(id: number, status: 'approved' | 'rejected'): Promise<Counselor> {
     const counselor = await Counselor.findByPk(id, {
       include: [{ model: User, as: 'user' }]
     });
@@ -2081,7 +2081,7 @@ export class CounselorService {
     await counselor.update({ verificationStatus: status });
 
     // If approved, you might want to send a notification or email here
-    if (status === 'verified') {
+    if (status === 'approved') {
       console.log(`Counselor ${counselor.user?.name} approved.`);
     } else {
       console.log(`Counselor ${counselor.user?.name} rejected.`);

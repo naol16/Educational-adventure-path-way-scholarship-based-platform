@@ -85,7 +85,7 @@ export interface CounselorResponse {
     areasOfExpertise: string | null;
     hourlyRate: number | null;
     yearsOfExperience: number | null;
-    verificationStatus: 'pending' | 'verified' | 'rejected';
+    verificationStatus: 'pending' | 'approved' | 'rejected';
     isActive: boolean;
     rating: number;
     ratingPercentage: number;
@@ -208,7 +208,7 @@ export interface RescheduleBookingDto {
 }
 
 export interface AdminVerificationDto {
-    verificationStatus: "verified" | "rejected";
+    verificationStatus: "approved" | "rejected";
 }
 
 export interface AdminVisibilityDto {
