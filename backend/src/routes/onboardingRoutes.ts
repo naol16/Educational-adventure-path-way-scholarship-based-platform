@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { OnboardingController } from "../controller/OnboardingController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
+import { validateStudentProfile, validateFiles } from "../middleware/onboardingValidation.js";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.post("/verify-identity", authenticate, OnboardingController.verifyIdentit
  * @desc Stage 3: Update Profile and Complete Onboarding
  * @access Private
  */
-router.put("/update-profile", authenticate, OnboardingController.updateProfile);
+router.put("/update-profile", authenticate, validateFiles, validateStudentProfile, OnboardingController.updateProfile);
 
 
 export default router;

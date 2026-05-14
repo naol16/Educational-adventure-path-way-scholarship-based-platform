@@ -6,32 +6,45 @@ import { TextCleaner } from "../utils/textcleaner.js";
 
 
 export class VectorService {
+    private static formatValue(val: any): string {
+        if (!val) return "";
+        if (Array.isArray(val)) return val.join(", ");
+        if (typeof val === 'string' && val.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(val);
+                if (Array.isArray(parsed)) return parsed.join(", ");
+            } catch (e) { }
+        }
+        return val;
+    }
+
     /**
      * Refined Student Context: Focus on dense keywords.
      */
     static async generateStudentEmbedding(student: Student): Promise<void> {
         // We use a structured list. This makes the "meaning" denser.
         const studentContext = `
-            Location: ${student.countryOfResidence || ""}
-            Target_Location: ${student.countryInterest || student.preferredCountries || ""}
-            Level: ${student.academicStatus || student.preferredDegreeLevel || ""}
-            FieldOfStudy: ${student.studyPreferences || student.fieldOfStudy || ""}
-            Experience: ${student.workExperience || ""}
-            Requirements: ${student.academicHistory || ""}
+            Location: ${this.formatValue(student.countryOfResidence)}
+            Target_Location: ${this.formatValue(student.countryInterest || student.preferredCountries)}
+            Level: ${this.formatValue(student.academicStatus || student.preferredDegreeLevel)}
+            FieldOfStudy: ${this.formatValue(student.studyPreferences || student.fieldOfStudy)}
+            Experience: ${this.formatValue(student.workExperience)}
+            Requirements: ${this.formatValue(student.academicHistory)}
         `.replace(/\s+/g, ' ').trim();
+
+        console.log(`[VectorService] Generated Context: "${studentContext}"`);
 
         const currentHash = crypto.createHash("md5").update(studentContext).digest("hex");
 
         if (!student.embedding || student.profileHash !== currentHash) {
-            console.log(`[VectorService] Student Context for AI: "${studentContext}"`);
             console.log(`[VectorService] Refreshing dense embedding for student ${student.id}...`);
-            
+
             // TASK_TYPE: RETRIEVAL_QUERY (Standard for Google Gemini Embeddings)
             const vector = await GeminiIngestionService.generateEmbedding(
                 studentContext,
-            
+
             );
-            
+
             await student.update({
                 embedding: vector,
                 profileHash: currentHash
@@ -43,8 +56,8 @@ export class VectorService {
      * Refined Scholarship Context: Mirrors the student structure.
      */
     static async generateScholarshipEmbedding(scholarshipData: any): Promise<number[]> {
-           const description = TextCleaner.prepare(scholarshipData.description);
-    const requirements = TextCleaner.prepare(scholarshipData.requirements);
+        const description = TextCleaner.prepare(scholarshipData.description);
+        const requirements = TextCleaner.prepare(scholarshipData.requirements);
         const context = `
             Location: ${scholarshipData.country || ""}
             Target_Location: ${scholarshipData.country || ""}
@@ -76,7 +89,7 @@ export class VectorService {
         if (!counselor.embedding || counselor.profileHash !== currentHash) {
             console.log(`[VectorService] Counselor Context for AI: "${counselorContext}"`);
             const vector = await GeminiIngestionService.generateEmbedding(counselorContext);
-            
+
             await counselor.update({
                 embedding: vector,
                 profileHash: currentHash
@@ -101,7 +114,7 @@ export class VectorService {
         if (!student.counselorEmbedding || student.counselorProfileHash !== currentHash) {
             console.log(`[VectorService] Student Context for Counselor Matching: "${studentContext}"`);
             const vector = await GeminiIngestionService.generateEmbedding(studentContext);
-            
+
             await student.update({
                 counselorEmbedding: vector,
                 counselorProfileHash: currentHash

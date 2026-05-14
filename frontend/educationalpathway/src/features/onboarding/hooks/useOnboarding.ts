@@ -100,9 +100,9 @@ export const useOnboarding = () => {
 
       const payload = { ...basePayload, ...data };
 
-      await updateProfile(payload);
+      const result = await updateProfile(payload);
 
-      updateUser({ isOnboarded: true });
+      updateUser(result.user || result.data?.user || result);
       toast.success("Welcome!");
       router.push("/dashboard");
     } catch (error: unknown) {

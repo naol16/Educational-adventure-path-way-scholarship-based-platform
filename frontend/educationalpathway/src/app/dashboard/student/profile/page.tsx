@@ -14,10 +14,13 @@ const mapUserToFormValues = (userData: any): Partial<ProfileFormValues> => {
   
   const safeParse = (str: any, defaultVal: any = []) => {
     if (!str) return defaultVal;
+    if (typeof str !== "string") return str;
     try {
-      return typeof str === "string" ? JSON.parse(str) : str;
+      return JSON.parse(str);
     } catch {
-      return defaultVal;
+      // If it's a string but not JSON, return it as a single-item array if the default is an array,
+      // or just return the string itself.
+      return Array.isArray(defaultVal) ? [str] : str;
     }
   };
 
@@ -47,13 +50,26 @@ const mapUserToFormValues = (userData: any): Partial<ProfileFormValues> => {
     preferredCountries: safeParse(userData.preferredCountries, []),
     preferredUniversities: safeParse(userData.preferredUniversities, []),
     workExperience: safeParse(userData.workExperience, []),
+    academicHistory: safeParse(userData.academicHistory, []),
     familyIncomeRange: userData.familyIncomeRange || "",
     needsFinancialSupport: userData.needsFinancialSupport || false,
     notifications: safeParse(userData.notificationPreferences, { email: true, sms: false, inSystem: true }),
     documents: {
       cv: userData.cvUrl || null,
       transcript: userData.transcriptUrl || null,
-      degreeCertificate: userData.certificateUrl || userData.degreeCertificateUrl || null,
+      university_transcript: userData.transcriptUrl || null,
+      high_school_transcript: userData.transcriptUrl || null,
+      degreeCertificate: userData.degreeCertificateUrl || null,
+      bachelor_degree: userData.degreeCertificateUrl || null,
+      master_degree: userData.degreeCertificateUrl || null,
+      grade_12_certificate: userData.degreeCertificateUrl || null,
+      languageCertificate: userData.languageCertificateUrl || null,
+      english_proficiency: userData.languageCertificateUrl || null,
+      recommendation_letters: userData.recommendationLettersUrl || null,
+      personal_statement: userData.sopUrl || null,
+      research_proposal: userData.researchProposalUrl || null,
+      publications: userData.publicationsUrl || null,
+      id_proof: userData.idCardUrl || null,
     },
   } as any;
 };
@@ -85,12 +101,19 @@ export default function StudentProfilePage() {
       const payload = {
         ...data,
         countryInterest: data.targetLocation,
+        languageScore: data.testScore, // Map frontend testScore to backend languageScore
+        academicStatus: data.currentEducationLevel, // Map education level
+        currentUniversity: data.previousUniversity, // Map school name
       };
-      await updateProfile(payload);
-      updateUser({ ...user, ...data, countryInterest: data.targetLocation, isOnboarded: true });
+      const response = await updateProfile(payload);
+      
+      // Update global user state with the returned user from backend
+      const updatedUser = response.user || response.data?.user || response.data || response;
+      updateUser(updatedUser);
+      
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500); // Give time for the user to see the inline success message
+        router.push("/dashboard/student");
+      }, 1500);
     } catch (err: unknown) {
       throw err; // Re-throw to be caught by the form's internal handler
     }

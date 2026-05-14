@@ -366,7 +366,10 @@ export class AuthService {
     let profileData: any = {};
     if (user.role === UserRole.STUDENT) {
       const student = await StudentRepository.findByUserId(user.id);
-      if (student) profileData = student.toJSON();
+      if (student) {
+        profileData = student.toJSON();
+        profileData.profileCompletion = StudentRepository.calculateCompletion(student);
+      }
     } else if (user.role === UserRole.COUNSELOR) {
       const counselor = await CounselorRepository.findByUserId(user.id);
       if (counselor) profileData = counselor.toJSON();

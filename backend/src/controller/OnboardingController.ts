@@ -75,7 +75,12 @@ export class OnboardingController {
         
         const files: { [key: string]: UploadedFile } = {};
         if (req.files) {
-            const possibleFiles = ['cv', 'transcript', 'certificate', 'degreeCertificate', 'languageCertificate', 'avatar'];
+            const possibleFiles = [
+                'cv', 'transcript', 'certificate', 'degreeCertificate', 'languageCertificate', 'avatar',
+                'bachelor_degree', 'university_transcript', 'recommendation_letters', 'personal_statement',
+                'high_school_transcript', 'grade_12_certificate', 'english_proficiency', 'id_proof',
+                'research_proposal', 'master_degree', 'publications'
+            ];
             possibleFiles.forEach(key => {
                 if (req.files![key]) {
                     files[key] = (Array.isArray(req.files![key]) ? req.files![key][0] : req.files![key]) as UploadedFile;
@@ -86,8 +91,8 @@ export class OnboardingController {
         const result = await OnboardingService.updateProfile(userId, req.body, files);
 
         res.status(200).json({
-            status: "success",
-            message: "Profile updated and onboarding complete",
+            success: true,
+            message: "Profile updated successfully",
             data: result
         });
     });

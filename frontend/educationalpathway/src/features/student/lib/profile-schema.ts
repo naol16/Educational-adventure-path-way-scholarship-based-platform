@@ -10,7 +10,7 @@ const PREFERENCE_LEVELS = ["High", "Medium", "Low"] as const;
 
 export const profileSchema = z.object({
   // Step 1: Personal Info
-  fullName: z.string().min(2, "Full name is required"),
+  fullName: z.string().min(3, "Full name must be at least 3 characters"),
   gender: z.enum(GENDER_VALUES, { message: "Please select a gender" }),
   dateOfBirth: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date of birth",
@@ -27,7 +27,7 @@ export const profileSchema = z.object({
   fieldOfStudyInput: z.array(z.string()).min(1, "Select at least one field of study"),
   previousUniversity: z.string().min(1, "Previous university is required"),
   graduationYear: z.number().int().min(1900).max(new Date().getFullYear() + 10),
-  gpa: z.number().min(0).max(10),
+  gpa: z.number().min(0, "GPA must be at least 0").max(10, "GPA must be at most 10"),
 
   // Step 3: Scholarship Preferences
   preferredDegreeLevel: z.array(z.string()).min(1, "Select at least one degree level"),
@@ -65,7 +65,7 @@ export const profileSchema = z.object({
   needsFinancialSupport: z.boolean().default(false),
 
   // Step 10: Documents
-  documents: z.record(z.any()).optional(),
+  documents: z.record(z.string(), z.any()).optional(),
 
   // Step 11: Notification Preferences
   notifications: z.object({
@@ -73,6 +73,25 @@ export const profileSchema = z.object({
     sms: z.boolean().default(false),
     inSystem: z.boolean().default(true),
   }),
+}).superRefine((data, ctx) => {
+  if (data.testScore) {
+    const score = parseFloat(data.testScore);
+    if (isNaN(score)) return;
+
+    if (data.languageTestType === 'IELTS') {
+      if (score < 0 || score > 9) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "IELTS score must be between 0 and 9", path: ["testScore"] });
+      }
+    } else if (data.languageTestType === 'TOEFL') {
+      if (score < 0 || score > 120) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "TOEFL score must be between 0 and 120", path: ["testScore"] });
+      }
+    } else if (data.languageTestType === 'Duolingo') {
+      if (score < 10 || score > 160) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Duolingo score must be between 10 and 160", path: ["testScore"] });
+      }
+    }
+  }
 });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
