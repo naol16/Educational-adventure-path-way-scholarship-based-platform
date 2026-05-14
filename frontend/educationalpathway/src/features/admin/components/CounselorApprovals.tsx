@@ -45,7 +45,7 @@ export const CounselorApprovals = () => {
 
   const handleAccept = async (id: number) => {
     try {
-      await updateCounselorVerification(id, 'verified');
+      await updateCounselorVerification(id, 'approved');
       toast.success('Counselor approved successfully');
       setPendingCounselors(prev => prev.filter(c => c.id !== id));
       setSelectedCounselor(null);

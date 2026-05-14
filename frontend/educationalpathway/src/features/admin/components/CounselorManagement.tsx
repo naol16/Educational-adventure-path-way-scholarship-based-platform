@@ -57,10 +57,10 @@ export const CounselorManagement = () => {
 
   const handleAccept = async (id: number) => {
     try {
-      await updateCounselorVerification(id, 'verified');
+      await updateCounselorVerification(id, 'approved');
       toast.success('Counselor accepted and verified');
       if (selectedCounselor && selectedCounselor.id === id) {
-        setSelectedCounselor({ ...selectedCounselor, verificationStatus: 'verified' });
+        setSelectedCounselor({ ...selectedCounselor, verificationStatus: 'approved' });
       }
       fetchCounselors();
     } catch (error) {
@@ -211,7 +211,7 @@ export const CounselorManagement = () => {
                       {selectedCounselor.isVisible ? <><Eye size={14} className="mr-2" /> Publicly Visible</> : <><EyeOff size={14} className="mr-2" /> Hidden From Students</>}
                    </Button>
                    <div className={`px-6 py-3 rounded-lg text-xs font-black uppercase tracking-widest border h-12 flex items-center ${
-                     selectedCounselor.verificationStatus === 'verified' ? 'bg-success/5 text-success border-success/20' : 'bg-destructive/5 text-destructive border-destructive/20'
+                     selectedCounselor.verificationStatus === 'approved' ? 'bg-success/5 text-success border-success/20' : 'bg-destructive/5 text-destructive border-destructive/20'
                    }`}>
                      Status: {selectedCounselor.verificationStatus}
                    </div>
@@ -411,7 +411,7 @@ export const CounselorManagement = () => {
            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Network Status</span>
            <div className="flex items-center gap-6 text-[10px] font-black font-mono uppercase">
               <span className="flex items-center gap-2 bg-warning/5 text-warning px-3 py-1 rounded-md border border-warning/10"><div className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" /> {counselors.filter(c => c.verificationStatus === 'pending').length} Pending</span>
-              <span className="flex items-center gap-2 bg-success/5 text-success px-3 py-1 rounded-md border border-success/10"><div className="h-1.5 w-1.5 rounded-full bg-success" /> {counselors.filter(c => c.verificationStatus === 'verified').length} Verified</span>
+              <span className="flex items-center gap-2 bg-success/5 text-success px-3 py-1 rounded-md border border-success/10"><div className="h-1.5 w-1.5 rounded-full bg-success" /> {counselors.filter(c => c.verificationStatus === 'approved').length} Approved</span>
            </div>
         </div>
       </div>
@@ -438,7 +438,7 @@ export const CounselorManagement = () => {
                  <div className="min-w-0">
                     <h3 className="font-black text-foreground text-2xl tracking-tighter group-hover:text-primary transition-colors flex items-center gap-3">
                       {counselor.name}
-                      {counselor.verificationStatus === 'verified' && <ShieldCheck size={20} className="text-success" />}
+                      {counselor.verificationStatus === 'approved' && <ShieldCheck size={20} className="text-success" />}
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
                        <span className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-black uppercase tracking-widest"><Mail size={12} className="opacity-50 text-primary" /> {counselor.email}</span>
@@ -455,14 +455,14 @@ export const CounselorManagement = () => {
                  
                  <div className="flex flex-col gap-2">
                     <span className={`px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 border ${
-                       counselor.verificationStatus === 'verified' ? 'bg-success/5 text-success border-success/20' : 
+                       counselor.verificationStatus === 'approved' ? 'bg-success/5 text-success border-success/20' : 
                        counselor.verificationStatus === 'rejected' ? 'bg-destructive/5 text-destructive border-destructive/20' : 
                        'bg-warning/5 text-warning border-warning/20'
                      }`}>
-                       <span className={`h-1.5 w-1.5 rounded-full ${counselor.verificationStatus === 'verified' ? 'bg-success' : counselor.verificationStatus === 'rejected' ? 'bg-destructive' : 'bg-warning'}`} />
+                       <span className={`h-1.5 w-1.5 rounded-full ${counselor.verificationStatus === 'approved' ? 'bg-success' : counselor.verificationStatus === 'rejected' ? 'bg-destructive' : 'bg-warning'}`} />
                        {counselor.verificationStatus}
                     </span>
-                    {!counselor.isVisible && counselor.verificationStatus === 'verified' && (
+                    {!counselor.isVisible && counselor.verificationStatus === 'approved' && (
                        <span className="text-[8px] font-black uppercase text-warning text-center">Hidden from Public</span>
                     )}
                  </div>

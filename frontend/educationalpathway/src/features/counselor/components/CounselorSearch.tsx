@@ -140,17 +140,18 @@ export const CounselorSearch = () => {
                    Elite Advisory Network
                  </div>
                  <div className="h-4 w-px bg-border/40" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Verified Consultants Only</span>
+                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Approved Consultants Only</span>
                </div>
                
-               <div className="space-y-4">
-                 <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-none">
-                   Strategic <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Advisors</span>
-                 </h1>
-                 <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
-                   Synchronize with international academic experts authorized to optimize your scholarship strategy and institutional alignment.
-                 </p>
-               </div>
+                 <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-6">
+                   <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tighter uppercase leading-none whitespace-nowrap">
+                     Strategic Advisors
+                   </h1>
+                   <div className="hidden md:block h-3 w-px bg-border/40" />
+                   <p className="text-[10px] md:text-xs text-muted-foreground font-black uppercase tracking-widest whitespace-nowrap opacity-60">
+                     Synchronize with international academic experts authorized to optimize your strategy
+                   </p>
+                 </div>
             </div>
 
             <div className="flex items-center gap-4">

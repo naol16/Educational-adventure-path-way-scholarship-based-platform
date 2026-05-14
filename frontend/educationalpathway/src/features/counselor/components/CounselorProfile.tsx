@@ -246,9 +246,9 @@ export const CounselorProfile = () => {
                 <Clock size={14} className="animate-pulse" /> Pending Approval
               </span>
             )}
-            {profile.verificationStatus === 'verified' && (
+            {profile.verificationStatus === 'approved' && (
               <span className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-500/20 flex items-center gap-2">
-                <CheckCircle2 size={14} /> Verified Expert
+                <CheckCircle2 size={14} /> Approved Expert
               </span>
             )}
           </div>

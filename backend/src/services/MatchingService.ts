@@ -45,16 +45,19 @@ export class MatchingService {
             
             const aiResults = await AIService.rankScholarships(student.toJSON(), rows, recommendedCounselors);
             
-            // Merge AI scores and reasons back into the results
+            // Merge AI reasons back into the results, but preserve pgvector match_score for percentage
             rows.forEach(row => {
                 const aiMatch = aiResults.find((r: any) => String(r.id) === String(row.id));
                 if (aiMatch) {
-                    row.match_score = aiMatch.match_score;
+                    // We preserve the vector match score for consistent percentage
+                    if ((row.match_score || 0) <= 0) {
+                        row.match_score = aiMatch.match_score || row.match_score;
+                    }
                     row.match_reason = aiMatch.match_reason;
                 }
             });
             
-            // Re-sort based on the new AI match scores
+            // Re-sort based on the match scores (which are now purely vector based)
             rows.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
         } catch (err) {
             console.error("[MatchingService] AI re-ranking failed, falling back to vector scores:", err);

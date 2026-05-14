@@ -87,16 +87,16 @@ export const CounselorDetailsPage = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-12 flex flex-col justify-between h-full">
           <motion.button 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: -10, opacity: 0 }}
+            animate={{ opacity: 1, y: 0, opacity: 1 }}
             onClick={() => router.back()}
-            className="flex items-center text-[10px] font-black text-muted-foreground hover:text-primary transition-all group w-fit bg-card/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-border/40 shadow-sm uppercase tracking-[0.2em]"
+            className="flex items-center text-[10px] font-black text-muted-foreground hover:text-primary transition-all group w-fit uppercase tracking-[0.2em]"
           >
-            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Synchronize Directory
+            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform text-primary" />
+            Back to Directory
           </motion.button>
 
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-10 relative z-20 pb-4 mt-16 md:mt-0">
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-10 relative z-20 pb-4 mt-12 md:mt-16">
              <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -120,7 +120,7 @@ export const CounselorDetailsPage = () => {
                 >
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
-                      <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Verified Expert
+                      <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Approved Expert
                     </Badge>
                     {counselor.match_score > 0 && (
                       <Badge className="bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
@@ -164,9 +164,9 @@ export const CounselorDetailsPage = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + (i * 0.1) }}
-                  className="bg-card/40 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center justify-center text-center border border-border/40 hover:border-primary/40 hover:scale-105 transition-all group"
+                  className="flex flex-col items-center justify-center text-center group"
                 >
-                  <div className={`size-12 rounded-2xl ${stat.bgColor} ${stat.color} flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform`}>
+                  <div className={`size-14 rounded-2xl ${stat.bgColor} ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <stat.icon className="size-6" strokeWidth={2.5} />
                   </div>
                   <p className="text-3xl font-black text-foreground tracking-tighter">{stat.value}</p>
@@ -222,8 +222,8 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="expertise" className="space-y-10 mt-0">
-                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
+              <TabsContent value="expertise" className="space-y-10 mt-0 pt-8">
+                <div className="space-y-12">
                    <div className="flex items-center gap-4 mb-10">
                       <div className="h-6 w-1 bg-primary rounded-full" />
                       <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Expertise Matrix</h3>
@@ -244,8 +244,8 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="education" className="space-y-10 mt-0">
-                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
+              <TabsContent value="education" className="space-y-10 mt-0 pt-8">
+                <div className="space-y-12">
                    <div className="flex items-center gap-4 mb-12">
                       <div className="h-6 w-1 bg-primary rounded-full" />
                       <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Academic Pedigree</h3>
@@ -265,8 +265,8 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="reviews" className="space-y-10 mt-0">
-                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
+              <TabsContent value="reviews" className="space-y-10 mt-0 pt-8">
+                <div className="space-y-12">
                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                      <div className="space-y-2">
                         <div className="flex items-center gap-4">
@@ -324,10 +324,10 @@ export const CounselorDetailsPage = () => {
           {/* Tactical Sidebar */}
           <div className="lg:col-span-4 space-y-8">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
-              className="bg-card/40 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden"
+              className="space-y-8"
             >
               {/* Booking & Pricing Section */}
               <div className="p-10 border-b border-border/10 space-y-10">
