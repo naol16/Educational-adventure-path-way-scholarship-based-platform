@@ -37,17 +37,17 @@ export const CommunityGroups: React.FC = () => {
         fetchGroups();
     }, []);
 
-    const joinGroup = async (groupId: number) => {
-        try {
-            await api.post(`/groups/${groupId}/join`);
-            toast.success('Joined group successfully!');
-            // Redirect to chat page
-            window.location.href = '/dashboard/student/chat';
-        } catch (error) {
-            console.error('Failed to join group:', error);
-            toast.error('Failed to join group');
-        }
-    };
+     const joinGroup = async (groupId: number) => {
+         try {
+             await api.post(`/groups/${groupId}/join`);
+             toast.success('Joined group successfully!');
+             // Navigate to chat with the group selected
+             window.location.href = `/dashboard/student/chat?groupId=${groupId}`;
+         } catch (error) {
+             console.error('Failed to join group:', error);
+             toast.error('Failed to join group');
+         }
+     };
 
     if (loading) return <div>Loading groups...</div>;
 
@@ -73,11 +73,11 @@ export const CommunityGroups: React.FC = () => {
                                 {group.description || 'No description available for this group.'}
                             </p>
                             <Button 
-                                onClick={() => !group.isJoined && joinGroup(group.id)} 
-                                className={`w-full ${group.isJoined ? 'bg-green-600 hover:bg-green-700 cursor-default' : ''}`}
-                                disabled={group.isJoined}
+                                onClick={() => group.isJoined ? window.location.href = `/dashboard/student/chat?groupId=${group.id}` : joinGroup(group.id)}
+                                variant={group.isJoined ? "outline" : "primary"}
+                                className="w-full"
                             >
-                                {group.isJoined ? 'Already Joined' : 'Join Community'}
+                                {group.isJoined ? 'View Group' : 'Join Community'}
                             </Button>
                         </CardContent>
                     </Card>

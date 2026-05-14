@@ -34,6 +34,7 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const targetUserId = searchParams.get("userId");
+  const targetGroupId = searchParams.get("groupId");
 
   // Booking States
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -41,16 +42,15 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
   const [fetchingCounselor, setFetchingCounselor] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-  const { socket, isConnected } = useSocket(token);
+   const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+   const { socket, isConnected } = useSocket(token);
 
-  // 1. Fetch Conversations
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const res = await api.get("/chat/conversations");
-        const convs = res.data;
-        setConversations(convs);
+   // 1. Fetch Conversations
+   const fetchConversations = async () => {
+     try {
+       const res = await api.get("/chat/conversations");
+       const convs = res.data;
+       setConversations(convs);
 
         // If targetUserId is provided, try to find or start chat
         if (targetUserId) {
@@ -71,12 +71,24 @@ export const ChatPage = ({ currentUser }: { currentUser: ChatUser }) => {
             }
           }
         }
-      } catch (err) {
-        console.error("Failed to fetch conversations", err);
-      }
-    };
-    if (token) fetchConversations();
-  }, [token, targetUserId]);
+        
+        // If targetGroupId is provided, find and open that group conversation
+        if (targetGroupId) {
+          const gid = parseInt(targetGroupId);
+          const existingGroup = convs.find((c: any) => c.isGroup && c.id === gid);
+          if (existingGroup) {
+            setActiveConversation(existingGroup);
+          }
+          // If group not found, it will appear after user joins (they'll see it in list)
+        }
+     } catch (err) {
+       console.error("Failed to fetch conversations", err);
+     }
+   };
+
+    useEffect(() => {
+      if (token) fetchConversations();
+    }, [token, targetUserId, targetGroupId]);
 
   // 2. Fetch Messages with Pagination
   const fetchMessages = useCallback(async (isInitial = false) => {

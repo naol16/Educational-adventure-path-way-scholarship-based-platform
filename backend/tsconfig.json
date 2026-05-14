@@ -10,8 +10,12 @@
     "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    //"module": "nodenext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "target": "esnext",
+    //"target": "ESNext",
+
     "types": [],
     // For nodejs:
     // "lib": ["esnext"],

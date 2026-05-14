@@ -8,13 +8,13 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function MeetingPage({ params }: { params: Promise<{ roomId: string }> }) {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [isJitsiLoading, setIsJitsiLoading] = useState(true);
   const unwrappedParams = use(params);
   const roomId = unwrappedParams.roomId;
 
-  if (isLoading) {
+   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -68,7 +68,7 @@ export default function MeetingPage({ params }: { params: Promise<{ roomId: stri
         <div className="flex-1 text-center">
           <h1 className="text-lg font-semibold text-white">Counseling Session</h1>
         </div>
-        <div className="w-[150px]"></div> {/* Spacer for centering */}
+         <div className="w-37.5"></div> {/* Spacer for centering */}
       </div>
 
       {isJitsiLoading && (
