@@ -60,7 +60,7 @@ export const StudentDashboard = () => {
   const router = useRouter();
 
   const { data: matchesResponse, isLoading: loadingMatches } = useSWR<any>(
-    user?.isOnboarded ? "/scholarships/match" : null,
+    user?.isOnboarded ? `/scholarships/match?u=${user.id}` : null,
     {
       revalidateOnMount: true,
     },
@@ -68,7 +68,7 @@ export const StudentDashboard = () => {
 
   const rawMatches: any[] = Array.isArray(matchesResponse)
     ? matchesResponse
-    : matchesResponse?.data || [];
+    : matchesResponse?.data?.data || matchesResponse?.data || [];
 
   const matches: Scholarship[] = rawMatches.map((match) => ({
     ...match,
@@ -86,13 +86,13 @@ export const StudentDashboard = () => {
     isLoading: loadingStats,
   } = useSWR<{
     deadlineCount: number;
-  }>(user?.isOnboarded ? "/scholarships/dashboard/stats" : null, {
+  }>(user?.isOnboarded ? `/scholarships/dashboard/stats?u=${user.id}` : null, {
     fallbackData: { deadlineCount: 0 },
     revalidateOnMount: true,
   });
 
   const { data: counselorsResponse, isLoading: loadingCounselors } =
-    useSWR<any>(user?.isOnboarded ? "/counselors/recommendations/me" : null, {
+    useSWR<any>(user?.isOnboarded ? `/counselors/recommendations/me?u=${user.id}` : null, {
       revalidateOnMount: true,
     });
 
@@ -101,12 +101,12 @@ export const StudentDashboard = () => {
     : counselorsResponse?.data || [];
 
   const { data: ieltsPathData } = useSWR<any>(
-    user?.isOnboarded ? "/learning-path?examType=IELTS" : null,
+    user?.isOnboarded ? `/learning-path?examType=IELTS&u=${user.id}` : null,
     { revalidateOnMount: true }
   );
 
   const { data: toeflPathData } = useSWR<any>(
-    user?.isOnboarded ? "/learning-path?examType=TOEFL" : null,
+    user?.isOnboarded ? `/learning-path?examType=TOEFL&u=${user.id}` : null,
     { revalidateOnMount: true }
   );
 
@@ -121,7 +121,9 @@ export const StudentDashboard = () => {
 
   const calculateCompletion = () => {
     if (!user) return 0;
-    return user.profileCompletion || 89;
+    // user.profileCompletion is now provided by the backend.
+    // We fall back to 0 (new student) instead of hardcoded 89.
+    return user.profileCompletion || 0;
   };
 
   const completionRate = calculateCompletion();

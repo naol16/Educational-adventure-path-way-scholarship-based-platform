@@ -10,9 +10,14 @@ cloudinary.config({
 
 export class FileService {
     /**
-     * Uploads a file buffer to Cloudinary and returns the secure URL.
+     * Uploads a file (Buffer or Path) to Cloudinary and returns the secure URL.
      */
-    static async uploadFile(fileBuffer: Buffer, folder: string = "onboarding_docs"): Promise<string> {
+    static async uploadFile(file: Buffer | string, folder: string = "onboarding_docs"): Promise<string> {
+        if (typeof file === 'string') {
+            const result = await cloudinary.uploader.upload(file, { folder, resource_type: "auto" });
+            return result.secure_url;
+        }
+
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 { folder, resource_type: "auto" },
@@ -23,7 +28,7 @@ export class FileService {
                 }
             );
 
-            uploadStream.end(fileBuffer);
+            uploadStream.end(file);
         });
     }
 
