@@ -168,13 +168,13 @@ export const createSlotsValidation = [
       const index = parseInt(path.match(/\d+/)![0]);
       const slots = req.body.slots;
       const startTime = slots[index].startTime;
-      
+
       if (value && startTime) {
         const [startHours, startMinutes] = startTime.split(':').map(Number);
         const [endHours, endMinutes] = value.split(':').map(Number);
         const startTotal = startHours * 60 + startMinutes;
         const endTotal = endHours * 60 + endMinutes;
-        
+
         if (endTotal <= startTotal) {
           throw new Error('End time must be after start time');
         }

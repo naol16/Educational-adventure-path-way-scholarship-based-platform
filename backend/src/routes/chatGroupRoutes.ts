@@ -204,4 +204,34 @@ router.delete("/:id/members/:userId", authenticate, async (req, res) => {
     }
 });
 
+/**
+ * @route PUT /api/groups/:id
+ * @desc Update a group (Admin only)
+ */
+router.put("/:id", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const group = await ChatService.updateGroupConversation(id, req.body);
+        res.status(200).json({ status: "success", data: group });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in PUT /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
+ * @route DELETE /api/groups/:id
+ * @desc Delete a group (Admin only)
+ */
+router.delete("/:id", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        await ChatService.deleteGroupConversation(id);
+        res.status(200).json({ status: "success", message: "Group deleted successfully" });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in DELETE /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
 export default router;

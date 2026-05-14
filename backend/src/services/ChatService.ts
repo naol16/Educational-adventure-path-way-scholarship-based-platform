@@ -449,4 +449,31 @@ export class ChatService {
     });
     return !!participant;
   }
+
+  static async updateGroupConversation(id: number, data: any) {
+    const group = await Conversation.findByPk(id);
+    if (!group || !group.isGroup) throw new AppError("Group not found", 404);
+
+    await group.update({
+      name: data.name || group.name,
+      description: data.description || group.description,
+      country: data.country || group.country,
+      category: data.category || group.category,
+      groupType: data.groupType || group.groupType,
+    });
+
+    return group;
+  }
+
+  static async deleteGroupConversation(id: number) {
+    const group = await Conversation.findByPk(id);
+    if (!group || !group.isGroup) throw new AppError("Group not found", 404);
+
+    // Delete participants and messages first
+    await ConversationParticipant.destroy({ where: { conversationId: id } });
+    await ChatMessage.destroy({ where: { conversationId: id } });
+    await group.destroy();
+
+    return true;
+  }
 }
