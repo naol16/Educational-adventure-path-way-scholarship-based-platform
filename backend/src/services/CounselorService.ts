@@ -333,10 +333,11 @@ export class CounselorService {
     // 3. Post-process to add match reasons (heuristic labels)
     const results = await Promise.all(candidates.map(async (counselor: any) => {
       const matchReasons: string[] = [];
-      const vectorScore = parseFloat(counselor.match_score || "0");
+      let vectorScore = parseFloat(counselor.match_score || "0");
       
       // Heuristic labels for UI "Reasons"
       const expertiseText = (counselor.areasOfExpertise || "").toLowerCase();
+
       if (expertiseText && this.hasTokenOverlap(expertiseText, studentProfileSignal)) {
         matchReasons.push("Expertise aligns with your academic focus");
       }
@@ -349,6 +350,17 @@ export class CounselorService {
 
       if (student.countryInterest && counselorCountries.includes(student.countryInterest.toLowerCase())) {
         matchReasons.push(`Expert in ${student.countryInterest} systems`);
+      }
+
+      // FALLBACK HEURISTIC: If vector matching returned 0 (e.g. no profile yet)
+      // or if it's too low, calculate a base match on hard criteria
+      if (vectorScore < 50) {
+        let heuristicScore = 45; // Starting base
+        if (matchReasons.length > 0) heuristicScore += 20;
+        if (matchReasons.some(r => r.includes("Expert in"))) heuristicScore += 25;
+        
+        // Randomize slightly to make it feel dynamic
+        vectorScore = Math.min(95, heuristicScore + (counselor.id % 10));
       }
 
       if (matchReasons.length === 0) {
@@ -1075,7 +1087,8 @@ export class CounselorService {
     if (dto.status === "cancelled" && booking.status === "completed") throw httpError(409, "Cannot cancel a completed booking");
 
     if (dto.status === "confirmed") {
-      await booking.update({ status: "confirmed" });
+      const meetingLink = booking.meetingLink || `Pathway-Session-${booking.id}-${Date.now()}`;
+      await booking.update({ status: "confirmed", meetingLink });
     }
     if (dto.status === "started") await booking.update({ status: "started", startedAt: new Date() });
     if (dto.status === "completed" || dto.status === "awaiting_confirmation") {
@@ -1101,8 +1114,9 @@ export class CounselorService {
       throw httpError(404, "Booking not found");
     }
 
-    if (booking.status !== "awaiting_confirmation") {
-      throw httpError(409, "This booking is not ready for student confirmation. It must be marked as completed by the counselor first.");
+    const validStatuses = ["awaiting_confirmation", "started", "confirmed"];
+    if (!validStatuses.includes(booking.status)) {
+      throw httpError(409, "This booking is not ready for student confirmation. It must be in a confirmed, started, or completed state.");
     }
 
     const payment = booking.paymentId ? await Payment.findByPk(booking.paymentId) : null;
