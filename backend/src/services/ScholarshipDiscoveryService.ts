@@ -202,7 +202,6 @@ export class ScholarshipDiscoveryService {
       const manualRequirements = this.extractRequirementsContextual(cleanText);
       const manualIntakeSeason = this.extractIntakeSeasonContextual(cleanText);
       const manualCountry = this.extractCountryContextual(cleanText, url);
-      const manualUniversity = this.extractUniversityContextual(cleanText, title);
       const regexData = this.quickRegex(cleanText);
 
       const title = (
@@ -210,6 +209,8 @@ export class ScholarshipDiscoveryService {
         regexData.title ||
         this.titleFromUrl(url)
       ).substring(0, 500);
+
+      const manualUniversity = this.extractUniversityContextual(cleanText, title);
       const description = (
         metadata.description || cleanText.substring(0, 2000)
       ).substring(0, 2000);
@@ -375,6 +376,7 @@ export class ScholarshipDiscoveryService {
       $('meta[name="geo.region"]').attr("content") ||
       $('meta[name="geo.placename"]').attr("content") ||
       "";
+    let university = "";
 
     $('script[type="application/ld+json"]').each((_: any, el: any) => {
       try {
@@ -390,6 +392,7 @@ export class ScholarshipDiscoveryService {
           country ||
           data.address?.addressCountry ||
           data.location?.address?.addressCountry;
+        university = university || data.provider?.name || data.organizer?.name || data.university;
       } catch (e) {}
     });
 
@@ -401,6 +404,7 @@ export class ScholarshipDiscoveryService {
       requirements: requirements?.toString(),
       intakeSeason: intakeSeason?.toString(),
       country: country?.toString(),
+      university: university?.toString(),
     };
   }
 
