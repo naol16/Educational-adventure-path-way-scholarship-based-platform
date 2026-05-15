@@ -34,24 +34,34 @@ export const seedAdminUser = async () => {
     const admin2Password = await bcrypt.hash("Naol123@", 10);
 
     // Seed Yoseph
-    await UserRepository.createIfNotExists({
-      name: "Yoseph",
-      email: "josefdagne5@gmail.com",
-      password: admin1Password,
-      role: UserRole.ADMIN,
-      isActive: true,
-      isVerified: true
-    });
+    const josef = await UserRepository.findByEmail("josefdagne5@gmail.com");
+    if (josef) {
+      await UserRepository.update(josef.id, { password: admin1Password, isActive: true, isVerified: true });
+    } else {
+      await UserRepository.create({
+        name: "Yoseph",
+        email: "josefdagne5@gmail.com",
+        password: admin1Password,
+        role: UserRole.ADMIN,
+        isVerified: true
+      });
+      await UserRepository.update((await UserRepository.findByEmail("josefdagne5@gmail.com"))!.id, { isActive: true } as any);
+    }
 
     // Seed Naol
-    await UserRepository.createIfNotExists({
-      name: "Naol",
-      email: "lemesanaol16@gmail.com",
-      password: admin2Password,
-      role: UserRole.ADMIN,
-      isActive: true,
-      isVerified: true
-    });
+    const naol = await UserRepository.findByEmail("lemesanaol16@gmail.com");
+    if (naol) {
+      await UserRepository.update(naol.id, { password: admin2Password, isActive: true, isVerified: true });
+    } else {
+      await UserRepository.create({
+        name: "Naol",
+        email: "lemesanaol16@gmail.com",
+        password: admin2Password,
+        role: UserRole.ADMIN,
+        isVerified: true
+      });
+      await UserRepository.update((await UserRepository.findByEmail("lemesanaol16@gmail.com"))!.id, { isActive: true } as any);
+    }
   } catch (error) {
     console.error("Error seeding admin users:", error);
   }

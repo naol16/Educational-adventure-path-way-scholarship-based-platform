@@ -55,7 +55,7 @@ export function StudentSidebar() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
               <Image
-                src="/admas.png"
+                src="/pathfinder.png"
                 alt="Logo"
                 width={36}
                 height={36}
@@ -63,7 +63,7 @@ export function StudentSidebar() {
               />
             </div>
             <span className="text-sm font-bold text-foreground tracking-tight">
-              አድማስ
+              Path Finder
             </span>
           </div>
         )}

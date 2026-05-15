@@ -34,14 +34,14 @@ export function CounselorNavbar() {
        <div className="flex items-center gap-4 group cursor-pointer">
           <div className="relative h-11 w-11 overflow-hidden rounded-lg shadow-indigo-500/10 group-hover:rotate-6 transition-transform duration-300">
             <Image 
-              src="/admas.png" 
-              alt="አድማስ Logo" 
+              src="/pathfinder.png" 
+              alt="Path Finder Logo" 
               fill
               className="object-cover"
             />
           </div>
           <div className="hidden sm:block">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">አድማስ</h2>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Path Finder</h2>
             <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mt-1">Counselor Portal</p>
           </div>
        </div>

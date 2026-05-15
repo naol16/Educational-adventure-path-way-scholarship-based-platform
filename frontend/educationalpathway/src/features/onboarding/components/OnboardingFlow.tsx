@@ -10,6 +10,7 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +24,7 @@ export function OnboardingFlow() {
     loading,
     files,
     handleFileChange,
+    removeFile,
     handleStage1,
     handleStage2,
     handleStage3,
@@ -33,7 +35,7 @@ export function OnboardingFlow() {
       <div className="w-full max-w-3xl">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Image 
-            src="/admas.png" 
+            src="/pathfinder.png" 
             alt="Logo" 
             width={40} 
             height={40} 
@@ -120,6 +122,16 @@ export function OnboardingFlow() {
                       <p className="text-xs text-muted-foreground mt-1">
                         Click to replace file
                       </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile("document");
+                        }}
+                        className="absolute top-4 right-4 p-2 bg-destructive/10 text-destructive rounded-full hover:bg-destructive hover:text-white transition-all z-20"
+                        title="Remove file"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
                   ) : (
                     <div className="animate-in fade-in duration-300">
@@ -183,6 +195,16 @@ export function OnboardingFlow() {
                           {files.idCard.name}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">Click to replace</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile("idCard");
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-destructive/10 text-destructive rounded-full hover:bg-destructive hover:text-white transition-all z-20"
+                          title="Remove file"
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     ) : (
                       <div className="animate-in fade-in duration-300">
@@ -215,6 +237,16 @@ export function OnboardingFlow() {
                           {files.selfie.name}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">Click to replace</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile("selfie");
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-destructive/10 text-destructive rounded-full hover:bg-destructive hover:text-white transition-all z-20"
+                          title="Remove file"
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     ) : (
                       <div className="animate-in fade-in duration-300">

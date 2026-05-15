@@ -33,6 +33,12 @@ export const useOnboarding = () => {
     }
   };
 
+  const removeFile = (name: string) => {
+    const newFiles = { ...files };
+    delete newFiles[name];
+    setFiles(newFiles);
+  };
+
   const handleStage1 = async () => {
     if (!files.document) {
       toast.error("Please upload your document");
@@ -118,6 +124,7 @@ export const useOnboarding = () => {
     files,
     extractedData,
     handleFileChange,
+    removeFile,
     handleStage1,
     handleStage2,
     handleStage3,

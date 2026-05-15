@@ -15,7 +15,6 @@ import {
   PanelLeftOpen,
   Menu,
   X,
-  ShieldCheck,
   ClipboardList,
   Wallet
 } from 'lucide-react';
@@ -47,9 +46,9 @@ export function CounselorSidebar() {
         {(!collapsed || mobile) && (
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-              <Image src="/admas.png" alt="Logo" width={36} height={36} className="h-full w-full object-cover" />
+              <Image src="/pathfinder.png" alt="Logo" width={36} height={36} className="h-full w-full object-cover" />
             </div>
-            <span className="text-sm font-bold text-foreground tracking-tight">አድማስ</span>
+            <span className="text-sm font-bold text-foreground tracking-tight">Path Finder</span>
           </div>
         )}
         
@@ -95,19 +94,6 @@ export function CounselorSidebar() {
         })}
       </nav>
 
-      {/* FOOTER */}
-      <div className="p-3 border-t border-border">
-        <Link
-          href="/dashboard/counselor/profile"
-          onClick={() => setMobileOpen(false)}
-          className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition focus:outline-none text-muted-foreground hover:bg-muted hover:text-foreground font-medium ${collapsed && !mobile ? 'justify-center px-0' : ''}`}
-        >
-          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <ShieldCheck size={14} className="text-primary" />
-          </div>
-          {(!collapsed || mobile) && <span className="text-sm font-medium">Verification</span>}
-        </Link>
-      </div>
     </div>
   );
 

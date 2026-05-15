@@ -87,7 +87,7 @@ export function SignupForm({
     try {
       await register(data);
       setStep('otp');
-      setResendTimer(60);
+      setResendTimer(180);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "We couldn't process your registration. Please check your information and try again."));
     } finally {
@@ -113,7 +113,7 @@ export function SignupForm({
     setError(null);
     try {
       await sendRegistrationOTP(formData);
-      setResendTimer(60);
+      setResendTimer(180);
       resetOtp();
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Unable to send a new code. Please wait a moment and try again."));

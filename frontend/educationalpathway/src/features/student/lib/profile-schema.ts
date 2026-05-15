@@ -10,7 +10,7 @@ const PREFERENCE_LEVELS = ["High", "Medium", "Low"] as const;
 
 export const profileSchema = z.object({
   // Step 1: Personal Info
-  fullName: z.string().min(3, "Full name must be at least 3 characters"),
+  fullName: z.string().min(3, "Full name must be at least 3 characters").regex(/^[a-zA-Z\s]*$/, "Name should only contain letters and spaces."),
   gender: z.enum(GENDER_VALUES, { message: "Please select a gender" }),
   dateOfBirth: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date of birth",

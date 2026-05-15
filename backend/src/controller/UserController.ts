@@ -63,6 +63,20 @@ export class UserController {
     }
   }
 
+  static async deleteAvatar(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const user = await UserService.updateProfile(req.user.id, { avatarUrl: null });
+      res.json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;

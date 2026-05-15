@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -34,7 +34,7 @@ import 'react-international-phone/style.css';
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ProfileFormValues } from "../../lib/profile-schema";
+import { ProfileFormValues, profileSchema } from "../../lib/profile-schema";
 import { FIELDS_OF_STUDY, FIELDS_OF_STUDY_GROUPED } from "../../constants/fields-of-study";
 import { useGeoData, CountryData, UniversityData } from "../../hooks/useGeoData";
 import { RequiredDocumentsSection } from "./RequiredDocumentsSection";
@@ -130,7 +130,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
   const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const methods = useForm<ProfileFormValues>({
-    // resolver: zodResolver(profileSchema) as any, // disabled validation for now
+    resolver: zodResolver(profileSchema) as any,
     mode: "onChange",
     defaultValues: {
       preferredDegreeLevel: [],
@@ -156,6 +156,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
     setValue,
     control,
     handleSubmit,
+    trigger,
     formState: { errors },
   } = methods;
   const countryOfResidence = watch("countryOfResidence");
@@ -224,14 +225,16 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
 
 
 
-  // const validateStep = async (step: number): Promise<boolean> => {
-  //   const stepFields = STEPS[step - 1].fields as (keyof ProfileFormValues)[];
-  //   const result = await trigger(stepFields);
-  //   return result;
-  // };
+  const validateStep = async (step: number): Promise<boolean> => {
+    const stepFields = STEPS[step - 1].fields as (keyof ProfileFormValues)[];
+    const result = await trigger(stepFields);
+    return result;
+  };
 
   const handleNext = async () => {
-    // Validation removed for now
+    const isValid = await validateStep(currentStep);
+    if (!isValid) return;
+
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -339,7 +342,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
 
         {/* Form */}
         <form
-          onSubmit={handleSubmit(handleFormSubmit)}
+          onSubmit={methods.handleSubmit(handleFormSubmit as any)}
           className="bg-card rounded-2xl border border-border shadow-sm p-6"
         >
           <AnimatePresence mode="wait">
@@ -457,6 +460,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           Prefer not to say
                         </option>
                       </select>
+                      {errors.gender?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.gender.message}</p>
+                      )}
                     </div>
 
                     {/* Nationality */}
@@ -490,6 +496,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           formatOptionLabel={formatCountryOption}
                           isClearable
                         />
+                        {errors.nationality?.message && (
+                          <p className="text-destructive text-sm mt-1">{errors.nationality.message}</p>
+                        )}
                       </div>
                     </div>
 
@@ -525,6 +534,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           formatOptionLabel={formatCountryOption}
                           isClearable
                         />
+                        {errors.countryOfResidence?.message && (
+                          <p className="text-destructive text-sm mt-1">{errors.countryOfResidence.message}</p>
+                        )}
                       </div>
                     </div>
 
@@ -577,6 +589,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           />
                         </div>
                       )}
+                      {errors.city?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.city.message}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -613,6 +628,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                         <option value="Master's">Master&apos;s Degree</option>
                         <option value="PhD">PhD</option>
                       </select>
+                      {errors.currentEducationLevel?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.currentEducationLevel.message}</p>
+                      )}
                     </div>
 
                     {/* Degree Seeking */}
@@ -630,6 +648,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                         <option value="Master's">Master&apos;s</option>
                         <option value="PhD">PhD</option>
                       </select>
+                      {errors.degreeSeeking?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.degreeSeeking.message}</p>
+                      )}
                     </div>
 
                     {/* Field of Study */}
@@ -654,6 +675,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                         isSearchable
                         closeMenuOnSelect={false}
                       />
+                      {errors.fieldOfStudyInput?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.fieldOfStudyInput.message}</p>
+                      )}
                     </div>
 
                     {/* Previous University */}
@@ -682,6 +706,9 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                         isClearable
                         isSearchable
                       />
+                      {errors.previousUniversity?.message && (
+                        <p className="text-destructive text-sm mt-1">{errors.previousUniversity.message}</p>
+                      )}
                     </div>
 
                     {/* Graduation Year */}
@@ -701,6 +728,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           type="number"
                           placeholder="2024"
                           className="pl-10"
+                          error={errors.graduationYear?.message}
                         />
                       </div>
                     </div>
@@ -721,6 +749,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                           step="0.01"
                           placeholder="3.8"
                           className="pl-10"
+                          error={errors.gpa?.message}
                         />
                       </div>
                     </div>
@@ -751,6 +780,7 @@ export const StudentProfileForm: React.FC<MultiStepFormProps> = ({
                         <Input
                           {...methods.register("testScore")}
                           placeholder="e.g., 7.5"
+                          error={errors.testScore?.message}
                         />
                       </div>
                     )}

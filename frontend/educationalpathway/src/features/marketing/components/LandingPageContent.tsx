@@ -140,15 +140,15 @@ export const LandingPageContent = () => {
         <Link className="flex items-center gap-3 group" href="/">
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-linear-to-br from-emerald-400/20 to-teal-900/40 border border-emerald-500/20 group-hover:border-emerald-400/50 transition-colors">
             <Image
-              src="/admas.png"
-              alt="Admas Logo"
+              src="/pathfinder.png"
+              alt="Path Finder Logo"
               width={24}
               height={24}
               className="object-contain"
             />
           </div>
            <span className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-foreground to-foreground/70 tracking-tight font-serif">
-            አድማስ
+            Path Finder
           </span>
         </Link>
 
@@ -412,7 +412,7 @@ export const LandingPageContent = () => {
              <div className="container mx-auto max-w-4xl px-6">
                 <div className="text-center mb-20">
                    <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter mb-6 font-serif">Common Questions</h2>
-                   <p className="text-muted-foreground text-lg">Everything you need to know about the Admas platform.</p>
+                   <p className="text-muted-foreground text-lg">Everything you need to know about the Path Finder platform.</p>
                 </div>
                 
                 <div className="space-y-4">

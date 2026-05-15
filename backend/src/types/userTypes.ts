@@ -36,6 +36,7 @@ export interface UpdateUserDto {
   verificationCode?: string;
   verificationCodeExpires?: Date;
   password?: string;
+  avatarUrl?: string | null;
 }
 
 export interface UserResponse {

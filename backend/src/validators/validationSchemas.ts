@@ -7,6 +7,9 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@
 const PASSWORD_MESSAGE = 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character';
 const VALID_ROLES = Object.values(UserRole) as string[];
 
+const NAME_REGEX = /^[a-zA-Z\s]*$/;
+const NAME_MESSAGE = 'Name should only contain letters and spaces';
+
 // ============================
 // Auth Validation Schemas
 // ============================
@@ -15,7 +18,8 @@ export const registerValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
+    .matches(NAME_REGEX).withMessage(NAME_MESSAGE),
 
   body('email')
     .trim()
@@ -102,6 +106,40 @@ export const updateProfileValidation = [
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
+    .matches(NAME_REGEX).withMessage(NAME_MESSAGE),
+  
+  body('email')
+    .optional()
+    .trim()
+    .isEmail().withMessage('Invalid email address'),
+
+  body('phoneNumber')
+    .optional()
+    .matches(/^\+?[1-9]\d{1,14}$/).withMessage('Invalid phone number format'),
+
+  body('dateOfBirth')
+    .optional()
+    .isISO8601().withMessage('Invalid date format for Date of Birth'),
+
+  body('gpa')
+    .optional()
+    .isFloat({ min: 0, max: 10 }).withMessage('GPA must be between 0 and 10'),
+
+  body('graduationYear')
+    .optional()
+    .isInt({ min: 1900, max: new Date().getFullYear() + 10 }).withMessage('Invalid graduation year'),
+
+  body('preferredDegreeLevel')
+    .optional()
+    .isArray().withMessage('Preferred degree level must be an array'),
+
+  body('preferredCountries')
+    .optional()
+    .isArray().withMessage('Preferred countries must be an array'),
+
+  body('needsFinancialSupport')
+    .optional()
+    .isBoolean().withMessage('Needs financial support must be a boolean')
 ];
 
 export const googleLoginValidation = [
@@ -160,10 +198,10 @@ export const updateBookingStatusValidation = [
 export const applyAsCounselorValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Bio must not exceed 2000 characters'),
+    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 500 }).withMessage('Areas of expertise must not exceed 500 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
   body('hourlyRate')
     .optional()
     .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')
@@ -177,10 +215,10 @@ export const applyAsCounselorValidation = [
 export const updateCounselorProfileValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Bio must not exceed 2000 characters'),
+    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 500 }).withMessage('Areas of expertise must not exceed 500 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
   body('hourlyRate')
     .optional()
     .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')

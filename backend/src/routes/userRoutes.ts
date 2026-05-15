@@ -18,6 +18,7 @@ router.put(
   UserController.updateProfile,
 );
 router.post("/upload-avatar", authenticate, UserController.uploadAvatar);
+router.delete("/avatar", authenticate, UserController.deleteAvatar);
 
 router.get(
   "/booked-students",

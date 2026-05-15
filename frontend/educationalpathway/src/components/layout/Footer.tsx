@@ -15,14 +15,14 @@ export function Footer() {
           <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
               <Image 
-                src="/admas.png" 
-                alt="አድማስ Logo" 
+                src="/pathfinder.png" 
+                alt="Path Finder Logo" 
                 width={24} 
                 height={24} 
                 className="object-contain"
               />
             </div>
-            <span className="text-2xl font-black text-foreground font-serif tracking-tight">አድማስ</span>
+            <span className="text-2xl font-black text-foreground font-serif tracking-tight">Path Finder</span>
           </Link>
 
           <div className="flex flex-col items-center md:items-end gap-4">
@@ -34,7 +34,7 @@ export function Footer() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              © {new Date().getFullYear()} አድማስ Platform. All rights reserved.
+              © {new Date().getFullYear()} Path Finder Platform. All rights reserved.
             </p>
           </div>
         </div>

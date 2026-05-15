@@ -8,10 +8,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Play, FileText, BookOpen, Maximize2 } from "lucide-react";
 
 interface ToeflMission {
@@ -60,7 +60,7 @@ export default function ToeflMissionsResources() {
     error,
   } = useSWR<ToeflMissionsResponse>(
     `/learning-path/toefl-missions?level=${selectedLevel}&skill=${selectedSkill === "all" ? "" : selectedSkill}`,
-    async (url) => {
+    async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch TOEFL missions");
       return res.json();
@@ -76,7 +76,7 @@ export default function ToeflMissionsResources() {
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           TOEFL iBT Learning Resources
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Complete catalog of missions with videos and PDFs for each skill level
         </p>
       </div>
@@ -95,7 +95,7 @@ export default function ToeflMissionsResources() {
               <Button
                 key={level}
                 onClick={() => setSelectedLevel(level)}
-                variant={selectedLevel === level ? "default" : "outline"}
+                variant={selectedLevel === level ? "primary" : "outline"}
                 className="w-full"
               >
                 {levelLabels[level]}
@@ -117,7 +117,7 @@ export default function ToeflMissionsResources() {
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => setSelectedSkill("all")}
-              variant={selectedSkill === "all" ? "default" : "outline"}
+              variant={selectedSkill === "all" ? "primary" : "outline"}
               className="px-4"
             >
               All Skills
@@ -127,7 +127,7 @@ export default function ToeflMissionsResources() {
                 <Button
                   key={skill}
                   onClick={() => setSelectedSkill(skill)}
-                  variant={selectedSkill === skill ? "default" : "outline"}
+                  variant={selectedSkill === skill ? "primary" : "outline"}
                   className={`px-4 ${
                     selectedSkill === skill
                       ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
@@ -158,7 +158,7 @@ export default function ToeflMissionsResources() {
       ) : missions.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               No missions found for the selected criteria.
             </p>
           </CardContent>
@@ -231,7 +231,7 @@ export default function ToeflMissionsResources() {
                               {mission.objective}
                             </CardDescription>
                           </div>
-                          <Maximize2 className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                          <Maximize2 className="w-5 h-5 text-muted-foreground/60 flex-shrink-0 mt-1" />
                         </div>
                       </CardHeader>
 
@@ -252,7 +252,7 @@ export default function ToeflMissionsResources() {
                                   (youtubeId: string, idx: number) => (
                                     <div
                                       key={idx}
-                                      className="relative bg-gray-200 rounded-lg overflow-hidden h-48 group cursor-pointer"
+                                      className="relative bg-muted rounded-lg overflow-hidden h-48 group cursor-pointer"
                                     >
                                       <iframe
                                         width="100%"
@@ -272,7 +272,7 @@ export default function ToeflMissionsResources() {
                                 )}
                               </div>
                             ) : (
-                              <p className="text-gray-500">
+                              <p className="text-muted-foreground">
                                 No videos available
                               </p>
                             )}
@@ -295,43 +295,40 @@ export default function ToeflMissionsResources() {
                                       href={pdf}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors group"
+                                      className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted transition-colors group"
                                     >
                                       <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
+                                        <p className="text-sm font-medium text-foreground truncate group-hover:text-blue-600">
                                           PDF Resource {idx + 1}
                                         </p>
-                                        <p className="text-xs text-gray-500 truncate">
+                                        <p className="text-xs text-muted-foreground truncate">
                                           {new URL(pdf).hostname}
                                         </p>
                                       </div>
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        asChild
+                                        as="a"
+                                        href={pdf}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="ml-2 flex-shrink-0"
                                       >
-                                        <a
-                                          href={pdf}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          Open
-                                        </a>
+                                        Open
                                       </Button>
                                     </a>
                                   ),
                                 )}
                               </div>
                             ) : (
-                              <p className="text-gray-500">No PDFs available</p>
+                              <p className="text-muted-foreground">No PDFs available</p>
                             )}
                           </div>
 
                           {/* Summary */}
-                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
-                            <p className="text-sm text-gray-700">
+                          <div className="bg-muted p-4 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
                               <span className="font-semibold">
                                 Total Resources:
                               </span>{" "}
@@ -351,20 +348,20 @@ export default function ToeflMissionsResources() {
       )}
 
       {/* Summary Stats */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <Card className="bg-muted/50 border-border">
         <CardHeader>
           <CardTitle>Resources Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-gray-600 text-sm">Total Missions</p>
+              <p className="text-muted-foreground text-sm">Total Missions</p>
               <p className="text-2xl font-bold text-blue-600">
                 {missions.length}
               </p>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">Total Videos</p>
+              <p className="text-muted-foreground text-sm">Total Videos</p>
               <p className="text-2xl font-bold text-red-600">
                 {missions.reduce(
                   (sum: number, m: ToeflMission) => sum + m.videos.length,
@@ -373,7 +370,7 @@ export default function ToeflMissionsResources() {
               </p>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">Total PDFs</p>
+              <p className="text-muted-foreground text-sm">Total PDFs</p>
               <p className="text-2xl font-bold text-blue-600">
                 {missions.reduce(
                   (sum: number, m: ToeflMission) => sum + m.pdfs.length,
@@ -382,7 +379,7 @@ export default function ToeflMissionsResources() {
               </p>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">Level</p>
+              <p className="text-muted-foreground text-sm">Level</p>
               <p className="text-2xl font-bold text-purple-600">
                 {selectedLevel === "1"
                   ? "Easy"

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { Upload, FileText, CheckCircle2, AlertCircle, Eye } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Eye, X } from "lucide-react";
 import { DOCUMENT_REQUIREMENTS, EducationLevel } from "../../constants/document-requirements";
 import { Modal } from "@/components/ui/Modal";
 
@@ -66,7 +66,20 @@ export const RequiredDocumentsSection: React.FC<RequiredDocumentsSectionProps> =
         />
 
         {file ? (
-          <div className="text-center animate-in fade-in zoom-in-95 duration-300 w-full">
+          <div className="text-center animate-in fade-in zoom-in-95 duration-300 w-full relative">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setValue(fieldName, null, { shouldValidate: true });
+              }}
+              className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors z-20 shadow-sm"
+              title="Remove file"
+            >
+              <X size={14} />
+            </button>
+
             <div className="w-14 h-14 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 className="w-7 h-7 text-success" />
             </div>

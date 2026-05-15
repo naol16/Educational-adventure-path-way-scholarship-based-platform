@@ -60,7 +60,13 @@ api.interceptors.response.use(
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
     // If the error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    // Do NOT retry for login, register, or google-login
+    const isAuthRoute = originalRequest?.url?.includes('/auth/login') || 
+                       originalRequest?.url?.includes('/auth/register') ||
+                       originalRequest?.url?.includes('/auth/google-login') ||
+                       originalRequest?.url?.includes('/auth/verify-otp');
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
 
       try {

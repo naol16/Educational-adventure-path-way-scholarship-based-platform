@@ -56,20 +56,20 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
   };
 
   return (
-    <div className="fixed inset-0 z-100 bg-[#0B1F2A] text-white overflow-hidden flex flex-col font-sans"
-         style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+    <div className="fixed inset-0 z-100 bg-background text-foreground overflow-hidden flex flex-col font-sans"
+         style={{ backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.03 }}>
       
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6 border-b border-white/10 bg-[#0B1F2A]/80 backdrop-blur-md">
+      <header className="flex items-center justify-between px-8 py-6 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 rounded-full bg-[#10B981]/20 flex items-center justify-center border border-[#10B981]/30">
             <div className="w-3 h-3 rounded-full bg-[#10B981] shadow-[0_0_10px_#10B981]" />
           </div>
-          <span className="text-sm font-medium tracking-widest text-white/70 uppercase">Active Protocol: Reading Comprehension</span>
+          <span className="text-sm font-medium tracking-widest text-muted-foreground uppercase">Active Protocol: Reading Comprehension</span>
         </div>
         <button 
           onClick={onClose}
-          className="flex items-center gap-2 px-4 py-2 rounded border border-white/20 hover:bg-white/5 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 rounded border border-border hover:bg-muted transition-colors text-sm font-medium"
         >
           ABORT DRILL <X className="w-4 h-4" />
         </button>
@@ -87,7 +87,7 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
             <span className="font-mono text-lg">Active</span>
           </div>
         </div>
-        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-1 bg-muted rounded-full overflow-hidden">
           <div className="h-full bg-[#10B981] shadow-[0_0_10px_#10B981] transition-all duration-500" style={{ width: `${((currentIndex + 1) / drillQuestions.length) * 100}%` }} />
         </div>
       </div>
@@ -97,7 +97,7 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
         
         {/* Left: Source Document (Optional, only if passage/script exists) */}
         {(currentQ.passage || currentQ.script || currentQ.prompt) && (
-        <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-8 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 bg-card border border-border rounded-xl p-8 overflow-y-auto custom-scrollbar">
           <div className="flex items-center gap-2 mb-6 text-[#10B981]">
             <div className="w-5 h-5 rounded flex items-center justify-center border border-[#10B981]/50 bg-[#10B981]/10">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -105,7 +105,7 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
             <span className="text-xs font-bold tracking-wider uppercase">Reference Material</span>
           </div>
           
-          <div className="space-y-6 text-lg text-white/80 font-serif leading-relaxed">
+          <div className="space-y-6 text-lg text-foreground/80 font-serif leading-relaxed">
             <p className="whitespace-pre-wrap">
               {currentQ.passage || currentQ.script || currentQ.prompt}
             </p>
@@ -138,8 +138,8 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
               const isCorrect = getIsCorrect();
               const displayLetter = ['A','B','C','D'][idx] || idx.toString();
               
-              let borderClass = 'border-white/10';
-              let bgClass = 'bg-white/5 hover:bg-white/10';
+              let borderClass = 'border-border';
+              let bgClass = 'bg-card hover:bg-muted';
               
               if (isSelected && showFeedback) {
                 if (isCorrect) {
@@ -164,11 +164,11 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
                   <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-lg border transition-colors
                     ${isSelected && showFeedback && isCorrect ? 'bg-[#10B981] border-[#10B981] text-white' : 
                       isSelected && showFeedback && !isCorrect ? 'bg-red-500 border-red-500 text-white' : 
-                      'border-white/20 text-white/60'}`}
+                      'border-border text-muted-foreground'}`}
                   >
                     {displayLetter}
                   </div>
-                  <span className="text-lg text-white/90 leading-relaxed pt-1">{optText}</span>
+                  <span className="text-lg text-foreground/90 leading-relaxed pt-1">{optText}</span>
                 </button>
               );
             })}
@@ -180,7 +180,7 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
               <motion.div 
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-0 left-0 right-0 bg-[#0B1F2A]/95 border border-[#10B981] rounded-xl p-6 shadow-[0_-10px_40px_rgba(16,185,129,0.15)] backdrop-blur-xl"
+                className="absolute bottom-0 left-0 right-0 bg-background/95 border border-[#10B981] rounded-xl p-6 shadow-[0_-10px_40px_rgba(16,185,129,0.15)] backdrop-blur-xl"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 shrink-0 rounded-xl bg-[#10B981]/10 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
@@ -192,10 +192,10 @@ export function PracticeDrillOverlay({ skill, examType, questions, onClose, onCo
                         DATA VERIFIED <div className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
                       </span>
                     </div>
-                    <p className="text-white/90 mb-2">
+                    <p className="text-foreground/90 mb-2">
                       Your logic matches <span className="text-[#10B981] font-bold border-b border-[#10B981]">Band 8.5</span> standards.
                     </p>
-                    <p className="text-white/60 text-sm leading-relaxed">
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                       Explanation: {currentQ.explanation || 'Review the source document to understand why this option is correct.'}
                     </p>
                   </div>

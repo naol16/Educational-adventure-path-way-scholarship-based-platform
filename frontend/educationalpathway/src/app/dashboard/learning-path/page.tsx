@@ -47,11 +47,11 @@ const CircularGauge = ({
   return (
     <button 
       onClick={onClick}
-      className={`flex items-center gap-4 transition-all duration-300 p-2 rounded-xl border ${isActive ? 'bg-white/10 border-white/20 shadow-lg scale-105' : 'border-transparent hover:bg-white/5 opacity-70'}`}
+      className={`flex items-center gap-4 transition-all duration-300 p-2 rounded-xl border ${isActive ? 'bg-primary/10 border-primary/20 shadow-lg scale-105' : 'border-transparent hover:bg-muted opacity-70'}`}
     >
       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
         <svg className="w-full h-full transform -rotate-90">
-          <circle cx="32" cy="32" r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="4" fill="none" />
+          <circle cx="32" cy="32" r={radius} stroke="currentColor" className="text-muted-foreground/10" strokeWidth="4" fill="none" />
           <motion.circle 
             cx="32" cy="32" r={radius} 
             stroke={color} 
@@ -65,12 +65,12 @@ const CircularGauge = ({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-          <span className="text-[13px] font-bold text-white/90">{score}</span>
-          <span className="text-[9px] font-bold text-white/50">/ {maxScore}</span>
+          <span className="text-[13px] font-bold text-foreground/90">{score}</span>
+          <span className="text-[9px] font-bold text-muted-foreground">/ {maxScore}</span>
         </div>
       </div>
       <div className="flex flex-col text-left">
-        <span className="text-xs font-bold tracking-wider text-white/80 uppercase">{label}</span>
+        <span className="text-xs font-bold tracking-wider text-foreground/80 uppercase">{label}</span>
       </div>
     </button>
   );
@@ -367,11 +367,11 @@ function LearningPathDashboardContent() {
       <div className="lg:col-span-3">
         <div className="flex items-center gap-2 mb-6">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"></path><path d="M8 3H3v5"></path><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"></path><path d="m15 9 6-6"></path></svg>
-          <h2 className="text-xl font-bold tracking-widest uppercase text-white/90">Missions</h2>
+          <h2 className="text-xl font-bold tracking-widest uppercase text-foreground/90">Missions</h2>
         </div>
         
         <div className="relative pl-6 space-y-6">
-          <div className="absolute left-[11px] top-4 bottom-0 w-[2px] bg-linear-to-b from-[#10B981] via-[#10B981]/50 to-transparent" />
+          <div className="absolute left-[11px] top-4 bottom-0 w-[2px] bg-linear-to-b from-[#10B981] via-[#10B981]/30 to-transparent" />
           
           {currentSkillData.missions.map((mission: any, idx: number) => {
             const prevMissionStatus = idx > 0 ? calculateMissionCompletion(currentSkillData.missions[idx - 1], idx - 1) : null;
@@ -379,13 +379,13 @@ function LearningPathDashboardContent() {
 
             return (
             <div key={idx} className={`relative ${isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`} onClick={() => !isLocked && setActivePhaseIndex(idx)}>
-              <div className={`absolute -left-6 top-4 w-3 h-3 rounded-full ${idx === activePhaseIndex ? 'bg-[#10B981] shadow-[0_0_12px_#10B981]' : isLocked ? 'bg-white/10' : 'bg-[#10B981]/50'}`} />
+              <div className={`absolute -left-6 top-4 w-3 h-3 rounded-full ${idx === activePhaseIndex ? 'bg-[#10B981] shadow-[0_0_12px_#10B981]' : isLocked ? 'bg-muted' : 'bg-[#10B981]/50'}`} />
               <motion.div 
-                className={`border rounded-xl p-4 transition-all ${idx === activePhaseIndex ? 'bg-white/5 border-[#10B981]/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-transparent border-transparent hover:bg-white/5 opacity-60'}`}
+                className={`border rounded-xl p-4 transition-all ${idx === activePhaseIndex ? 'bg-muted border-[#10B981]/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-transparent border-transparent hover:bg-muted opacity-60'}`}
               >
-                <div className={`flex items-center justify-between text-[10px] font-bold tracking-wider mb-1 ${idx === activePhaseIndex ? 'text-[#10B981]' : 'text-white/40'}`}>
+                <div className={`flex items-center justify-between text-[10px] font-bold tracking-wider mb-1 ${idx === activePhaseIndex ? 'text-[#10B981]' : 'text-muted-foreground/60'}`}>
                   <span>PHASE 0{idx + 1}</span>
-                  {isLocked && <Lock className="w-5 h-5 text-white/40" />}
+                  {isLocked && <Lock className="w-5 h-5 text-muted-foreground/40" />}
                 </div>
                 <div className="text-lg font-bold mb-1 relative z-10">{mission.title}</div>
               </motion.div>
@@ -403,28 +403,28 @@ function LearningPathDashboardContent() {
 
               return (
                 <>
-                  <div className={`absolute -left-6 top-10 w-3 h-3 rounded-full ${isMockExamLocked ? 'bg-white/10' : 'bg-[#EAB308] shadow-[0_0_12px_#EAB308]'}`} />
+                  <div className={`absolute -left-6 top-10 w-3 h-3 rounded-full ${isMockExamLocked ? 'bg-muted' : 'bg-[#EAB308] shadow-[0_0_12px_#EAB308]'}`} />
                   {isMockExamLocked ? (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 relative overflow-hidden opacity-60 cursor-not-allowed">
+                    <div className="bg-muted/30 border border-border rounded-xl p-4 relative overflow-hidden opacity-60 cursor-not-allowed">
                       <div className="flex items-center justify-between mb-1 relative z-10">
-                        <div className="text-[10px] text-white/40 font-black tracking-wider">FINAL EVALUATION</div>
-                        <Lock className="w-5 h-5 text-white/40" />
+                        <div className="text-[10px] text-muted-foreground/60 font-black tracking-wider">FINAL EVALUATION</div>
+                        <Lock className="w-5 h-5 text-muted-foreground/40" />
                       </div>
-                      <div className="text-lg font-bold text-white relative z-10">Mock Exam</div>
-                      <div className="text-xs text-white/50 mt-1 relative z-10">Complete all phases to unlock</div>
+                      <div className="text-lg font-bold text-foreground relative z-10">Mock Exam</div>
+                      <div className="text-xs text-muted-foreground mt-1 relative z-10">Complete all phases to unlock</div>
                     </div>
                   ) : (
                     <Link 
                       href="/dashboard/learning-path/mock-exam"
                       className="bg-linear-to-br from-[#EAB308]/20 to-transparent border border-[#EAB308]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(234,179,8,0.15)] relative overflow-hidden group hover:from-[#EAB308]/30 transition-colors cursor-pointer block"
                     >
-                      <div className="absolute top-0 -inset-full h-full w-1/2 z-0 block transform -skew-x-12 bg-linear-to-r from-transparent to-white opacity-20 group-hover:animate-[shimmer_1.5s_infinite]" />
+                      <div className="absolute top-0 -inset-full h-full w-1/2 z-0 block transform -skew-x-12 bg-linear-to-r from-transparent to-foreground/10 opacity-20 group-hover:animate-[shimmer_1.5s_infinite]" />
                       <div className="flex items-center justify-between mb-1 relative z-10">
                         <div className="text-[10px] text-[#EAB308] font-black tracking-wider">FINAL EVALUATION</div>
                         <Award className="w-5 h-5 text-[#EAB308]" />
                       </div>
-                      <div className="text-lg font-bold text-white relative z-10">Mock Exam</div>
-                      <div className="text-xs text-white/70 mt-1 relative z-10">Ready to start assessment</div>
+                      <div className="text-lg font-bold text-foreground relative z-10">Mock Exam</div>
+                      <div className="text-xs text-foreground/70 mt-1 relative z-10">Ready to start assessment</div>
                     </Link>
                   )}
                 </>
@@ -442,22 +442,22 @@ function LearningPathDashboardContent() {
           </div>
           <span className="text-xs font-bold tracking-widest uppercase">Active Sector</span>
         </div>
-        <h1 className="text-4xl font-bold mb-4">{currentPhase.title}</h1>
-        <p className="text-white/60 text-sm mb-8 leading-relaxed max-w-2xl">
+        <h1 className="text-4xl font-bold mb-4 text-foreground">{currentPhase.title}</h1>
+        <p className="text-foreground/60 text-sm mb-8 leading-relaxed max-w-2xl">
           {currentPhase.objective}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button 
             onClick={() => setViewMode('videos')}
-            className="relative group p-8 rounded-2xl border border-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-white/5 hover:bg-white/10"
+            className="relative group p-8 rounded-2xl border border-border transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-card hover:bg-muted"
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80 group-hover:bg-[#10B981]/20 group-hover:text-[#10B981] transition-colors">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-muted text-foreground/80 group-hover:bg-[#10B981]/20 group-hover:text-[#10B981] transition-colors">
               <Play className="w-6 h-6 ml-1" />
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold mb-2 tracking-wide uppercase">Video Lessons</div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold tracking-wider text-white/60">
+              <div className="text-xl font-bold mb-2 tracking-wide uppercase text-foreground">Video Lessons</div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted/50 text-[10px] font-bold tracking-wider text-muted-foreground">
                 {currentPhase.videos.length} VIDEOS AVAILABLE
               </div>
             </div>
@@ -465,14 +465,14 @@ function LearningPathDashboardContent() {
 
           <button 
             onClick={() => setViewMode('resources')}
-            className="relative group p-8 rounded-2xl border border-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-white/5 hover:bg-white/10"
+            className="relative group p-8 rounded-2xl border border-border transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-card hover:bg-muted"
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80 group-hover:bg-accent/20 group-hover:text-accent transition-colors">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-muted text-foreground/80 group-hover:bg-accent/20 group-hover:text-accent transition-colors">
               <FileText className="w-6 h-6" />
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold mb-2 tracking-wide uppercase">Study Resources</div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold tracking-wider text-white/60">
+              <div className="text-xl font-bold mb-2 tracking-wide uppercase text-foreground">Study Resources</div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted/50 text-[10px] font-bold tracking-wider text-muted-foreground">
                 {currentPhase.pdfs.length} PDF GUIDES
               </div>
             </div>
@@ -481,14 +481,14 @@ function LearningPathDashboardContent() {
           <button 
             onClick={handleTakePracticeDrill}
             disabled={loadingDrill}
-            className={`relative group p-8 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-4 ${loadingDrill ? 'bg-[#10B981]/5 border-[#10B981]/30 cursor-wait' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            className={`relative group p-8 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-4 ${loadingDrill ? 'bg-[#10B981]/5 border-[#10B981]/30 cursor-wait' : 'bg-card border-border hover:bg-muted'}`}
           >
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${loadingDrill ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-white/10 text-white/80 group-hover:bg-[#10B981]/20 group-hover:text-[#10B981]'}`}>
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${loadingDrill ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-muted text-foreground/80 group-hover:bg-[#10B981]/20 group-hover:text-[#10B981]'}`}>
               <ClipboardList className="w-6 h-6" />
             </div>
             <div className="text-center">
               <div className="text-xl font-bold mb-2 tracking-wide uppercase">Practice Drill</div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold tracking-wider text-white/60">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted text-[10px] font-bold tracking-wider text-foreground/60">
                 {loadingDrill ? 'GENERATING AI DRILL...' : 'INTERACTIVE SESSION'}
               </div>
             </div>
@@ -497,7 +497,7 @@ function LearningPathDashboardContent() {
           <button 
             disabled={!currentMissionStatus.isPrepComplete || loadingUnitTest}
             onClick={handleTakeUnitTest}
-            className={`relative p-8 rounded-2xl border ${currentMissionStatus.isPrepComplete ? 'border-[#10B981]/50 bg-[#10B981]/10 hover:bg-[#10B981]/20 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-white/5 bg-white/5 opacity-60 cursor-not-allowed'} flex flex-col items-center justify-center gap-4 transition-all duration-300`}
+            className={`relative p-8 rounded-2xl border ${currentMissionStatus.isPrepComplete ? 'border-[#10B981]/50 bg-[#10B981]/10 hover:bg-[#10B981]/20 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-border bg-muted opacity-60 cursor-not-allowed'} flex flex-col items-center justify-center gap-4 transition-all duration-300`}
             style={!currentMissionStatus.isPrepComplete ? { backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px)' } : {}}
           >
             {!currentMissionStatus.isPrepComplete && (
@@ -505,11 +505,11 @@ function LearningPathDashboardContent() {
                 <Lock className="w-3 h-3" /> REQUIRED: FINISH PREP
               </div>
             )}
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${currentMissionStatus.isPrepComplete ? 'bg-[#10B981] text-white shadow-lg' : 'bg-white/10 text-white/80'}`}>
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${currentMissionStatus.isPrepComplete ? 'bg-[#10B981] text-white shadow-lg' : 'bg-muted text-foreground/80'}`}>
               <Award className="w-6 h-6" />
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold mb-2 tracking-wide uppercase">Unit Test</div>
+              <div className="text-xl font-bold mb-2 tracking-wide uppercase text-foreground">Unit Test</div>
               {currentMissionStatus.isPrepComplete && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#10B981]/30 bg-[#10B981]/10 text-[10px] font-bold tracking-wider text-[#10B981]">
                   {loadingUnitTest ? 'LOADING...' : currentMissionStatus.isFullyComplete ? 'PASSED' : 'READY TO START'}
@@ -533,7 +533,7 @@ function LearningPathDashboardContent() {
       <div className="flex items-center justify-between mb-8">
         <button 
           onClick={() => setViewMode('overview')}
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors py-2 px-4 rounded-lg bg-white/5 border border-white/10"
+          className="flex items-center gap-2 text-foreground/60 hover:text-foreground transition-colors py-2 px-4 rounded-lg bg-muted border border-border"
         >
           <ChevronLeft size={20} /> Back to Overview
         </button>
@@ -544,8 +544,8 @@ function LearningPathDashboardContent() {
           <MonitorPlay size={24} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold">{currentPhase.title}: Video Lessons</h2>
-          <p className="text-white/50 text-sm uppercase tracking-widest">{selectedSkill} • {pathData?.proficiencyLevel} LEVEL</p>
+          <h2 className="text-2xl font-bold text-foreground">{currentPhase.title}: Video Lessons</h2>
+          <p className="text-muted-foreground text-sm uppercase tracking-widest">{selectedSkill} • {pathData?.proficiencyLevel} LEVEL</p>
         </div>
       </div>
 
@@ -558,7 +558,7 @@ function LearningPathDashboardContent() {
               setResourceCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-video-${idx}`]: true }));
               setActiveVideoUrl(video.videolink || video.videoLink);
             }}
-            className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group hover:border-[#10B981]/50 transition-all shadow-xl cursor-pointer"
+            className="bg-card border border-border rounded-2xl overflow-hidden group hover:border-[#10B981]/50 transition-all shadow-xl cursor-pointer"
           >
             <div className="aspect-video relative overflow-hidden bg-black/40">
               <img 
@@ -573,10 +573,10 @@ function LearningPathDashboardContent() {
               </div>
             </div>
             <div className="p-5">
-              <h3 className="font-bold text-lg mb-2 line-clamp-2 text-white/90 group-hover:text-[#10B981] transition-colors leading-tight">
+              <h3 className="font-bold text-lg mb-2 line-clamp-2 text-foreground/90 group-hover:text-[#10B981] transition-colors leading-tight">
                 {video.title} {resourceCompleted[`${examType}-${selectedSkill}-${activePhaseIndex}-video-${idx}`] && <CheckCircle2 className="inline w-4 h-4 text-[#10B981] ml-2" />}
               </h3>
-              <p className="text-white/40 text-xs line-clamp-2 leading-relaxed italic">{video.description || 'Watch this tactical video to master the current skill sector.'}</p>
+              <p className="text-muted-foreground text-xs line-clamp-2 leading-relaxed italic">{video.description || 'Watch this tactical video to master the current skill sector.'}</p>
             </div>
           </motion.div>
         ))}
@@ -593,7 +593,7 @@ function LearningPathDashboardContent() {
       <div className="flex items-center justify-between mb-8">
         <button 
           onClick={() => setViewMode('overview')}
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors py-2 px-4 rounded-lg bg-white/5 border border-white/10"
+          className="flex items-center gap-2 text-foreground/60 hover:text-foreground transition-colors py-2 px-4 rounded-lg bg-muted border border-border"
         >
           <ChevronLeft size={20} /> Back to Overview
         </button>
@@ -604,8 +604,8 @@ function LearningPathDashboardContent() {
           <BookOpen size={24} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold">{currentPhase.title}: Study Guides</h2>
-          <p className="text-white/50 text-sm uppercase tracking-widest">{selectedSkill} • {pathData?.proficiencyLevel} LEVEL</p>
+          <h2 className="text-2xl font-bold text-foreground">{currentPhase.title}: Study Guides</h2>
+          <p className="text-muted-foreground text-sm uppercase tracking-widest">{selectedSkill} • {pathData?.proficiencyLevel} LEVEL</p>
         </div>
       </div>
 
@@ -617,24 +617,24 @@ function LearningPathDashboardContent() {
               setResourceCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-pdf-${idx}`]: true }));
               setActivePdfUrl(pdf.pdfLink || '#');
             }}
-            className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl group hover:border-accent/50 transition-all shadow-lg cursor-pointer"
+            className="flex items-center justify-between p-6 bg-card border border-border rounded-2xl group hover:border-accent/50 transition-all shadow-lg cursor-pointer"
           >
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-accent group-hover:bg-accent/10 transition-colors shadow-inner">
+              <div className="w-14 h-14 rounded-xl bg-muted border border-border flex items-center justify-center text-accent group-hover:bg-accent/10 transition-colors shadow-inner">
                 <FileText size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-white/90 group-hover:text-accent transition-colors text-lg leading-tight">
+                <h3 className="font-bold text-foreground/90 group-hover:text-accent transition-colors text-lg leading-tight">
                   {pdf.title} {resourceCompleted[`${examType}-${selectedSkill}-${activePhaseIndex}-pdf-${idx}`] && <CheckCircle2 className="inline w-4 h-4 text-accent ml-2" />}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-white/30 text-[10px] font-bold tracking-widest uppercase">PDF DOCUMENT</span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-accent/70 text-[10px] font-bold tracking-widest uppercase">{pdf.level}</span>
+                  <span className="text-muted-foreground/40 text-[10px] font-bold tracking-widest uppercase">PDF DOCUMENT</span>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <span className="text-accent/70 text-[10px] font-black uppercase tracking-widest">{pdf.level}</span>
                 </div>
               </div>
             </div>
-            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white/60 group-hover:text-accent group-hover:bg-accent/20 group-hover:border-accent/30 transition-all shadow-sm">
+            <div className="p-4 bg-muted border border-border rounded-2xl text-foreground/60 group-hover:text-accent group-hover:bg-accent/20 group-hover:border-accent/30 transition-all shadow-sm">
               <FileText size={24} />
             </div>
           </div>
@@ -644,7 +644,7 @@ function LearningPathDashboardContent() {
   );
 
   return (
-    <div className="w-full min-h-full bg-background text-white rounded-none lg:rounded-2xl overflow-hidden font-sans border-0 lg:border border-white/10 shadow-2xl relative">
+    <div className="w-full min-h-full bg-background text-foreground rounded-none lg:rounded-2xl overflow-hidden font-sans border-0 lg:border border-border shadow-2xl relative">
       <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-[#10B981]/5 to-transparent pointer-events-none" />
 
       {loading ? (
@@ -653,7 +653,7 @@ function LearningPathDashboardContent() {
             <div className="absolute inset-0 rounded-full border-2 border-[#10B981]/20" />
             <div className="absolute inset-0 rounded-full border-t-2 border-[#10B981] animate-spin" />
           </div>
-          <p className="text-white/40 tracking-widest uppercase font-bold animate-pulse">Initializing Phase Parameters...</p>
+          <p className="text-muted-foreground tracking-widest uppercase font-bold animate-pulse">Initializing Phase Parameters...</p>
         </div>
       ) : (
         <div className="p-4 lg:p-10 relative z-10">
@@ -665,23 +665,23 @@ function LearningPathDashboardContent() {
           </div>
 
           {/* Header Row */}
-          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 lg:p-6 mb-8 backdrop-blur-sm gap-4">
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between bg-card border border-border rounded-2xl p-4 lg:p-6 mb-8 backdrop-blur-sm gap-4">
             <div className="flex items-center gap-2 lg:gap-8 overflow-x-auto custom-scrollbar pb-2 lg:pb-0 w-full lg:w-auto">
               <CircularGauge isActive={selectedSkill === 'reading'} onClick={() => { setSelectedSkill('reading'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('reading')} maxScore={examType === 'IELTS' ? 9 : 30} label="Reading" color="#10B981" />
               <CircularGauge isActive={selectedSkill === 'listening'} onClick={() => { setSelectedSkill('listening'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('listening')} maxScore={examType === 'IELTS' ? 9 : 30} label="Listening" color="#10B981" />
               <CircularGauge isActive={selectedSkill === 'writing'} onClick={() => { setSelectedSkill('writing'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('writing')} maxScore={examType === 'IELTS' ? 9 : 30} label="Writing" color="#F43F5E" />
               <CircularGauge isActive={selectedSkill === 'speaking'} onClick={() => { setSelectedSkill('speaking'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('speaking')} maxScore={examType === 'IELTS' ? 9 : 30} label="Speaking" color="#F59E0B" />
             </div>
-            <div className="flex bg-white/10 p-1 rounded-lg border border-white/10 shrink-0">
+            <div className="flex bg-muted p-1 rounded-lg border border-border shrink-0">
               <button 
                 onClick={() => setExamType('IELTS')}
-                className={`px-6 py-2 rounded-md transition-all font-bold text-sm ${examType === 'IELTS' ? 'bg-[#10B981]/20 text-[#10B981]' : 'text-white/50 hover:text-white'}`}
+                className={`px-6 py-2 rounded-md transition-all font-bold text-sm ${examType === 'IELTS' ? 'bg-[#10B981]/20 text-[#10B981]' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 IELTS
               </button>
               <button 
                 onClick={() => setExamType('TOEFL')}
-                className={`px-6 py-2 rounded-md transition-all font-bold text-sm ${examType === 'TOEFL' ? 'bg-[#10B981]/20 text-[#10B981]' : 'text-white/50 hover:text-white'}`}
+                className={`px-6 py-2 rounded-md transition-all font-bold text-sm ${examType === 'TOEFL' ? 'bg-[#10B981]/20 text-[#10B981]' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 TOEFL
               </button>
@@ -727,10 +727,10 @@ function LearningPathDashboardContent() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 lg:p-10"
           >
-            <button onClick={() => setActiveVideoUrl(null)} className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 hover:text-red-500 rounded-full flex items-center justify-center transition-colors">
+            <button onClick={() => setActiveVideoUrl(null)} className="absolute top-6 right-6 w-10 h-10 bg-muted hover:bg-muted/80 hover:text-red-500 rounded-full flex items-center justify-center transition-colors">
               <X size={24} />
             </button>
-            <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.15)] border border-white/10 relative">
+            <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.15)] border border-border relative">
               <iframe 
                 src={getYouTubeEmbedUrl(activeVideoUrl)} 
                 className="absolute inset-0 w-full h-full"
@@ -749,16 +749,16 @@ function LearningPathDashboardContent() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
             className="fixed inset-0 z-100 flex flex-col bg-background/95 backdrop-blur-xl"
           >
-            <div className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-background shrink-0">
+            <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-background shrink-0">
               <div className="flex items-center gap-3">
                 <FileText className="text-accent" />
-                <span className="font-bold tracking-widest uppercase text-white/80">Study Resource Reader</span>
+                <span className="font-bold tracking-widest uppercase text-foreground/80">Study Resource Reader</span>
               </div>
               <div className="flex items-center gap-4">
-                <a href={activePdfUrl} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60 hover:text-white transition-colors">
+                <a href={activePdfUrl} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
                   <Download size={14} /> Open Native
                 </a>
-                <button onClick={() => setActivePdfUrl(null)} className="w-10 h-10 bg-white/5 hover:bg-red-500/20 hover:text-red-500 rounded-lg flex items-center justify-center transition-colors">
+                <button onClick={() => setActivePdfUrl(null)} className="w-10 h-10 bg-muted hover:bg-red-500/20 hover:text-red-500 rounded-lg flex items-center justify-center transition-colors">
                   <X size={20} />
                 </button>
               </div>

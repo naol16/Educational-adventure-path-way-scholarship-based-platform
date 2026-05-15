@@ -7,7 +7,8 @@ import {
   Loader2,
   Lock,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -173,11 +174,30 @@ export const ProfileInfo = () => {
                   <div className="relative">
                     <div className="h-32 w-32 rounded-3xl overflow-hidden bg-primary/5 ring-1 ring-border shadow-sm mx-auto">
                       {user?.avatarUrl || user?.profileImageUrl ? (
-                        <img 
-                          src={user.avatarUrl || user.profileImageUrl} 
-                          alt={user.name} 
-                          className="h-full w-full object-cover"
-                        />
+                        <>
+                          <img 
+                            src={user.avatarUrl || user.profileImageUrl} 
+                            alt={user.name} 
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            onClick={async () => {
+                              if (confirm("Are you sure you want to remove your profile picture?")) {
+                                try {
+                                  await api.delete("/user/avatar");
+                                  await refreshUser();
+                                  toast.success("Profile picture removed");
+                                } catch (error: any) {
+                                  toast.error("Failed to remove profile picture");
+                                }
+                              }
+                            }}
+                            className="absolute -top-2 -left-2 bg-destructive text-white p-1.5 rounded-xl shadow-lg hover:scale-110 transition-transform active:scale-95 z-20"
+                            title="Remove profile picture"
+                          >
+                            <X size={14} strokeWidth={3} />
+                          </button>
+                        </>
                       ) : (
                         <div className="h-full w-full flex items-center justify-center text-primary text-4xl font-black bg-primary/5">
                           {user?.name?.charAt(0).toUpperCase()}
@@ -185,7 +205,7 @@ export const ProfileInfo = () => {
                       )}
                       
                       {isUploadingAvatar && (
-                        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center rounded-3xl">
+                        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center rounded-3xl z-30">
                           <Loader2 className="h-8 w-8 text-primary animate-spin" />
                         </div>
                       )}

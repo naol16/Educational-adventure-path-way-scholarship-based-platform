@@ -7,12 +7,16 @@ const PASSWORD_MESSAGE = "Password must be at least 8 characters long and includ
 const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
 const PHONE_MESSAGE = "Please enter a valid phone number including country code (e.g., +2519XXXXXXXX).";
 
+const NAME_REGEX = /^[a-zA-Z\s]*$/;
+const NAME_MESSAGE = "Name should only contain letters and spaces.";
+
 // --- Auth Schemas ---
 
 export const signupSchema = z.object({
   name: z.string()
     .min(2, "Full Name is required and must be at least 2 characters long.")
-    .max(100, "Full Name must not exceed 100 characters."),
+    .max(100, "Full Name must not exceed 100 characters.")
+    .regex(NAME_REGEX, NAME_MESSAGE),
   email: z.string()
     .email("Please enter a valid email address (e.g., user@example.com)."),
   password: z.string()

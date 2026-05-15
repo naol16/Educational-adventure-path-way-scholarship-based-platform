@@ -1288,8 +1288,34 @@ export class CounselorService {
   static async updateVerification(counselorId: number, dto: AdminVerificationDto): Promise<CounselorResponse> {
     const counselor = await CounselorRepository.findById(counselorId);
     if (!counselor) throw httpError(404, "Counselor not found");
+    
     await counselor.update({ verificationStatus: dto.verificationStatus });
+    
     const user = await User.findByPk(counselor.userId);
+    
+    if (dto.verificationStatus === 'approved' && user) {
+      // Transition user to counselor role
+      await user.update({ role: UserRole.COUNSELOR });
+      
+      // Notify the counselor
+      NotificationService.createNotification(
+        user.id,
+        "Application Approved!",
+        "Congratulations! Your counselor application has been approved. You now have access to the counselor dashboard.",
+        "application_approved",
+        counselor.id
+      ).catch(err => console.error("[CounselorService] Failed to send approval notification:", err));
+    } else if (dto.verificationStatus === 'rejected' && user) {
+      // Notify the counselor about rejection
+      NotificationService.createNotification(
+        user.id,
+        "Application Status Update",
+        "We have reviewed your counselor application. Unfortunately, it has not been approved at this time.",
+        "application_rejected",
+        counselor.id
+      ).catch(err => console.error("[CounselorService] Failed to send rejection notification:", err));
+    }
+
     return await this.formatCounselorResponse(counselor, user);
   }
 
@@ -2102,24 +2128,6 @@ export class CounselorService {
     }));
   }
 
-  static async adminUpdateVerification(id: number, status: 'approved' | 'rejected'): Promise<Counselor> {
-    const counselor = await Counselor.findByPk(id, {
-      include: [{ model: User, as: 'user' }]
-    });
-    
-    if (!counselor) throw httpError(404, "Counselor application not found");
-
-    await counselor.update({ verificationStatus: status });
-
-    // If approved, you might want to send a notification or email here
-    if (status === 'approved') {
-      console.log(`Counselor ${counselor.user?.name} approved.`);
-    } else {
-      console.log(`Counselor ${counselor.user?.name} rejected.`);
-    }
-
-    return counselor;
-  }
 
   static async adminDelete(id: number): Promise<void> {
     console.log(`[AdminDelete] Start for counselorId: ${id}`);
@@ -2163,10 +2171,29 @@ export class CounselorService {
       });
       console.log(`[AdminDelete] Consultations deleted: ${consultationsDeleted}`);
 
+      // Cleanup chat-related data
+      const { ConversationParticipant } = await import('../models/ConversationParticipant.js');
+      const { CounselorMessage } = await import('../models/CounselorMessage.js');
+      const { ChatMessage } = await import('../models/ChatMessage.js');
+
+      await ConversationParticipant.destroy({ where: { userId: counselor.userId }, transaction: t });
+      await CounselorMessage.destroy({ 
+        where: { 
+          [Op.or]: [
+            { senderUserId: counselor.userId }, 
+            { recipientUserId: counselor.userId }
+          ] 
+        }, 
+        transaction: t 
+      });
+      await ChatMessage.destroy({ where: { senderId: counselor.userId }, transaction: t });
+
       // Aggressive cleanup of other user-related tables that might block deletion
       await UserWarning.destroy({ where: { [Op.or]: [{ userId: counselor.userId }, { adminId: counselor.userId }] }, transaction: t });
       await MessageReport.destroy({ where: { reporterId: counselor.userId }, transaction: t });
       await Notification.destroy({ where: { userId: counselor.userId }, transaction: t });
+      await (await import('../models/PasswordResetToken.js')).PasswordResetToken.destroy({ where: { userId: counselor.userId }, transaction: t });
+      await (await import('../models/RefreshToken.js')).RefreshToken.destroy({ where: { userId: counselor.userId }, transaction: t });
 
       // Manually delete the counselor record
       const counselorDeleted = await Counselor.destroy({ where: { id }, transaction: t });
