@@ -130,7 +130,7 @@ export default function ToeflMissionsResources() {
                   variant={selectedSkill === skill ? "default" : "outline"}
                   className={`px-4 ${
                     selectedSkill === skill
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-foreground"
                       : skillColors[skill]
                   }`}
                 >
@@ -264,7 +264,7 @@ export default function ToeflMissionsResources() {
                                         allowFullScreen
                                         className="rounded-lg"
                                       />
-                                      <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <div className="absolute top-2 right-2 bg-red-600 text-foreground px-2 py-1 rounded text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                                         Video {idx + 1}
                                       </div>
                                     </div>

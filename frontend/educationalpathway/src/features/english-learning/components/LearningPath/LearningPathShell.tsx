@@ -33,7 +33,7 @@ export function LearningPathShell({ children }: { children: React.ReactNode }) {
             </p>
          </div>
          <Link href="/dashboard/learning-path/diagnostic/assessment">
-            <Button className="h-11 px-10 rounded-lg primary-gradient text-white font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">Start Diagnostic Test</Button>
+            <Button className="h-11 px-10 rounded-lg primary-gradient text-foreground font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">Start Diagnostic Test</Button>
          </Link>
       </div>
     );

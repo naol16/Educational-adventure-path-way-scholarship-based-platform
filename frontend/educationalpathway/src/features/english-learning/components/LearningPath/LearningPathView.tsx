@@ -462,7 +462,7 @@ export function LearningPathView() {
             </Button>
          ) : (
            <Link href="/dashboard/learning-path/diagnostic/assessment">
-              <Button className="h-16 px-12 rounded-2xl primary-gradient text-white font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">
+              <Button className="h-16 px-12 rounded-2xl primary-gradient text-foreground font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-2xl">
                 Initialize Diagnostic
               </Button>
            </Link>
@@ -670,7 +670,7 @@ export function LearningPathView() {
                     className={`flex flex-col gap-4 p-4 rounded-[40px] transition-all duration-700 ${isActive ? 'bg-muted/30 border border-border/40 shadow-sm' : 'border border-transparent'}`}
                   >
                     <div className="flex items-start gap-8">
-                      <div className={`size-20 rounded-full shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-xl' : 'bg-muted border-border text-muted-foreground'}`}>
+                      <div className={`size-20 rounded-full shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-foreground shadow-xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-xl' : 'bg-muted border-border text-muted-foreground'}`}>
                         {isLocked ? <Lock size={24} /> : isDone ? <CheckCircle2 size={28} /> : <span className="text-lg font-black">{i + 1}</span>}
                       </div>
                       
@@ -778,7 +778,7 @@ export function LearningPathView() {
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                                   {m.videos?.map((v: any) => (
                                     <div key={v.id} className="group relative bg-card/40 border border-border/40 rounded-[40px] p-8 flex flex-col gap-6 hover:shadow-2xl transition-all duration-500 hover:border-primary/30">
-                                      <div className="aspect-video rounded-[32px] overflow-hidden bg-black relative shadow-2xl border border-white/5">
+                                      <div className="aspect-video rounded-[32px] overflow-hidden bg-background relative shadow-2xl border border-white/5">
                                         {v.videolink?.includes('youtube.com') || v.videolink?.includes('youtu.be') ? (
                                           <iframe 
                                             src={getYoutubeEmbedUrl(v.videolink)} 
@@ -893,7 +893,7 @@ export function LearningPathView() {
                                                 className={`group text-left p-6 rounded-2xl text-xs font-bold border transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400' : selected ? 'bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400' : 'opacity-20 border-border/20') : 'bg-muted/30 border-border/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground'}`}
                                               >
                                                 <div className="flex items-center gap-4">
-                                                  <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500 text-white' : selected ? 'bg-red-500 text-white' : 'bg-muted-foreground/10 text-muted-foreground opacity-50') : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
+                                                  <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${rev ? (correct ? 'bg-emerald-500 text-foreground' : selected ? 'bg-red-500 text-foreground' : 'bg-muted-foreground/10 text-muted-foreground opacity-50') : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
                                                     {String.fromCharCode(65 + (q.options || q.choices).indexOf(opt))}
                                                   </div>
                                                   <span>{opt}</span>
@@ -973,10 +973,10 @@ export function LearningPathView() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10 bg-background/95 backdrop-blur-2xl"
           >
-            <div className="relative w-full max-w-6xl aspect-video rounded-[40px] overflow-hidden bg-black shadow-2xl border border-border/20">
+            <div className="relative w-full max-w-6xl aspect-video rounded-[40px] overflow-hidden bg-background shadow-2xl border border-border/20">
               <button 
                 onClick={() => setSelectedVideo(null)}
-                className="absolute top-8 right-8 z-10 size-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95"
+                className="absolute top-8 right-8 z-10 size-12 rounded-full bg-muted hover:bg-muted/80 backdrop-blur-xl border border-border flex items-center justify-center text-foreground transition-all hover:scale-110 active:scale-95"
               >
                 <StopCircle size={24} />
               </button>
@@ -996,15 +996,15 @@ export function LearningPathView() {
               )}
               <div className="absolute bottom-10 left-10 right-10 flex items-end justify-between pointer-events-none">
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Active Stream</p>
-                  <h4 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">{selectedVideo.title}</h4>
+                  <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.4em]">Active Stream</p>
+                  <h4 className="text-2xl md:text-4xl font-black text-foreground uppercase tracking-tighter">{selectedVideo.title}</h4>
                 </div>
                 <div className="pointer-events-auto">
                    <a 
                      href={selectedVideo.videolink} 
                      target="_blank" 
                      rel="noopener noreferrer"
-                     className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:scale-105"
+                     className="px-6 py-3 rounded-full bg-muted hover:bg-muted/80 backdrop-blur-xl border border-border text-foreground text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:scale-105"
                    >
                      Watch on YouTube <ExternalLink size={14} />
                    </a>
