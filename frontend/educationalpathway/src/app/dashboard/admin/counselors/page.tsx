@@ -1,6 +1,6 @@
-import { CounselorManagement } from '@/features/admin/components/CounselorManagement';
+import { Counselors } from '@/features/admin/components/Counselors';
 
 export default function AdminCounselorsPage() {
-  return <CounselorManagement />;
+  return <Counselors />;
 }
 

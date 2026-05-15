@@ -27,7 +27,8 @@ export class MessageReport extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        field: 'message_id'
+        field: 'message_id',
+        onDelete: 'CASCADE'
     })
     declare messageId: number;
 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-context";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
@@ -10,25 +12,38 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getErrorMessage } from "@/lib/api";
 import { motion } from "framer-motion";
 import { GoogleLogin } from "@react-oauth/google";
+import { loginSchema } from "@/lib/validations";
+import { z } from "zod";
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { login, googleLogin } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      await login({ email, password });
+      await login(data);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to login. Please check your credentials."));
+      setError(getErrorMessage(err, "We couldn't sign you in. Please verify your email and password and try again."));
     } finally {
       setIsLoading(false);
     }
@@ -36,9 +51,6 @@ export function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
-
-      {/* Background decorations */}
-
       <div className="absolute inset-0 -z-10">
         <div className="absolute -top-10 -left-10 w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
         <div className="absolute -bottom-10 -right-10 w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px]" />
@@ -51,63 +63,39 @@ export function LoginForm() {
         className="w-full max-w-md"
       >
         <Card className="bg-card border border-border rounded-2xl">
-
           <CardHeader className="text-center pt-10 pb-4">
-
-            <h1 className="text-3xl font-semibold text-foreground">
-              Welcome
-            </h1>
-
-            <p className="text-sm text-muted-foreground mt-2">
-              Sign in to continue
-            </p>
-
+            <h1 className="text-3xl font-semibold text-foreground">Welcome</h1>
+            <p className="text-sm text-muted-foreground mt-2">Sign in to continue</p>
           </CardHeader>
 
           <CardBody className="px-8 pb-8 space-y-6">
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-
-              {/* Email */}
-
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
-
-                <Label htmlFor="email" className="text-label">
-                  Email
-                </Label>
-
+                <Label htmlFor="email" className="text-label">Email</Label>
                 <Input
+                  {...register("email")}
                   id="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12 bg-muted border-border"
+                  className={`h-12 bg-muted border-border ${errors.email ? 'border-destructive' : ''}`}
                 />
-
+                {errors.email && (
+                  <p className="text-[10px] text-destructive flex items-center gap-1">
+                    <AlertCircle size={10} /> {errors.email.message}
+                  </p>
+                )}
               </div>
 
-              {/* Password */}
-
               <div className="space-y-2">
-
-                <Label htmlFor="password" className="text-label">
-                  Password
-                </Label>
-
+                <Label htmlFor="password" className="text-label">Password</Label>
                 <div className="relative">
-
                   <Input
+                    {...register("password")}
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-12 bg-muted border-border pr-12"
+                    className={`h-12 bg-muted border-border pr-12 ${errors.password ? 'border-destructive' : ''}`}
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -115,9 +103,12 @@ export function LoginForm() {
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
-
                 </div>
-
+                {errors.password && (
+                  <p className="text-[10px] text-destructive flex items-center gap-1">
+                    <AlertCircle size={10} /> {errors.password.message}
+                  </p>
+                )}
               </div>
 
               {error && (
@@ -126,52 +117,25 @@ export function LoginForm() {
                 </div>
               )}
 
-              {/* Submit */}
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-12"
-                isLoading={isLoading}
-              >
+              <Button type="submit" size="lg" className="w-full h-12" isLoading={isLoading}>
                 Sign In
               </Button>
 
-              {/* Forgot password */}
-
               <div className="text-center">
-
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                >
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
                   Forgot your password?
                 </Link>
-
               </div>
-
             </form>
 
-            {/* Divider */}
-
             <div className="relative flex items-center">
-
               <div className="grow border-t border-border"></div>
-
-              <span className="mx-3 text-xs text-muted-foreground">
-                OR
-              </span>
-
+              <span className="mx-3 text-xs text-muted-foreground">OR</span>
               <div className="grow border-t border-border"></div>
-
             </div>
 
-            {/* Google Login */}
-
             {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
-
               <div className="w-full flex justify-center [&>div]:w-full">
-
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -185,42 +149,22 @@ export function LoginForm() {
                   width="100%"
                   text="signin_with"
                 />
-
               </div>
-
             ) : (
-
-              <p className="text-xs text-center text-muted-foreground">
-                Google login unavailable
-              </p>
-
+              <p className="text-xs text-center text-muted-foreground">Google login unavailable</p>
             )}
 
-            {/* Register */}
-
             <div className="text-center pt-4">
-
               <p className="text-sm text-muted-foreground">
-
                 Don’t have an account?{" "}
-
-                <Link
-                  href="/role-selection"
-                  className="text-primary font-medium hover:underline"
-                >
+                <Link href="/role-selection" className="text-primary font-medium hover:underline">
                   Create Account
                 </Link>
-
               </p>
-
             </div>
-
           </CardBody>
-
         </Card>
-
       </motion.div>
-
     </div>
   );
 }

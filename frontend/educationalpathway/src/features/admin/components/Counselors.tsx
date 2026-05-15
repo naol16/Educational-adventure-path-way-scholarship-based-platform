@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAllCounselors, updateCounselorVerification } from '../api/admin-api';
+import { getAllCounselors, updateCounselorVerification, deleteCounselor } from '../api/admin-api';
 import { Button, ConfirmModal, Badge } from '@/components/ui';
 import { 
   Loader2, 
@@ -21,29 +21,40 @@ import {
   EyeOff,
   History,
   TrendingUp,
-  Award
+  Award,
+  ChevronLeft,
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminPayoutCounselor } from '../api/admin-api';
 import api from '@/lib/api';
 
-export const CounselorManagement = () => {
+export const Counselors = () => {
   const [counselors, setCounselors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [targetId, setTargetId] = useState<number | null>(null);
   const [selectedCounselor, setSelectedCounselor] = useState<any | null>(null);
 
   const [payoutAmount, setPayoutAmount] = useState<string>('');
   const [isPayoutProcessing, setIsPayoutProcessing] = useState(false);
   const [isVisibilityLoading, setIsVisibilityLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [limit] = useState(10);
 
-  const fetchCounselors = async () => {
+  const fetchCounselors = async (currentPage = page) => {
     setLoading(true);
     try {
-      const data = await getAllCounselors();
-      setCounselors(data);
+      const response = await getAllCounselors(currentPage, limit, 'approved');
+      if (response.success) {
+        setCounselors(response.data.rows);
+        setTotal(response.data.total);
+      }
     } catch {
       toast.error('Failed to load counselor data');
     } finally {
@@ -51,20 +62,32 @@ export const CounselorManagement = () => {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchCounselors(newPage);
+  };
+
   useEffect(() => {
     fetchCounselors();
   }, []);
 
   const handleAccept = async (id: number) => {
+    setTargetId(id);
+    setIsApproveModalOpen(true);
+  };
+
+  const confirmAccept = async () => {
+    if (!targetId) return;
     try {
-      await updateCounselorVerification(id, 'approved');
-      toast.success('Counselor accepted and verified');
-      if (selectedCounselor && selectedCounselor.id === id) {
-        setSelectedCounselor({ ...selectedCounselor, verificationStatus: 'approved' });
-      }
+      await updateCounselorVerification(targetId, 'approved');
+      toast.success('Counselor approved and activated');
       fetchCounselors();
-    } catch (error) {
-      toast.error('Failed to accept counselor');
+      setSelectedCounselor((prev: any) => ({ ...prev, verificationStatus: 'approved' }));
+    } catch {
+      toast.error('Failed to approve counselor');
+    } finally {
+      setTargetId(null);
+      setIsApproveModalOpen(false);
     }
   };
 
@@ -90,18 +113,38 @@ export const CounselorManagement = () => {
     }
   };
 
+  const handleDelete = (id: number) => {
+    setTargetId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!targetId) return;
+    try {
+      await deleteCounselor(targetId);
+      toast.success('Counselor permanently deleted');
+      setSelectedCounselor(null);
+      fetchCounselors();
+    } catch (error) {
+      toast.error('Failed to delete counselor');
+    } finally {
+      setTargetId(null);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
   const handleToggleVisibility = async (id: number, currentVisibility: boolean) => {
     setIsVisibilityLoading(true);
     try {
-      await api.patch(`/counselors/admin/${id}/visibility`, { isVisible: !currentVisibility });
+      await api.patch(`/counselors/admin/${id}/visibility`, { isActive: !currentVisibility });
       toast.success(`Counselor is now ${!currentVisibility ? 'visible' : 'hidden'} to students`);
       
       if (selectedCounselor && selectedCounselor.id === id) {
-        setSelectedCounselor({ ...selectedCounselor, isVisible: !currentVisibility });
+        setSelectedCounselor({ ...selectedCounselor, isActive: !currentVisibility });
       }
       
       // Update local state
-      setCounselors(prev => prev.map(c => c.id === id ? { ...c, isVisible: !currentVisibility } : c));
+      setCounselors(prev => prev.map(c => c.id === id ? { ...c, isActive: !currentVisibility } : c));
     } catch (error) {
       toast.error('Failed to update visibility');
     } finally {
@@ -202,13 +245,20 @@ export const CounselorManagement = () => {
                 </>
              ) : (
                 <div className="flex items-center gap-4">
+                   <Button 
+                     variant="outline"
+                     className="border-destructive/30 text-destructive font-black uppercase tracking-widest text-[10px] px-6 h-12 rounded-lg hover:bg-destructive hover:text-white transition-all flex items-center gap-2"
+                     onClick={() => handleDelete(selectedCounselor.id)}
+                   >
+                     <Trash2 size={14} /> Delete
+                   </Button>
                    <Button
                       variant="outline"
-                      className={`font-black uppercase tracking-widest text-[10px] px-6 h-12 rounded-lg transition-all ${selectedCounselor.isVisible ? 'border-success/30 text-success' : 'border-warning/30 text-warning'}`}
-                      onClick={() => handleToggleVisibility(selectedCounselor.id, selectedCounselor.isVisible)}
+                      className={`font-black uppercase tracking-widest text-[10px] px-6 h-12 rounded-lg transition-all ${selectedCounselor.isActive ? 'border-success/30 text-success' : 'border-warning/30 text-warning'}`}
+                      onClick={() => handleToggleVisibility(selectedCounselor.id, selectedCounselor.isActive)}
                       isLoading={isVisibilityLoading}
                    >
-                      {selectedCounselor.isVisible ? <><Eye size={14} className="mr-2" /> Publicly Visible</> : <><EyeOff size={14} className="mr-2" /> Hidden From Students</>}
+                      {selectedCounselor.isActive ? <><Eye size={14} className="mr-2" /> Publicly Visible</> : <><EyeOff size={14} className="mr-2" /> Hidden From Students</>}
                    </Button>
                    <div className={`px-6 py-3 rounded-lg text-xs font-black uppercase tracking-widest border h-12 flex items-center ${
                      selectedCounselor.verificationStatus === 'approved' ? 'bg-success/5 text-success border-success/20' : 'bg-destructive/5 text-destructive border-destructive/20'
@@ -251,7 +301,7 @@ export const CounselorManagement = () => {
             </section>
 
             {/* Financial & Payout Section */}
-            {selectedCounselor.verificationStatus === 'verified' && (
+            {selectedCounselor.verificationStatus === 'approved' && (
               <section className="space-y-6 pt-8 border-t border-border/40">
                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
                     <Banknote size={16} /> Financial Overview
@@ -403,15 +453,17 @@ export const CounselorManagement = () => {
         <div className="space-y-4">
           <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Counselors</h2>
           <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Vetting and managing {counselors.length} platform experts
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Vetting and managing {total} platform experts
           </p>
         </div>
         
         <div className="flex flex-col items-end gap-2">
-           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Network Status</span>
+           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Management Status</span>
            <div className="flex items-center gap-6 text-[10px] font-black font-mono uppercase">
-              <span className="flex items-center gap-2 bg-warning/5 text-warning px-3 py-1 rounded-md border border-warning/10"><div className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" /> {counselors.filter(c => c.verificationStatus === 'pending').length} Pending</span>
-              <span className="flex items-center gap-2 bg-success/5 text-success px-3 py-1 rounded-md border border-success/10"><div className="h-1.5 w-1.5 rounded-full bg-success" /> {counselors.filter(c => c.verificationStatus === 'approved').length} Approved</span>
+              <span className="flex items-center gap-2 bg-success/5 text-success px-4 py-2 rounded-lg border border-success/10">
+                <div className="h-1.5 w-1.5 rounded-full bg-success" /> 
+                {total} ACTIVE EXPERTS
+              </span>
            </div>
         </div>
       </div>
@@ -462,7 +514,7 @@ export const CounselorManagement = () => {
                        <span className={`h-1.5 w-1.5 rounded-full ${counselor.verificationStatus === 'approved' ? 'bg-success' : counselor.verificationStatus === 'rejected' ? 'bg-destructive' : 'bg-warning'}`} />
                        {counselor.verificationStatus}
                     </span>
-                    {!counselor.isVisible && counselor.verificationStatus === 'approved' && (
+                    {!counselor.isActive && counselor.verificationStatus === 'approved' && (
                        <span className="text-[8px] font-black uppercase text-warning text-center">Hidden from Public</span>
                     )}
                  </div>
@@ -484,6 +536,47 @@ export const CounselorManagement = () => {
         )}
       </div>
 
+      {/* Pagination Controls */}
+      {total > limit && (
+        <div className="flex items-center justify-center gap-4 pt-12 pb-12 border-t border-border/50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="h-10 px-4 rounded-xl border-border/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            <ChevronLeft size={16} /> Prev
+          </Button>
+          
+          <div className="flex items-center gap-2 px-6">
+            {Array.from({ length: Math.ceil(total / limit) }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handlePageChange(i + 1)}
+                className={`h-8 w-8 rounded-lg text-[10px] font-black transition-all ${
+                  page === i + 1 
+                    ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(Math.min(Math.ceil(total / limit), page + 1))}
+            disabled={page === Math.ceil(total / limit)}
+            className="h-10 px-4 rounded-xl border-border/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            Next <ChevronRight size={16} />
+          </Button>
+        </div>
+      )}
+
       <ConfirmModal
         isOpen={isRejectModalOpen}
         onClose={() => setIsRejectModalOpen(false)}
@@ -491,6 +584,24 @@ export const CounselorManagement = () => {
         title="Reject Application"
         description="Are you sure you want to permanently reject this counselor?"
         confirmText="Confirm Rejection"
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Counselor Permanently"
+        description="Are you absolutely sure? This will delete the counselor account and ALL associated data (bookings, slots, reviews). This action CANNOT be undone."
+        confirmText="Yes, Delete Permanently"
+      />
+
+      <ConfirmModal
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        onConfirm={confirmAccept}
+        title="Approve Counselor"
+        description="Are you sure you want to approve this counselor and grant them full platform access?"
+        confirmText="Yes, Approve Counselor"
       />
     </div>
   );

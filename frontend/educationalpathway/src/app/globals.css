@@ -384,6 +384,28 @@ button {
 
 /* ---------------- SCROLLBAR UTILITIES ---------------- */
 
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -396,6 +418,13 @@ button {
 }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---------------- MESSAGE BUBBLE FIXES ---------------- */
+.message-bubble {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
 
 /* ---------------- NPROGRESS ---------------- */
 

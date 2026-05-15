@@ -82,7 +82,7 @@ export const UserDetails = () => {
         router.push('/dashboard/admin/users');
         return;
       } else if (actionType === 'approve') {
-        await updateCounselorVerification(user.counselor.id, 'verified');
+        await updateCounselorVerification(user.counselor.id, 'approved');
         toast.success(`Counselor verified`);
       } else if (actionType === 'reject') {
         await updateCounselorVerification(user.counselor.id, 'rejected');
@@ -358,7 +358,7 @@ export const UserDetails = () => {
                       {isCounselor && (
                          <>
                            <Button 
-                             disabled={user.counselor.verificationStatus === 'verified'}
+                             disabled={user.counselor.verificationStatus === 'approved'}
                              className="w-full h-14 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border-none font-black uppercase text-[10px] tracking-widest"
                              onClick={() => handleAction('approve')}
                            >

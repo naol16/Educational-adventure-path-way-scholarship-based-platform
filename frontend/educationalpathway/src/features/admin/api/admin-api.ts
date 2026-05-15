@@ -11,7 +11,17 @@ export interface AdminStats {
   pendingPayouts: number;
 }
 
-export const getAllUsers = async (page = 1, limit = 10): Promise<User[]> => {
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: {
+    rows: T[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export const getAllUsers = async (page = 1, limit = 10): Promise<PaginatedResponse<User>> => {
   const response = await api.get('/user', { params: { page, limit } });
   return response.data;
 };
@@ -21,8 +31,8 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   return response.data;
 };
 
-export const getUsersByRole = async (role: UserRole): Promise<User[]> => {
-  const response = await api.get(`/user/role/${role}`);
+export const getUsersByRole = async (role: UserRole, page = 1, limit = 10): Promise<PaginatedResponse<User>> => {
+  const response = await api.get(`/user/role/${role}`, { params: { page, limit } });
   return response.data;
 };
 
@@ -53,9 +63,9 @@ export const deleteUser = async (id: number): Promise<void> => {
   await api.delete(`/user/${id}`);
 };
 
-export const getAllCounselors = async (): Promise<any[]> => {
-  const response = await api.get('/counselors/admin/list');
-  return response.data || [];
+export const getAllCounselors = async (page = 1, limit = 10, status?: string): Promise<PaginatedResponse<any>> => {
+  const response = await api.get('/counselors/admin/list', { params: { page, limit, status } });
+  return response.data;
 };
 
 export const updateCounselorVerification = async (id: number, status: 'approved' | 'rejected'): Promise<void> => {
@@ -70,4 +80,7 @@ export const adminPayoutCounselor = async (id: number, amount: number) => {
 export const getPendingCounselors = async (): Promise<any[]> => {
   const response = await api.get('/counselors/admin/pending');
   return response.data || [];
+};
+export const deleteCounselor = async (id: number): Promise<void> => {
+  await api.delete(`/counselors/admin/${id}`);
 };

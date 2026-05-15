@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getPendingCounselors, updateCounselorVerification } from '../api/admin-api';
+import { getPendingCounselors, updateCounselorVerification, deleteCounselor } from '../api/admin-api';
 import { Button, ConfirmModal, Badge } from '@/components/ui';
 import { 
   Loader2, 
@@ -15,7 +15,8 @@ import {
   MapPin, 
   Briefcase, 
   GraduationCap, 
-  Award
+  Award,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +25,8 @@ export const CounselorApprovals = () => {
   const [pendingCounselors, setPendingCounselors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [targetId, setTargetId] = useState<number | null>(null);
   const [selectedCounselor, setSelectedCounselor] = useState<any | null>(null);
 
@@ -44,13 +47,22 @@ export const CounselorApprovals = () => {
   }, []);
 
   const handleAccept = async (id: number) => {
+    setTargetId(id);
+    setIsApproveModalOpen(true);
+  };
+
+  const confirmAccept = async () => {
+    if (!targetId) return;
     try {
-      await updateCounselorVerification(id, 'approved');
-      toast.success('Counselor approved successfully');
-      setPendingCounselors(prev => prev.filter(c => c.id !== id));
+      await updateCounselorVerification(targetId, 'approved');
+      toast.success('Counselor approved and activated');
+      setPendingCounselors((prev: any[]) => prev.filter(c => c.id !== targetId));
       setSelectedCounselor(null);
-    } catch (error) {
+    } catch {
       toast.error('Failed to approve counselor');
+    } finally {
+      setTargetId(null);
+      setIsApproveModalOpen(false);
     }
   };
 
@@ -64,13 +76,33 @@ export const CounselorApprovals = () => {
     try {
       await updateCounselorVerification(targetId, 'rejected');
       toast.success('Counselor application rejected');
-      setPendingCounselors(prev => prev.filter(c => c.id !== targetId));
+      setPendingCounselors((prev: any[]) => prev.filter(c => c.id !== targetId));
       setSelectedCounselor(null);
     } catch (error) {
       toast.error('Failed to reject counselor');
     } finally {
       setTargetId(null);
       setIsRejectModalOpen(false);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setTargetId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!targetId) return;
+    try {
+      await deleteCounselor(targetId);
+      toast.success('Application deleted');
+      setPendingCounselors((prev: any[]) => prev.filter(c => c.id !== targetId));
+      setSelectedCounselor(null);
+    } catch (error) {
+      toast.error('Failed to delete application');
+    } finally {
+      setTargetId(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -96,6 +128,13 @@ export const CounselorApprovals = () => {
              Back to Queue
            </Button>
            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline"
+                className="border-destructive/30 text-destructive font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg flex items-center gap-2"
+                onClick={() => handleDelete(selectedCounselor.id)}
+              >
+                <Trash2 size={14} /> Delete Application
+              </Button>
               <Button 
                 variant="outline"
                 className="border-destructive/30 text-destructive font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg"
@@ -222,6 +261,24 @@ export const CounselorApprovals = () => {
         title="Reject Application"
         description="Are you sure you want to permanently reject this counselor?"
         confirmText="Confirm Rejection"
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Application Permanently"
+        description="Are you absolutely sure? This will permanently remove this application and the user account from the system."
+        confirmText="Yes, Delete Permanently"
+      />
+
+      <ConfirmModal
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        onConfirm={confirmAccept}
+        title="Approve Counselor"
+        description="Are you sure you want to approve this counselor and grant them full platform access?"
+        confirmText="Yes, Approve Counselor"
       />
     </div>
   );

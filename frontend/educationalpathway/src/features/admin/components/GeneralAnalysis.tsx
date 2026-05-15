@@ -33,14 +33,16 @@ export const GeneralAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, usersData, counselorsData] = await Promise.all([
+        const [statsData, usersResponse, counselorsResponse] = await Promise.all([
           getAdminStats(),
           getAllUsers(1, 5),
-          getAllCounselors()
+          getAllCounselors(1, 5)
         ]);
         
         setStats(statsData);
-        setRecentUsers(usersData.slice(0, 5));
+        if (usersResponse.success) {
+          setRecentUsers(usersResponse.data.rows);
+        }
         setPendingCounselors(statsData.pendingCounselors);
       } catch (error) {
         console.error('Failed to fetch command center data:', error);

@@ -23,7 +23,8 @@ import {
   Mic,
   MessageSquare,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  LogOut
 } from 'lucide-react';
 import { Button, Card, CardBody, Input } from '@/components/ui';
 import { getCounselorProfile, updateCounselorProfile, applyAsCounselor } from '../api/counselor-api';
@@ -35,6 +36,7 @@ import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 import { useGeoData } from '../../student/hooks/useGeoData';
 import { FIELDS_OF_STUDY, FIELDS_OF_STUDY_GROUPED } from '../../student/constants/fields-of-study';
+import { useAuth } from '@/providers/auth-context';
 
 const COUNSELOR_POSITIONS = [
   { value: "Higher Education Consultant", label: "Higher Education Consultant" },
@@ -84,6 +86,7 @@ const STEPS = [
 ];
 
 export const CounselorProfile = () => {
+  const { logout } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,6 +94,7 @@ export const CounselorProfile = () => {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [files, setFiles] = useState<{[key: string]: File}>({});
+  const [showPendingModal, setShowPendingModal] = useState(false);
 
   // Availability Slots State
   const [slots, setSlots] = useState<{day: string, startTime: string, endTime: string}[]>([]);
@@ -175,13 +179,18 @@ export const CounselorProfile = () => {
       if (isOnboarding) {
         await applyAsCounselor(payload);
         toast.success('Professional application submitted');
+        setIsOnboarding(false);
+        setProfile({ ...profile, verificationStatus: 'pending', isOnboarded: true });
+        setShowPendingModal(true);
       } else {
         await updateCounselorProfile(payload);
         toast.success('Profile updated successfully');
+        if (profile.verificationStatus === 'pending') {
+          setShowPendingModal(true);
+        } else {
+          router.push('/dashboard/counselor');
+        }
       }
-
-      setIsOnboarding(false);
-      router.push('/dashboard/counselor');
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to submit application';
       toast.error(errorMessage);
@@ -225,8 +234,52 @@ export const CounselorProfile = () => {
     setProfile({ ...profile, consultationModes: updated });
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse">Loading Profile...</p>
+      </div>
+    );
+  }
   if (!profile) return <div className="p-8 text-center"><AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-bold">Error Loading Profile</h2></div>;
+
+  // If they are fully onboarded but pending, block access to the form completely
+  const isPendingApproval = profile.isOnboarded && profile.verificationStatus === 'pending';
+
+  if (showPendingModal || (profile.isOnboarded && profile.verificationStatus === 'pending')) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-background/95 backdrop-blur-md">
+        <div className="w-full max-w-lg bg-card border border-border rounded-3xl overflow-hidden relative animate-in fade-in zoom-in duration-500">
+          <div className="absolute top-0 left-0 w-full h-1 primary-gradient animate-pulse" />
+          <div className="p-10 text-center space-y-6">
+            <div className="h-20 w-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto border-4 border-warning/20">
+              <Clock className="h-10 w-10 text-warning" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black tracking-tight">Application Under Review</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Thank you for completing your profile! Our team is currently reviewing your details. This usually takes <span className="font-bold text-foreground">24-48 hours</span>.
+              </p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <p className="text-xs font-semibold text-muted-foreground">
+                We will notify you via email as soon as your account is approved.
+              </p>
+            </div>
+            <div className="pt-4 flex gap-4">
+              <Button 
+                onClick={() => logout()} 
+                className="w-full h-12 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/20 font-black uppercase tracking-widest text-xs rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
+              >
+                <LogOut size={16} /> Logout & Exit
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
@@ -247,7 +300,7 @@ export const CounselorProfile = () => {
               </span>
             )}
             {profile.verificationStatus === 'approved' && (
-              <span className="px-4 py-2 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-500/20 flex items-center gap-2">
+              <span className="px-4 py-2 bg-emerald-500/5 text-emerald-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/10 flex items-center gap-2">
                 <CheckCircle2 size={14} /> Approved Expert
               </span>
             )}
@@ -292,25 +345,29 @@ export const CounselorProfile = () => {
             >
               {/* Step 1: Identity & Contact */}
               {currentStep === 1 && (
-                <Card className="border-border shadow-xl">
-                  <CardBody className="p-8 space-y-8">
-                    <div className="flex items-center gap-3 text-primary">
-                      <div className="p-2 bg-primary/10 rounded-lg"><User size={20} /></div>
-                      <h2 className="text-xl font-bold font-heading">Core Identity</h2>
-                    </div>
+                <div className="space-y-12">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-3xl font-black tracking-tight">Public Brand</h2>
+                    <p className="text-muted-foreground font-medium">This information will be displayed on your public counselor profile.</p>
+                  </div>
 
+                  <div className="space-y-10">
                     <div className="space-y-4">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Professional Bio (Min. 50 characters)</label>
+                      <div className="flex items-center gap-3 text-primary">
+                        <div className="p-2 bg-primary/5 rounded-lg"><User size={20} /></div>
+                        <h3 className="text-sm font-black uppercase tracking-widest">Professional Biography</h3>
+                      </div>
                       <textarea
                         value={profile.bio || ''}
                         onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                        className="w-full min-h-[140px] bg-muted/40 border border-border rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none leading-relaxed"
-                        placeholder="I am an experienced education consultant specializing in..."
+                        className="w-full min-h-[160px] bg-muted/30 border border-border rounded-3xl p-6 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none leading-relaxed font-medium"
+                        placeholder="Explain your background, achievements, and how you can help students..."
                         required
                       />
+                      <p className="text-[10px] text-muted-foreground ml-2 font-bold uppercase tracking-widest opacity-60">Min. 50 characters required</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-border/50">
                       <div className="space-y-2">
                         <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Phone Number</label>
                         <PhoneInput
@@ -389,24 +446,28 @@ export const CounselorProfile = () => {
                       </div>
                     </div>
 
-                    <div className="pt-8 border-t border-border flex justify-end">
-                      <Button onClick={nextStep} className="h-14 px-10 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20">
+                    <div className="pt-12 border-t border-border flex justify-end">
+                      <Button onClick={nextStep} className="h-14 px-12 gap-2 primary-gradient text-white rounded-2xl font-black uppercase tracking-widest text-xs">
                         Next Step <ChevronRight size={16} />
                       </Button>
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               )}
 
               {/* Step 2: Professional & Academic */}
               {currentStep === 2 && (
-                <Card className="border-border shadow-xl">
-                  <CardBody className="p-8 space-y-10">
-                    <section className="space-y-6">
-                      <div className="flex items-center gap-3 text-primary">
-                        <div className="p-2 bg-primary/10 rounded-lg"><GraduationCap size={20} /></div>
-                        <h2 className="text-xl font-bold font-heading">Academic History</h2>
-                      </div>
+                <div className="space-y-12">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-3xl font-black tracking-tight">Academic & Career</h2>
+                    <p className="text-muted-foreground font-medium">Verify your credentials to build trust with applicants.</p>
+                  </div>
+
+                  <section className="space-y-8">
+                    <div className="flex items-center gap-3 text-primary">
+                      <div className="p-2 bg-primary/5 rounded-lg"><GraduationCap size={20} /></div>
+                      <h3 className="text-sm font-black uppercase tracking-widest">Academic History</h3>
+                    </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Highest Education</label>
@@ -456,7 +517,33 @@ export const CounselorProfile = () => {
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Study Country</label>
-                          <Input value={profile.studyCountry || ''} onChange={(e) => setProfile({ ...profile, studyCountry: e.target.value })} placeholder="e.g. USA" className="h-14 bg-muted/30" />
+                          <Select
+                            options={countries.map((c) => ({
+                              value: c.name,
+                              label: c.name,
+                              flag: c.flag,
+                            }))}
+                            value={profile.studyCountry ? { 
+                              value: profile.studyCountry, 
+                              label: profile.studyCountry, 
+                              flag: countries.find(c => c.name === profile.studyCountry)?.flag || "" 
+                            } : null}
+                            onChange={(val: SingleValue<any>) => setProfile({ ...profile, studyCountry: val?.value || "" })}
+                            classNamePrefix="react-select"
+                            placeholder={loadingCountries ? "Loading..." : "Select country"}
+                            isDisabled={loadingCountries}
+                            formatOptionLabel={formatCountryOption}
+                            isClearable
+                            styles={{
+                              control: (base) => ({
+                                ...base,
+                                height: '56px',
+                                borderRadius: '12px',
+                                backgroundColor: 'rgba(var(--muted), 0.3)',
+                                borderColor: 'rgba(var(--border), 1)',
+                              })
+                            }}
+                          />
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Fields of Study</label>
@@ -487,10 +574,10 @@ export const CounselorProfile = () => {
                       </div>
                     </section>
 
-                    <section className="space-y-6 pt-6 border-t border-border">
+                    <section className="space-y-8 pt-10 border-t border-border/50">
                       <div className="flex items-center gap-3 text-primary">
-                        <div className="p-2 bg-primary/10 rounded-lg"><Briefcase size={20} /></div>
-                        <h2 className="text-xl font-bold font-heading">Professional Standing</h2>
+                        <div className="p-2 bg-primary/5 rounded-lg"><Briefcase size={20} /></div>
+                        <h3 className="text-sm font-black uppercase tracking-widest">Professional Standing</h3>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
@@ -550,87 +637,50 @@ export const CounselorProfile = () => {
                       </div>
                     </section>
 
-                    <div className="pt-8 border-t border-border flex justify-between">
-                      <Button variant="outline" onClick={prevStep} className="h-14 px-8 gap-2 border-border font-black uppercase tracking-widest text-xs">
+                    <div className="pt-12 border-t border-border flex justify-between">
+                      <Button variant="outline" onClick={prevStep} className="h-14 px-10 gap-2 border-border font-black uppercase tracking-widest text-xs rounded-2xl">
                         <ChevronLeft size={16} /> Previous
                       </Button>
-                      <Button onClick={nextStep} className="h-14 px-10 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20">
+                      <Button onClick={nextStep} className="h-14 px-12 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs rounded-2xl">
                         Next Step <ChevronRight size={16} />
                       </Button>
                     </div>
-                  </CardBody>
-                </Card>
+                </div>
               )}
 
               {/* Step 3: Availability & Pricing */}
               {currentStep === 3 && (
-                <Card className="border-border shadow-xl">
-                  <CardBody className="p-8 space-y-10">
-                    <section className="space-y-6">
-                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-primary">
-                          <div className="p-2 bg-primary/10 rounded-lg"><Clock size={20} /></div>
-                          <h2 className="text-xl font-bold font-heading">Weekly Availability</h2>
-                        </div>
-                        <Button onClick={addSlot} type="button" size="sm" variant="outline" className="h-10 px-4 gap-2 border-primary/20 text-primary hover:bg-primary/5">
-                          <Plus size={14} /> Add Slot
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {slots.length === 0 && (
-                          <div className="text-center py-10 bg-muted/20 border border-dashed border-border rounded-xl">
-                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">No slots defined yet</p>
-                          </div>
-                        )}
-                        {slots.map((slot, index) => (
-                          <div key={index} className="flex flex-wrap items-center gap-4 p-4 bg-muted/30 rounded-xl border border-border group animate-in slide-in-from-left-2 transition-all hover:bg-muted/50">
-                            <div className="flex-1 min-w-[140px]">
-                              <select 
-                                value={slot.day} 
-                                onChange={(e) => updateSlot(index, 'day', e.target.value)}
-                                className="w-full h-10 bg-transparent font-bold text-xs uppercase tracking-tight outline-none"
-                              >
-                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input type="time" value={slot.startTime} onChange={(e) => updateSlot(index, 'startTime', e.target.value)} className="h-10 w-32 bg-background border-border" />
-                              <span className="text-muted-foreground text-xs uppercase font-black">to</span>
-                              <Input type="time" value={slot.endTime} onChange={(e) => updateSlot(index, 'endTime', e.target.value)} className="h-10 w-32 bg-background border-border" />
-                            </div>
-                            <button onClick={() => removeSlot(index)} type="button" className="p-2 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-                              <X size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
+                <div className="space-y-12">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-3xl font-black tracking-tight">Pricing & Rates</h2>
+                    <p className="text-muted-foreground font-medium">Set your consulting fees and preferred consultation channels.</p>
+                  </div>
 
-                    <section className="space-y-8 pt-6 border-t border-border">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3 text-primary">
-                            <div className="p-2 bg-primary/10 rounded-lg"><DollarSign size={18} /></div>
-                            <h3 className="text-sm font-black uppercase tracking-widest">Pricing & Mode</h3>
-                          </div>
+                  <section className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <div className="space-y-8">
+                        <div className="flex items-center gap-3 text-primary">
+                          <div className="p-2 bg-primary/5 rounded-lg"><DollarSign size={18} /></div>
+                          <h3 className="text-sm font-black uppercase tracking-widest">Rate Configuration</h3>
+                        </div>
                           <div className="space-y-4">
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Session Price ($/hr)</label>
-                              <Input type="number" min="0" value={profile.hourlyRate || ''} onChange={(e) => setProfile({ ...profile, hourlyRate: e.target.value ? Math.max(0, parseFloat(e.target.value)) : 0 })} className="h-12 bg-muted/30" />
+                              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Session Price ($/hr)</label>
+                              <Input type="number" min="0" value={profile.hourlyRate || ''} onChange={(e) => setProfile({ ...profile, hourlyRate: e.target.value ? Math.max(0, parseFloat(e.target.value)) : 0 })} className="h-14 bg-muted/30 border-border rounded-2xl" />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Default Duration (min)</label>
-                              <Input type="number" min="1" value={profile.sessionDuration || 60} onChange={(e) => setProfile({ ...profile, sessionDuration: e.target.value ? Math.max(1, parseInt(e.target.value)) : 60 })} className="h-12 bg-muted/30" />
+                              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Default Duration (min)</label>
+                              <Input type="number" min="1" value={profile.sessionDuration || 60} onChange={(e) => setProfile({ ...profile, sessionDuration: e.target.value ? Math.max(1, parseInt(e.target.value)) : 60 })} className="h-14 bg-muted/30 border-border rounded-2xl" />
                             </div>
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Consultation Modes</h3>
-                          <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-8">
+                          <h3 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-3">
+                             <div className="p-2 bg-primary/5 rounded-lg"><MessageSquare size={16} /></div>
+                             Consultation Channels
+                          </h3>
+                          <div className="grid grid-cols-1 gap-3">
                             {[
                               { id: 'chat', label: 'Direct Chat', icon: MessageSquare },
                               { id: 'audio', label: 'Audio Call', icon: Mic },
@@ -658,25 +708,29 @@ export const CounselorProfile = () => {
                       </div>
                     </section>
 
-                    <div className="pt-8 border-t border-border flex justify-between">
-                      <Button variant="outline" onClick={prevStep} className="h-14 px-8 gap-2 border-border font-black uppercase tracking-widest text-xs">
+                    <div className="pt-12 border-t border-border flex justify-between">
+                      <Button variant="outline" onClick={prevStep} className="h-14 px-10 gap-2 border-border font-black uppercase tracking-widest text-xs rounded-2xl">
                         <ChevronLeft size={16} /> Previous
                       </Button>
-                      <Button onClick={nextStep} className="h-14 px-10 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20">
+                      <Button onClick={nextStep} className="h-14 px-12 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs rounded-2xl">
                         Next Step <ChevronRight size={16} />
                       </Button>
                     </div>
-                  </CardBody>
-                </Card>
+                </div>
               )}
 
               {/* Step 4: Documents */}
               {currentStep === 4 && (
-                <Card className="border-border shadow-xl">
-                  <CardBody className="p-8 space-y-10">
+                <div className="space-y-12">
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-3xl font-black tracking-tight">Verification</h2>
+                    <p className="text-muted-foreground font-medium">Upload your documents to complete the verification process.</p>
+                  </div>
+
+                  <div className="space-y-10">
                     <div className="flex items-center gap-3 text-primary">
-                      <div className="p-2 bg-primary/10 rounded-lg"><ShieldCheck size={20} /></div>
-                      <h2 className="text-xl font-bold font-heading">Verification Files</h2>
+                      <div className="p-2 bg-primary/5 rounded-lg"><ShieldCheck size={20} /></div>
+                      <h3 className="text-sm font-black uppercase tracking-widest">Verification Files</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -732,20 +786,20 @@ export const CounselorProfile = () => {
                       </div>
                     </div>
 
-                    <div className="pt-8 border-t border-border flex justify-between">
-                      <Button variant="outline" onClick={prevStep} disabled={saving} className="h-14 px-8 gap-2 border-border font-black uppercase tracking-widest text-xs">
+                    <div className="pt-12 border-t border-border flex justify-between">
+                      <Button variant="outline" onClick={prevStep} disabled={saving} className="h-14 px-10 gap-2 border-border font-black uppercase tracking-widest text-xs rounded-2xl">
                         <ChevronLeft size={16} /> Previous
                       </Button>
                       <Button 
                         onClick={handleSave} 
                         isLoading={saving}
-                        className="h-14 px-12 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30"
+                        className="h-14 px-12 gap-2 primary-gradient text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-primary/20"
                       >
-                        Finish Application <CheckCircle2 size={18} />
+                        {profile.verificationStatus === 'approved' ? 'Update Brand Details' : 'Submit for Verification'} <CheckCircle2 size={18} />
                       </Button>
                     </div>
-                  </CardBody>
-                </Card>
+                  </div>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>

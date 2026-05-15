@@ -31,11 +31,24 @@ export class ChatController {
             conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
         }
 
+        if (!conversation) {
+            throw new AppError("Failed to access or create conversation", 404);
+        }
+
         const message = await ChatService.sendMessage({ 
             conversationId: conversation.id, 
             senderId, 
             content 
         });
+
+        // Emit via Socket for real-time updates
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${conversation.id}`).emit("receive_message", message);
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
 
         res.status(201).json({
             status: "success",
@@ -56,8 +69,12 @@ export class ChatController {
 
         const conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
         
+        if (!conversation) {
+            throw new AppError("Failed to start conversation", 500);
+        }
+
         // Fetch the conversation with participants to be consistent with getConversations
-        const fullConversation = await ChatService.getConversations(senderId).then(convs => convs.find(c => c.id === conversation.id));
+        const fullConversation = await ChatService.getConversations(senderId).then(convs => convs.data.find(c => c.id === conversation.id));
 
         res.status(200).json({
             status: "success",
@@ -70,11 +87,20 @@ export class ChatController {
      */
     static getConversations = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user.id;
-        const conversations = await ChatService.getConversations(userId);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+
+        const { data, total, hasMore } = await ChatService.getConversations(userId, page, limit);
 
         res.status(200).json({
             status: "success",
-            data: conversations
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                hasMore
+            }
         });
     });
 
@@ -128,6 +154,19 @@ export class ChatController {
         const userId = (req as any).user.id;
 
         await ChatService.markAsRead(Number(conversationId), userId);
+
+        // Emit via Socket
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${conversationId}`).emit("messages_read", {
+                conversationId: Number(conversationId),
+                readerId: userId,
+                readAt: new Date()
+            });
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
 
         res.status(200).json({
             status: "success",
@@ -264,6 +303,19 @@ export class ChatController {
 
         const message = await ChatService.editMessage(Number(messageId), userId, content);
 
+        // Emit via Socket
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${message.conversationId}`).emit("message_edited", {
+                messageId: Number(messageId),
+                conversationId: message.conversationId,
+                content: content
+            });
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
+
         res.status(200).json({
             status: "success",
             data: message
@@ -276,8 +328,27 @@ export class ChatController {
     static deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
         const userId = (req as any).user.id;
+        console.log(`[ChatController] Deleting message: ${messageId} by user: ${userId}`);
+        
+        // Find the message first to get its conversationId for socket emission
+        const msg = await (await import("../models/ChatMessage.js")).ChatMessage.findByPk(Number(messageId));
+        const conversationId = msg?.conversationId;
 
         await ChatService.deleteMessage(Number(messageId), userId);
+
+        // Emit via Socket
+        if (conversationId) {
+            try {
+                const { SocketService } = await import("../services/SocketService.js");
+                const io = SocketService.getIO();
+                io.to(`conversation_${conversationId}`).emit("message_deleted", {
+                    messageId: Number(messageId),
+                    conversationId: conversationId
+                });
+            } catch (err) {
+                console.error("[ChatController] Socket emission failed:", err);
+            }
+        }
 
         res.status(200).json({
             status: "success",

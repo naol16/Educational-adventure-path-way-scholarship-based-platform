@@ -19,7 +19,7 @@ export class MarketingController {
                         const count = await Scholarship.count();
                         realValue = `${count}+`;
                     } else if (s.dbKey === 'counselors') {
-                        const count = await Counselor.count({ where: { verificationStatus: 'verified' } });
+                        const count = await Counselor.count({ where: { verificationStatus: 'approved' } });
                         realValue = `${count}+`;
                     } else if (s.dbKey === 'students') {
                         const count = await Student.count();
@@ -30,7 +30,7 @@ export class MarketingController {
             } else {
                 // Default fallback if table is empty
                 const scholarshipCount = await Scholarship.count();
-                const counselorCount = await Counselor.count({ where: { verificationStatus: 'verified' } });
+                const counselorCount = await Counselor.count({ where: { verificationStatus: 'approved' } });
                 const studentCount = await Student.count();
 
                 stats = [

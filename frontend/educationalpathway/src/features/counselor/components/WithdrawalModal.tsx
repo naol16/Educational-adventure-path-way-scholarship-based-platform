@@ -145,7 +145,7 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance, onSuccess }
                                 }}
                                 className={`p-3 rounded-xl border text-[9px] font-black uppercase tracking-tighter transition-all flex flex-col items-center gap-1.5 ${
                                     method === m 
-                                    ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]' 
+                                    ? 'bg-primary/10 border-primary text-primary' 
                                     : 'bg-muted/30 border-border text-muted-foreground hover:bg-muted/50'
                                 }`}
                             >
@@ -172,7 +172,7 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance, onSuccess }
                                         className="pl-9 h-11 rounded-xl bg-muted/20"
                                     />
                                     {bankSearch && (
-                                        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
+                                        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
                                             {loadingBanks ? (
                                                 <div className="p-4 text-center"><Loader2 className="animate-spin h-4 w-4 mx-auto" /></div>
                                             ) : filteredBanks.length > 0 ? (
@@ -223,7 +223,7 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance, onSuccess }
 
                 <div className="pt-2">
                     <Button 
-                        className="w-full h-14 primary-gradient text-white shadow-xl rounded-2xl font-black uppercase tracking-widest text-xs"
+                        className="w-full h-14 primary-gradient text-white rounded-2xl font-black uppercase tracking-widest text-xs"
                         disabled={isSubmitting}
                         onClick={handleSubmit}
                     >

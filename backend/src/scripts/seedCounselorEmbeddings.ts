@@ -10,7 +10,7 @@ async function seed() {
         await connectSequelize();
 
         const counselors = await Counselor.findAll({
-            where: { verificationStatus: 'verified', isActive: true },
+            where: { verificationStatus: 'approved', isActive: true },
             include: [{ model: User, as: "user" }]
         });
 

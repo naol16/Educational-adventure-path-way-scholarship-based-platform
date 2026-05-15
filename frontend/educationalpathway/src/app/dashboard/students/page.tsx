@@ -6,33 +6,33 @@ export default function AssignedStudentsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-20 px-4">
       {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-[32px] p-8 md:p-12 mesh-gradient-premium border border-white/10 shadow-2xl">
-        <div className="absolute inset-0 bg-linear-to-r from-black/40 to-transparent z-0" />
+      <div className="relative overflow-hidden py-12 border-b border-border">
+        <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent z-0" />
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="space-y-2">
             <div className="flex items-center gap-2 px-3 py-1 bg-card/10 backdrop-blur-md rounded-full w-fit border border-white/10">
               <Zap size={14} className="text-amber-400 fill-amber-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Mentorship Roster</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Mentorship Roster</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-white font-serif tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
               My Students
             </h1>
-            <p className="text-white/70 max-w-lg font-medium leading-relaxed">
+            <p className="text-muted-foreground max-w-lg font-medium leading-relaxed">
               Manage and track the progress of students under your direct mentorship and guidance.
             </p>
           </div>
 
-          <div className="bg-card/10 backdrop-blur-xl p-6 rounded-2xl border border-white/20 w-full md:w-auto min-w-[240px]">
+          <div className="w-full md:w-auto min-w-[240px]">
              <div className="flex justify-between items-end mb-4">
                <div>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Active Mentorships</p>
-                 <p className="text-3xl font-black text-white flex items-baseline gap-2">
-                   Live <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Active Mentorships</p>
+                  <p className="text-3xl font-black text-foreground flex items-baseline gap-2">
+                    Live <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                  </p>
                </div>
-               <Users size={32} className="text-white opacity-50" />
+                <Users size={32} className="text-primary opacity-20" />
              </div>
-             <p className="text-xs text-white/50 font-bold leading-relaxed">
+              <p className="text-xs text-muted-foreground font-bold leading-relaxed">
                Providing professional academic advice to help students find their path.
              </p>
           </div>

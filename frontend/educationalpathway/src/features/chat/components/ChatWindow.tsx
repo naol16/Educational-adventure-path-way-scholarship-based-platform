@@ -205,14 +205,16 @@ export const ChatWindow = ({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onShowMembers}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Chat info"
-          >
-            <Info size={20} />
-          </button>
+          {isGroup && (
+            <button
+              type="button"
+              onClick={onShowMembers}
+              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Chat info"
+            >
+              <Info size={20} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -401,14 +403,37 @@ export const ChatWindow = ({
                                   )}
                                 </div>
 
-                                {/* Quick Reply Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => onReplyMessage?.(m)}
-                                  className={`mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-primary hover:text-primary group-hover:opacity-100 ${isMe ? "mr-0.5" : "ml-0.5"}`}
-                                >
-                                  <CornerUpLeft size={14} />
-                                </button>
+                                 {/* Quick Action Buttons */}
+                                 <div className={`mb-0.5 flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-all ${isMe ? "flex-row-reverse mr-1" : "flex-row ml-1"}`}>
+                                   <button
+                                     type="button"
+                                     onClick={() => onReplyMessage?.(m)}
+                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-primary hover:text-primary hover:bg-primary/5 active:scale-90"
+                                     title="Reply"
+                                   >
+                                     <Reply size={15} />
+                                   </button>
+                                   
+                                   {isMe && (
+                                     <button
+                                       type="button"
+                                       onClick={() => onEditMessage?.(m.id, m.content)}
+                                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-primary hover:text-primary hover:bg-primary/5 active:scale-90"
+                                       title="Edit"
+                                     >
+                                       <Edit2 size={15} />
+                                     </button>
+                                   )}
+
+                                   <button
+                                     type="button"
+                                     onClick={() => onDeleteMessage?.(m.id)}
+                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5 active:scale-90"
+                                     title="Delete"
+                                   >
+                                     <Trash2 size={15} />
+                                   </button>
+                                 </div>
                               </div>
                             );
                           })}
@@ -514,7 +539,8 @@ export const ChatWindow = ({
               >
                 <Copy size={16} className="text-primary" /> Copy Text
               </button>
-              {contextMenu.message.senderId === currentUserId && (
+              {/* Message Actions */}
+              {contextMenu.message.senderId === currentUserId ? (
                 <>
                   <button
                     onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }}
@@ -529,6 +555,13 @@ export const ChatWindow = ({
                     <Trash2 size={16} className="text-destructive" /> Delete
                   </button>
                 </>
+              ) : (
+                <button
+                  onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }}
+                  className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors"
+                >
+                  <Trash2 size={16} className="text-destructive" /> Delete
+                </button>
               )}
             </motion.div>
           </>

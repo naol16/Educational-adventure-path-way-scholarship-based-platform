@@ -2,12 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Video, Clock, Loader2, CheckCircle2 } from 'lucide-react';
+import { Calendar, Video, Clock, Loader2, CheckCircle2, CreditCard, DollarSign, Receipt } from 'lucide-react';
 import { Card, CardBody, Button, Badge } from '@/components/ui';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { ReviewModal } from '@/features/counselor/components/ReviewModal';
 import { useRouter } from 'next/navigation';
+import { Upload } from 'lucide-react';
+
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+    const [timeLeft, setTimeLeft] = useState<{ d: number, h: number, m: number, s: number } | null>(null);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const difference = new Date(targetDate).getTime() - Date.now();
+            if (difference <= 0) {
+                setTimeLeft(null);
+                clearInterval(interval);
+            } else {
+                setTimeLeft({
+                    d: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                    h: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                    m: Math.floor((difference / 1000 / 60) % 60),
+                    s: Math.floor((difference / 1000) % 60)
+                });
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    if (!timeLeft) return <span className="text-emerald-500 font-black animate-pulse">Starting Soon!</span>;
+    
+    return (
+        <div className="flex gap-2 text-center text-xs font-mono">
+            <div className="bg-primary/10 text-primary px-2 py-1 rounded">{timeLeft.d}d</div>
+            <div className="bg-primary/10 text-primary px-2 py-1 rounded">{timeLeft.h}h</div>
+            <div className="bg-primary/10 text-primary px-2 py-1 rounded">{timeLeft.m}m</div>
+            <div className="bg-primary/10 text-primary px-2 py-1 rounded">{timeLeft.s}s</div>
+        </div>
+    );
+};
 
 export const StudentBookingManager = () => {
     const router = useRouter();
@@ -189,6 +223,12 @@ export const StudentBookingManager = () => {
                                                         <span className="flex items-center gap-1.5 text-sm font-bold text-red-500">
                                                             Ongoing Session
                                                         </span>
+                                                        {booking.meetingLink && (
+                                                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 bg-emerald-500/5 px-2 py-1 rounded-md border border-emerald-500/10">
+                                                                <Video size={12} />
+                                                                {booking.meetingLink}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -237,7 +277,7 @@ export const StudentBookingManager = () => {
                                             </Badge>
                                         </div>
 
-                                        <div className="space-y-3 mb-8">
+                                        <div className="space-y-3 mb-6">
                                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                                 <Calendar size={16} className="text-primary" />
                                                 <span>
@@ -257,6 +297,32 @@ export const StudentBookingManager = () => {
                                                     ) : 'Time not set'}
                                                 </span>
                                             </div>
+                                        </div>
+
+                                        <div className="bg-muted/30 p-4 rounded-xl border border-border/50 mb-6 space-y-3">
+                                            <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Pre-Session Checklist</h4>
+                                            {booking.slot?.startTime && (
+                                                <div className="flex justify-between items-center bg-card p-3 rounded-lg shadow-sm">
+                                                    <span className="text-xs font-bold text-foreground">Time Remaining:</span>
+                                                    <CountdownTimer targetDate={booking.slot.startTime} />
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center bg-card p-3 rounded-lg shadow-sm cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/dashboard/student/profile')}>
+                                                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                                                    <Upload size={14} className="text-primary" />
+                                                    Upload documents (CV, SOP)
+                                                </div>
+                                                <Badge variant="outline" className="text-[10px]">Optional</Badge>
+                                            </div>
+                                            {booking.meetingLink && (
+                                                <div 
+                                                    className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                                                    onClick={() => router.push(`/dashboard/meeting/${booking.meetingLink}`)}
+                                                >
+                                                    <Video size={12} />
+                                                    <span className="truncate">Agora: {booking.meetingLink}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex gap-3">
@@ -289,6 +355,83 @@ export const StudentBookingManager = () => {
                             </Link>
                         </div>
                     )}
+                </div>
+            ) : activeTab === 'history' ? (
+                <div className="space-y-6">
+                    <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-muted/30 border-b border-border">
+                                    <tr>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Date & Time</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Expert / Session</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Transaction Reference</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Amount Paid</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {bookings.filter(b => b.payment).map((booking) => (
+                                        <tr key={booking.id} className="hover:bg-muted/20 transition-colors group">
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-black text-foreground">
+                                                        {new Date(booking.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                                                        {new Date(booking.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                                        <Video size={16} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{booking.counselor?.name || 'Expert Consultation'}</span>
+                                                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Session ID: #{booking.id.toString().slice(-6)}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCard size={14} className="text-muted-foreground/40" />
+                                                    <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
+                                                        {booking.payment?.tx_ref?.slice(-16) || '---'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-1.5">
+                                                    <DollarSign size={14} className="text-emerald-500" />
+                                                    <span className="text-sm font-black text-foreground">
+                                                        {booking.payment?.amount} <span className="text-[10px] text-muted-foreground ml-1 uppercase">{booking.payment?.currency}</span>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <Badge className={`uppercase text-[9px] font-black px-3 py-1 rounded-full ${
+                                                    booking.payment?.status === 'success' 
+                                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                                                    : 'bg-destructive/10 text-destructive border border-destructive/20'
+                                                }`}>
+                                                    {booking.payment?.status === 'success' ? 'Completed' : booking.payment?.status || 'Pending'}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {bookings.filter(b => b.payment).length === 0 && (
+                            <div className="py-32 text-center bg-muted/5">
+                                <Receipt className="mx-auto h-16 w-16 text-muted-foreground/20 mb-6" />
+                                <h4 className="text-lg font-black text-foreground uppercase tracking-widest">No Transactions</h4>
+                                <p className="text-sm text-muted-foreground mt-2 font-medium">Your payment history will appear here once you book a session.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-10">
@@ -342,7 +485,7 @@ export const StudentBookingManager = () => {
                                                 </div>
                                                 {booking.payment && (
                                                     <div className="text-right">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Amount Paid</p>
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Fee Reference</p>
                                                         <p className="text-sm font-bold text-foreground">
                                                             {booking.payment.amount} {booking.payment.currency}
                                                         </p>

@@ -52,10 +52,10 @@ export const AvailabilityManager = () => {
 
   const addSlot = () => {
     const newSlot = {
-      dayOfWeek: 'Monday',
+      date: new Date().toISOString().split('T')[0],
       startTime: '09:00',
       endTime: '10:00',
-      isRecurring: true
+      isRecurring: false
     };
     setSlots([...slots, newSlot]);
   };
@@ -146,13 +146,14 @@ export const AvailabilityManager = () => {
                   <Card className="border-border bg-card group">
                     <CardBody className="p-4 flex flex-col md:flex-row items-center gap-4">
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                        <select
-                          value={slot.dayOfWeek}
-                          onChange={(e) => updateSlot(index, 'dayOfWeek', e.target.value)}
-                          className="bg-muted border border-border rounded-lg px-3 h-10 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                        >
-                          {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
-                        </select>
+                        <div className="relative w-full">
+                          <Input
+                            type="date"
+                            value={slot.date || ''}
+                            onChange={(e) => updateSlot(index, 'date', e.target.value)}
+                            className="bg-muted h-10 w-full"
+                          />
+                        </div>
                         <div className="relative">
                           <Clock size={14} className="absolute left-3 top-3 text-muted-foreground" />
                           <Input
@@ -203,7 +204,7 @@ export const AvailabilityManager = () => {
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2 text-xs">
                     <div className="h-1.5 w-1.5 rounded-full bg-card mt-1 shrink-0" />
-                    Recurring weekly slots
+                    Specific date availability
                   </li>
                   <li className="flex items-start gap-2 text-xs">
                     <div className="h-1.5 w-1.5 rounded-full bg-card mt-1 shrink-0" />

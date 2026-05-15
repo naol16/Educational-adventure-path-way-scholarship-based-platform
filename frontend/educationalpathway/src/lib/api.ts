@@ -47,8 +47,10 @@ api.interceptors.response.use(
     // Automatically unwrap the standard JSend-like { status: 'success', data: ... } format
     // If pagination exists, we preserve the whole structure to avoid losing metadata
     if (response.data && (response.data.status === 'success' || response.data.success === true) && response.data.data !== undefined) {
-      if (response.data.pagination) {
-        return response; // Return the whole thing if pagination exists
+      // If it's a paginated response (contains rows and total), don't unwrap 
+      // or at least preserve the success/status at the top level.
+      if (response.data.pagination || (response.data.data && response.data.data.rows && response.data.data.total !== undefined)) {
+        return response;
       }
       return { ...response, data: response.data.data };
     }

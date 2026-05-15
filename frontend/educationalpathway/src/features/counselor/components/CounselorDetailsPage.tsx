@@ -87,23 +87,23 @@ export const CounselorDetailsPage = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-12 flex flex-col justify-between h-full">
           <motion.button 
-            initial={{ opacity: 0, y: -10, opacity: 0 }}
-            animate={{ opacity: 1, y: 0, opacity: 1 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
             onClick={() => router.back()}
-            className="flex items-center text-[10px] font-black text-muted-foreground hover:text-primary transition-all group w-fit uppercase tracking-[0.2em]"
+            className="flex items-center text-[10px] font-black text-muted-foreground hover:text-primary transition-all group w-fit bg-card/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-border/40 shadow-sm uppercase tracking-[0.2em]"
           >
-            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform text-primary" />
-            Back to Directory
+            <ArrowLeft className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            Synchronize Directory
           </motion.button>
 
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-10 relative z-20 pb-4 mt-12 md:mt-16">
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-10 relative z-20 pb-4 mt-16 md:mt-0">
              <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 100 }}
                 className="relative"
              >
-                <Avatar className="size-48 md:size-56 rounded-2xl border-4 border-background relative z-10 group overflow-hidden">
+                <Avatar className="size-48 md:size-56 rounded-2xl relative z-10 group overflow-hidden">
                   <AvatarImage src={counselor.profileImageUrl} className="object-cover transition-transform duration-700 group-hover:scale-110" />
                   <AvatarFallback className="text-6xl font-black bg-primary/10 text-primary">
                     {counselor.name ? counselor.name.charAt(0).toUpperCase() : 'C'}
@@ -120,7 +120,7 @@ export const CounselorDetailsPage = () => {
                 >
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
-                      <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Approved Expert
+                      <ShieldCheck className="h-3.5 w-3.5 mr-2 inline" strokeWidth={3} /> Verified Expert
                     </Badge>
                     {counselor.match_score > 0 && (
                       <Badge className="bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-widest">
@@ -155,7 +155,7 @@ export const CounselorDetailsPage = () => {
                   color: "text-primary", 
                   bgColor: "bg-primary/10" 
                 },
-                { label: "Precision Rating", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
+                { label: "Precision Rating", value: counselor.rating > 0 ? Number(counselor.rating).toFixed(1) : "New", icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
                 { label: "Tactical Exp", value: `${counselor.yearsOfExperience || 0}+ Yrs`, icon: Clock, color: "text-blue-500", bgColor: "bg-blue-500/10" },
                 { label: "Frequency", value: counselor.supportedLanguages?.[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
               ].map((stat, i) => (
@@ -164,9 +164,9 @@ export const CounselorDetailsPage = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + (i * 0.1) }}
-                  className="flex flex-col items-center justify-center text-center group"
+                  className="bg-card/40 backdrop-blur-sm p-8 rounded-2xl flex flex-col items-center justify-center text-center border border-border/40 hover:border-primary/40 hover:scale-105 transition-all group"
                 >
-                  <div className={`size-14 rounded-2xl ${stat.bgColor} ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <div className={`size-12 rounded-2xl ${stat.bgColor} ${stat.color} flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform`}>
                     <stat.icon className="size-6" strokeWidth={2.5} />
                   </div>
                   <p className="text-3xl font-black text-foreground tracking-tighter">{stat.value}</p>
@@ -222,8 +222,8 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="expertise" className="space-y-10 mt-0 pt-8">
-                <div className="space-y-12">
+              <TabsContent value="expertise" className="space-y-10 mt-0">
+                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
                    <div className="flex items-center gap-4 mb-10">
                       <div className="h-6 w-1 bg-primary rounded-full" />
                       <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Expertise Matrix</h3>
@@ -244,15 +244,15 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="education" className="space-y-10 mt-0 pt-8">
-                <div className="space-y-12">
+              <TabsContent value="education" className="space-y-10 mt-0">
+                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
                    <div className="flex items-center gap-4 mb-12">
                       <div className="h-6 w-1 bg-primary rounded-full" />
                       <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Academic Pedigree</h3>
                    </div>
                    <div className="relative pl-12 border-l-2 border-primary/20 space-y-16 py-4">
                       <div className="relative">
-                        <div className="absolute -left-[63px] top-0 size-8 rounded-full bg-primary border-4 border-background" />
+                        <div className="absolute -left-[63px] top-0 size-8 rounded-full bg-primary" />
                         <h4 className="text-3xl font-black uppercase tracking-tight text-foreground leading-none mb-4">{counselor.highestEducationLevel || "Doctorate / Masters"}</h4>
                         <p className="text-2xl text-primary font-black uppercase tracking-tighter mb-4 leading-none">{counselor.universityName || "Leading Global Institution"}</p>
                         <p className="text-lg text-muted-foreground font-medium italic border-l-2 border-border/40 pl-6 py-1">{counselor.fieldsOfStudy || "Specialized Academic Field"}</p>
@@ -265,8 +265,8 @@ export const CounselorDetailsPage = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="reviews" className="space-y-10 mt-0 pt-8">
-                <div className="space-y-12">
+              <TabsContent value="reviews" className="space-y-10 mt-0">
+                <div className="bg-card/40 backdrop-blur-sm border border-border/40 p-10 md:p-12 rounded-2xl">
                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                      <div className="space-y-2">
                         <div className="flex items-center gap-4">
@@ -278,7 +278,7 @@ export const CounselorDetailsPage = () => {
                      <div className="flex items-center gap-6 px-10 py-6 bg-amber-500/5 rounded-2xl border border-amber-500/10 group">
                        <Star className="size-10 fill-amber-500 text-amber-500 group-hover:scale-110 transition-transform" strokeWidth={0} />
                        <div className="space-y-1">
-                          <span className="font-black text-5xl text-foreground tracking-tighter leading-none">{Number(counselor.rating || 0).toFixed(1)}</span>
+                          <span className="font-black text-5xl text-foreground tracking-tighter leading-none">{counselor.rating > 0 ? Number(counselor.rating).toFixed(1) : "New"}</span>
                           <p className="text-[9px] font-black uppercase tracking-widest text-amber-600/60">Verified Accuracy</p>
                        </div>
                      </div>
@@ -287,7 +287,7 @@ export const CounselorDetailsPage = () => {
                    <CounselorReviews counselorId={counselor.id} />
  
                     {reviewableBooking && (
-                     <div className="mt-16 p-12 rounded-2xl primary-gradient shadow-primary/20 flex flex-col md:flex-row items-center justify-between gap-10 group overflow-hidden relative">
+                     <div className="mt-16 p-12 rounded-2xl primary-gradient flex flex-col md:flex-row items-center justify-between gap-10 group overflow-hidden relative">
                         <div className="absolute top-0 right-0 size-48 bg-white/5 blur-3xl -mr-24 -mt-24" />
                         <div className="relative z-10 space-y-4 text-center md:text-left">
                           <h4 className="font-black text-3xl text-white tracking-tight uppercase leading-none">Session Finalized</h4>
@@ -297,15 +297,15 @@ export const CounselorDetailsPage = () => {
                         </div>
                         <Button 
                           onClick={() => setShowReviewModal(true)}
-                          className="relative z-10 h-16 px-12 rounded-xl bg-white text-primary hover:bg-white/90 shadow-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95"
+                          className="relative z-10 h-16 px-12 rounded-xl bg-white text-primary hover:bg-white/90 font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95"
                         >
                           Protocol Review
                         </Button>
                      </div>
                    )}
  
-                   <div className="mt-16 p-8 rounded-2xl bg-muted/20 border border-border/40 flex items-start gap-6">
-                      <div className="size-12 rounded-2xl bg-card flex items-center justify-center text-primary border border-border/20 shrink-0">
+                   <div className="mt-16 p-8 rounded-2xl bg-muted/20 flex items-start gap-6">
+                      <div className="size-12 rounded-2xl bg-card flex items-center justify-center text-primary shrink-0">
                          <ShieldCheck className="size-6" strokeWidth={2.5} />
                       </div>
                       <div className="space-y-2">
@@ -324,10 +324,10 @@ export const CounselorDetailsPage = () => {
           {/* Tactical Sidebar */}
           <div className="lg:col-span-4 space-y-8">
             <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
-              className="space-y-8"
+              className="bg-card/40 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden"
             >
               {/* Booking & Pricing Section */}
               <div className="p-10 border-b border-border/10 space-y-10">
@@ -337,7 +337,7 @@ export const CounselorDetailsPage = () => {
                     <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Protocol Authorization</span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-foreground tracking-tighter">$45</span>
+                    <span className="text-5xl font-black text-foreground tracking-tighter">ETB {counselor.hourlyRate || 500}</span>
                     <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">/ Session</span>
                   </div>
                 </div>

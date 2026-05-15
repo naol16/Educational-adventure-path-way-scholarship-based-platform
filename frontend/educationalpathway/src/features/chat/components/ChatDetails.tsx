@@ -13,6 +13,7 @@ interface ChatDetailsProps {
   onClose: () => void;
   onLeaveGroup?: () => void;
   onDeleteChat?: () => void;
+  onStartPrivateChat?: (userId: number) => void;
 }
 
 export const ChatDetails = ({
@@ -22,10 +23,11 @@ export const ChatDetails = ({
   onClose,
   onLeaveGroup,
   onDeleteChat,
+  onStartPrivateChat,
 }: ChatDetailsProps) => {
   const [activeTab, setActiveTab] = useState("Members");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  
+
   const toggleNotifications = async () => {
     try {
       const newState = !notificationsEnabled;
@@ -97,11 +99,11 @@ export const ChatDetails = ({
             label="Notifications"
             value={notificationsEnabled ? "Enabled" : "Muted"}
             action={
-              <div 
+              <div
                 onClick={toggleNotifications}
                 className={`h-5 w-9 rounded-full relative cursor-pointer transition-colors ${notificationsEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}
               >
-                <motion.div 
+                <motion.div
                   layout
                   className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm"
                   initial={false}
@@ -119,9 +121,8 @@ export const ChatDetails = ({
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`pb-3 text-sm font-medium transition-colors relative ${
-                      activeTab === tab ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === tab ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     {tab}
                     {activeTab === tab && (
@@ -130,7 +131,7 @@ export const ChatDetails = ({
                   </button>
                 ))}
               </div>
-              
+
               <div className="py-2">
                 <AnimatePresence mode="wait">
                   {activeTab === "Members" && (
@@ -140,17 +141,23 @@ export const ChatDetails = ({
                         {participants.map((member: ChatUser) => (
                           <div
                             key={member.id}
-                            className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors group"
+                            onClick={() => member.id !== currentUser.id && onStartPrivateChat?.(member.id)}
+                            className={`flex items-center gap-3 p-2 rounded-xl transition-all group ${
+                              member.id !== currentUser.id ? "hover:bg-primary/5 cursor-pointer active:scale-[0.98]" : "opacity-80"
+                            }`}
                           >
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border border-primary/20 shrink-0">
                               {member.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-foreground truncate">{member.name}</p>
+                              <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{member.name}</p>
                               <p className="text-[10px] text-primary font-black uppercase tracking-widest">
                                 {member.role}
                               </p>
                             </div>
+                            {member.id !== currentUser.id && (
+                              <ChevronRight className="text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" size={14} />
+                            )}
                           </div>
                         ))}
                       </div>
@@ -215,11 +222,11 @@ export const ChatDetails = ({
           )}
 
 
-          <SectionTitle title="Actions" />
-          {isGroup ? (
-            <MenuItem icon={LogOut} label="Leave Group" variant="destructive" onClick={onLeaveGroup} />
-          ) : (
-            <MenuItem icon={Trash2} label="Delete Chat" variant="destructive" onClick={onDeleteChat} />
+          {isGroup && (
+            <>
+              <SectionTitle title="Actions" />
+              <MenuItem icon={LogOut} label="Leave Group" variant="destructive" onClick={onLeaveGroup} />
+            </>
           )}
         </div>
       </div>
@@ -269,9 +276,8 @@ const MenuItem = ({ icon: Icon, label, value, variant, onClick }: MenuItemProps)
       size={18}
     />
     <span
-      className={`flex-1 text-left text-sm font-medium ${
-        variant === "destructive" ? "text-destructive" : "text-foreground"
-      }`}
+      className={`flex-1 text-left text-sm font-medium ${variant === "destructive" ? "text-destructive" : "text-foreground"
+        }`}
     >
       {label}
     </span>

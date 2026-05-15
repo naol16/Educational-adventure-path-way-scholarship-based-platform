@@ -54,7 +54,8 @@ export interface CredentialDto {
 }
 
 export interface CreateSlotDto {
-    dayOfWeek: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+    dayOfWeek?: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+    date?: string; // YYYY-MM-DD
     startTime: string; // HH:mm format
     endTime: string;   // HH:mm format
     isRecurring?: boolean;

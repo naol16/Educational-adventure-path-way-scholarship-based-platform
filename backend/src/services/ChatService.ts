@@ -8,41 +8,58 @@ import { Op } from "sequelize";
 import { Consultation } from "../models/Consultation.js";
 import { sequelize } from "../config/sequelize.js";
 import { AppError } from "../errors/AppError.js";
+import { Sanitizer } from "../utils/sanitizer.js";
 
 export class ChatService {
   static async getOrCreateConversation(userId1: number, userId2: number) {
     const expectedDistinctUsers = userId1 === userId2 ? 1 : 2;
 
-    const participantInfo: any = await ConversationParticipant.findAll({
-      where: {
-        userId: { [Op.in]: [userId1, userId2] },
-      },
+    // Find conversations where BOTH users are participants
+    // 1. Get all conversation IDs for userId1
+    const user1Convs = await ConversationParticipant.findAll({
+      where: { userId: userId1 },
       attributes: ["conversationId"],
       raw: true,
     });
+    const user1ConvIds = user1Convs.map((p: any) => p.conversationId);
 
-    const convIds = participantInfo.map((p: any) => p.conversationId);
-
-    if (convIds.length > 0) {
+    if (user1ConvIds.length > 0) {
+      // 2. Find a private conversation among those where userId2 is also a participant
       const existingConv = await Conversation.findOne({
         where: {
-          id: { [Op.in]: convIds },
+          id: { [Op.in]: user1ConvIds },
           isGroup: false,
         },
         include: [
           {
             model: ConversationParticipant,
             as: "participants",
-            attributes: ["userId"],
+            where: { userId: userId2 },
+            required: true,
           },
         ],
       });
 
-      if (
-        existingConv &&
-        existingConv.participants.length === expectedDistinctUsers
-      ) {
-        return existingConv;
+      if (existingConv) {
+         // Re-fetch with full associations
+         const fullConv = await Conversation.findByPk(existingConv.id, {
+           include: [
+             {
+               model: ConversationParticipant,
+               as: "participants",
+               attributes: ["userId"],
+             },
+             {
+               model: User,
+               as: "members",
+               attributes: ["id", "name", "role", "avatarUrl"],
+             },
+           ],
+         });
+
+         if (fullConv && fullConv.participants.length === expectedDistinctUsers) {
+           return fullConv;
+         }
       }
     }
 
@@ -61,11 +78,39 @@ export class ChatService {
       });
     }
 
-    return newConversation;
+    // Return the conversation with participants and members included
+    return Conversation.findByPk(newConversation.id, {
+      include: [
+        {
+          model: ConversationParticipant,
+          as: "participants",
+          attributes: ["userId"],
+        },
+        {
+          model: User,
+          as: "members",
+          attributes: ["id", "name", "role", "avatarUrl"],
+        },
+      ],
+    });
   }
 
   static async getConversationById(id: number) {
-    return Conversation.findByPk(id);
+    return Conversation.findByPk(id, {
+      include: [
+        {
+          model: ConversationParticipant,
+          as: "participants",
+          attributes: ["userId", "role"],
+        },
+        {
+          model: User,
+          as: "members",
+          attributes: ["id", "name", "role", "avatarUrl"],
+          through: { attributes: ["role"] },
+        },
+      ],
+    });
   }
 
   static async sendMessage({
@@ -80,10 +125,12 @@ export class ChatService {
     if (!senderId || !conversationId || !content)
       throw new Error("Missing required fields");
 
+    const sanitizedContent = Sanitizer.escapeHTML(content);
+
     const message = await ChatMessage.create({
       senderId,
       conversationId,
-      content,
+      content: sanitizedContent,
       replyToId,
       attachmentUrl,
       attachmentType,
@@ -153,25 +200,27 @@ export class ChatService {
 
   static async deleteMessage(messageId: number, senderId: number) {
     const message = await ChatMessage.findByPk(messageId);
-    if (!message) throw new Error("Message not found");
+    if (!message) return messageId; // Already deleted, consider it success
 
     const participant = await ConversationParticipant.findOne({
       where: { conversationId: message.conversationId, userId: senderId },
     });
 
-    if (
-      Number(message.senderId) !== Number(senderId) &&
-      (!participant || participant.role === "Member")
-    ) {
-      throw new Error("Unauthorized to delete");
+    if (!participant) {
+      throw new AppError("Unauthorized to delete this message", 403);
     }
 
     await message.destroy();
     return messageId;
   }
 
-  static async getConversations(userId: number) {
-    const conversations = await Conversation.findAll({
+  static async getConversations(userId: number, page: number = 1, limit: number = 20) {
+    const offset = (page - 1) * limit;
+
+    // We fetch a bit more to handle the in-memory deduplication if necessary, 
+    // but ideally deduplication should happen in the query.
+    // For now, let's just paginate the database query.
+    const { rows: conversations, count: totalCount } = await Conversation.findAndCountAll({
       include: [
         {
           model: ConversationParticipant,
@@ -187,6 +236,9 @@ export class ChatService {
         },
       ],
       order: [["updatedAt", "DESC"]],
+      limit,
+      offset,
+      distinct: true // Important for correct count with includes
     });
 
     const seenOtherUserIds = new Set<number>();
@@ -205,12 +257,11 @@ export class ChatService {
       return true;
     });
 
-    return Promise.all(
+    const data = await Promise.all(
       filtered.map(async (conv) => {
         try {
           const plain = conv.get({ plain: true });
 
-          // Ensure members are included in the plain object
           if (!plain.members && (conv as any).members) {
             plain.members = ((conv as any).members as any[]).map((m) => ({
               id: m.id,
@@ -239,10 +290,16 @@ export class ChatService {
           return plain;
         } catch (err) {
           console.error(`[ChatService] Error processing conversation ${conv.id}:`, err);
-          return conv.get({ plain: true }); // Fallback to basic data
+          return conv.get({ plain: true });
         }
       }),
     );
+
+    return {
+      data,
+      total: totalCount,
+      hasMore: offset + conversations.length < totalCount
+    };
   }
 
   static async getAvailableUsersToChat(userId: number) {
@@ -409,17 +466,29 @@ export class ChatService {
     });
   }
 
-  static async getGroupConversations(userId?: number) {
-    const groups = await Conversation.findAll({
+  static async getGroupConversations(userId?: number, page: number = 1, limit: number = 20) {
+    const offset = (page - 1) * limit;
+
+    const { rows: groups, count: totalCount } = await Conversation.findAndCountAll({
       where: { isGroup: true, isActive: true },
       include: [
         { model: ConversationParticipant, as: "participants", attributes: ["userId", "role"] },
+        {
+          model: User,
+          as: "members",
+          attributes: ["id", "name", "role", "avatarUrl"],
+          through: { attributes: ["role"] },
+        },
       ],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+      distinct: true
     });
 
+    let data = groups;
     if (userId) {
-      return groups.map((g) => {
+      data = groups.map((g) => {
         const plain = g.get({ plain: true });
         plain.isJoined = plain.participants?.some(
           (p: any) => p.userId === userId,
@@ -429,9 +498,14 @@ export class ChatService {
         )?.role;
         delete plain.participants;
         return plain;
-      });
+      }) as any;
     }
-    return groups;
+
+    return {
+      data,
+      total: totalCount,
+      hasMore: offset + groups.length < totalCount
+    };
   }
 
   static async leaveGroup(userId: number, conversationId: number) {
@@ -450,30 +524,23 @@ export class ChatService {
     return !!participant;
   }
 
+  /**
+   * Update a group conversation (Admin only)
+   */
   static async updateGroupConversation(id: number, data: any) {
     const group = await Conversation.findByPk(id);
     if (!group || !group.isGroup) throw new AppError("Group not found", 404);
-
-    await group.update({
-      name: data.name || group.name,
-      description: data.description || group.description,
-      country: data.country || group.country,
-      category: data.category || group.category,
-      groupType: data.groupType || group.groupType,
-    });
-
-    return group;
+    
+    return group.update(data);
   }
 
+  /**
+   * Delete a group conversation (Admin only)
+   */
   static async deleteGroupConversation(id: number) {
     const group = await Conversation.findByPk(id);
     if (!group || !group.isGroup) throw new AppError("Group not found", 404);
-
-    // Delete participants and messages first
-    await ConversationParticipant.destroy({ where: { conversationId: id } });
-    await ChatMessage.destroy({ where: { conversationId: id } });
+    
     await group.destroy();
-
-    return true;
   }
 }
