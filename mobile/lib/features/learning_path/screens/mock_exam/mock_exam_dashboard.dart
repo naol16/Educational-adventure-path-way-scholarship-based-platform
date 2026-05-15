@@ -252,74 +252,14 @@ class _GenerateCard extends StatelessWidget {
             children: [
               Icon(LucideIcons.playCircle, color: primary, size: 20),
               const SizedBox(width: 8),
-              Text('Start New Exam',
+              Text('Take Assessment',
                   style: DesignSystem.headingStyle(buildContext: context, fontSize: 16)),
             ],
           ),
-          const SizedBox(height: 4),
-          Text('Configure your mock assessment below.',
-              style: DesignSystem.labelStyle(buildContext: context, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text('Help you identify your level of language proficiency across all four skills.',
+              style: DesignSystem.labelStyle(buildContext: context, fontSize: 12).copyWith(height: 1.4)),
           const SizedBox(height: 20),
-
-          // Exam Type
-          Text('Exam Type',
-              style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)
-                  .copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Row(
-            children: ['IELTS', 'TOEFL'].map((t) {
-              final sel = state.examType == t;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => notifier.setExamType(t),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: EdgeInsets.only(right: t == 'IELTS' ? 8 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: sel ? primary : DesignSystem.surface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: sel ? primary : DesignSystem.glassBorder(context)),
-                    ),
-                    child: Center(
-                      child: Text(t,
-                          style: GoogleFonts.inter(
-                              color: sel ? Colors.white : DesignSystem.subText(context),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14)),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-
-          // Difficulty
-          Text('Difficulty',
-              style: DesignSystem.labelStyle(buildContext: context, fontSize: 11)
-                  .copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _DiffBtn(label: 'Easy', color: const Color(0xFF10B981), state: state, notifier: notifier),
-              const SizedBox(width: 8),
-              _DiffBtn(label: 'Medium', color: const Color(0xFFF59E0B), state: state, notifier: notifier),
-              const SizedBox(width: 8),
-              _DiffBtn(label: 'Hard', color: const Color(0xFFF87171), state: state, notifier: notifier),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Learning path error
-          if (state.learningPathError != null) ...[
-            _ErrorBanner(
-              icon: LucideIcons.lock,
-              title: 'Mock Exam Locked',
-              message: state.learningPathError!,
-            ),
-            const SizedBox(height: 12),
-          ],
 
           // General error
           if (state.error != null) ...[
@@ -352,7 +292,7 @@ class _GenerateCard extends StatelessWidget {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         ),
                         const SizedBox(width: 10),
-                        Text('Generating Exam...',
+                        Text('Preparing Assessment...',
                             style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
                       ],
                     )
@@ -361,47 +301,13 @@ class _GenerateCard extends StatelessWidget {
                       children: [
                         const Icon(LucideIcons.sparkles, size: 16),
                         const SizedBox(width: 8),
-                        Text('Generate Assessment',
+                        Text('START ASSESSMENT',
                             style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
                       ],
                     ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DiffBtn extends StatelessWidget {
-  final String label;
-  final Color color;
-  final MockExamState state;
-  final MockExamNotifier notifier;
-  const _DiffBtn({required this.label, required this.color, required this.state, required this.notifier});
-
-  @override
-  Widget build(BuildContext context) {
-    final sel = state.difficulty == label;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => notifier.setDifficulty(label),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: sel ? color : DesignSystem.surface(context),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: sel ? color : DesignSystem.glassBorder(context)),
-          ),
-          child: Center(
-            child: Text(label,
-                style: GoogleFonts.inter(
-                    color: sel ? Colors.white : DesignSystem.subText(context),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
-          ),
-        ),
       ),
     );
   }

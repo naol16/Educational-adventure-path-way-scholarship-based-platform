@@ -16,6 +16,7 @@ import marketingRouter from "./marketingRoutes.js";
 import chatGroupRouter from "./chatGroupRoutes.js";
 import moderationRouter from "./moderationRoutes.js";
 import aiChatRouter from "./aiChatRoutes.js";
+import mockExamRouter from "./mockExamRoutes.js";
 
 export default {
   userRouter,
@@ -36,4 +37,5 @@ export default {
   chatGroupRouter,
   moderationRouter,
   aiChatRouter,
+  mockExamRouter,
 };

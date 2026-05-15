@@ -395,6 +395,14 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
     );
   }
 
+  String _getUserFriendlyError(String? error) {
+    if (error == null) return "An unknown error occurred.";
+    if (error.contains("max retries") || error.contains("ApiException") || error.contains("SocketException")) {
+      return "Connection lost. Please check your network connection and try again.";
+    }
+    return error;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isSetupPhase) {
@@ -417,7 +425,11 @@ class _DiagnosticAssessmentScreenState extends ConsumerState<DiagnosticAssessmen
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("Error: ${assessmentState.error}", textAlign: TextAlign.center),
+              Text(
+                _getUserFriendlyError(assessmentState.error), 
+                textAlign: TextAlign.center,
+                style: DesignSystem.bodyStyle(buildContext: context),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {

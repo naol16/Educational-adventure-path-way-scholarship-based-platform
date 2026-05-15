@@ -46,8 +46,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
 
   /* Typography */
-  --font-sans: var(--font-open-sans), "Open Sans", system-ui, sans-serif;
-  --font-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-serif: var(--font-plus-jakarta), "Plus Jakarta Sans", Georgia, serif;
 }
 
 /* ---------------- LIGHT MODE (Default) ---------------- */
@@ -130,7 +130,7 @@ body {
 }
 
 * {
-  font-family: var(--font-sans) !important;
+  font-family: inherit;
 }
 
 /* Unified form control styling — same look in light and dark */
@@ -149,8 +149,17 @@ textarea:focus {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
-  font-weight: normal;
+  font-weight: 800;
   line-height: 1.2;
+}
+
+/* Explicitly set navigation fonts to ensure they don't use fallbacks */
+nav, aside, .sidebar, [role="navigation"] {
+  font-family: var(--font-sans);
+}
+
+nav *, aside *, .sidebar *, [role="navigation"] * {
+  font-family: var(--font-sans);
 }
 
 button {

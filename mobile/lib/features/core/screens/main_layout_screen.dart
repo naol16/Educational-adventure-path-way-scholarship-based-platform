@@ -70,7 +70,7 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
                 Expanded(child: _buildNavItem(LucideIcons.home, Icons.home_rounded, "Home", 0, currentIndex)),
                 Expanded(child: _buildNavItem(LucideIcons.compass, Icons.explore_rounded, "Discover", 1, currentIndex)),
                 Expanded(child: _buildNavItem(LucideIcons.graduationCap, Icons.school_rounded, "Learn", 2, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.users, Icons.groups_rounded, "Mentors", 3, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.users, Icons.groups_rounded, "Counselors", 3, currentIndex)),
                 Expanded(child: _buildNavItem(LucideIcons.mic, Icons.mic_rounded, "Interview", 4, currentIndex)),
               ],
             ),

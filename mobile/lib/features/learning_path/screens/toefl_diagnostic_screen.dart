@@ -212,11 +212,10 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
 
         if (status == 'success' && mounted) {
           // Store result in provider so AssessmentResultScreen can read it
-          ref.read(assessmentProvider.notifier).pollResult(testId);
-          // ignore: use_build_context_synchronously
+          await ref.read(assessmentProvider.notifier).pollResult(testId);
+          if (!mounted) return;
           Navigator.pop(context); // Close dialog
           Navigator.pushReplacement(
-            // ignore: use_build_context_synchronously
             context,
             MaterialPageRoute(builder: (context) => const AssessmentResultScreen()),
           );
@@ -354,6 +353,14 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
     );
   }
 
+  String _getUserFriendlyError(String? error) {
+    if (error == null) return "An unknown error occurred.";
+    if (error.contains("max retries") || error.contains("ApiException") || error.contains("SocketException")) {
+      return "Connection lost. Please check your network connection and try again.";
+    }
+    return error;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(toeflTaskProvider);
@@ -372,7 +379,14 @@ class _ToeflDiagnosticScreenState extends ConsumerState<ToeflDiagnosticScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("Error: ${state.error}", style: const TextStyle(color: Colors.white70)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  _getUserFriendlyError(state.error), 
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.read(toeflTaskProvider.notifier).generateTask(force: true),

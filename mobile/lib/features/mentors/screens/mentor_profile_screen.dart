@@ -62,7 +62,7 @@ class MentorProfileScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => BookingBottomSheet(
         counselorId: mentor.id,
-        counselorName: mentor.currentPosition ?? "Mentor",
+        counselorName: mentor.currentPosition ?? "Counselor",
       ),
     );
   }
@@ -219,7 +219,7 @@ class MentorProfileScreen extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          mentor.currentPosition ?? "Expert Mentor",
+                          mentor.currentPosition ?? "Expert Counselor",
                           style: GoogleFonts.plusJakartaSans(
                             color: DesignSystem.mainText(context),
                             fontWeight: FontWeight.w800,
@@ -256,7 +256,7 @@ class MentorProfileScreen extends ConsumerWidget {
                       Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 4),
                       Text(
-                        "${mentor.rating.toStringAsFixed(1)} (120+ Reviews)",
+                        "${mentor.rating.toStringAsFixed(1)} (${mentor.totalSessions} Sessions)",
                         style: GoogleFonts.inter(
                           color: DesignSystem.mainText(context),
                           fontWeight: FontWeight.bold,

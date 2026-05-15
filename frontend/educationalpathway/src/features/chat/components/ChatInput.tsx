@@ -25,7 +25,6 @@ interface ChatInputProps {
 export const ChatInput = ({
   onSend,
   onTyping,
-  onSchedule,
   disabled,
   editingMessage,
   replyingTo,

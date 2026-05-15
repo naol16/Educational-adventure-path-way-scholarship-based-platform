@@ -14,6 +14,7 @@ import 'package:mobile/features/chat/widgets/community_group_card.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/features/mentors/screens/mentor_profile_screen.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
+import 'package:mobile/features/chat/screens/group_chat_preview_screen.dart';
 import 'package:mobile/features/mentors/screens/student_bookings_screen.dart';
 
 class MentorsHubScreen extends ConsumerStatefulWidget {
@@ -92,7 +93,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Mentors Hub", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w800, fontSize: 24)),
+              Text("Counselors Hub", style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.w800, fontSize: 24)),
               Text("Learn from the best in the field", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 14)),
             ],
           ),
@@ -286,7 +287,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            mentor.name.isNotEmpty ? mentor.name : (mentor.currentPosition ?? "Expert Mentor"),
+                            mentor.name.isNotEmpty ? mentor.name : (mentor.currentPosition ?? "Expert Counselor"),
                             style: GoogleFonts.plusJakartaSans(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 16),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -301,7 +302,7 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                     Text(
                       mentor.areasOfExpertise.isNotEmpty
                           ? mentor.areasOfExpertise.first
-                          : (mentor.currentPosition ?? 'Expert Mentor'),
+                          : (mentor.currentPosition ?? 'Expert Counselor'),
                       style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -313,6 +314,8 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
                         Icon(Icons.star, color: Colors.amber, size: 14),
                         const SizedBox(width: 2),
                         Text(mentor.rating.toStringAsFixed(1), style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontWeight: FontWeight.bold, fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text("(${mentor.totalSessions})", style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 11)),
                       ],
                     ),
                   ],
@@ -357,12 +360,12 @@ class _MentorsHubScreenState extends ConsumerState<MentorsHubScreen> {
           itemCount: groups.length,
           itemBuilder: (context, index) => CommunityGroupCard(
             group: groups[index],
-            onJoinSuccess: () {
-              // Switch to Messages tab
-              _pageController.animateToPage(
-                2,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GroupChatPreviewScreen(group: groups[index]),
+                ),
               );
             },
           ),

@@ -6,7 +6,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/learning_path/providers/assessment_provider.dart';
 import 'package:mobile/features/learning_path/providers/toefl_task_provider.dart';
-import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/features/learning_path/screens/assessment_result_screen.dart';
 
 class PathfinderLoadingScreen extends ConsumerStatefulWidget {
@@ -60,30 +59,30 @@ class _PathfinderLoadingScreenState extends ConsumerState<PathfinderLoadingScree
       final toeflState = ref.read(toeflTaskProvider);
       if (toeflState.testId != null) {
         try {
-          final assessApi = ref.read(assessmentApiServiceProvider);
-          final result = await assessApi.getResult(toeflState.testId!);
-          final status = result['status'];
-
-          if (status == 'success' && mounted && !_navigating) {
-            _navigating = true;
-            timer.cancel();
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const AssessmentResultScreen()),
-            );
-            return;
-          } else if (status == 'failed') {
-            timer.cancel();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Grading failed: ${result['error'] ?? 'Unknown error'}'),
-                  backgroundColor: Colors.red,
-                ),
+          final result = await ref.read(assessmentProvider.notifier).pollResult(toeflState.testId!);
+          if (result != null) {
+            final status = result['status'];
+            if (status == 'success' && mounted && !_navigating) {
+              _navigating = true;
+              timer.cancel();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const AssessmentResultScreen()),
               );
-              Navigator.pop(context);
+              return;
+            } else if (status == 'failed') {
+              timer.cancel();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Grading failed: ${result['error'] ?? 'Unknown error'}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+              return;
             }
-            return;
           }
           // Still 'processing' — keep waiting
           return;

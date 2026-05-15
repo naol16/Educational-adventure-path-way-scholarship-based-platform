@@ -43,6 +43,7 @@ import {
   Layers,
   Globe
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { 
   getLearningPath, 
@@ -940,25 +941,22 @@ export function LearningPathView() {
                 </Button>
               </div>
 
-            <div className={`w-full max-w-5xl p-8 md:p-16 rounded-[40px] md:rounded-[80px] border transition-all duration-1000 ${canLevelUp ? 'bg-foreground text-background border-foreground shadow-2xl' : 'bg-muted/20 text-muted-foreground border-border/40'}`}>
+            <div className={`w-full max-w-5xl p-8 md:p-16 rounded-[40px] md:rounded-[80px] border transition-all duration-1000 bg-foreground text-background border-foreground shadow-2xl`}>
               <div className="flex flex-col md:flex-row items-center justify-between gap-16">
                 <div className="space-y-8 flex-1">
-                  <div className={`inline-flex items-center gap-3 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.4em] ${canLevelUp ? 'bg-background/10 text-background' : 'bg-muted border border-border/40'}`}>
-                    {canLevelUp ? <Unlock size={14} className="animate-bounce" /> : <Lock size={14} />} Universal Certification
+                  <div className={`inline-flex items-center gap-3 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.4em] bg-background/10 text-background`}>
+                    <Unlock size={14} className="animate-bounce" /> Evaluation Hub
                   </div>
-                  <h3 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-[0.85]">Neural <br/> Graduation</h3>
-                  <p className={`text-lg md:text-xl font-medium leading-tight ${canLevelUp ? 'opacity-70' : 'text-muted-foreground'}`}>
-                    {canLevelUp 
-                      ? "Module synchronization complete. You are authorized for the final proficiency verification." 
-                      : "Continue resolving sectors to reach 100% mastery and unlock the final graduation protocol."}
+                  <h3 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-[0.85]">Mock Exam <br/> Protocol</h3>
+                  <p className={`text-lg md:text-xl font-medium leading-tight opacity-70`}>
+                    Take a full-length IELTS or TOEFL mock exam to verify your proficiency and synchronize with the global matrix.
                   </p>
                 </div>
-                <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"} className="w-full md:w-auto">
+                <Link href="/dashboard/learning-path/mock-exam" className="w-full md:w-auto">
                   <Button 
-                    disabled={!canLevelUp} 
-                    className={`rounded-full h-20 md:h-24 w-full md:px-16 font-black uppercase tracking-widest text-[10px] md:text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-background text-foreground hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
+                    className={`rounded-full h-20 md:h-24 w-full md:px-16 font-black uppercase tracking-widest text-[10px] md:text-[11px] transition-all duration-700 bg-background text-foreground hover:scale-105 shadow-2xl`}
                   >
-                    {canLevelUp ? "Initialize Graduation" : "Protocol Encrypted"}
+                    Initialize Assessment
                   </Button>
                 </Link>
               </div>
