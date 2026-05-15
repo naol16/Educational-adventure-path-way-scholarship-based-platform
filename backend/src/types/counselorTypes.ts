@@ -54,7 +54,8 @@ export interface CredentialDto {
 }
 
 export interface CreateSlotDto {
-    dayOfWeek: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+    dayOfWeek?: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+    date?: string; // YYYY-MM-DD
     startTime: string; // HH:mm format
     endTime: string;   // HH:mm format
     isRecurring?: boolean;
@@ -85,7 +86,7 @@ export interface CounselorResponse {
     areasOfExpertise: string | null;
     hourlyRate: number | null;
     yearsOfExperience: number | null;
-    verificationStatus: 'pending' | 'verified' | 'rejected';
+    verificationStatus: 'pending' | 'approved' | 'rejected';
     isActive: boolean;
     rating: number;
     ratingPercentage: number;
@@ -208,7 +209,7 @@ export interface RescheduleBookingDto {
 }
 
 export interface AdminVerificationDto {
-    verificationStatus: "verified" | "rejected";
+    verificationStatus: "approved" | "rejected";
 }
 
 export interface AdminVisibilityDto {

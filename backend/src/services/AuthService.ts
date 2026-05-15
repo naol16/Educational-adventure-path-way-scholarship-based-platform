@@ -178,7 +178,7 @@ export class AuthService {
     // Check counselor approval status
     if (user.role === UserRole.COUNSELOR) {
       const counselor = await CounselorRepository.findByUserId(user.id);
-      if (counselor) {
+      if (counselor && counselor.verificationStatus !== 'approved') {
         if (counselor.verificationStatus === 'pending') {
           throw new AppError("Your application is currently being reviewed by our administrators. You will be notified once your account is approved.", 403);
         } else if (counselor.verificationStatus === 'rejected') {
@@ -235,7 +235,7 @@ export class AuthService {
     // Check counselor approval status for Google login as well
     if (refreshedUser.role === UserRole.COUNSELOR) {
       const counselor = await CounselorRepository.findByUserId(refreshedUser.id);
-      if (counselor) {
+      if (counselor && counselor.verificationStatus !== 'approved') {
         if (counselor.verificationStatus === 'pending') {
           throw new AppError("Your application is currently being reviewed by our administrators. You will be notified once your account is approved.", 403);
         } else if (counselor.verificationStatus === 'rejected') {

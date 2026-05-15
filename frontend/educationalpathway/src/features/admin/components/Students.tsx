@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { User } from '@/features/auth/types';
-import { getAllUsers, deleteUser, getUserById } from '../api/admin-api';
+import { getUsersByRole, deleteUser, getUserById } from '../api/admin-api';
+import { UserRole } from '@/features/auth/types';
 
 import { Button, Card, CardBody, Badge, ConfirmModal } from '@/components/ui';
 import { 
@@ -24,8 +25,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export const StudentManagement = () => {
+export const Students = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,19 +35,28 @@ export const StudentManagement = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [limit] = useState(10);
 
-  const fetchStudents = async () => {
+  const fetchStudents = async (currentPage = page) => {
     setLoading(true);
     try {
-      const data = await getAllUsers();
-      // Filter for students. In a real app, this should be done on the backend.
-      const filtered = data.filter(user => user.role === 'student');
-      setStudents(filtered);
+      const response = await getUsersByRole('student', currentPage, limit);
+      if (response.success) {
+        setStudents(response.data.rows);
+        setTotal(response.data.total);
+      }
     } catch {
       toast.error('Failed to load students');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchStudents(newPage);
   };
 
   useEffect(() => {
@@ -307,7 +318,7 @@ export const StudentManagement = () => {
         <div className="space-y-4">
           <h2 className="text-4xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none">Students</h2>
           <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60 flex items-center gap-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Managing {students.length} scholars on the platform
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Managing {total} scholars on the platform
           </p>
         </div>
         
@@ -400,6 +411,47 @@ export const StudentManagement = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Pagination Controls */}
+      {total > limit && (
+        <div className="flex items-center justify-center gap-4 pt-12 pb-12 border-t border-border/50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="h-10 px-4 rounded-xl border-border/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            <ChevronLeft size={16} /> Prev
+          </Button>
+          
+          <div className="flex items-center gap-2 px-6">
+            {Array.from({ length: Math.ceil(total / limit) }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => handlePageChange(i + 1)}
+                className={`h-8 w-8 rounded-lg text-[10px] font-black transition-all ${
+                  page === i + 1 
+                    ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(Math.min(Math.ceil(total / limit), page + 1))}
+            disabled={page === Math.ceil(total / limit)}
+            className="h-10 px-4 rounded-xl border-border/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            Next <ChevronRight size={16} />
+          </Button>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}

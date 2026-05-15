@@ -70,7 +70,7 @@ export const requireVerifiedCounselor = async (
       });
     }
 
-    if (counselor.verificationStatus !== 'verified') {
+    if (counselor.verificationStatus !== 'approved') {
       return res.status(403).json({
         success: false,
         error: 'Your counselor account is not yet verified. Please wait for admin approval.',

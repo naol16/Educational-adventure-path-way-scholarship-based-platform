@@ -12,8 +12,11 @@ import { LearningPath } from "../models/LearningPath.js";
 import { LearningPathProgress } from "../models/LearningPathProgress.js";
 import { AssessmentResult } from "../models/AssessmentResult.js";
 import { TrackedScholarship } from "../models/TrackedScholarship.js";
+import { Document } from "../models/Document.js";
 import { Scholarship } from "../models/Scholarship.js";
 import { ScholarshipMilestone } from "../models/ScholarshipMilestone.js";
+import { CounselorReview } from "../models/CounselorReview.js";
+import { Consultation } from "../models/Consultation.js";
 import { UserRole } from "../types/userTypes.js";
 import { CounselorPayout } from "../models/CounselorPayout.js";
 import { CounselorWalletTransaction } from "../models/CounselorWalletTransaction.js";
@@ -30,6 +33,10 @@ import { EmailService } from "./EmailService.js";
 import { FileService } from "./FileService.js";
 import { VectorService } from "./VectorService.js";
 import { ExchangeRateService } from "./ExchangeRateService.js";
+import { MarketingStat } from "../models/MarketingStat.js";
+import { UserWarning } from "../models/UserWarning.js";
+import { MessageReport } from "../models/MessageReport.js";
+import { Notification } from "../models/Notification.js";
 import configs from "../config/configs.js";
 import {
   AdminVerificationDto,
@@ -515,13 +522,17 @@ export class CounselorService {
   static async createSlots(counselorId: number, slots: CreateSlotDto[]): Promise<SlotResponse[]> {
     if (slots.length === 0) throw httpError(400, "Slots array is required");
 
-    // 1. Update Counselor profile with the new weekly schedule
-    const counselor = await CounselorRepository.findById(counselorId);
-    if (!counselor) throw httpError(404, "Counselor not found");
+    // Check if these are recurring slots (using dayOfWeek)
+    const hasRecurringSlots = slots.some(slot => slot.dayOfWeek);
 
-    await counselor.update({ weeklySchedule: JSON.stringify(slots) });
+    // 1. Update Counselor profile with the new weekly schedule ONLY if adding recurring slots
+    if (hasRecurringSlots) {
+      const counselor = await CounselorRepository.findById(counselorId);
+      if (!counselor) throw httpError(404, "Counselor not found");
+      await counselor.update({ weeklySchedule: JSON.stringify(slots) });
+    }
 
-    // 2. Generate individual slot records for the next 4 weeks
+    // 2. Generate individual slot records
     const dayMap: Record<string, number> = {
       'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     };
@@ -529,52 +540,61 @@ export class CounselorService {
     const slotsToCreate: any[] = [];
     const now = new Date();
 
-    for (let week = 0; week < 4; week++) {
-      for (const slot of slots) {
-        const targetDay = dayMap[slot.dayOfWeek];
-        if (targetDay === undefined) continue;
+    for (const slot of slots) {
+      const [startH, startM] = slot.startTime.split(':').map(Number);
+      const [endH, endM] = slot.endTime.split(':').map(Number);
+      const offsetMinutes = slot.utcOffset || 0;
 
-        const [startH, startM] = slot.startTime.split(':').map(Number);
-        const [endH, endM] = slot.endTime.split(':').map(Number);
-        const offsetMinutes = slot.utcOffset || 0;
+      if (slot.date) {
+        // One-off specific date
+        // Format: YYYY-MM-DDTHH:mm:00.000Z
+        const padTime = (timeStr: string) => timeStr.length === 4 ? `0${timeStr}` : timeStr;
+        const userStartStr = `${slot.date}T${padTime(slot.startTime)}:00.000Z`; 
+        const userEndStr = `${slot.date}T${padTime(slot.endTime)}:00.000Z`;
 
-        // Get current UTC time in milliseconds
-        const nowUtcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-        // User's current local time as a UTC Date object
-        const userNow = new Date(nowUtcMs + (offsetMinutes * 60000));
+        const userStartTime = new Date(userStartStr);
+        const userEndTime = new Date(userEndStr);
 
-        // Find the next occurrence of this day of the week in the user's timezone
-        const currentDay = userNow.getUTCDay();
-        let diff = targetDay - currentDay;
-        if (diff < 0) diff += 7; // Ensure we move forward
+        const startTime = new Date(userStartTime.getTime() + offsetMinutes * 60000);
+        const endTime = new Date(userEndTime.getTime() + offsetMinutes * 60000);
 
-        // Set the target date in UTC matching the user's requested time
-        const userStartTime = new Date(userNow);
-        userStartTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
-        userStartTime.setUTCHours(startH as number, startM, 0, 0);
-
-        // Convert back to absolute UTC timestamp
-        const startTime = new Date(userStartTime.getTime() - (offsetMinutes * 60000));
-
-        const userEndTime = new Date(userNow);
-        userEndTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
-        userEndTime.setUTCHours(endH as number, endM, 0, 0);
-        
-        const endTime = new Date(userEndTime.getTime() - (offsetMinutes * 60000));
-
-        // Skip if this time has already passed
+        // Check for overlap or past dates
         if (startTime < now) continue;
-
-        // Check for overlaps with booked slots (which we didn't delete)
         const overlap = await AvailabilitySlotRepository.findOverlappingSlots(counselorId, startTime, endTime);
         if (overlap) continue;
 
-        slotsToCreate.push({
-          counselorId,
-          startTime,
-          endTime,
-          status: 'available'
-        });
+        slotsToCreate.push({ counselorId, startTime, endTime, status: 'available' });
+      } else if (slot.dayOfWeek) {
+        // Recurring logic
+        const targetDay = dayMap[slot.dayOfWeek];
+        if (targetDay === undefined) continue;
+
+        for (let week = 0; week < 4; week++) {
+          const nowUtcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const userNow = new Date(nowUtcMs + (offsetMinutes * 60000));
+
+          const currentDay = userNow.getUTCDay();
+          let diff = targetDay - currentDay;
+          if (diff < 0) diff += 7;
+
+          const userStartTime = new Date(userNow);
+          userStartTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+          userStartTime.setUTCHours(startH as number, startM, 0, 0);
+
+          const startTime = new Date(userStartTime.getTime() - (offsetMinutes * 60000));
+
+          const userEndTime = new Date(userNow);
+          userEndTime.setUTCDate(userNow.getUTCDate() + diff + (week * 7));
+          userEndTime.setUTCHours(endH as number, endM, 0, 0);
+
+          const endTime = new Date(userEndTime.getTime() - (offsetMinutes * 60000));
+
+          if (startTime < now) continue;
+          const overlap = await AvailabilitySlotRepository.findOverlappingSlots(counselorId, startTime, endTime);
+          if (overlap) continue;
+
+          slotsToCreate.push({ counselorId, startTime, endTime, status: 'available' });
+        }
       }
     }
 
@@ -637,7 +657,7 @@ export class CounselorService {
     const slot = await AvailabilitySlotRepository.findById(dto.slotId);
     if (!slot || slot.status !== "available") throw httpError(409, "Slot is not available");
     const counselor = await CounselorRepository.findById(slot.counselorId);
-    if (!counselor || counselor.verificationStatus !== "verified" || !counselor.isActive) {
+    if (!counselor || counselor.verificationStatus !== "approved" || !counselor.isActive) {
       throw httpError(403, "Counselor is not available for booking");
     }
 
@@ -717,8 +737,8 @@ export class CounselorService {
 
   static async initiateBookingByCounselor(counselorUserId: number, studentUserId: number, slotId: number): Promise<any> {
     const counselor = await CounselorRepository.findByUserId(counselorUserId);
-    if (!counselor || counselor.verificationStatus !== "verified" || !counselor.isActive) {
-      throw httpError(403, "Counselor profile not active or verified");
+    if (!counselor || counselor.verificationStatus !== "approved" || !counselor.isActive) {
+      throw httpError(403, "Counselor profile not active or approved");
     }
 
     const student = await Student.findOne({ where: { userId: studentUserId } });
@@ -969,7 +989,7 @@ export class CounselorService {
     return this.formatBookingResponse(booking);
   }
 
-  static async getStudents(counselorId: number): Promise<any[]> {
+  static async getStudents(counselorId: number, page: number = 1, limit: number = 20): Promise<{ data: any[], total: number, hasMore: boolean }> {
     const bookings = await BookingRepository.findUniqueStudentsByCounselor(counselorId);
     const uniqueStudents = new Map<number, any>();
     bookings.forEach((booking) => {
@@ -1006,7 +1026,17 @@ export class CounselorService {
         });
       }
     });
-    return Array.from(uniqueStudents.values());
+
+    const allStudents = Array.from(uniqueStudents.values());
+    const total = allStudents.length;
+    const offset = (page - 1) * limit;
+    const data = allStudents.slice(offset, offset + limit);
+
+    return {
+      data,
+      total,
+      hasMore: offset + data.length < total
+    };
   }
 
   static async getStudentProgress(counselorId: number, studentId: number): Promise<StudentProgressResponse> {
@@ -1263,20 +1293,33 @@ export class CounselorService {
     return await this.formatCounselorResponse(counselor, user);
   }
 
-  static async adminList(): Promise<CounselorResponse[]> {
-    const counselors = await Counselor.findAll({
+  static async adminList(page = 1, limit = 10, status?: string): Promise<{ rows: CounselorResponse[], count: number }> {
+    const offset = (page - 1) * limit;
+    
+    const where: any = {};
+    if (status) {
+      where.verificationStatus = status;
+    } else {
+      // Default to showing only non-pending counselors in the main list
+      where.verificationStatus = { [Op.ne]: 'pending' };
+    }
+
+    const { rows: counselors, count } = await Counselor.findAndCountAll({
+      where,
       include: [{
         model: User,
         as: "user",
         attributes: ["id", "name", "email"]
       }],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
     });
 
-    return await Promise.all(counselors.map(async (c) => {
+    const rows = await Promise.all(counselors.map(async (c) => {
       const plain = c.get({ plain: true });
       let u = plain.user || plain.User || (c as any).user || (c as any).User || null;
 
-      // ABSOLUTE FALLBACK: If join failed for some reason, look up manually
       if (!u) {
         console.warn(`[adminList] Join failure for Counselor ${c.id}, attempting direct lookup for User ${c.userId}`);
         u = await User.findByPk(c.userId, { attributes: ["id", "name", "email"] });
@@ -1284,6 +1327,8 @@ export class CounselorService {
 
       return await this.formatCounselorResponse(c, u);
     }));
+
+    return { rows, count };
   }
 
   static async updateVisibility(counselorId: number, dto: AdminVisibilityDto): Promise<CounselorResponse> {
@@ -2057,7 +2102,7 @@ export class CounselorService {
     }));
   }
 
-  static async adminUpdateVerification(id: number, status: 'verified' | 'rejected'): Promise<Counselor> {
+  static async adminUpdateVerification(id: number, status: 'approved' | 'rejected'): Promise<Counselor> {
     const counselor = await Counselor.findByPk(id, {
       include: [{ model: User, as: 'user' }]
     });
@@ -2067,12 +2112,76 @@ export class CounselorService {
     await counselor.update({ verificationStatus: status });
 
     // If approved, you might want to send a notification or email here
-    if (status === 'verified') {
+    if (status === 'approved') {
       console.log(`Counselor ${counselor.user?.name} approved.`);
     } else {
       console.log(`Counselor ${counselor.user?.name} rejected.`);
     }
 
     return counselor;
+  }
+
+  static async adminDelete(id: number): Promise<void> {
+    console.log(`[AdminDelete] Start for counselorId: ${id}`);
+    const counselor = await Counselor.findByPk(id);
+    if (!counselor) {
+      console.log(`[AdminDelete] Counselor ${id} not found`);
+      throw httpError(404, "Counselor not found");
+    }
+    console.log(`[AdminDelete] Found counselor ${id}, associated userId: ${counselor.userId}`);
+
+    const t = await sequelize.transaction();
+    try {
+      // Clean up related data to ensure smooth deletion and no leftover data
+      const slotsDeleted = await AvailabilitySlot.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Slots deleted: ${slotsDeleted}`);
+
+      const bookingsDeleted = await Booking.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Bookings deleted: ${bookingsDeleted}`);
+
+      const reviewsDeleted = await CounselorReview.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Reviews deleted: ${reviewsDeleted}`);
+
+      const payoutsDeleted = await CounselorPayout.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Payouts deleted: ${payoutsDeleted}`);
+
+      const txDeleted = await CounselorWalletTransaction.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Wallet transactions deleted: ${txDeleted}`);
+
+      const docsDeleted = await Document.destroy({ where: { counselorId: id }, transaction: t });
+      console.log(`[AdminDelete] Documents deleted: ${docsDeleted}`);
+
+      // Delete any consultations linked to this counselor
+      const consultationsDeleted = await Consultation.destroy({ 
+        where: { 
+          [Op.or]: [
+            { counselorId: counselor.userId }, // In some models it might be userId
+            { studentId: counselor.userId }
+          ] 
+        }, 
+        transaction: t 
+      });
+      console.log(`[AdminDelete] Consultations deleted: ${consultationsDeleted}`);
+
+      // Aggressive cleanup of other user-related tables that might block deletion
+      await UserWarning.destroy({ where: { [Op.or]: [{ userId: counselor.userId }, { adminId: counselor.userId }] }, transaction: t });
+      await MessageReport.destroy({ where: { reporterId: counselor.userId }, transaction: t });
+      await Notification.destroy({ where: { userId: counselor.userId }, transaction: t });
+
+      // Manually delete the counselor record
+      const counselorDeleted = await Counselor.destroy({ where: { id }, transaction: t });
+      console.log(`[AdminDelete] Counselor record deleted: ${counselorDeleted}`);
+      
+      // Delete the associated user which cascades to any other related records
+      const userDeleted = await User.destroy({ where: { id: counselor.userId }, transaction: t });
+      console.log(`[AdminDelete] User record deleted: ${userDeleted}`);
+      
+      await t.commit();
+      console.log(`[AdminDelete] Transaction committed for counselor ${id}`);
+    } catch (error) {
+      await t.rollback();
+      console.error(`[AdminDelete] Error during deletion of counselor ${id}:`, error);
+      throw error;
+    }
   }
 }

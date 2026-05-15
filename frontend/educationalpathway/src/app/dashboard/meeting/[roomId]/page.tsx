@@ -34,7 +34,9 @@ export default function MeetingPage({ params }: { params: Promise<{ roomId: stri
   
   const handleLeave = () => {
     if (user.role === 'student') {
-      router.push('/dashboard/student/counselors');
+      router.push('/dashboard/counselors');
+    } else if (user.role === 'admin') {
+      router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/counselor');
     }

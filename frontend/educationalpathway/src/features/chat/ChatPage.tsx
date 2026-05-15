@@ -9,23 +9,34 @@ import { ChatDetails } from "./components/ChatDetails";
 import { Conversation, Message, ChatUser } from "./types";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
-import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { Loader2, Search, X, Users, Trash2 } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { Button } from "@/components/ui";
 
 interface ChatPageProps {
   currentUser: ChatUser;
 }
 
 export const ChatPage = ({ currentUser }: ChatPageProps) => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const targetGroupId = searchParams.get("groupId");
+  const userIdFromUrl = searchParams.get("userId");
+  const initialHandled = useRef(false);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  
+  // List pagination
+  const [listHasMore, setListHasMore] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  
+  // Messages pagination
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [typingUser, setTypingUser] = useState<{ userId: number; isTyping: boolean } | null>(null);
@@ -35,73 +46,238 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
   const [replyingTo, setReplyingTo] = useState<{ id: number; content: string; senderName: string } | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [isMobileListVisible, setIsMobileListVisible] = useState(true);
+  const [messageIdToDelete, setMessageIdToDelete] = useState<number | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
   const { socket, isConnected } = useSocket(token);
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (pageNum: number = 1) => {
     try {
-      setLoading(true);
+      if (pageNum === 1) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
       
-      // Fetch both personal conversations and all discoverable groups
-      const [convsRes, groupsRes] = await Promise.all([
-        api.get("/chat/conversations"),
-        api.get("/groups")
+      const isCounselor = currentUser.role?.toLowerCase() === 'counselor';
+      const limit = 15;
+
+      const [convsRes, groupsRes, extraRes, recommendedRes] = await Promise.all([
+        api.get(`/chat/conversations?page=${pageNum}&limit=${limit}`),
+        api.get(`/groups?page=${pageNum}&limit=${limit}`),
+        isCounselor ? api.get(`/counselors/students?page=${pageNum}&limit=${limit}`) : api.get(`/counselors/directory?page=${pageNum}&limit=${limit}`),
+        !isCounselor && pageNum === 1 ? api.get("/counselors/recommendations/me") : Promise.resolve({ data: [] })
       ]);
       
       const convsData = Array.isArray(convsRes.data) ? convsRes.data : (convsRes.data?.data || []);
       const groupsData = Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.data || []);
       
-      // Merge: Keep all personal chats + All groups (mark them as joined/unjoined)
-      const mergedConvs = [...convsData];
+      // Check if any category has more items
+      const hasMoreConvs = convsRes.data?.pagination?.hasMore || false;
+      const hasMoreGroups = groupsRes.data?.pagination?.hasMore || false;
+      const hasMoreExtra = extraRes.data?.pagination?.hasMore || extraRes.data?.data?.pagination?.hasMore || false;
       
+      setListHasMore(hasMoreConvs || hasMoreGroups || hasMoreExtra);
+      
+      let extraData = isCounselor 
+        ? (Array.isArray(extraRes.data) ? extraRes.data : extraRes.data?.data || [])
+        : (extraRes.data?.rows || extraRes.data?.data?.rows || extraRes.data?.data || (Array.isArray(extraRes.data) ? extraRes.data : []));
+
+      // For students, merge directory with recommendations
+      if (!isCounselor) {
+        const recommendedData = Array.isArray(recommendedRes.data) ? recommendedRes.data : (recommendedRes.data?.data || []);
+        // Combine and deduplicate by user ID
+        const combinedCounselors = [...recommendedData];
+        extraData.forEach((c: any) => {
+          if (!combinedCounselors.some(rc => (rc.user?.id || rc.userId) === (c.user?.id || c.userId))) {
+            combinedCounselors.push(c);
+          }
+        });
+        extraData = combinedCounselors;
+      }
+      
+      // Merge: Keep all personal chats + All groups
+      let mergedConvs = [...convsData];
+      
+      // Mark existing personal chats based on role
+      mergedConvs = mergedConvs.map(c => {
+        if (!c.isGroup) {
+          const otherUser = c.members?.find((m: any) => m.id !== currentUser.id) || c.users?.find((u: any) => u.id !== currentUser.id);
+          const role = otherUser?.role?.toLowerCase();
+          if (isCounselor && (role === 'student' || role === 'user')) {
+             return { ...c, isStudentChat: true };
+          } else if (!isCounselor && role === 'counselor') {
+            return { ...c, isCounselorChat: true };
+          }
+        }
+        return c;
+      });
+      
+      // Add discoverable entries (counselors for students, students for counselors)
+      if (isCounselor) {
+        extraData.forEach((s: any) => {
+          const studentId = s.userId || s.id;
+          if (!studentId || studentId === currentUser.id) return;
+
+          const hasExisting = mergedConvs.some(conv => 
+            !conv.isGroup && 
+            (conv.members?.some((m: any) => m.id === studentId) || conv.users?.some((u: any) => u.id === studentId))
+          );
+
+          if (!hasExisting) {
+            const studentUser = { 
+              id: studentId, 
+              name: s.name || "Student", 
+              email: s.email || "", 
+              role: 'student',
+              avatarUrl: s.avatarUrl || null
+            };
+            mergedConvs.push({
+              id: `student-${studentId}`,
+              isNotJoined: true,
+              isStudentChat: true,
+              name: studentUser.name,
+              members: [studentUser],
+              users: [studentUser],
+              unreadCount: 0,
+              messages: [],
+              isGroup: false
+            });
+          }
+        });
+      } else {
+        extraData.forEach((c: any) => {
+          const counselorId = c.userId || c.id;
+          if (!counselorId || counselorId === currentUser.id) return;
+          
+          const hasExisting = mergedConvs.some(conv => 
+            !conv.isGroup && 
+            (conv.members?.some((m: any) => m.id === counselorId) || conv.users?.some((u: any) => u.id === counselorId))
+          );
+
+          if (!hasExisting) {
+            const counselorUser = {
+              id: counselorId,
+              name: c.name || "Counselor",
+              email: c.email || "",
+              role: 'counselor',
+              avatarUrl: c.profileImageUrl || null
+            };
+            mergedConvs.push({
+              id: `counselor-${counselorId}`,
+              isNotJoined: true,
+              isCounselorChat: true,
+              name: counselorUser.name,
+              members: [counselorUser],
+              users: [counselorUser],
+              unreadCount: 0,
+              messages: [],
+              isGroup: false
+            });
+          }
+        });
+      }
+
       groupsData.forEach((group: any) => {
         const isAlreadyIn = mergedConvs.some(c => c.id === group.id);
         if (!isAlreadyIn) {
-          // If not in personal conversations, it's an unjoined group
           mergedConvs.push({
             ...group,
-            isNotJoined: true, // Marker for UI
+            isNotJoined: !group.isJoined,
             unreadCount: 0,
             messages: []
           });
         }
       });
 
-      setConversations(mergedConvs);
+      setConversations(prev => {
+        if (pageNum === 1) return mergedConvs;
+        
+        // Append new, filter duplicates
+        const existingIds = new Set(prev.map(c => c.id));
+        const newConvs = mergedConvs.filter(c => !existingIds.has(c.id));
+        return [...prev, ...newConvs];
+      });
+    } catch (err) {
+      console.error("[Chat] Failed to load conversations:", err);
+      toast.error("Failed to load conversations");
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [currentUser]);
 
-      // Handle target group from URL
-      if (targetGroupId) {
+  // Separate effect for handling URL parameters (one-time only)
+  useEffect(() => {
+    if (loading || initialHandled.current) return;
+
+    const handleInitialChat = async () => {
+      initialHandled.current = true;
+      let currentConvs = [...conversations];
+
+      // Priority 1: Handle userId (1-on-1 chat)
+      if (userIdFromUrl) {
+        try {
+          const res = await api.post("/chat/start", { receiverId: userIdFromUrl });
+          const chatData = res.data;
+          if (chatData && chatData.id) {
+            const chatId = Number(chatData.id);
+            const existingIdx = currentConvs.findIndex(c => Number(c.id) === chatId);
+            if (existingIdx !== -1) {
+               currentConvs[existingIdx] = chatData;
+            } else {
+               currentConvs = [chatData, ...currentConvs];
+            }
+            setConversations(currentConvs);
+            setActiveConv(chatData);
+            setIsMobileListVisible(false);
+            
+            // Clean URL to prevent re-triggering and "locked" state
+            router.replace('/dashboard/student/chat', { scroll: false });
+          }
+        } catch (e) {
+          console.error("Failed to start initial 1-on-1 chat", e);
+        }
+      } 
+      // Priority 2: Handle target group from URL
+      else if (targetGroupId) {
         const targetId = parseInt(targetGroupId);
-        const existing = mergedConvs.find((c: Conversation) => c.id === targetId);
+        const existing = currentConvs.find((c: Conversation) => Number(c.id) === targetId);
         if (existing) {
           setActiveConv(existing);
           setIsMobileListVisible(false);
+          router.replace('/dashboard/student/chat', { scroll: false });
         } else {
-          // If not in list, fetch specifically
           try {
             const groupRes = await api.get(`/groups/${targetId}`);
-            const groupData = groupRes.data?.data || groupRes.data;
-            if (groupData) {
+            const groupData = groupRes.data;
+            if (groupData && groupData.id) {
               setConversations(prev => [groupData, ...prev]);
               setActiveConv(groupData);
               setIsMobileListVisible(false);
+              router.replace('/dashboard/student/chat', { scroll: false });
             }
           } catch (e) {
             console.error("Failed to fetch target group", e);
           }
         }
       }
-    } catch (err) {
-      toast.error("Failed to load conversations");
-    } finally {
-      setLoading(false);
-    }
-  }, [targetGroupId]);
+    };
+
+    handleInitialChat();
+  }, [loading, userIdFromUrl, targetGroupId, conversations, router]);
 
   useEffect(() => {
-    fetchConversations();
+    fetchConversations(1);
+    setListPage(1);
   }, [fetchConversations]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!listHasMore || loading || isLoadingMore) return;
+    const nextPage = listPage + 1;
+    setListPage(nextPage);
+    fetchConversations(nextPage);
+  }, [listHasMore, loading, isLoadingMore, listPage, fetchConversations]);
 
   const fetchMessages = useCallback(async (convId: number, pageNum: number = 1) => {
     try {
@@ -128,12 +304,14 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
   }, []);
 
   useEffect(() => {
-    if (activeConv) {
+    if (activeConv && socket) {
       const isNotJoined = (activeConv as any).isNotJoined;
       setPage(1);
       
+      // Join conversation room for real-time updates
+      socket.emit("join_conversation", activeConv.id);
+      
       // Only fetch messages if joined or if group allows preview (backend dependent)
-      // For now, let's try to fetch but handle errors gracefully
       fetchMessages(activeConv.id, 1);
       setShowDetails(false);
       
@@ -142,23 +320,30 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
         api.patch(`/chat/read/${activeConv.id}`).catch(() => {});
         setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, unreadCount: 0 } : c));
       }
+
+      return () => {
+        socket.emit("leave_conversation", activeConv.id);
+      };
     }
-  }, [activeConv?.id, fetchMessages]);
+  }, [activeConv?.id, fetchMessages, socket]);
 
   // Socket listeners
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("newMessage", (data: { message: Message; conversationId: number }) => {
+    socket.on("receive_message", (message: Message) => {
+      const conversationId = message.conversationId;
+      console.log("[Chat] Received real-time message:", message);
+      
       // Update conversations list (move to top, update last message)
       setConversations(prev => {
-        const convIdx = prev.findIndex(c => c.id === data.conversationId);
+        const convIdx = prev.findIndex(c => c.id === conversationId);
         if (convIdx === -1) return prev;
         
         const updated = [...prev];
         const conv = { ...updated[convIdx] };
-        conv.messages = [data.message];
-        if (activeConv?.id !== data.conversationId) {
+        conv.messages = [message];
+        if (activeConv?.id !== conversationId) {
           conv.unreadCount = (Number(conv.unreadCount) || 0) + 1;
         }
         
@@ -166,14 +351,17 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
         return [conv, ...updated];
       });
 
-      // Add message if active
-      if (activeConv?.id === data.conversationId) {
-        setMessages(prev => [data.message, ...prev]);
-        api.post(`/chat/conversations/${data.conversationId}/read`).catch(() => {});
+      // Add message if active and not already present
+      if (activeConv?.id === conversationId) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === message.id)) return prev;
+          return [message, ...prev];
+        });
+        api.patch(`/chat/read/${conversationId}`).catch(() => {});
       }
     });
 
-    socket.on("userTyping", (data: { userId: number; isTyping: boolean; conversationId: number }) => {
+    socket.on("user_typing", (data: { userId: number; isTyping: boolean; conversationId: number }) => {
       if (activeConv?.id === data.conversationId) {
         setTypingUser({ userId: data.userId, isTyping: data.isTyping });
       }
@@ -183,31 +371,31 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
       setOnlineUsers(new Set(users));
     });
 
-    socket.on("messageRead", (data: { conversationId: number; userId: number }) => {
-      if (activeConv?.id === data.conversationId && data.userId !== currentUser.id) {
+    socket.on("messages_read", (data: { conversationId: number; readerId: number }) => {
+      if (activeConv?.id === data.conversationId && data.readerId !== currentUser.id) {
         setMessages(prev => prev.map(m => m.senderId === currentUser.id ? { ...m, isRead: true } : m));
       }
     });
 
-    socket.on("messageEdited", (data: { messageId: number; content: string; conversationId: number }) => {
+    socket.on("message_edited", (data: { messageId: number; content: string; conversationId: number }) => {
       if (activeConv?.id === data.conversationId) {
         setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, content: data.content, isEdited: true } : m));
       }
     });
 
-    socket.on("messageDeleted", (data: { messageId: number; conversationId: number }) => {
+    socket.on("message_deleted", (data: { messageId: number; conversationId: number }) => {
       if (activeConv?.id === data.conversationId) {
         setMessages(prev => prev.filter(m => m.id !== data.messageId));
       }
     });
 
     return () => {
-      socket.off("newMessage");
-      socket.off("userTyping");
+      socket.off("receive_message");
+      socket.off("user_typing");
       socket.off("onlineUsers");
-      socket.off("messageRead");
-      socket.off("messageEdited");
-      socket.off("messageDeleted");
+      socket.off("messages_read");
+      socket.off("message_edited");
+      socket.off("message_deleted");
     };
   }, [socket, activeConv?.id, currentUser.id]);
 
@@ -220,9 +408,20 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
       };
       if (replyingTo) payload.replyToId = replyingTo.id;
       
-      await api.post("/chat/send", payload);
+      const response = await api.post("/chat/send", payload);
+      const { message } = response.data;
+
+      // Update state immediately if it's the active conversation
+      if (message && activeConv.id === message.conversationId) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === message.id)) return prev;
+          return [message, ...prev];
+        });
+      }
+
       setReplyingTo(null);
     } catch (err) {
+      console.error("[Chat] Send failed:", err);
       toast.error("Failed to send message");
     }
   };
@@ -239,9 +438,15 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
 
   const handleDelete = async (id: number) => {
     try {
+      // Optimistically update state
+      setMessages(prev => prev.filter(m => m.id !== id));
       await api.delete(`/chat/messages/${id}`);
+      setMessageIdToDelete(null);
     } catch (err) {
+      console.error("[Chat] Delete failed:", err);
       toast.error("Failed to delete message");
+      // Optionally refresh messages if delete fails to restore the state
+      if (activeConv) fetchMessages(activeConv.id, 1);
     }
   };
 
@@ -261,8 +466,9 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
       // Refresh active conversation to update membership status
       const res = await api.get(`/groups/${activeConv.id}`);
       const groupData = res.data?.data || res.data;
-      setActiveConv(groupData);
-      setConversations(prev => prev.map(c => c.id === activeConv.id ? groupData : c));
+      const updatedGroup = { ...groupData, isNotJoined: false };
+      setActiveConv(updatedGroup);
+      setConversations(prev => prev.map(c => c.id === activeConv.id ? updatedGroup : c));
     } catch (err) {
       toast.error("Failed to join group");
     } finally {
@@ -283,15 +489,68 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
     }
   };
 
-  const handleSelectConv = (conv: Conversation) => {
+  const handleSelectConv = async (conv: Conversation) => {
+    if (conv.isGroup) {
+      setActiveConv(conv);
+      setIsMobileListVisible(false);
+      return;
+    }
+
+    // Handle initialization for both discoverable students and counselors
+    if ((conv as any).isNotJoined && ((conv as any).isCounselorChat || (conv as any).isStudentChat)) {
+      const otherUser = conv.members?.[0] || conv.users?.[0];
+      if (otherUser && otherUser.id) {
+        await startNewChat(otherUser.id);
+        return;
+      }
+    }
+    
     setActiveConv(conv);
     setIsMobileListVisible(false);
+    if (!conv.isGroup) {
+      setShowDetails(false);
+    }
   };
 
   const handleBack = () => {
     setIsMobileListVisible(true);
     setActiveConv(null);
   };
+
+
+
+  const startNewChat = async (userId: number) => {
+    try {
+      const res = await api.post("/chat/start", { receiverId: userId });
+      // The interceptor unwraps res.data.data into res.data
+      const chatData = res.data;
+      
+      if (chatData && chatData.id) {
+        const chatId = Number(chatData.id);
+        
+        setConversations(prev => {
+          const existsIdx = prev.findIndex(c => Number(c.id) === chatId);
+          if (existsIdx !== -1) {
+            const updated = [...prev];
+            updated[existsIdx] = { ...updated[existsIdx], ...chatData };
+            return updated;
+          }
+          return [chatData, ...prev];
+        });
+        
+        setActiveConv(chatData);
+        setIsMobileListVisible(false);
+        
+        // Fetch messages for the newly selected/started chat
+        fetchMessages(chatId, 1);
+      }
+    } catch (err) {
+      console.error("[Chat] Failed to start/select chat:", err);
+      toast.error("Failed to start chat");
+    }
+  };
+
+
 
   if (loading && conversations.length === 0) {
     return (
@@ -318,7 +577,12 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
           activeConversationId={activeConv?.id || null}
           onSelect={handleSelectConv}
           currentUserId={currentUser.id}
+          currentUserRole={currentUser.role}
           onlineUsers={onlineUsers}
+          hasMore={listHasMore}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMore}
+          initialLoading={loading}
         />
       </div>
 
@@ -348,13 +612,60 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
                 fetchMessages(activeConv.id, nextPage);
               }}
               onEditMessage={(id, content) => setEditingMessage({ id, content })}
-              onDeleteMessage={handleDelete}
+              onDeleteMessage={(id) => setMessageIdToDelete(id)}
               onReplyMessage={(msg) => setReplyingTo({ id: msg.id, content: msg.content, senderName: msg.sender?.name || "User" })}
               onShowMembers={() => setShowDetails(true)}
               onJoinGroup={handleJoinGroup}
               isJoining={isJoining}
               onBack={handleBack}
             />
+
+            {/* Message Delete Confirmation Modal */}
+            <AnimatePresence>
+              {messageIdToDelete && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                    className="bg-card w-full max-w-sm rounded-3xl border border-border shadow-2xl overflow-hidden p-6 text-center"
+                  >
+                    <div className="flex justify-center mb-4 text-destructive">
+                      <div className="p-4 bg-destructive/10 rounded-full">
+                        <Trash2 size={32} />
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Delete Message?</h3>
+                    <p className="text-sm text-muted-foreground font-medium mb-6">
+                      This action cannot be undone. The message will be removed for all participants.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                        onClick={() => setMessageIdToDelete(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-destructive hover:bg-destructive/90 text-white rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
+                        onClick={() => {
+                          if (messageIdToDelete) handleDelete(messageIdToDelete);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <ChatInput
               onSend={handleSend}
               onTyping={handleTyping}
@@ -375,6 +686,7 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
                   messages={messages}
                   onClose={() => setShowDetails(false)}
                   onLeaveGroup={handleLeaveGroup}
+                  onStartPrivateChat={startNewChat}
                 />
               )}
             </AnimatePresence>

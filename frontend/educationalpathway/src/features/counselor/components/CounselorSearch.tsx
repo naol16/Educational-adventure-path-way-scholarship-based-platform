@@ -12,7 +12,7 @@ import Link from 'next/link';
 const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any) => void }) => {
   console.log('Counselor data:', { id: counselor.id, match: counselor.match_score });
   return (
-    <Card className="rounded-2xl shadow-sm border border-border/40 bg-card/40 backdrop-blur-md hover:border-primary/40 hover:shadow-xl transition-all duration-500 overflow-hidden group relative">
+    <Card className="rounded-2xl bg-card/40 backdrop-blur-md hover:border-primary/40 transition-all duration-500 overflow-hidden group relative">
       <CardBody className="p-8">
         {/* Match Score Badge */}
         {counselor.match_score > 0 && (
@@ -25,7 +25,7 @@ const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any)
         )}
         <div className="flex flex-col items-center text-center space-y-6">
           <Link href={`/dashboard/counselors/${counselor.id}`} className="relative shrink-0">
-            <Avatar className="size-24 rounded-2xl border-2 border-background shadow-lg group-hover:border-primary/30 transition-all">
+            <Avatar className="size-24 rounded-2xl border-2 border-background group-hover:border-primary/30 transition-all">
               {counselor.profileImageUrl && (
                 <AvatarImage src={counselor.profileImageUrl} className="object-cover" />
               )}
@@ -35,12 +35,32 @@ const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any)
             </Avatar>
           </Link>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Link href={`/dashboard/counselors/${counselor.id}`}>
-              <h3 className="text-xl font-black uppercase tracking-tight text-foreground group-hover:text-primary transition-colors leading-tight">
+              <h3 className="text-xl font-black uppercase tracking-tight text-foreground group-hover:text-primary transition-colors leading-tight line-clamp-1">
                 {counselor?.name || 'Anonymous Expert'}
               </h3>
             </Link>
+            {counselor.areasOfExpertise && (
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest line-clamp-1">
+                {typeof counselor.areasOfExpertise === 'string' && counselor.areasOfExpertise.startsWith('[')
+                  ? JSON.parse(counselor.areasOfExpertise).join(', ')
+                  : counselor.areasOfExpertise}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 text-sm font-bold bg-muted/50 px-4 py-2 rounded-xl">
+            <div className="flex items-center gap-1.5 text-amber-500">
+              <Star size={14} className="fill-amber-500" />
+              <span>{counselor.rating > 0 ? Number(counselor.rating).toFixed(1) : 'New'}</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest ml-1">({counselor.totalReviews || 0})</span>
+            </div>
+            <div className="w-px h-4 bg-border/80" />
+            <div className="text-foreground flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Rate:</span>
+              ETB {counselor.hourlyRate || 500}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 w-full">
@@ -52,10 +72,10 @@ const CounselorCard = ({ counselor, onBook }: { counselor: any; onBook: (c: any)
                 Details
               </Button>
             </Link>
-            <Button
-              onClick={() => onBook(counselor)}
-              className="w-full rounded-xl h-12 px-4 font-black uppercase tracking-widest text-[9px] primary-gradient text-white shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
-            >
+              <Button
+                onClick={() => onBook(counselor)}
+                className="w-full rounded-xl h-12 px-4 font-black uppercase tracking-widest text-[9px] primary-gradient text-white hover:scale-[1.02] active:scale-95 transition-all"
+              >
               Booking
             </Button>
           </div>
@@ -154,7 +174,7 @@ export const CounselorSearch = () => {
             </div>
 
             <div className="flex items-center gap-4">
-               <div className="size-20 rounded-[32px] bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shadow-inner">
+               <div className="size-20 rounded-[32px] bg-primary/5 flex items-center justify-center text-primary">
                   <Users size={32} />
                </div>
             </div>
@@ -169,7 +189,7 @@ export const CounselorSearch = () => {
                 All Experts
                 <motion.div
                   layoutId="counselor-tab-dot"
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full shadow-[0_4px_12px_rgba(16,185,129,0.4)]"
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full"
                 />
               </button>
             </div>
@@ -181,13 +201,13 @@ export const CounselorSearch = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Query expertise, institution, or region..." 
-                  className="w-full h-14 pl-14 pr-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/40 transition-all shadow-xs"
+                  className="w-full h-14 pl-14 pr-6 bg-card rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all"
                 />
               </div>
 
               <Button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 shadow-lg ${showFilters ? 'bg-primary text-white' : 'bg-card border border-border/60 text-foreground hover:bg-muted'}`}
+                className={`h-14 px-8 rounded-2xl flex items-center gap-3 font-black text-[10px] tracking-widest uppercase transition-all duration-500 ${showFilters ? 'bg-primary text-white' : 'bg-card text-foreground hover:bg-muted'}`}
               >
                 <Filter size={14} />
                 Filters
@@ -204,7 +224,7 @@ export const CounselorSearch = () => {
                 animate={{ height: 'auto', opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, y: -20 }}
                 transition={{ duration: 0.5, ease: "circOut" }}
-                className="overflow-hidden bg-card/30 backdrop-blur-sm border border-border/40 rounded-[32px] px-10 py-10 shadow-inner"
+                className="overflow-hidden bg-card/30 backdrop-blur-sm rounded-[32px] px-10 py-10"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="space-y-4">
@@ -215,7 +235,7 @@ export const CounselorSearch = () => {
                     <select 
                       value={filters.country}
                       onChange={(e) => setFilters({...filters, country: e.target.value})}
-                      className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
+                      className="w-full h-14 px-6 bg-card rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 outline-none transition-all appearance-none cursor-pointer"
                     >
                       <option value="">Global Network</option>
                       <option value="United States">United States</option>
@@ -234,7 +254,7 @@ export const CounselorSearch = () => {
                     <select 
                       value={filters.expertise}
                       onChange={(e) => setFilters({...filters, expertise: e.target.value})}
-                      className="w-full h-14 px-6 bg-card border border-border/40 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary/40 outline-none transition-all shadow-xs appearance-none cursor-pointer"
+                      className="w-full h-14 px-6 bg-card rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/5 outline-none transition-all appearance-none cursor-pointer"
                     >
                       <option value="">All Disciplines</option>
                       <option value="Visa Support">Visa & Immigration</option>
@@ -289,7 +309,7 @@ export const CounselorSearch = () => {
               </div>
             </AnimatePresence>
           ) : (
-            <Card className="rounded-2xl border border-dashed border-border/40 bg-card/20 p-24 text-center shadow-inner backdrop-blur-sm space-y-6">
+            <Card className="rounded-2xl bg-card/20 p-24 text-center backdrop-blur-sm space-y-6">
               <div className="size-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto">
                 <Users className="size-10 text-muted-foreground opacity-20" />
               </div>

@@ -87,8 +87,8 @@ export const CounselorDetailsPage = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-12 flex flex-col justify-between h-full">
           <motion.button 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
             onClick={() => router.back()}
             className="flex items-center text-[10px] font-black text-muted-foreground hover:text-primary transition-all group w-fit bg-card/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-border/40 shadow-sm uppercase tracking-[0.2em]"
           >
@@ -103,7 +103,7 @@ export const CounselorDetailsPage = () => {
                 transition={{ type: "spring", stiffness: 100 }}
                 className="relative"
              >
-                <Avatar className="size-48 md:size-56 rounded-2xl border-4 border-background relative z-10 group overflow-hidden">
+                <Avatar className="size-48 md:size-56 rounded-2xl relative z-10 group overflow-hidden">
                   <AvatarImage src={counselor.profileImageUrl} className="object-cover transition-transform duration-700 group-hover:scale-110" />
                   <AvatarFallback className="text-6xl font-black bg-primary/10 text-primary">
                     {counselor.name ? counselor.name.charAt(0).toUpperCase() : 'C'}
@@ -155,7 +155,7 @@ export const CounselorDetailsPage = () => {
                   color: "text-primary", 
                   bgColor: "bg-primary/10" 
                 },
-                { label: "Precision Rating", value: Number(counselor.rating || 0).toFixed(1), icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
+                { label: "Precision Rating", value: counselor.rating > 0 ? Number(counselor.rating).toFixed(1) : "New", icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10" },
                 { label: "Tactical Exp", value: `${counselor.yearsOfExperience || 0}+ Yrs`, icon: Clock, color: "text-blue-500", bgColor: "bg-blue-500/10" },
                 { label: "Frequency", value: counselor.supportedLanguages?.[0] || "English", icon: Languages, color: "text-purple-500", bgColor: "bg-purple-500/10" },
               ].map((stat, i) => (
@@ -252,7 +252,7 @@ export const CounselorDetailsPage = () => {
                    </div>
                    <div className="relative pl-12 border-l-2 border-primary/20 space-y-16 py-4">
                       <div className="relative">
-                        <div className="absolute -left-[63px] top-0 size-8 rounded-full bg-primary border-4 border-background" />
+                        <div className="absolute -left-[63px] top-0 size-8 rounded-full bg-primary" />
                         <h4 className="text-3xl font-black uppercase tracking-tight text-foreground leading-none mb-4">{counselor.highestEducationLevel || "Doctorate / Masters"}</h4>
                         <p className="text-2xl text-primary font-black uppercase tracking-tighter mb-4 leading-none">{counselor.universityName || "Leading Global Institution"}</p>
                         <p className="text-lg text-muted-foreground font-medium italic border-l-2 border-border/40 pl-6 py-1">{counselor.fieldsOfStudy || "Specialized Academic Field"}</p>
@@ -278,7 +278,7 @@ export const CounselorDetailsPage = () => {
                      <div className="flex items-center gap-6 px-10 py-6 bg-amber-500/5 rounded-2xl border border-amber-500/10 group">
                        <Star className="size-10 fill-amber-500 text-amber-500 group-hover:scale-110 transition-transform" strokeWidth={0} />
                        <div className="space-y-1">
-                          <span className="font-black text-5xl text-foreground tracking-tighter leading-none">{Number(counselor.rating || 0).toFixed(1)}</span>
+                          <span className="font-black text-5xl text-foreground tracking-tighter leading-none">{counselor.rating > 0 ? Number(counselor.rating).toFixed(1) : "New"}</span>
                           <p className="text-[9px] font-black uppercase tracking-widest text-amber-600/60">Verified Accuracy</p>
                        </div>
                      </div>
@@ -287,7 +287,7 @@ export const CounselorDetailsPage = () => {
                    <CounselorReviews counselorId={counselor.id} />
  
                     {reviewableBooking && (
-                     <div className="mt-16 p-12 rounded-2xl primary-gradient shadow-primary/20 flex flex-col md:flex-row items-center justify-between gap-10 group overflow-hidden relative">
+                     <div className="mt-16 p-12 rounded-2xl primary-gradient flex flex-col md:flex-row items-center justify-between gap-10 group overflow-hidden relative">
                         <div className="absolute top-0 right-0 size-48 bg-white/5 blur-3xl -mr-24 -mt-24" />
                         <div className="relative z-10 space-y-4 text-center md:text-left">
                           <h4 className="font-black text-3xl text-white tracking-tight uppercase leading-none">Session Finalized</h4>
@@ -297,15 +297,15 @@ export const CounselorDetailsPage = () => {
                         </div>
                         <Button 
                           onClick={() => setShowReviewModal(true)}
-                          className="relative z-10 h-16 px-12 rounded-xl bg-white text-primary hover:bg-white/90 shadow-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95"
+                          className="relative z-10 h-16 px-12 rounded-xl bg-white text-primary hover:bg-white/90 font-black uppercase tracking-widest text-[10px] transition-all hover:scale-105 active:scale-95"
                         >
                           Protocol Review
                         </Button>
                      </div>
                    )}
  
-                   <div className="mt-16 p-8 rounded-2xl bg-muted/20 border border-border/40 flex items-start gap-6">
-                      <div className="size-12 rounded-2xl bg-card flex items-center justify-center text-primary border border-border/20 shrink-0">
+                   <div className="mt-16 p-8 rounded-2xl bg-muted/20 flex items-start gap-6">
+                      <div className="size-12 rounded-2xl bg-card flex items-center justify-center text-primary shrink-0">
                          <ShieldCheck className="size-6" strokeWidth={2.5} />
                       </div>
                       <div className="space-y-2">
@@ -337,7 +337,7 @@ export const CounselorDetailsPage = () => {
                     <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Protocol Authorization</span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-foreground tracking-tighter">$45</span>
+                    <span className="text-5xl font-black text-foreground tracking-tighter">ETB {counselor.hourlyRate || 500}</span>
                     <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">/ Session</span>
                   </div>
                 </div>

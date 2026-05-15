@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquare,
+  GraduationCap,
   Menu,
   X
 } from 'lucide-react';
@@ -37,7 +38,7 @@ const menuItems = [
   {
     group: "MANAGEMENT",
     items: [
-      { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
+      { name: 'Students', icon: GraduationCap, href: '/dashboard/admin/students' },
       { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
       { name: 'Approval Queue', icon: UserIcon, href: '/dashboard/admin/counselors/approvals' },
       { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
@@ -47,13 +48,11 @@ const menuItems = [
     group: "FINANCIAL",
     items: [
       { name: 'Payouts', icon: Banknote, href: '/dashboard/admin/payouts' },
-      { name: 'Payments', icon: TrendingUp, href: '/dashboard/admin/transactions' },
     ]
   },
   {
     group: "PLATFORM",
     items: [
-      { name: 'Logs', icon: Database, href: '/dashboard/admin/logs' },
       { name: 'Settings', icon: Settings, href: '/dashboard/admin/settings' },
     ]
   }

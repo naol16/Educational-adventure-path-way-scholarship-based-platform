@@ -31,8 +31,14 @@ router.post("/", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
  */
 router.get("/", authenticate, async (req, res) => {
     try {
-        const groups = await ChatService.getGroupConversations(req.user!.id);
-        res.status(200).json({ status: "success", data: groups });
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const { data, total, hasMore } = await ChatService.getGroupConversations(req.user!.id, page, limit);
+        res.status(200).json({ 
+            status: "success", 
+            data,
+            pagination: { page, limit, total, hasMore }
+        });
     } catch (err: any) {
         console.error('[chatGroupRoutes] Error in GET /api/groups ->', err?.stack || err);
         res.status(500).json({ status: "error", message: err.message });
@@ -204,4 +210,33 @@ router.delete("/:id/members/:userId", authenticate, async (req, res) => {
     }
 });
 
+/**
+ * @route PUT /api/groups/:id
+ * @desc Update a group (Admin only)
+ */
+router.put("/:id", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const group = await ChatService.updateGroupConversation(id, req.body);
+        res.status(200).json({ status: "success", data: group });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in PUT /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+/**
+ * @route DELETE /api/groups/:id
+ * @desc Delete a group (Admin only)
+ */
+router.delete("/:id", authenticate, authorize(UserRole.ADMIN), async (req, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        await ChatService.deleteGroupConversation(id);
+        res.status(200).json({ status: "success", message: "Group deleted successfully" });
+    } catch (err: any) {
+        console.error('[chatGroupRoutes] Error in DELETE /api/groups/:id ->', err?.stack || err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
 export default router;

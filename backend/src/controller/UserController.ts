@@ -69,8 +69,16 @@ export class UserController {
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = (page - 1) * limit;
 
-      const users = await UserService.getAllUsers(limit, offset);
-      res.json(users);
+      const { rows, count } = await UserService.getAllUsers(limit, offset);
+      res.json({
+        success: true,
+        data: {
+          rows,
+          total: count,
+          page,
+          limit
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -79,8 +87,20 @@ export class UserController {
   static async getUsersByRole(req: Request, res: Response, next: NextFunction) {
     try {
       const { role } = req.params;
-      const users = await UserService.getUsersByRole(role as UserRole);
-      res.json(users);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = (page - 1) * limit;
+
+      const { rows, count } = await UserService.getUsersByRole(role as UserRole, limit, offset);
+      res.json({
+        success: true,
+        data: {
+          rows,
+          total: count,
+          page,
+          limit
+        }
+      });
     } catch (error) {
       next(error);
     }

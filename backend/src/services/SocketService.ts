@@ -13,9 +13,12 @@ export class SocketService {
     static initialize(server: HTTPServer) {
         this.io = new SocketIOServer(server, {
             cors: {
-                origin: "*", // Adjust in production
-                methods: ["GET", "POST"]
-            }
+                origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:5173"],
+                methods: ["GET", "POST"],
+                credentials: true
+            },
+            transports: ["polling", "websocket"],
+            allowEIO3: true
         });
 
         // Redis Adapter for scaling - only if Redis is actually available

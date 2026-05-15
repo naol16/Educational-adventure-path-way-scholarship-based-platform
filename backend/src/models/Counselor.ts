@@ -76,7 +76,7 @@ export class Counselor extends Model {
         defaultValue: 'pending',
         field: 'verification_status'
     })
-    declare verificationStatus: 'pending' | 'verified' | 'rejected';
+    declare verificationStatus: 'pending' | 'approved' | 'rejected';
 
     @Default(true)
     @Column({

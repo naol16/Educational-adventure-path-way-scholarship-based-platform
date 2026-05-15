@@ -71,11 +71,11 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-card w-full max-w-lg rounded-2xl animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="p-8 border-b border-border bg-muted/20">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted border-2 border-primary/20">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted">
               {counselor.profileImageUrl ? (
                 <img src={counselor.profileImageUrl} alt={counselor.name} className="w-full h-full object-cover" />
               ) : (
@@ -167,7 +167,7 @@ export const StudentBookingModal = ({ counselor, onClose, onSuccess }: StudentBo
             onClick={handleBookSession} 
             disabled={!selectedSlot || bookingInProgress}
             isLoading={bookingInProgress}
-            className="flex-[1.5] primary-gradient rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+            className="flex-[1.5] primary-gradient rounded-2xl h-12 font-bold transition-all"
           >
             Confirm & Pay
           </Button>

@@ -125,16 +125,20 @@ export class UserService {
     return UserRepository.findById(userId);
   }
 
-  static async getAllUsers(limit: number, offset: number): Promise<User[]> {
-    return UserRepository.findAll(limit, offset);
+  static async getAllUsers(limit: number, offset: number): Promise<{ rows: User[], count: number }> {
+    const rows = await UserRepository.findAll(limit, offset);
+    const count = await UserRepository.countAll();
+    return { rows, count };
   }
 
   static async getUserById(id: number): Promise<User | null> {
     return UserRepository.findById(id);
   }
 
-  static async getUsersByRole(role: UserRole): Promise<User[]> {
-    return UserRepository.findByRole(role);
+  static async getUsersByRole(role: UserRole, limit: number, offset: number): Promise<{ rows: User[], count: number }> {
+    const rows = await UserRepository.findByRole(role, limit, offset);
+    const count = await UserRepository.countByRole(role);
+    return { rows, count };
   }
 
   static async updateUserRole(

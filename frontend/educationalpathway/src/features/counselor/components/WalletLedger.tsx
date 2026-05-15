@@ -59,7 +59,7 @@ export const WalletLedger = () => {
                 </Button>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-muted/50 border-b border-border">

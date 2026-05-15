@@ -110,7 +110,8 @@ export class ChatMessage extends Model {
     @Column({
         type: DataType.INTEGER,
         allowNull: true,
-        field: 'reply_to_id'
+        field: 'reply_to_id',
+        onDelete: 'CASCADE'
     })
     declare replyToId?: number;
 

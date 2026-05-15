@@ -193,8 +193,14 @@ export class CounselorController {
 
   static async getStudents(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.getStudents((req as any).counselor.id);
-      res.status(200).json({ success: true, data });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const { data, total, hasMore } = await CounselorService.getStudents((req as any).counselor.id, page, limit);
+      res.status(200).json({ 
+        success: true, 
+        data,
+        pagination: { page, limit, total, hasMore }
+      });
     } catch (error) {
       next(error);
     }
@@ -286,8 +292,19 @@ export class CounselorController {
 
   static async adminList(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await CounselorService.adminList();
-      res.status(200).json({ success: true, data });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const status = req.query.status as string;
+      const { rows, count } = await CounselorService.adminList(page, limit, status);
+      res.status(200).json({ 
+        success: true, 
+        data: {
+          rows,
+          total: count,
+          page,
+          limit
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -437,6 +454,14 @@ export class CounselorController {
     try {
       const data = await CounselorService.getPendingApplications();
       return ResponseHelper.success(res, data);
+    } catch (error) {
+      next(error);
+    }
+  }
+  static async adminDelete(req: Request, res: Response, next: NextFunction) {
+    try {
+      await CounselorService.adminDelete(Number(req.params.id));
+      res.status(200).json({ success: true, message: 'Counselor deleted successfully' });
     } catch (error) {
       next(error);
     }
