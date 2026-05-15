@@ -28,6 +28,7 @@ class User {
     this.studyMode,
     this.preferredCountries,
     this.preferredUniversities,
+    this.verificationStatus,
     required this.raw,
   });
 
@@ -37,6 +38,7 @@ class User {
   final String role;
   final bool isOnboarded;
   final String? avatarUrl;
+  final String? verificationStatus;
 
   // Profile fields
   final String? fullName;
@@ -65,6 +67,9 @@ class User {
   bool get isStudent => role.toLowerCase() == 'student';
   bool get isCounselor => role.toLowerCase() == 'counselor';
   bool get isAdmin => role.toLowerCase() == 'admin';
+
+  bool get isApproved => !isCounselor || verificationStatus == 'approved';
+  bool get isPendingApproval => isCounselor && verificationStatus == 'pending';
 
   factory User.fromJson(Map<String, dynamic> json) {
     final id = readInt(json, const ['id']);
@@ -101,6 +106,7 @@ class User {
         if (v is List) return v;
         return null;
       })(),
+      verificationStatus: readValue<String>(json, const ['verificationStatus', 'verification_status']),
       raw: Map<String, dynamic>.from(json),
     );
   }

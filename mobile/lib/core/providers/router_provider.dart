@@ -9,6 +9,7 @@ import 'package:mobile/features/auth/screens/register_screen.dart';
 import 'package:mobile/features/auth/screens/role_selection_screen.dart';
 import 'package:mobile/features/auth/screens/forgot_password_screen.dart';
 import 'package:mobile/features/onboarding/screens/student_onboarding_screen.dart';
+import 'package:mobile/features/auth/screens/verification_waiting_screen.dart';
 import 'package:mobile/features/core/screens/main_layout_screen.dart';
 import 'package:mobile/features/core/screens/settings_screen.dart';
 import 'package:mobile/features/notifications/screens/notification_list_screen.dart';
@@ -58,10 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loggedIn = auth != null;
 
       if (loggedIn) {
-        if (!auth.isOnboarded && !onOnboarding) {
+        if (auth.isPendingApproval && loc != '/waiting') {
+          return '/waiting';
+        }
+        if (!auth.isOnboarded && !onOnboarding && !auth.isPendingApproval) {
           return '/onboarding';
         }
-        if (auth.isOnboarded && onGuestAuthFlow) {
+        if (auth.isOnboarded && !auth.isPendingApproval && onGuestAuthFlow) {
           return '/home';
         }
       } else {
@@ -82,6 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/waiting',
+        builder: (context, state) => const VerificationWaitingScreen(),
       ),
       GoRoute(
         path: '/register',

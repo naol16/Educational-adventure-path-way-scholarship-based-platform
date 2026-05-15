@@ -1,53 +1,101 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/features/chat/services/ai_chat_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/core/widgets/glass_container.dart';
 
-class PathfinderChatScreen extends StatefulWidget {
+class PathfinderChatScreen extends ConsumerStatefulWidget {
   final String initialMessage;
+  final int? scholarshipId;
 
-  const PathfinderChatScreen({super.key, this.initialMessage = ''});
+  const PathfinderChatScreen({super.key, this.initialMessage = '', this.scholarshipId});
 
   @override
-  State<PathfinderChatScreen> createState() => _PathfinderChatScreenState();
+  ConsumerState<PathfinderChatScreen> createState() => _PathfinderChatScreenState();
 }
 
-class _PathfinderChatScreenState extends State<PathfinderChatScreen> {
+class _PathfinderChatScreenState extends ConsumerState<PathfinderChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<Map<String, String>> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
+  String? _sessionId;
+  final _storage = const FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.initialMessage;
-    _messages.add({
-      'role': 'ai',
-      'text': 'Hi! I am Pathfinder, your AI scholarship assistant. How can I help you accelerate your journey today?',
-    });
-    if (widget.initialMessage.isNotEmpty) {
+    _initSession();
+  }
+
+  Future<void> _initSession() async {
+    _sessionId = await _storage.read(key: 'ai_chat_session_id');
+    if (_sessionId == null) {
+      _sessionId = 'session_${const Uuid().v4()}';
+      await _storage.write(key: 'ai_chat_session_id', value: _sessionId!);
+    }
+
+    await _loadHistory();
+
+    if (widget.initialMessage.isNotEmpty && _messages.where((m) => m['role'] == 'user').isEmpty) {
       _sendMessage(widget.initialMessage);
     }
   }
 
-  void _sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+  Future<void> _loadHistory() async {
+    setState(() => _isLoading = true);
+    final history = await ref.read(aiChatServiceProvider).getChatHistory(
+      scholarshipId: widget.scholarshipId,
+      sessionId: _sessionId!,
+    );
+    
     setState(() {
-      _messages.add({'role': 'user', 'text': text});
+      if (history.isNotEmpty) {
+        _messages.clear();
+        _messages.addAll(history);
+      } else {
+        _messages.add({
+          'role': 'assistant',
+          'content': widget.scholarshipId != null 
+              ? "Hi! I am Path Finder. What would you like to know about this scholarship?" 
+              : "Hi! I am Path Finder. How can I help you with your educational journey today?",
+        });
+      }
+      _isLoading = false;
+    });
+  }
+
+  void _sendMessage(String text) async {
+    if (text.trim().isEmpty || _isLoading) return;
+    
+    setState(() {
+      _messages.add({'role': 'user', 'content': text});
       _controller.clear();
       _isLoading = true;
     });
 
-    // Mock API call to Chat API / Pathfinder AI
-    await Future.delayed(const Duration(seconds: 2));
+    final response = await ref.read(aiChatServiceProvider).sendMessage(
+      text,
+      _sessionId!,
+      scholarshipId: widget.scholarshipId,
+    );
 
     setState(() {
-      _messages.add({
-        'role': 'ai',
-        'text': 'I am analyzing your profile to find matches for "$text". My connection to the live data source is currently being finalized on the backend, but I have noted your requirements!',
-      });
+      if (response != null) {
+        _messages.add({
+          'role': 'assistant',
+          'content': response['content'],
+        });
+      } else {
+        _messages.add({
+          'role': 'assistant',
+          'content': "Sorry, I am having trouble connecting right now.",
+        });
+      }
       _isLoading = false;
     });
   }
@@ -87,7 +135,7 @@ class _PathfinderChatScreenState extends State<PathfinderChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = _messages[index];
                     final isUser = msg['role'] == 'user';
-                    return _buildMessageBubble(msg['text']!, isUser);
+                    return _buildMessageBubble(msg['content']!, isUser);
                   },
                 ),
               ),

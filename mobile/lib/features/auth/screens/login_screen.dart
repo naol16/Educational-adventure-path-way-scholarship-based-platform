@@ -60,8 +60,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (password.isEmpty) {
       setState(() => _passwordError = 'Password is required');
       isValid = false;
-    } else if (password.length < 6) {
-      setState(() => _passwordError = 'Password must be at least 6 characters');
+    } else if (password.length < 8) {
+      setState(() => _passwordError = 'Password must be at least 8 characters');
       isValid = false;
     }
 
@@ -235,11 +235,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 setState(() => _submitting = true);
                                 try {
                                   await ref.read(authProvider.notifier).loginWithGoogle();
+                                  
+                                  if (!mounted) return;
+                                  final authState = ref.read(authProvider);
+                                  if (authState.hasError) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_messageForError(authState.error)),
+                                        backgroundColor: Colors.red.shade600,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
                                 } catch (e) {
                                   if (mounted) {
-                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(_messageForError(e))),
+                                      SnackBar(
+                                        content: Text(_messageForError(e)),
+                                        backgroundColor: Colors.red.shade600,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
                                     );
                                   }
                                 } finally {

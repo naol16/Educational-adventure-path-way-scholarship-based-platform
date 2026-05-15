@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -41,11 +42,16 @@ class _CounselorOnboardingScreenState
   String? _position;
   final _orgController = TextEditingController();
   final _expController = TextEditingController();
+  List<String> _fieldsOfStudy = [];
+  List<String> _areasOfExpertise = [];
 
   // Step 3: Availability
   double _hourlyRate = 50.0;
   int _sessionDuration = 60;
   List<String> _consultationModes = ['chat', 'video'];
+  List<Map<String, String>> _weeklySlots = [
+    {'day': 'Monday', 'startTime': '09:00', 'endTime': '17:00'}
+  ];
 
   // Step 4: Documents
   File? _profileImage;
@@ -79,6 +85,21 @@ class _CounselorOnboardingScreenState
         _hourlyRate = profile.hourlyRate;
         _sessionDuration = profile.sessionDuration;
         _consultationModes = profile.consultationModes;
+        _fieldsOfStudy = profile.fieldsOfStudy;
+        _areasOfExpertise = profile.areasOfExpertise;
+        
+        final scheduleStr = profile.weeklySchedule;
+        if (scheduleStr != null && scheduleStr.isNotEmpty) {
+          try {
+            final Map<String, dynamic> schedule = jsonDecode(scheduleStr);
+            if (schedule.containsKey('slots')) {
+              _weeklySlots = List<Map<String, String>>.from(
+                (schedule['slots'] as List).map((e) => Map<String, String>.from(e))
+              );
+            }
+          } catch (e) {}
+        }
+
         _profileImageUrl = profile.profileImageUrl;
         _cvUrl = profile.cvUrl;
         _certUrl = profile.certificateUrls;
@@ -291,6 +312,54 @@ class _CounselorOnboardingScreenState
           (v) => setState(() => _position = v),
         ),
         const SizedBox(height: 20),
+        _buildLabel('Fields of Study'),
+        Wrap(
+          spacing: 8,
+          children: [
+            'Computer Science',
+            'Business',
+            'Engineering',
+            'Medicine',
+            'Arts',
+          ].map((f) {
+            final active = _fieldsOfStudy.contains(f);
+            return FilterChip(
+              label: Text(f, style: TextStyle(fontSize: 12, color: active ? Colors.white : null)),
+              selected: active,
+              onSelected: (s) {
+                setState(() {
+                  if (s) _fieldsOfStudy.add(f);
+                  else _fieldsOfStudy.remove(f);
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        _buildLabel('Areas of Expertise'),
+        Wrap(
+          spacing: 8,
+          children: [
+            'Full Scholarships',
+            'Undergraduate Admissions',
+            'SOP Review',
+            'CV Optimization',
+            'Visa Prep',
+          ].map((e) {
+            final active = _areasOfExpertise.contains(e);
+            return FilterChip(
+              label: Text(e, style: TextStyle(fontSize: 12, color: active ? Colors.white : null)),
+              selected: active,
+              onSelected: (s) {
+                setState(() {
+                  if (s) _areasOfExpertise.add(e);
+                  else _areasOfExpertise.remove(e);
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
         _buildLabel('Years of Experience'),
         _buildTextField(
           _expController,
@@ -329,26 +398,80 @@ class _CounselorOnboardingScreenState
           ),
         ),
         const SizedBox(height: 32),
+        _buildLabel('Weekly Schedule Slots'),
+        ..._weeklySlots.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final slot = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButton<String>(
+                      value: slot['day'],
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      items: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                          .map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 12))))
+                          .toList(),
+                      onChanged: (v) => setState(() => _weeklySlots[idx]['day'] = v!),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildTimePicker(slot['startTime']!, (t) => setState(() => _weeklySlots[idx]['startTime'] = t)),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text('-', style: TextStyle(fontSize: 12)),
+                  ),
+                  Expanded(
+                    child: _buildTimePicker(slot['endTime']!, (t) => setState(() => _weeklySlots[idx]['endTime'] = t)),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.red),
+                    onPressed: () => setState(() => _weeklySlots.removeAt(idx)),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+        TextButton.icon(
+          onPressed: () => setState(() => _weeklySlots.add({'day': 'Monday', 'startTime': '09:00', 'endTime': '17:00'})),
+          icon: const Icon(LucideIcons.plus, size: 18),
+          label: const Text('Add Availability Slot'),
+        ),
+        const SizedBox(height: 32),
         _buildLabel('Consultation Modes'),
         Wrap(
-          spacing: 10,
-          children: ['chat', 'audio', 'video'].map((m) {
-            final active = _consultationModes.contains(m);
-            return FilterChip(
-              label: Text(m.toUpperCase()),
+          spacing: 12,
+          children: [
+            {'id': 'chat', 'label': 'Chat', 'icon': LucideIcons.messageSquare},
+            {'id': 'audio', 'label': 'Audio', 'icon': LucideIcons.mic},
+            {'id': 'video', 'label': 'Video', 'icon': LucideIcons.video},
+          ].map((mode) {
+            final active = _consultationModes.contains(mode['id']);
+            return ChoiceChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(mode['icon'] as IconData, size: 16, color: active ? Colors.white : null),
+                  const SizedBox(width: 8),
+                  Text(mode['label'] as String, style: TextStyle(color: active ? Colors.white : null)),
+                ],
+              ),
               selected: active,
               onSelected: (s) {
                 setState(() {
-                  if (s)
-                    _consultationModes.add(m);
-                  else
-                    _consultationModes.remove(m);
+                  if (s) _consultationModes.add(mode['id'] as String);
+                  else _consultationModes.remove(mode['id'] as String);
                 });
               },
-              selectedColor: DesignSystem.primary(
-                context,
-              ).withValues(alpha: 0.2),
-              checkmarkColor: DesignSystem.primary(context),
+              selectedColor: DesignSystem.primary(context),
             );
           }).toList(),
         ),
@@ -386,6 +509,31 @@ class _CounselorOnboardingScreenState
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimePicker(String current, ValueChanged<String> onSelected) {
+    return GestureDetector(
+      onTap: () async {
+        final time = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay(
+            hour: int.parse(current.split(':')[0]),
+            minute: int.parse(current.split(':')[1]),
+          ),
+        );
+        if (time != null) {
+          onSelected('${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(current, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
@@ -733,6 +881,9 @@ class _CounselorOnboardingScreenState
         'hourlyRate': _hourlyRate,
         'sessionDuration': _sessionDuration,
         'consultationModes': _consultationModes,
+        'fieldsOfStudy': _fieldsOfStudy,
+        'areasOfExpertise': _areasOfExpertise,
+        'weeklySchedule': jsonEncode({'slots': _weeklySlots}),
         'isOnboarded': true,
       };
 

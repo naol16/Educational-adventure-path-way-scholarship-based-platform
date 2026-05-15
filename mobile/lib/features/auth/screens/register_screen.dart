@@ -78,11 +78,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       isValid = false;
     }
 
+    final passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]');
     if (password.isEmpty) {
       setState(() => _passwordError = 'Password is required');
       isValid = false;
-    } else if (password.length < 6) {
-      setState(() => _passwordError = 'Password must be at least 6 characters');
+    } else if (password.length < 8) {
+      setState(() => _passwordError = 'Password must be at least 8 characters');
+      isValid = false;
+    } else if (!passwordRegex.hasMatch(password)) {
+      setState(() => _passwordError = 'Password must include uppercase, lowercase, number, and special character');
       isValid = false;
     }
 
@@ -258,11 +262,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 setState(() => _submitting = true);
                                 try {
                                   await ref.read(authProvider.notifier).loginWithGoogle(role: _roleForApi);
+                                  
+                                  if (!mounted) return;
+                                  final authState = ref.read(authProvider);
+                                  if (authState.hasError) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_messageForError(authState.error)),
+                                        backgroundColor: Colors.red.shade600,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
                                 } catch (e) {
                                   if (mounted) {
-                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(_messageForError(e))),
+                                      SnackBar(
+                                        content: Text(_messageForError(e)),
+                                        backgroundColor: Colors.red.shade600,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
                                     );
                                   }
                                 } finally {

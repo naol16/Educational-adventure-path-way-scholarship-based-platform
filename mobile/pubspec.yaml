@@ -65,6 +65,7 @@ dependencies:
   agora_rtc_engine: ^6.3.2
   smooth_page_indicator: ^2.0.1
   fl_chart: ^0.70.0
+  uuid: ^4.3.3
 
 dev_dependencies:
   flutter_test:
