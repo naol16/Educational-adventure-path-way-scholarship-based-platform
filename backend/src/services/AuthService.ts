@@ -180,9 +180,9 @@ export class AuthService {
       const counselor = await CounselorRepository.findByUserId(user.id);
       if (counselor && counselor.verificationStatus !== 'approved') {
         if (counselor.verificationStatus === 'pending') {
-          throw new AppError("Your application is currently being reviewed by our administrators. You will be notified once your account is approved.", 403);
+          throw new AppError("Your account is awaiting admin approval.", 403);
         } else if (counselor.verificationStatus === 'rejected') {
-          throw new AppError("Your application has been rejected. Please contact support for more information.", 403);
+          throw new AppError("Your account application has been rejected. Please contact support for more information.", 403);
         }
       }
     }
@@ -237,9 +237,9 @@ export class AuthService {
       const counselor = await CounselorRepository.findByUserId(refreshedUser.id);
       if (counselor && counselor.verificationStatus !== 'approved') {
         if (counselor.verificationStatus === 'pending') {
-          throw new AppError("Your application is currently being reviewed by our administrators. You will be notified once your account is approved.", 403);
+          throw new AppError("Your account is awaiting admin approval.", 403);
         } else if (counselor.verificationStatus === 'rejected') {
-          throw new AppError("Your application has been rejected. Please contact support for more information.", 403);
+          throw new AppError("Your account application has been rejected. Please contact support for more information.", 403);
         }
       }
     }

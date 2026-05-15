@@ -6,14 +6,14 @@ export class MarketingController {
         try {
             // Fetch stats from DB
             const dbStats = await MarketingStat.findAll({ order: [['id', 'ASC']] });
-            
+
             let stats;
             if (dbStats.length > 0) {
                 // If we have manual overrides in DB, use them
                 // But if they have a dbKey, we can still update their value with real counts
                 stats = await Promise.all(dbStats.map(async (s) => {
                     if (s.isManual) return { label: s.label, value: s.value };
-                    
+
                     let realValue = s.value;
                     if (s.dbKey === 'scholarships') {
                         const count = await Scholarship.count();
@@ -32,7 +32,7 @@ export class MarketingController {
                 const scholarshipCount = await Scholarship.count();
                 const counselorCount = await Counselor.count({ where: { verificationStatus: 'approved' } });
                 const studentCount = await Student.count();
-                
+
                 stats = [
                     { label: "Active Scholarships", value: `${scholarshipCount}+` },
                     { label: "Verified Counselors", value: `${counselorCount}+` },

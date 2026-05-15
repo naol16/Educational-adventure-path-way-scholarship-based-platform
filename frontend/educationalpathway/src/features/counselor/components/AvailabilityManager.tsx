@@ -75,7 +75,12 @@ export const AvailabilityManager = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await createCounselorSlots(slots);
+      const offsetMinutes = -new Date().getTimezoneOffset();
+      const slotsWithTimezone = slots.map(slot => ({
+        ...slot,
+        utcOffset: offsetMinutes
+      }));
+      await createCounselorSlots(slotsWithTimezone);
       toast.success('Availability updated successfully');
     } catch (error) {
       toast.error('Failed to save availability');

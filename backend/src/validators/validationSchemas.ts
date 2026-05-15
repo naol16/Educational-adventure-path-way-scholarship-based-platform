@@ -154,7 +154,7 @@ export const updateSlotValidation = [
 export const updateBookingStatusValidation = [
   body('status')
     .notEmpty().withMessage('Status is required')
-    .isIn(['started', 'completed', 'cancelled']).withMessage('Invalid status value')
+    .isIn(['confirmed', 'started', 'completed', 'awaiting_confirmation', 'cancelled', 'disputed']).withMessage('Invalid status value')
 ];
 
 export const applyAsCounselorValidation = [

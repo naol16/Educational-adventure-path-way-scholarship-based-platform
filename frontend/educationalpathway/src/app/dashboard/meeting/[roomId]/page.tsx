@@ -47,7 +47,7 @@ export default function MeetingPage({ params }: { params: Promise<{ roomId: stri
       {/* Agora Meeting Container */}
       <div className="flex-1 w-full h-full relative z-0">
         <AgoraMeeting
-          appId="5ef76d27b47942eeb8dbc338310e4876"
+          appId="a18f1d5c0eb94bf8a80c5d5d51e3bfff"
           channel={roomId}
           userName={displayName}
           uid={user.id}

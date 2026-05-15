@@ -241,7 +241,7 @@ export const ChatWindow = ({
 
         {messages.length === 0 && !loading ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/[0.06]">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/6">
               <MessageCircle size={28} className="text-muted-foreground" />
             </div>
             <p className="text-[15px] font-medium text-foreground">No messages yet</p>

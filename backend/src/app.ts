@@ -87,8 +87,7 @@ app.use(cookieParser());
 app.use(
   expressupload({
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
+    useTempFiles: false,
     createParentPath: true,
     parseNested: true,
   }),

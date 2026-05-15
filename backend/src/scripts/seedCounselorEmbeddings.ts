@@ -6,9 +6,9 @@ import { User } from "../models/User.js";
 async function seed() {
     try {
         console.log("Starting counselor embedding seeding...");
-        
+
         await connectSequelize();
-        
+
         const counselors = await Counselor.findAll({
             where: { verificationStatus: 'approved', isActive: true },
             include: [{ model: User, as: "user" }]

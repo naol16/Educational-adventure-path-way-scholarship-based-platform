@@ -82,10 +82,9 @@ export const StudentBookingManager = () => {
         if (!['confirmed', 'started'].includes(b.status)) return false;
         if (!b.slot) return b.status === 'started';
         const start = new Date(b.slot.startTime).getTime();
-        const end = new Date(b.slot.endTime).getTime();
         const now = Date.now();
-        // buffer of 5 mins before start
-        return (now >= (start - 300000) && now <= end) || b.status === 'started';
+        // buffer of 5 mins before start, up to 2 hours after start
+        return now >= (start - 300000) && now <= (start + 7200000);
     });
 
     const upcoming = bookings.filter(b => {
@@ -101,14 +100,20 @@ export const StudentBookingManager = () => {
         return aStart - bStart;
     });
 
-    const awaitingConfirmation = bookings.filter(b => {
-        return b.status === 'awaiting_confirmation';
-    });
-
+    const awaitingConfirmation = bookings.filter(b => b.status === 'awaiting_confirmation');
     const completed = bookings.filter(b => b.status === 'completed');
 
-    // Combine awaiting and completed for the "Past" view
-    const allPast = [...awaitingConfirmation, ...completed].sort((a, b) => {
+    const overdue = bookings.filter(b => {
+        if (!['confirmed', 'started'].includes(b.status)) return false;
+        if (!b.slot?.startTime) return false;
+        const start = new Date(b.slot.startTime).getTime();
+        const now = Date.now();
+        // If it's more than 2 hours past start time, it's overdue
+        return now > (start + 7200000);
+    });
+
+    // Combine awaiting, completed, and overdue for the "Past" view
+    const allPast = [...awaitingConfirmation, ...completed, ...overdue].sort((a, b) => {
         const aStart = new Date(a?.slot?.startTime || 0).getTime();
         const bStart = new Date(b?.slot?.startTime || 0).getTime();
         return bStart - aStart; // Newest first for past
@@ -442,11 +447,12 @@ export const StudentBookingManager = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {allPast.map((booking) => {
                                 const needsReview = awaitingConfirmation.some(b => b.id === booking.id);
+                                const isOverdue = overdue.some(b => b.id === booking.id);
                                 return (
                                     <Card key={booking.id} className={`overflow-hidden border-2 transition-all ${
                                         needsReview 
                                         ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/10 shadow-lg shadow-amber-500/5' 
-                                        : 'border-border/40 bg-card'
+                                        : isOverdue ? 'border-destructive/30 bg-destructive/5' : 'border-border/40 bg-card'
                                     }`}>
                                         <CardBody className="p-6">
                                             <div className="flex items-start justify-between mb-4">
@@ -461,15 +467,15 @@ export const StudentBookingManager = () => {
                                                 <Badge className={`uppercase text-[10px] font-black ${
                                                     needsReview 
                                                     ? 'bg-amber-500 text-white animate-pulse' 
-                                                    : 'bg-emerald-500 text-white'
+                                                    : isOverdue ? 'bg-destructive/80 text-white' : 'bg-emerald-500 text-white'
                                                 }`}>
-                                                    {needsReview ? 'Ready to Confirm' : 'Completed'}
+                                                    {needsReview ? 'Ready to Confirm' : isOverdue ? 'Expired / Overdue' : 'Completed'}
                                                 </Badge>
                                             </div>
 
                                             {/* Show meeting link for reference */}
                                             <div className={`mb-6 p-3 rounded-xl border flex justify-between items-center ${
-                                                needsReview ? 'bg-card/50 border-amber-500/10' : 'bg-muted/30 border-border/50'
+                                                needsReview ? 'bg-card/50 border-amber-500/10' : isOverdue ? 'bg-muted/30 border-destructive/20' : 'bg-muted/30 border-border/50'
                                             }`}>
                                                 <div>
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Session Link Reference</p>

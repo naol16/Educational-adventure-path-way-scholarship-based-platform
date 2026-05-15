@@ -536,7 +536,25 @@ export class LearningPathService {
       const skillProgress = allProgress.filter(p => p.section === sectionStr && p.isCompleted);
 
       // --- 1. Videos ---
-      const videoIds = (path.videoSections as any)[skill] || [];
+      let videoIds = (path.videoSections as any)[skill] || [];
+      
+      // AUTO-REPAIR: If no videos assigned to this skill, fetch from DB on the fly
+      if (videoIds.length === 0) {
+        const level = (path.proficiencyLevel || 'easy').toLowerCase();
+        const exam = (path.examType || 'IELTS').toUpperCase();
+        const dbVideos = await Video.findAll({
+          where: { level, type: skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase(), examType: exam, resourceType: 'video' },
+          limit: 20
+        });
+        if (dbVideos.length > 0) {
+          videoIds = dbVideos.map(v => v.id);
+          // Persist the repair
+          const updatedSections = { ...(path.videoSections as any), [skill]: videoIds };
+          path.videoSections = updatedSections;
+          await path.save();
+        }
+      }
+
       const videosProgress = await Promise.all(
         videoIds.map(async (id: number) => {
           const video = await VideoService.getById(id);
@@ -554,7 +572,24 @@ export class LearningPathService {
       );
 
       // --- 2. PDFs ---
-      const pdfIds = (path as any).pdfSections?.[skill] || [];
+      let pdfIds = (path as any).pdfSections?.[skill] || [];
+
+      // AUTO-REPAIR: If no PDFs assigned, fetch from DB
+      if (pdfIds.length === 0) {
+        const level = (path.proficiencyLevel || 'easy').toLowerCase();
+        const exam = (path.examType || 'IELTS').toUpperCase();
+        const dbPdfs = await Pdf.findAll({
+          where: { level, type: skill.charAt(0).toUpperCase() + skill.slice(1).toLowerCase(), examType: exam },
+          limit: 12
+        });
+        if (dbPdfs.length > 0) {
+          pdfIds = dbPdfs.map(p => p.id);
+          const updatedPdfSections = { ...((path as any).pdfSections || {}), [skill]: pdfIds };
+          (path as any).pdfSections = updatedPdfSections;
+          await path.save();
+        }
+      }
+
       const pdfsProgress = await Promise.all(
         pdfIds.map(async (id: number) => {
           const pdf = await PdfService.getById(id);
@@ -634,9 +669,9 @@ export class LearningPathService {
         const videoEnd = videoStart + 5;
         let missionVideos = videoStart < validVideos.length ? validVideos.slice(videoStart, videoEnd) : [];
 
-        // PDFs: 1 per mission
-        const pdfStart = i * 1;
-        const pdfEnd = pdfStart + 1;
+        // PDFs: 3 per mission
+        const pdfStart = i * 3;
+        const pdfEnd = pdfStart + 3;
         let missionPdfs = pdfStart < validPdfs.length ? validPdfs.slice(pdfStart, pdfEnd) : [];
 
         // --- INJECT PLACEHOLDERS TO ENFORCE EXACTLY 5 VIDEOS ---
@@ -658,7 +693,7 @@ export class LearningPathService {
           ];
 
           const placeholders = isToefl ? toeflPlaceholders : ieltsPlaceholders;
-          const placeholder = placeholders[(vIndex - 1) % placeholders.length];
+          const placeholder = placeholders[(vIndex - 1) % placeholders.length]!;
 
           missionVideos.push({
             id: 9000 + (skills.indexOf(skill) * 100) + (i * 10) + vIndex,
@@ -675,19 +710,20 @@ export class LearningPathService {
           });
         }
 
-        if (missionPdfs.length === 0) {
-          missionPdfs = [
-            {
-              id: 8000 + (skills.indexOf(skill) * 100) + (i * 10) + 1,
-              title: `${missionInfo.title} - Mastery Cheat Sheet`,
-              description: "Placeholder PDF guide.",
+        if (missionPdfs.length < 3) {
+          while (missionPdfs.length < 3) {
+            const pIndex = missionPdfs.length + 1;
+            missionPdfs.push({
+              id: 8000 + (skills.indexOf(skill) * 100) + (i * 10) + pIndex,
+              title: `${missionInfo.title} - Study Guide ${pIndex}`,
+              description: `Tactical briefing document ${pIndex} for ${missionInfo.title}.`,
               pdfLink: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
               level: path.proficiencyLevel || "medium",
               type: skill.charAt(0).toUpperCase() + skill.slice(1),
               examType: path.examType || "IELTS",
               isCompleted: false
-            }
-          ];
+            });
+          }
         }
         
         const isPracticeCompleted = updatedLearningMode[skill]?.questions?.some((q: any) => q.isCompleted) || 
