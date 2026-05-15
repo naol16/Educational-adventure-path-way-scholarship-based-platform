@@ -46,6 +46,7 @@ interface ProgressItem {
 interface Props {
   onStartTest: (examData: any) => void;
   onViewResult: (item: ProgressItem) => void;
+  isDiagnostic?: boolean;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -54,16 +55,13 @@ const difficultyColors: Record<string, string> = {
   Easy: "bg-success/10 text-success",
 };
 
-export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
+export function AssessmentDashboard({ onStartTest, onViewResult, isDiagnostic }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [examType, setExamType] = useState<"IELTS" | "TOEFL">("IELTS");
   const [difficulty, setDifficulty] = useState<string>("Medium");
   const [progressData, setProgressData] = useState<ProgressItem[]>([]);
   const [envMode, setEnvMode] = useState<"IELTS" | "TOEFL">("IELTS");
-  const [learningPathError, setLearningPathError] = useState<string | null>(
-    null,
-  );
   const [historyPage, setHistoryPage] = useState(1);
   const historyPageSize = 4;
 
@@ -112,33 +110,30 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
 
   const handleStartExam = async () => {
     try {
-      setLearningPathError(null);
       setLoading(true);
       toast.loading("Generating your personalized assessment...", {
         id: "generating",
       });
-      const res = await generateAssessment({ examType, difficulty });
+
+      // Determine if first-time diagnostic (no history for this examType)
+      const historyForType = progressData.filter(p => p.examType === examType);
+      const isFirstDiagnostic = isDiagnostic || historyForType.length === 0;
+
+      // Always pass force:true for retakes — mirrors mobile which never gates on 100% completion
+      const res = await generateAssessment({
+        examType,
+        difficulty,
+        isDiagnostic: isFirstDiagnostic,
+        force: !isFirstDiagnostic, // force=true bypasses the 100% gate on retakes
+      });
       toast.dismiss("generating");
       toast.success("Assessment ready!");
       onStartTest(res);
     } catch (error: any) {
       toast.dismiss("generating");
-      const status = error?.response?.status;
       const serverMessage =
         error?.response?.data?.error || error?.response?.data?.message;
-      if (status === 403) {
-        // Learning path not 100% complete
-        const progress = error?.response?.data?.currentProgress ?? null;
-        const msg =
-          progress !== null
-            ? `Your learning path is only ${progress}% complete. You must reach 100% across all sections (Reading, Writing, Listening, Speaking) before generating a mock exam.`
-            : "You must complete 100% of your learning path (Reading, Writing, Listening & Speaking) before generating a mock exam.";
-        setLearningPathError(msg);
-      } else {
-        toast.error(
-          serverMessage || "Failed to generate assessment. Please try again.",
-        );
-      }
+      toast.error(serverMessage || "Failed to generate assessment. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -231,7 +226,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <div className="flex items-center gap-2">
                 <Sparkles size={12} className={`${theme.accent} animate-pulse`} />
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-                  Strategic Diagnostic
+                  Strategic Placement
                 </span>
               </div>
             </div>
@@ -239,30 +234,18 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">
                 {progressData.some((p) => !p.isDiagnostic)
-                  ? "Mock Exam"
-                  : "Assessment"}{" "}
+                  ? "Practice"
+                  : "Level"}{" "}
                 <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">
-                  Matrix
+                  Hub
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground font-medium max-w-2xl leading-relaxed">
-                Validate your {envMode} proficiency through high-stakes AI
-                evaluations designed to replicate real-world proctoring
-                environments.
+                Identify your English level across all 4 skills to unlock your personalized mission roadmap.
               </p>
             </div>
           </div>
 
-          <Button
-            onClick={fetchStats}
-            variant="outline"
-            className="h-14 px-8 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted/50 transition-all shadow-sm bg-card"
-          >
-            <Loader2
-              className={`mr-2 size-4 ${loadingStats ? "animate-spin" : ""}`}
-            />
-            Refresh Data Stream
-          </Button>
         </div>
 
         {/* Intelligence Statistics Grid */}
@@ -272,7 +255,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60">
-                    Avg {isTOEFL ? "Score" : "Band"}
+                    Current {isTOEFL ? "Score" : "Band"}
                   </p>
                   <h3
                     className={`text-6xl font-black ${theme.text} tracking-tighter`}
@@ -301,7 +284,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60">
-                    Tests Processed
+                    Tests Completed
                   </p>
                   <h3 className="text-6xl font-black tracking-tighter">
                     {averages.tests}
@@ -314,8 +297,8 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <div className="flex items-center gap-3 pt-4 border-t border-border/10">
                 <BarChart2 size={14} className="text-blue-500" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Diagnostic Frequency:{" "}
-                  <span className="text-foreground">Optimal Spectrum</span>
+                  Performance Status:{" "}
+                  <span className="text-foreground">Great Progress!</span>
                 </p>
               </div>
             </CardBody>
@@ -336,18 +319,21 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   </span>
                 </div>
                 <p className="text-lg font-black tracking-tight uppercase">
-                  Target {isTOEFL ? "Score" : "Band"}:{" "}
+                  Target Goal:{" "}
                   <span className="text-foreground ml-2">
                     {thresholdBand}
                     {!isTOEFL && ".0"}+
                   </span>
+                </p>
+                <p className="text-[10px] text-muted-foreground font-medium leading-tight">
+                  This is the score required for 90% of your saved scholarships.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-muted-foreground">
-                    Efficiency Index
+                    Exam Readiness
                   </span>
                   <span className={theme.text}>
                     {averages.band} / {maxScore}
@@ -366,7 +352,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   <p
                     className={`text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 ${theme.text}`}
                   >
-                    <Sparkles size={12} /> Optimization Target Met
+                    <Sparkles size={12} /> Target Met! You're ready.
                   </p>
                 )}
               </div>
@@ -384,40 +370,13 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                   <div className="flex items-center gap-3">
                     <PlayCircle className="text-primary" size={20} />
                     <h3 className="text-xl font-black uppercase tracking-tight">
-                      {progressData.length === 0
-                        ? "Initiate Diagnostic"
-                        : "Execute Mock Exam"}
+                      Take Assessment
                     </h3>
                   </div>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    {progressData.length === 0
-                      ? "Deploy AI-driven synthesis for a full-spectrum diagnostic simulation."
-                      : "Perform a high-fidelity mock exam to verify your current proficiency level."}
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                    Help you identify your level of language proficiency across all four skills.
                   </p>
                 </div>
-
-                {learningPathError && (
-                  <div className="flex items-start gap-4 p-6 rounded-2xl border border-destructive/20 bg-destructive/5">
-                    <AlertCircle
-                      className="text-destructive shrink-0 mt-1"
-                      size={20}
-                    />
-                    <div className="space-y-3">
-                      <p className="font-black text-xs uppercase tracking-widest text-destructive">
-                        Protocol Restricted
-                      </p>
-                      <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                        {learningPathError}
-                      </p>
-                      <Link
-                        href="/dashboard/learning-path"
-                        className="inline-flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] hover:translate-x-1 transition-transform"
-                      >
-                        Navigate to Learning Path <ArrowRight size={14} />
-                      </Link>
-                    </div>
-                  </div>
-                )}
 
                 <Button
                   onClick={handleStartExam}
@@ -426,13 +385,11 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="animate-spin mr-3 size-5" /> Synthesis
-                      in Progress...
+                      <Loader2 className="animate-spin mr-3 size-5" /> Preparing Assessment...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="mr-3 size-5" /> Execute Assessment
-                      Protocol
+                      <Sparkles className="mr-3 size-5" /> START ASSESSMENT
                     </>
                   )}
                 </Button>
@@ -501,7 +458,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
               <CardBody className="p-10 space-y-8">
                 <div className="flex items-center justify-between border-b border-border/10 pb-6">
                   <h3 className="text-2xl font-black uppercase tracking-tight">
-                    Assessment History
+                    Your Previous Results
                   </h3>
                   <Badge className="bg-muted text-muted-foreground border-none font-black px-4 py-1.5 rounded-full text-[10px] tracking-widest">
                     {historyData.length} RECORDS
@@ -557,7 +514,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                             <div className="flex items-center gap-3">
                               <span className="font-black text-sm tracking-widest uppercase">
                                 {item.examType}{" "}
-                                {item.isDiagnostic ? "DIAGNOSTIC" : "MOCK EXAM"}
+                                {item.isDiagnostic ? "LEVEL CHECK" : "PRACTICE TEST"}
                               </span>
                               <Badge
                                 className={`text-[8px] font-black uppercase tracking-widest border-none ${item.isDiagnostic ? "bg-blue-500/10 text-blue-600" : "bg-emerald-500/10 text-emerald-600"}`}
@@ -596,7 +553,7 @@ export function AssessmentDashboard({ onStartTest, onViewResult }: Props) {
                           }}
                           className="h-14 px-8 rounded-lg font-black uppercase tracking-widest text-[9px] transition-all bg-foreground text-background hover:bg-foreground/90 mt-4 sm:mt-0 w-full sm:w-auto shadow-lg"
                         >
-                          View Diagnostic Matrix
+                          View Breakdown
                           <ChevronRight
                             size={14}
                             className="ml-2 group-hover:translate-x-1 transition-transform"

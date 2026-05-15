@@ -41,13 +41,11 @@ class _CounselorOnboardingScreenState
   String? _position;
   final _orgController = TextEditingController();
   final _expController = TextEditingController();
-  List<String> _selectedExpertise = [];
 
   // Step 3: Availability
   double _hourlyRate = 50.0;
   int _sessionDuration = 60;
   List<String> _consultationModes = ['chat', 'video'];
-  List<Map<String, String>> _slots = [];
 
   // Step 4: Documents
   File? _profileImage;
@@ -78,7 +76,6 @@ class _CounselorOnboardingScreenState
         _position = profile.currentPosition;
         _orgController.text = profile.organization ?? '';
         _expController.text = profile.yearsOfExperience.toString();
-        _selectedExpertise = profile.areasOfExpertise;
         _hourlyRate = profile.hourlyRate;
         _sessionDuration = profile.sessionDuration;
         _consultationModes = profile.consultationModes;

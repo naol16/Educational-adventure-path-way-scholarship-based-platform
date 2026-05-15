@@ -115,6 +115,7 @@ app.use("/api/marketing", routes.marketingRouter);
 app.use("/api/groups", routes.chatGroupRouter);
 app.use("/api/moderation", routes.moderationRouter);
 app.use("/api/ai-chat", routes.aiChatRouter);
+app.use("/api/mock-exam", routes.mockExamRouter);
 app.use("/api/debug", debugRoutes);
 // Health Check
 app.get("/health", (req, res) => {

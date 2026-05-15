@@ -4,255 +4,385 @@ import { LearningPathProgress } from "../models/LearningPathProgress.js";
 import { StudentRepository } from "../repositories/StudentRepository.js";
 import { LearningPathRepository } from "../repositories/LearningPathRepository.js";
 import { ResponseHelper } from "../utils/responseHelper.js";
+import {
+  getToeflMissionsByLevelAndSkill,
+  getToeflMissionsByLevel,
+  TOEFL_RESOURCES,
+} from "../constants/toeflResources.js";
 
 export class LearningPathController {
-    /**
-     * Gets the student's personalized learning path formatted by skill.
-     */
-    static async getMyPath(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            if (!userId) {
-                return ResponseHelper.error(res, "Unauthorized", 401);
-            }
+  /**
+   * Gets the student's personalized learning path formatted by skill.
+   */
+  static async getMyPath(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(res, "Unauthorized", 401);
+      }
 
-            const student = await StudentRepository.findByUserId(userId);
-            if (!student) {
-                return ResponseHelper.error(res, "Student profile not found", 404);
-            }
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
 
-            // Accept ?examType=IELTS or ?examType=TOEFL to fetch each path independently.
-            // Without it, falls back to returning the most recent path (any exam type).
-            const examType = typeof req.query.examType === 'string'
-                ? req.query.examType.toUpperCase()
-                : undefined;
+      // Accept ?examType=IELTS or ?examType=TOEFL to fetch each path independently.
+      // Without it, falls back to returning the most recent path (any exam type).
+      const examType =
+        typeof req.query.examType === "string"
+          ? req.query.examType.toUpperCase()
+          : undefined;
 
-            const path = await LearningPathService.getFormattedPath(student.id, examType);
+      const path = await LearningPathService.getFormattedPath(
+        student.id,
+        examType,
+      );
 
-            return ResponseHelper.success(res, path);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+      return ResponseHelper.success(res, path);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Marks a specific video or section as completed.
-     */
-    static async markComplete(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            const { videoId, pdfId, questionIndex, isNote, section, isCompleted, answer, examType } = req.body;
+  /**
+   * Gets TOEFL missions with videos and PDF resources by skill level
+   * Query params:
+   * - level: '1' (Easy), '2' (Medium), '3' (Hard)
+   * - skill: 'reading', 'listening', 'speaking', 'writing' (optional - returns all if not specified)
+   */
+  static async getToeflMissionsWithResources(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return ResponseHelper.error(res, "Unauthorized", 401);
+      }
 
-            if (!userId) {
-                return ResponseHelper.error(res, "Unauthorized", 401);
-            }
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
 
-            const student = await StudentRepository.findByUserId(userId);
-            if (!student) {
-                return ResponseHelper.error(res, "Student profile not found", 404);
-            }
+      const { level, skill } = req.query;
 
-            const [progress, created] = await LearningPathProgress.findOrCreate({
-                where: {
-                    studentId: student.id,
-                    videoId: videoId ?? null,
-                    pdfId: pdfId ?? null,
-                    questionIndex: questionIndex ?? null,
-                    isNote: isNote ?? false,
-                    section: section ? (section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()) : section,
-                    examType: examType ? examType.toUpperCase() : 'IELTS'
-                },
-                defaults: {
-                    isCompleted: isCompleted ?? true,
-                    answerText: answer ?? null
-                }
-            });
+      if (!level || !["1", "2", "3"].includes(level as string)) {
+        return ResponseHelper.error(
+          res,
+          "Invalid level. Must be '1', '2', or '3'",
+          400,
+        );
+      }
 
-            if (!created) {
-                await progress.update({ 
-                    isCompleted: isCompleted ?? true,
-                    answerText: answer ?? progress.answerText
-                });
-            }
+      let missions: any[] = [];
 
-            return ResponseHelper.success(res, progress);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+      if (
+        skill &&
+        ["reading", "listening", "speaking", "writing"].includes(
+          skill as string,
+        )
+      ) {
+        // Get missions for specific skill and level
+        missions = getToeflMissionsByLevelAndSkill(
+          level as "1" | "2" | "3",
+          skill as any,
+        );
+      } else {
+        // Get all missions for the level
+        missions = getToeflMissionsByLevel(level as "1" | "2" | "3");
+      }
+
+      // Format with YouTube embeds and additional metadata
+      const formattedMissions = missions.map((mission: any) => ({
+        ...mission,
+        videoUrls: mission.videos.map(
+          (id: string) => `https://www.youtube.com/embed/${id}`,
+        ),
+        youtubeIds: mission.videos,
+        skillLabel:
+          mission.skill.charAt(0).toUpperCase() + mission.skill.slice(1),
+        levelLabel: TOEFL_RESOURCES.find((l) => l.level === level)?.label || "",
+      }));
+
+      return ResponseHelper.success(res, {
+        level,
+        skill: skill || "all",
+        count: formattedMissions.length,
+        missions: formattedMissions,
+      });
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Bulk marks an entire section (Reading, Listening, Writing, or Speaking) as completed.
-     */
-    static async markSectionComplete(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            const { section, examType } = req.body; // e.g. "Reading"
+  /**
+   * Marks a specific video or section as completed.
+   */
+  static async markComplete(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const {
+        videoId,
+        pdfId,
+        questionIndex,
+        isNote,
+        section,
+        isCompleted,
+        answer,
+        examType,
+      } = req.body;
 
-            if (!userId || !section) {
-                return ResponseHelper.error(res, "Missing userId or section", 400);
-            }
+      if (!userId) {
+        return ResponseHelper.error(res, "Unauthorized", 401);
+      }
 
-            const student = await StudentRepository.findByUserId(userId);
-            if (!student) {
-                return ResponseHelper.error(res, "Student profile not found", 404);
-            }
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
 
-            const path = await LearningPathRepository.findByStudentId(student.id, examType);
-            if (!path) {
-                return ResponseHelper.error(res, "Learning path not found", 404);
-            }
+      const [progress, created] = await LearningPathProgress.findOrCreate({
+        where: {
+          studentId: student.id,
+          videoId: videoId ?? null,
+          pdfId: pdfId ?? null,
+          questionIndex: questionIndex ?? null,
+          isNote: isNote ?? false,
+          section: section
+            ? section.charAt(0).toUpperCase() + section.slice(1).toLowerCase()
+            : section,
+          examType: examType ? examType.toUpperCase() : "IELTS",
+        },
+        defaults: {
+          isCompleted: isCompleted ?? true,
+          answerText: answer ?? null,
+        },
+      });
 
-            // Normalizing the section string to match keys in the JSON sections
-            const lowerSection = section.toLowerCase();
-            const normalizedSection = section.charAt(0).toUpperCase() + section.slice(1).toLowerCase();
-            const normExamType = examType ? examType.toUpperCase() : 'IELTS';
+      if (!created) {
+        await progress.update({
+          isCompleted: isCompleted ?? true,
+          answerText: answer ?? progress.answerText,
+        });
+      }
 
-            // 1. Get all Video IDs for this section
-            const videoIds = (path.videoSections as any)[lowerSection] || [];
-            
-            // 2. Get the number of questions in the Learning Mode for this section
-            const questions = (path.learningModeSections as any)[lowerSection] || [];
-
-            // 3. Perform bulk operations
-            // We use upsert-like logic: findOrCreate or just bulk create/update.
-            // For simplicity and to ensure data integrity, we'll iterate through and mark each.
-            
-            // Mark all videos
-            for (const vId of videoIds) {
-                await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, videoId: vId, section: normalizedSection, examType: normExamType },
-                    defaults: { isCompleted: true }
-                }).then(([progress, created]) => {
-                   if (!created) progress.update({ isCompleted: true });
-                });
-            }
-
-            // Mark all questions
-            for (let i = 0; i < questions.length; i++) {
-                await LearningPathProgress.findOrCreate({
-                    where: { studentId: student.id, questionIndex: i, section: normalizedSection, examType: normExamType },
-                    defaults: { isCompleted: true }
-                }).then(([progress, created]) => {
-                   if (!created) progress.update({ isCompleted: true });
-                });
-            }
-
-            // Mark the note
-            await LearningPathProgress.findOrCreate({
-                where: { studentId: student.id, isNote: true, section: normalizedSection, examType: normExamType },
-                defaults: { isCompleted: true }
-            }).then(([progress, created]) => {
-                if (!created) progress.update({ isCompleted: true });
-            });
-
-            // Return success
-            return ResponseHelper.success(res, null, `${normalizedSection} section marked as complete.`);
-
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+      return ResponseHelper.success(res, progress);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Evaluates a speaking practice response using AI.
-     */
-    static async evaluateSpeaking(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            const { questionIndex } = req.body;
-            
-            // express-fileupload attaches files to req.files
-            const files = (req as any).files;
-            const audioFile = files?.audio;
+  /**
+   * Bulk marks an entire section (Reading, Listening, Writing, or Speaking) as completed.
+   */
+  static async markSectionComplete(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { section, examType } = req.body; // e.g. "Reading"
 
-            if (!userId) {
-                return ResponseHelper.error(res, "Unauthorized", 401);
-            }
+      if (!userId || !section) {
+        return ResponseHelper.error(res, "Missing userId or section", 400);
+      }
 
-            if (!audioFile) {
-                return ResponseHelper.error(res, "No audio file provided. Please upload as 'audio' field.", 400);
-            }
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
 
-            const student = await StudentRepository.findByUserId(userId);
-            if (!student) {
-                return ResponseHelper.error(res, "Student profile not found", 404);
-            }
+      const path = await LearningPathRepository.findByStudentId(
+        student.id,
+        examType,
+      );
+      if (!path) {
+        return ResponseHelper.error(res, "Learning path not found", 404);
+      }
 
-            // Normalizing file if it's an array
-            const actualFile = Array.isArray(audioFile) ? audioFile[0] : audioFile;
+      // Normalizing the section string to match keys in the JSON sections
+      const lowerSection = section.toLowerCase();
+      const normalizedSection =
+        section.charAt(0).toUpperCase() + section.slice(1).toLowerCase();
+      const normExamType = examType ? examType.toUpperCase() : "IELTS";
 
-            const examType = req.body.examType as string;
+      // 1. Get all Video IDs for this section
+      const videoIds = (path.videoSections as any)[lowerSection] || [];
 
-            const result = await LearningPathService.evaluateSpeakingPractice(
-                student.id,
-                parseInt(questionIndex as string),
-                actualFile.data.toString("base64"),
-                actualFile.mimetype,
-                examType
-            );
+      // 2. Get the number of questions in the Learning Mode for this section
+      const questions = (path.learningModeSections as any)[lowerSection] || [];
 
-            return ResponseHelper.success(res, result);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+      // 3. Perform bulk operations
+      // We use upsert-like logic: findOrCreate or just bulk create/update.
+      // For simplicity and to ensure data integrity, we'll iterate through and mark each.
+
+      // Mark all videos
+      for (const vId of videoIds) {
+        await LearningPathProgress.findOrCreate({
+          where: {
+            studentId: student.id,
+            videoId: vId,
+            section: normalizedSection,
+            examType: normExamType,
+          },
+          defaults: { isCompleted: true },
+        }).then(([progress, created]) => {
+          if (!created) progress.update({ isCompleted: true });
+        });
+      }
+
+      // Mark all questions
+      for (let i = 0; i < questions.length; i++) {
+        await LearningPathProgress.findOrCreate({
+          where: {
+            studentId: student.id,
+            questionIndex: i,
+            section: normalizedSection,
+            examType: normExamType,
+          },
+          defaults: { isCompleted: true },
+        }).then(([progress, created]) => {
+          if (!created) progress.update({ isCompleted: true });
+        });
+      }
+
+      // Mark the note
+      await LearningPathProgress.findOrCreate({
+        where: {
+          studentId: student.id,
+          isNote: true,
+          section: normalizedSection,
+          examType: normExamType,
+        },
+        defaults: { isCompleted: true },
+      }).then(([progress, created]) => {
+        if (!created) progress.update({ isCompleted: true });
+      });
+
+      // Return success
+      return ResponseHelper.success(
+        res,
+        null,
+        `${normalizedSection} section marked as complete.`,
+      );
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Generates a unit test for a specific mission/skill.
-     */
-    static async generateUnitTest(req: Request, res: Response) {
-        try {
-            const { skill, level, examType } = req.body;
-            const test = await LearningPathService.generateUnitTest(skill, level, examType);
-            return ResponseHelper.success(res, test);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+  /**
+   * Evaluates a speaking practice response using AI.
+   */
+  static async evaluateSpeaking(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { questionIndex } = req.body;
+
+      // express-fileupload attaches files to req.files
+      const files = (req as any).files;
+      const audioFile = files?.audio;
+
+      if (!userId) {
+        return ResponseHelper.error(res, "Unauthorized", 401);
+      }
+
+      if (!audioFile) {
+        return ResponseHelper.error(
+          res,
+          "No audio file provided. Please upload as 'audio' field.",
+          400,
+        );
+      }
+
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
+
+      // Normalizing file if it's an array
+      const actualFile = Array.isArray(audioFile) ? audioFile[0] : audioFile;
+
+      const examType = req.body.examType as string;
+
+      const result = await LearningPathService.evaluateSpeakingPractice(
+        student.id,
+        parseInt(questionIndex as string),
+        actualFile.data.toString("base64"),
+        actualFile.mimetype,
+        examType,
+      );
+
+      return ResponseHelper.success(res, result);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Dynamically generates a full mission (Practice & Unit Test) using AI.
-     */
-    static async generateDynamicMission(req: Request, res: Response) {
-        try {
-            const { skill, level, topic, missionIndex } = req.body;
-            
-            if (!skill || !level || !topic) {
-                return ResponseHelper.error(res, "Missing skill, level, or topic", 400);
-            }
-
-            const parsedIndex = missionIndex !== undefined ? parseInt(missionIndex, 10) : 0;
-            const missionData = await LearningPathService.generateMissionContent(skill, level, topic, parsedIndex);
-            
-            return ResponseHelper.success(res, missionData);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+  /**
+   * Generates a unit test for a specific mission/skill.
+   */
+  static async generateUnitTest(req: Request, res: Response) {
+    try {
+      const { skill, level, examType } = req.body;
+      const test = await LearningPathService.generateUnitTest(
+        skill,
+        level,
+        examType,
+      );
+      return ResponseHelper.success(res, test);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
 
-    /**
-     * Submits a unit test for evaluation.
-     */
-    static async submitUnitTest(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            const { skill, responses, missionIndex } = req.body;
+  /**
+   * Dynamically generates a full mission (Practice & Unit Test) using AI.
+   */
+  static async generateDynamicMission(req: Request, res: Response) {
+    try {
+      const { skill, level, topic, missionIndex } = req.body;
 
-            if (!userId) {
-                return ResponseHelper.error(res, "Unauthorized", 401);
-            }
+      if (!skill || !level || !topic) {
+        return ResponseHelper.error(res, "Missing skill, level, or topic", 400);
+      }
 
-            const student = await StudentRepository.findByUserId(userId);
-            if (!student) {
-                return ResponseHelper.error(res, "Student profile not found", 404);
-            }
+      const parsedIndex =
+        missionIndex !== undefined ? parseInt(missionIndex, 10) : 0;
+      const missionData = await LearningPathService.generateMissionContent(
+        skill,
+        level,
+        topic,
+        parsedIndex,
+      );
 
-            const result = await LearningPathService.evaluateUnitTest(student.id, skill, responses, missionIndex);
-            
-            return ResponseHelper.success(res, result);
-        } catch (error: any) {
-            return ResponseHelper.error(res, error.message);
-        }
+      return ResponseHelper.success(res, missionData);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
     }
+  }
+
+  /**
+   * Submits a unit test for evaluation.
+   */
+  static async submitUnitTest(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const { skill, responses, missionIndex } = req.body;
+
+      if (!userId) {
+        return ResponseHelper.error(res, "Unauthorized", 401);
+      }
+
+      const student = await StudentRepository.findByUserId(userId);
+      if (!student) {
+        return ResponseHelper.error(res, "Student profile not found", 404);
+      }
+
+      const result = await LearningPathService.evaluateUnitTest(
+        student.id,
+        skill,
+        responses,
+        missionIndex,
+      );
+
+      return ResponseHelper.success(res, result);
+    } catch (error: any) {
+      return ResponseHelper.error(res, error.message);
+    }
+  }
 }

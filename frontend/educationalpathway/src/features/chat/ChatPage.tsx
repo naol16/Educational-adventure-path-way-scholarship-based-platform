@@ -6,6 +6,8 @@ import { ChatList } from "./components/ChatList";
 import { ChatWindow } from "./components/ChatWindow";
 import { ChatInput } from "./components/ChatInput";
 import { ChatDetails } from "./components/ChatDetails";
+import { BookingModal } from "../counselor/components/BookingModal";
+import { StudentBookingModal } from "../counselor/components/StudentBookingModal";
 import { Conversation, Message, ChatUser } from "./types";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
@@ -47,6 +49,10 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
   const [isJoining, setIsJoining] = useState(false);
   const [isMobileListVisible, setIsMobileListVisible] = useState(true);
   const [messageIdToDelete, setMessageIdToDelete] = useState<number | null>(null);
+
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [activeCounselorData, setActiveCounselorData] = useState<any>(null);
+  const [fetchingCounselor, setFetchingCounselor] = useState(false);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
   const { socket, isConnected } = useSocket(token);
@@ -517,6 +523,28 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
     setActiveConv(null);
   };
 
+  const handleOpenBooking = async () => {
+    const otherUser = activeConv?.isGroup ? null : (activeConv?.members?.find(u => u.id !== currentUser.id) || activeConv?.users?.find(u => u.id !== currentUser.id) || null);
+    if (!otherUser) return;
+
+    if (currentUser.role === 'counselor') {
+      setActiveCounselorData({ id: -1, name: currentUser.name });
+      setIsBookingModalOpen(true);
+    } else if (otherUser.role === 'counselor') {
+      setFetchingCounselor(true);
+      try {
+        const res = await api.get(`/counselors/by-user/${otherUser.id}`);
+        setActiveCounselorData(res.data.data || res.data);
+        setIsBookingModalOpen(true);
+      } catch (err) {
+        console.error("Failed to fetch counselor data", err);
+        toast.error("Could not fetch counselor details");
+      } finally {
+        setFetchingCounselor(false);
+      }
+    }
+  };
+
 
 
   const startNewChat = async (userId: number) => {
@@ -618,6 +646,9 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
               onJoinGroup={handleJoinGroup}
               isJoining={isJoining}
               onBack={handleBack}
+              onBookSession={handleOpenBooking}
+              bookingLoading={fetchingCounselor}
+              currentUserRole={currentUser.role}
             />
 
             {/* Message Delete Confirmation Modal */}
@@ -676,6 +707,7 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
               onCancelEdit={() => setEditingMessage(null)}
               onCancelReply={() => setReplyingTo(null)}
               placeholder={(activeConv as any).isNotJoined ? "Join community to chat" : "Type a message..."}
+              onSchedule={handleOpenBooking}
             />
             
             <AnimatePresence>
@@ -710,6 +742,14 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
           </div>
         )}
       </div>
+
+      {isBookingModalOpen && activeCounselorData && (
+        currentUser.role === 'counselor' ? (
+          <BookingModal counselor={activeCounselorData} studentUserId={activeConv?.isGroup ? undefined : (activeConv?.members?.find(u => u.id !== currentUser.id)?.id || activeConv?.users?.find(u => u.id !== currentUser.id)?.id)} onClose={() => setIsBookingModalOpen(false)} />
+        ) : (
+          <StudentBookingModal counselor={activeCounselorData} onClose={() => setIsBookingModalOpen(false)} />
+        )
+      )}
     </div>
   );
 };

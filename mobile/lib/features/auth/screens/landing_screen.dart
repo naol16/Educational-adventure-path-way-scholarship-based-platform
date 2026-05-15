@@ -36,7 +36,7 @@ class _LandingScreenState extends State<LandingScreen> {
       imageUrl: 'assets/images/landing/scholarship_ui.png',
     ),
     CarouselSlide(
-      title: 'Verified Mentorship',
+      title: 'Verified Counseling',
       description: 'Unlock expert guidance with total peace of mind. Every transaction is protected by secure escrow.',
       imageUrl: 'assets/images/landing/mentorship_ui.png',
     ),

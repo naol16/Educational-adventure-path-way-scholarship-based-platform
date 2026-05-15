@@ -1,5 +1,4 @@
-import { LearningPath } from "../models/LearningPath.js";
-import { LearningPathProgress } from "../models/LearningPathProgress.js";
+import { LearningPath, LearningPathProgress } from "../models/index.js";
 import { Op } from "sequelize";
 
 export class LearningPathRepository {

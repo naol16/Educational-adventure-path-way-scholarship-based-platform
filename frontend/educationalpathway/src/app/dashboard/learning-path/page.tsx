@@ -14,27 +14,32 @@ import {
   Search,
   BookOpen,
   MonitorPlay,
-  Award
+  Award,
+  X
 } from 'lucide-react';
 import { PracticeDrillOverlay } from './PracticeDrillOverlay';
-import axios from 'axios';
+import { UnitTestOverlay } from '@/features/english-learning/components/LearningPath/LearningPathOverlays';
+import { getLearningPath, generateUnitTest } from '@/features/assessments/api/assessment-api';
+import { useLearningPath, LearningPathProvider } from '@/features/english-learning/components/LearningPath/LearningPathContext';
+import Link from 'next/link';
 
 // Circular Gauge Component
 const CircularGauge = ({ 
-  percentage, 
+  score,
+  maxScore,
   label, 
-  sublabel, 
   color,
   isActive,
   onClick
 }: { 
-  percentage: number, 
+  score: number,
+  maxScore: number,
   label: string, 
-  sublabel: string, 
   color: string,
   isActive?: boolean,
   onClick?: () => void
 }) => {
+  const percentage = (score / maxScore) * 100;
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -59,43 +64,100 @@ const CircularGauge = ({
             strokeLinecap="round"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold">{percentage}%</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+          <span className="text-[13px] font-bold text-white/90">{score}</span>
+          <span className="text-[9px] font-bold text-white/50">/ {maxScore}</span>
         </div>
       </div>
       <div className="flex flex-col text-left">
         <span className="text-xs font-bold tracking-wider text-white/80 uppercase">{label}</span>
-        <span style={{ color }} className="text-xs font-medium">{sublabel}</span>
       </div>
     </button>
   );
 };
 
-export default function LearningPathDashboard() {
+function LearningPathDashboardContent() {
   const [selectedSkill, setSelectedSkill] = useState<string>('reading');
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'overview' | 'videos' | 'resources'>('overview');
   const [showDrill, setShowDrill] = useState(false);
+  const [showUnitTest, setShowUnitTest] = useState(false);
+  const [unitTestContent, setUnitTestContent] = useState<any>(null);
+  const [drillContent, setDrillContent] = useState<any>(null);
+  const [loadingDrill, setLoadingDrill] = useState(false);
+  const [unitTestResults, setUnitTestResults] = useState<any>(null);
+  const [isSubmittingTest, setIsSubmittingTest] = useState(false);
+  const [loadingUnitTest, setLoadingUnitTest] = useState(false);
   const [pathData, setPathData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [examType, setExamType] = useState<'IELTS' | 'TOEFL'>('IELTS');
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [practiceCompleted, setPracticeCompleted] = useState<Record<string, boolean>>({});
+  const [resourceCompleted, setResourceCompleted] = useState<Record<string, boolean>>({});
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
+
+  // Helper to extract YouTube ID
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return '';
+    const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?]+)/);
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
+    }
+    return url;
+  };
+
+  // Access context methods for unit testing if wrapped in context provider
+  const { takeUnitTest, submitTest } = useLearningPath() || {};
+
+  const calculateMissionCompletion = (mission: any, phaseIndex: number, skillName: string = selectedSkill) => {
+    const videos = mission.videos || [];
+    const pdfs = mission.pdfs || [];
+    const totalResources = videos.length + pdfs.length;
+    
+    // In real app, check mission.isCompleted for videos/pdfs, or default to true for mock
+    // Check dynamic state or fallback to backend data
+    const completedVideos = videos.filter((v: any, idx: number) => resourceCompleted[`${examType}-${skillName}-${phaseIndex}-video-${idx}`] || v.isCompleted === true).length;
+    const completedPdfs = pdfs.filter((p: any, idx: number) => resourceCompleted[`${examType}-${skillName}-${phaseIndex}-pdf-${idx}`] || p.isCompleted === true).length;
+    const completedResources = completedVideos + completedPdfs;
+    
+    const practiceDone = practiceCompleted[`${examType}-${skillName}-${phaseIndex}`] || false;
+    const unitTestDone = practiceCompleted[`${examType}-${skillName}-${phaseIndex}-unitTest`] || false;
+    // For unit test to unlock, they must have watched all videos, pdfs and practice drill
+    const isPrepComplete = (totalResources > 0 ? completedResources >= totalResources : true) && practiceDone;
+    
+    return {
+      isFullyComplete: mission.isCompleted || unitTestDone, // Should be true when unit test is passed
+      isPrepComplete,
+      completedResources,
+      totalResources,
+      practiceDone,
+      unitTestDone
+    };
+  };
 
   useEffect(() => {
-    fetchPath();
-  }, [examType]);
+    if (typeof window !== 'undefined') {
+      const urlExamType = new URLSearchParams(window.location.search).get('exam');
+      if (urlExamType === 'TOEFL' || urlExamType === 'IELTS') {
+        setExamType(urlExamType as 'IELTS' | 'TOEFL');
+      }
+      setIsInitialized(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchPath();
+    }
+  }, [examType, isInitialized]);
 
   const fetchPath = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const response = await axios.get(`${apiUrl}/learning-path/my-path?examType=${examType}`, {
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.data.success) {
-        setPathData(response.data.data);
+      const data = await getLearningPath(examType);
+      if (data) {
+        setPathData(data);
       }
     } catch (error) {
       console.error("Error fetching path:", error);
@@ -106,7 +168,75 @@ export default function LearningPathDashboard() {
     }
   };
 
+  const handleTakeUnitTest = async () => {
+    if (!takeUnitTest) {
+      console.warn("takeUnitTest not available in context. Using mock test.");
+      setUnitTestContent({ questions: [{ question: "Mock unit test question?", options: ["A", "B", "C", "D"], correct_answer: 0 }] });
+      setShowUnitTest(true);
+      return;
+    }
+    try {
+       setLoadingUnitTest(true);
+       setIsSubmittingTest(true);
+       const res = await takeUnitTest(activePhaseIndex, selectedSkill, examType);
+       setUnitTestContent(res);
+       setShowUnitTest(true);
+       setUnitTestResults(null);
+    } catch (err) {
+       console.error("Failed to load unit test", err);
+    } finally {
+       setIsSubmittingTest(false);
+       setLoadingUnitTest(false);
+    }
+  };
+
+  const handleTakePracticeDrill = async () => {
+    try {
+      setLoadingDrill(true);
+      const res = await generateUnitTest({
+        skill: selectedSkill,
+        level: pathData?.proficiencyLevel || 'easy',
+        examType: examType
+      });
+      setDrillContent(res.data || res);
+      setShowDrill(true);
+    } catch (error) {
+      console.error("Failed to generate practice drill:", error);
+      // Fallback to static mock data
+      setDrillContent({
+        questions: pathData?.learningModeSections?.[selectedSkill] || pathData?.skills?.[selectedSkill]?.questions || []
+      });
+      setShowDrill(true);
+    } finally {
+      setLoadingDrill(false);
+    }
+  };
+
+  const handleSubmitUnitTest = async (responses: any[]) => {
+    if (!submitTest) {
+      // Mock submit
+      setUnitTestResults({ score: 10, total: 10, passed: true, message: "Mock passed" });
+      setPracticeCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-unitTest`]: true }));
+      return;
+    }
+    try {
+       setIsSubmittingTest(true);
+       const res = await submitTest(responses, selectedSkill, activePhaseIndex);
+       setUnitTestResults(res);
+       if (res?.passed) {
+         setPracticeCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-unitTest`]: true }));
+       }
+    } catch (err) {
+       console.error("Failed to submit test", err);
+    } finally {
+       setIsSubmittingTest(false);
+    }
+  };
+
   const mockData = () => {
+    const queryLevel = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('level') : null;
+    const computedLevel = queryLevel || 'easy';
+
     const ieltsVideos = [
       { id: 1, title: 'IELTS Strategy: Overview & Intro', level: 'easy', videolink: 'https://youtube.com/watch?v=7e90gBu4pas', thubnail: 'https://img.youtube.com/vi/7e90gBu4pas/0.jpg' },
       { id: 2, title: 'Key Vocabulary & Lexical Resource', level: 'easy', videolink: 'https://youtube.com/watch?v=0v9v76YjRyk', thubnail: 'https://img.youtube.com/vi/0v9v76YjRyk/0.jpg' },
@@ -124,15 +254,15 @@ export default function LearningPathDashboard() {
     ];
 
     const getPdfs = (skill: string, phase: number, type: string) => [
-      { id: Math.random(), title: `${skill} Phase ${phase} - Strategy Guide`, level: 'easy', pdfLink: '#' },
-      { id: Math.random(), title: `${skill} Phase ${phase} - Vocabulary List`, level: 'easy', pdfLink: '#' },
-      { id: Math.random(), title: `${skill} Phase ${phase} - Practice Drills`, level: 'easy', pdfLink: '#' }
+      { id: Math.random(), title: `${skill} Phase ${phase} - Strategy Guide`, level: computedLevel, pdfLink: '#' },
+      { id: Math.random(), title: `${skill} Phase ${phase} - Vocabulary List`, level: computedLevel, pdfLink: '#' },
+      { id: Math.random(), title: `${skill} Phase ${phase} - Practice Drills`, level: computedLevel, pdfLink: '#' }
     ];
 
     const videos = examType === 'IELTS' ? ieltsVideos : toeflVideos;
 
     const mock = {
-      proficiencyLevel: 'easy',
+      proficiencyLevel: computedLevel,
       examType: examType,
       current_progress_percentage: 15,
       skills: {
@@ -193,6 +323,39 @@ export default function LearningPathDashboard() {
 
   const currentSkillData = pathData?.skills?.[selectedSkill.toLowerCase()] || { missions: [] };
   const currentPhase = currentSkillData.missions[activePhaseIndex] || { title: 'No Phase Available', objective: '', videos: [], pdfs: [] };
+  const currentMissionStatus = calculateMissionCompletion(currentPhase, activePhaseIndex);
+
+  const getScore = (skill: string) => {
+    const skillData = pathData?.skills?.[skill.toLowerCase()];
+    if (!skillData || !skillData.missions || skillData.missions.length === 0) return 0;
+
+    let totalItems = 0;
+    let completedItems = 0;
+
+    skillData.missions.forEach((mission: any, idx: number) => {
+       const status = calculateMissionCompletion(mission, idx, skill.toLowerCase());
+       
+       totalItems += status.totalResources;
+       completedItems += status.completedResources;
+       
+       totalItems += 1; // Practice
+       if (status.practiceDone) completedItems += 1;
+
+       totalItems += 1; // Unit test
+       if (status.isFullyComplete) completedItems += 1;
+    });
+
+    if (totalItems === 0) return 0;
+
+    const maxScore = examType === 'IELTS' ? 9 : 30;
+    const rawScore = (completedItems / totalItems) * maxScore;
+
+    if (examType === 'IELTS') {
+      return Math.round(rawScore * 2) / 2; // Round to nearest 0.5
+    } else {
+      return Math.round(rawScore); // Round to nearest integer
+    }
+  };
 
   const renderOverview = () => (
     <motion.div 
@@ -204,40 +367,69 @@ export default function LearningPathDashboard() {
       <div className="lg:col-span-3">
         <div className="flex items-center gap-2 mb-6">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"></path><path d="M8 3H3v5"></path><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"></path><path d="m15 9 6-6"></path></svg>
-          <h2 className="text-xl font-bold tracking-widest uppercase text-white/90">Pipeline</h2>
+          <h2 className="text-xl font-bold tracking-widest uppercase text-white/90">Missions</h2>
         </div>
         
         <div className="relative pl-6 space-y-6">
           <div className="absolute left-[11px] top-4 bottom-0 w-[2px] bg-linear-to-b from-[#10B981] via-[#10B981]/50 to-transparent" />
           
-          {currentSkillData.missions.map((mission: any, idx: number) => (
-            <div key={idx} className="relative cursor-pointer" onClick={() => setActivePhaseIndex(idx)}>
-              <div className={`absolute -left-6 top-4 w-3 h-3 rounded-full ${idx <= activePhaseIndex ? 'bg-[#10B981] shadow-[0_0_12px_#10B981]' : 'bg-white/20'}`} />
+          {currentSkillData.missions.map((mission: any, idx: number) => {
+            const prevMissionStatus = idx > 0 ? calculateMissionCompletion(currentSkillData.missions[idx - 1], idx - 1) : null;
+            const isLocked = idx > 0 && !prevMissionStatus?.isFullyComplete;
+
+            return (
+            <div key={idx} className={`relative ${isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`} onClick={() => !isLocked && setActivePhaseIndex(idx)}>
+              <div className={`absolute -left-6 top-4 w-3 h-3 rounded-full ${idx === activePhaseIndex ? 'bg-[#10B981] shadow-[0_0_12px_#10B981]' : isLocked ? 'bg-white/10' : 'bg-[#10B981]/50'}`} />
               <motion.div 
                 className={`border rounded-xl p-4 transition-all ${idx === activePhaseIndex ? 'bg-white/5 border-[#10B981]/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-transparent border-transparent hover:bg-white/5 opacity-60'}`}
               >
-                <div className={`text-[10px] font-bold tracking-wider mb-1 ${idx === activePhaseIndex ? 'text-[#10B981]' : 'text-white/40'}`}>PHASE 0{idx + 1}</div>
+                <div className={`flex items-center justify-between text-[10px] font-bold tracking-wider mb-1 ${idx === activePhaseIndex ? 'text-[#10B981]' : 'text-white/40'}`}>
+                  <span>PHASE 0{idx + 1}</span>
+                  {isLocked && <Lock className="w-5 h-5 text-white/40" />}
+                </div>
                 <div className="text-lg font-bold mb-1 relative z-10">{mission.title}</div>
-                {idx === activePhaseIndex && (
-                  <div className="h-1 bg-white/10 rounded-full mt-2 overflow-hidden relative z-10">
-                    <div className="h-full w-[45%] bg-[#10B981]" />
-                  </div>
-                )}
               </motion.div>
             </div>
-          ))}
+            );
+          })}
 
           <div className="relative mt-8 pt-6">
-            <div className="absolute -left-6 top-10 w-3 h-3 rounded-full bg-[#EAB308] shadow-[0_0_12px_#EAB308]" />
-            <div className="bg-linear-to-br from-[#EAB308]/20 to-transparent border border-[#EAB308]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(234,179,8,0.15)] relative overflow-hidden group hover:from-[#EAB308]/30 transition-colors cursor-pointer">
-              <div className="absolute top-0 -inset-full h-full w-1/2 z-0 block transform -skew-x-12 bg-linear-to-r from-transparent to-white opacity-20 group-hover:animate-[shimmer_1.5s_infinite]" />
-              <div className="flex items-center justify-between mb-1 relative z-10">
-                <div className="text-[10px] text-[#EAB308] font-bold tracking-wider">FINAL EVALUATION</div>
-                <Lock className="w-3 h-3 text-[#EAB308]" />
-              </div>
-              <div className="text-lg font-bold text-white relative z-10">Mock Exam</div>
-              <div className="text-xs text-white/70 mt-1 relative z-10">Complete all phases to unlock</div>
-            </div>
+            {(() => {
+              // Lock mock exam if the last mission of the current skill isn't fully complete.
+              // To unlock this manually later, you can simply change `isMockExamLocked` to `false` below.
+              const lastMissionIdx = currentSkillData.missions.length > 0 ? currentSkillData.missions.length - 1 : -1;
+              const lastMissionStatus = lastMissionIdx >= 0 ? calculateMissionCompletion(currentSkillData.missions[lastMissionIdx], lastMissionIdx) : null;
+              const isMockExamLocked = lastMissionStatus ? !lastMissionStatus.isFullyComplete : true;
+
+              return (
+                <>
+                  <div className={`absolute -left-6 top-10 w-3 h-3 rounded-full ${isMockExamLocked ? 'bg-white/10' : 'bg-[#EAB308] shadow-[0_0_12px_#EAB308]'}`} />
+                  {isMockExamLocked ? (
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 relative overflow-hidden opacity-60 cursor-not-allowed">
+                      <div className="flex items-center justify-between mb-1 relative z-10">
+                        <div className="text-[10px] text-white/40 font-black tracking-wider">FINAL EVALUATION</div>
+                        <Lock className="w-5 h-5 text-white/40" />
+                      </div>
+                      <div className="text-lg font-bold text-white relative z-10">Mock Exam</div>
+                      <div className="text-xs text-white/50 mt-1 relative z-10">Complete all phases to unlock</div>
+                    </div>
+                  ) : (
+                    <Link 
+                      href="/dashboard/learning-path/mock-exam"
+                      className="bg-linear-to-br from-[#EAB308]/20 to-transparent border border-[#EAB308]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(234,179,8,0.15)] relative overflow-hidden group hover:from-[#EAB308]/30 transition-colors cursor-pointer block"
+                    >
+                      <div className="absolute top-0 -inset-full h-full w-1/2 z-0 block transform -skew-x-12 bg-linear-to-r from-transparent to-white opacity-20 group-hover:animate-[shimmer_1.5s_infinite]" />
+                      <div className="flex items-center justify-between mb-1 relative z-10">
+                        <div className="text-[10px] text-[#EAB308] font-black tracking-wider">FINAL EVALUATION</div>
+                        <Award className="w-5 h-5 text-[#EAB308]" />
+                      </div>
+                      <div className="text-lg font-bold text-white relative z-10">Mock Exam</div>
+                      <div className="text-xs text-white/70 mt-1 relative z-10">Ready to start assessment</div>
+                    </Link>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -275,7 +467,7 @@ export default function LearningPathDashboard() {
             onClick={() => setViewMode('resources')}
             className="relative group p-8 rounded-2xl border border-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-white/5 hover:bg-white/10"
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80 group-hover:bg-amber-500/20 group-hover:text-amber-500 transition-colors">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80 group-hover:bg-accent/20 group-hover:text-accent transition-colors">
               <FileText className="w-6 h-6" />
             </div>
             <div className="text-center">
@@ -287,32 +479,42 @@ export default function LearningPathDashboard() {
           </button>
 
           <button 
-            onClick={() => setShowDrill(true)}
-            className="relative group p-8 rounded-2xl border border-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-white/5 hover:bg-white/10"
+            onClick={handleTakePracticeDrill}
+            disabled={loadingDrill}
+            className={`relative group p-8 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-4 ${loadingDrill ? 'bg-[#10B981]/5 border-[#10B981]/30 cursor-wait' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80 group-hover:bg-[#0EA5E9]/20 group-hover:text-[#0EA5E9] transition-colors">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${loadingDrill ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-white/10 text-white/80 group-hover:bg-[#10B981]/20 group-hover:text-[#10B981]'}`}>
               <ClipboardList className="w-6 h-6" />
             </div>
             <div className="text-center">
               <div className="text-xl font-bold mb-2 tracking-wide uppercase">Practice Drill</div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold tracking-wider text-white/60">
-                INTERACTIVE SESSION
+                {loadingDrill ? 'GENERATING AI DRILL...' : 'INTERACTIVE SESSION'}
               </div>
             </div>
           </button>
 
           <button 
-            className="relative p-8 rounded-2xl border border-white/5 bg-white/5 opacity-60 cursor-not-allowed flex flex-col items-center justify-center gap-4"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px)' }}
+            disabled={!currentMissionStatus.isPrepComplete || loadingUnitTest}
+            onClick={handleTakeUnitTest}
+            className={`relative p-8 rounded-2xl border ${currentMissionStatus.isPrepComplete ? 'border-[#10B981]/50 bg-[#10B981]/10 hover:bg-[#10B981]/20 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-white/5 bg-white/5 opacity-60 cursor-not-allowed'} flex flex-col items-center justify-center gap-4 transition-all duration-300`}
+            style={!currentMissionStatus.isPrepComplete ? { backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px)' } : {}}
           >
-            <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 border border-white/10 rounded text-[9px] font-bold tracking-wider text-white/60 flex items-center gap-1">
-              <Lock className="w-3 h-3" /> REQUIRED: FINISH PREP
-            </div>
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/10 text-white/80">
+            {!currentMissionStatus.isPrepComplete && (
+              <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 border border-white/10 rounded text-[9px] font-bold tracking-wider text-white/60 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> REQUIRED: FINISH PREP
+              </div>
+            )}
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${currentMissionStatus.isPrepComplete ? 'bg-[#10B981] text-white shadow-lg' : 'bg-white/10 text-white/80'}`}>
               <Award className="w-6 h-6" />
             </div>
             <div className="text-center">
               <div className="text-xl font-bold mb-2 tracking-wide uppercase">Unit Test</div>
+              {currentMissionStatus.isPrepComplete && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#10B981]/30 bg-[#10B981]/10 text-[10px] font-bold tracking-wider text-[#10B981]">
+                  {loadingUnitTest ? 'LOADING...' : currentMissionStatus.isFullyComplete ? 'PASSED' : 'READY TO START'}
+                </div>
+              )}
             </div>
           </button>
         </div>
@@ -352,7 +554,11 @@ export default function LearningPathDashboard() {
           <motion.div 
             key={idx}
             whileHover={{ scale: 1.02 }}
-            className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group hover:border-[#10B981]/50 transition-all shadow-xl"
+            onClick={() => {
+              setResourceCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-video-${idx}`]: true }));
+              setActiveVideoUrl(video.videolink || video.videoLink);
+            }}
+            className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group hover:border-[#10B981]/50 transition-all shadow-xl cursor-pointer"
           >
             <div className="aspect-video relative overflow-hidden bg-black/40">
               <img 
@@ -360,23 +566,17 @@ export default function LearningPathDashboard() {
                 alt={video.title} 
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-[#0B1F2A]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+              <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                 <div className="w-14 h-14 rounded-full bg-[#10B981] flex items-center justify-center text-white shadow-[0_0_30px_rgba(16,185,129,0.5)]">
                   <Play size={24} fill="currentColor" />
                 </div>
               </div>
             </div>
             <div className="p-5">
-              <h3 className="font-bold text-lg mb-2 line-clamp-2 text-white/90 group-hover:text-[#10B981] transition-colors leading-tight">{video.title}</h3>
-              <p className="text-white/40 text-xs line-clamp-2 mb-4 leading-relaxed italic">{video.description || 'Watch this tactical video to master the current skill sector.'}</p>
-              <a 
-                href={video.videolink || video.videoLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-[#10B981]/20 border border-white/10 hover:border-[#10B981]/30 rounded-xl text-xs font-bold transition-all text-white/80 hover:text-[#10B981] tracking-widest uppercase"
-              >
-                Watch Now <ExternalLink size={14} />
-              </a>
+              <h3 className="font-bold text-lg mb-2 line-clamp-2 text-white/90 group-hover:text-[#10B981] transition-colors leading-tight">
+                {video.title} {resourceCompleted[`${examType}-${selectedSkill}-${activePhaseIndex}-video-${idx}`] && <CheckCircle2 className="inline w-4 h-4 text-[#10B981] ml-2" />}
+              </h3>
+              <p className="text-white/40 text-xs line-clamp-2 leading-relaxed italic">{video.description || 'Watch this tactical video to master the current skill sector.'}</p>
             </div>
           </motion.div>
         ))}
@@ -400,7 +600,7 @@ export default function LearningPathDashboard() {
       </div>
 
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-500">
+        <div className="w-12 h-12 rounded-2xl bg-accent/20 border border-accent/50 flex items-center justify-center text-accent">
           <BookOpen size={24} />
         </div>
         <div>
@@ -413,28 +613,30 @@ export default function LearningPathDashboard() {
         {currentPhase.pdfs.map((pdf: any, idx: number) => (
           <div 
             key={idx}
-            className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl group hover:border-amber-500/50 transition-all shadow-lg"
+            onClick={() => {
+              setResourceCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}-pdf-${idx}`]: true }));
+              setActivePdfUrl(pdf.pdfLink || '#');
+            }}
+            className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl group hover:border-accent/50 transition-all shadow-lg cursor-pointer"
           >
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500/10 transition-colors shadow-inner">
+              <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-accent group-hover:bg-accent/10 transition-colors shadow-inner">
                 <FileText size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-white/90 group-hover:text-amber-500 transition-colors text-lg leading-tight">{pdf.title}</h3>
+                <h3 className="font-bold text-white/90 group-hover:text-accent transition-colors text-lg leading-tight">
+                  {pdf.title} {resourceCompleted[`${examType}-${selectedSkill}-${activePhaseIndex}-pdf-${idx}`] && <CheckCircle2 className="inline w-4 h-4 text-accent ml-2" />}
+                </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-white/30 text-[10px] font-bold tracking-widest uppercase">PDF DOCUMENT</span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-amber-500/70 text-[10px] font-bold tracking-widest uppercase">{pdf.level}</span>
+                  <span className="text-accent/70 text-[10px] font-bold tracking-widest uppercase">{pdf.level}</span>
                 </div>
               </div>
             </div>
-            <a 
-              href={pdf.pdfLink || '#'} 
-              download
-              className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white/60 hover:text-white hover:bg-amber-500/20 hover:border-amber-500/30 transition-all shadow-sm"
-            >
-              <Download size={24} />
-            </a>
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white/60 group-hover:text-accent group-hover:bg-accent/20 group-hover:border-accent/30 transition-all shadow-sm">
+              <FileText size={24} />
+            </div>
           </div>
         ))}
       </div>
@@ -442,7 +644,7 @@ export default function LearningPathDashboard() {
   );
 
   return (
-    <div className="w-full min-h-full bg-[#0B1F2A] text-white rounded-none lg:rounded-2xl overflow-hidden font-sans border-0 lg:border border-white/10 shadow-2xl relative">
+    <div className="w-full min-h-full bg-background text-white rounded-none lg:rounded-2xl overflow-hidden font-sans border-0 lg:border border-white/10 shadow-2xl relative">
       <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-[#10B981]/5 to-transparent pointer-events-none" />
 
       {loading ? (
@@ -455,13 +657,20 @@ export default function LearningPathDashboard() {
         </div>
       ) : (
         <div className="p-4 lg:p-10 relative z-10">
+          {/* Current Level Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl lg:text-3xl font-black tracking-widest uppercase text-[#10B981] drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+              {examType} LEVEL: {pathData?.proficiencyLevel || 'Easy'} MASTERY
+            </h1>
+          </div>
+
           {/* Header Row */}
           <div className="flex flex-wrap lg:flex-nowrap items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 lg:p-6 mb-8 backdrop-blur-sm gap-4">
             <div className="flex items-center gap-2 lg:gap-8 overflow-x-auto custom-scrollbar pb-2 lg:pb-0 w-full lg:w-auto">
-              <CircularGauge isActive={selectedSkill === 'reading'} onClick={() => { setSelectedSkill('reading'); setViewMode('overview'); setActivePhaseIndex(0); }} percentage={40} label="Reading" sublabel="Level 2" color="#10B981" />
-              <CircularGauge isActive={selectedSkill === 'listening'} onClick={() => { setSelectedSkill('listening'); setViewMode('overview'); setActivePhaseIndex(0); }} percentage={20} label="Listening" sublabel="Level 1" color="#0EA5E9" />
-              <CircularGauge isActive={selectedSkill === 'writing'} onClick={() => { setSelectedSkill('writing'); setViewMode('overview'); setActivePhaseIndex(0); }} percentage={15} label="Writing" sublabel="Initiated" color="#F43F5E" />
-              <CircularGauge isActive={selectedSkill === 'speaking'} onClick={() => { setSelectedSkill('speaking'); setViewMode('overview'); setActivePhaseIndex(0); }} percentage={10} label="Speaking" sublabel="Initiated" color="#F59E0B" />
+              <CircularGauge isActive={selectedSkill === 'reading'} onClick={() => { setSelectedSkill('reading'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('reading')} maxScore={examType === 'IELTS' ? 9 : 30} label="Reading" color="#10B981" />
+              <CircularGauge isActive={selectedSkill === 'listening'} onClick={() => { setSelectedSkill('listening'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('listening')} maxScore={examType === 'IELTS' ? 9 : 30} label="Listening" color="#10B981" />
+              <CircularGauge isActive={selectedSkill === 'writing'} onClick={() => { setSelectedSkill('writing'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('writing')} maxScore={examType === 'IELTS' ? 9 : 30} label="Writing" color="#F43F5E" />
+              <CircularGauge isActive={selectedSkill === 'speaking'} onClick={() => { setSelectedSkill('speaking'); setViewMode('overview'); setActivePhaseIndex(0); }} score={getScore('speaking')} maxScore={examType === 'IELTS' ? 9 : 30} label="Speaking" color="#F59E0B" />
             </div>
             <div className="flex bg-white/10 p-1 rounded-lg border border-white/10 shrink-0">
               <button 
@@ -489,10 +698,89 @@ export default function LearningPathDashboard() {
 
       {showDrill && (
         <PracticeDrillOverlay 
+          skill={selectedSkill}
+          examType={examType}
+          questions={drillContent?.questions || drillContent || []}
           onClose={() => setShowDrill(false)} 
-          onComplete={() => {}} // Handle completion
+          onComplete={() => {
+            setPracticeCompleted(prev => ({ ...prev, [`${examType}-${selectedSkill}-${activePhaseIndex}`]: true }));
+            setShowDrill(false);
+          }} 
         />
       )}
+
+      <UnitTestOverlay 
+        show={showUnitTest} 
+        onClose={() => setShowUnitTest(false)}
+        unitTestContent={unitTestContent}
+        setUnitTestContent={setUnitTestContent}
+        unitTestResults={unitTestResults}
+        onSubmit={handleSubmitUnitTest}
+        isSubmitting={isSubmittingTest}
+        activeTab={selectedSkill}
+      />
+
+      {/* Video Overlay */}
+      <AnimatePresence>
+        {activeVideoUrl && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 lg:p-10"
+          >
+            <button onClick={() => setActiveVideoUrl(null)} className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 hover:text-red-500 rounded-full flex items-center justify-center transition-colors">
+              <X size={24} />
+            </button>
+            <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.15)] border border-white/10 relative">
+              <iframe 
+                src={getYouTubeEmbedUrl(activeVideoUrl)} 
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PDF Overlay */}
+      <AnimatePresence>
+        {activePdfUrl && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 z-100 flex flex-col bg-background/95 backdrop-blur-xl"
+          >
+            <div className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-background shrink-0">
+              <div className="flex items-center gap-3">
+                <FileText className="text-accent" />
+                <span className="font-bold tracking-widest uppercase text-white/80">Study Resource Reader</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <a href={activePdfUrl} download target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/60 hover:text-white transition-colors">
+                  <Download size={14} /> Open Native
+                </a>
+                <button onClick={() => setActivePdfUrl(null)} className="w-10 h-10 bg-white/5 hover:bg-red-500/20 hover:text-red-500 rounded-lg flex items-center justify-center transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 p-2 lg:p-6 h-full overflow-hidden">
+              <iframe 
+                src={activePdfUrl.startsWith('http') ? `https://docs.google.com/gview?url=${encodeURIComponent(activePdfUrl)}&embedded=true` : activePdfUrl} 
+                className="w-full h-full rounded-xl bg-foreground shadow-2xl"
+                style={{ border: 'none' }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+export default function LearningPathDashboard() {
+  return (
+    <LearningPathProvider>
+      <LearningPathDashboardContent />
+    </LearningPathProvider>
   );
 }

@@ -3,7 +3,7 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AgoraService {
-  static const String appId = "5ef76d27b47942eeb8dbc338310e4876";
+  static const String appId = "a18f1d5c0eb94bf8a80c5d5d51e3bfff";
 
   late RtcEngine _engine;
   bool _isInitialized = false;
