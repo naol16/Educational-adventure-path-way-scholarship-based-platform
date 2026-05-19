@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:device_preview/device_preview.dart';
 
 import 'package:mobile/core/providers/router_provider.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
@@ -19,14 +21,20 @@ void main() async {
   
   try {
     await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // Firebase Messaging background handler not supported on web
+    if (!kIsWeb) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    }
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
 
   runApp(
-    const ProviderScope(
-      child: AppRoot(),
+    DevicePreview(
+      enabled: kIsWeb, // only active when running on browser
+      builder: (context) => const ProviderScope(
+        child: AppRoot(),
+      ),
     ),
   );
 }
@@ -42,6 +50,9 @@ class AppRoot extends ConsumerWidget {
     return MaterialApp.router(
       title: 'EduPathway',
       debugShowCheckedModeBanner: false,
+      useInheritedMediaQuery: true,
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
       themeMode: themeState.themeMode,
       theme: ThemeData(
         useMaterial3: true,
