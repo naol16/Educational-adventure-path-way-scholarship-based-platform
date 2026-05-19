@@ -65,6 +65,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (name.isEmpty) {
       setState(() => _nameError = 'Full name is required');
       isValid = false;
+    } else if (RegExp(r'[0-9]').hasMatch(name)) {
+      setState(() => _nameError = 'Name cannot contain numbers');
+      isValid = false;
     } else if (name.split(' ').length < 2) {
       setState(() => _nameError = 'Please enter your first and last name');
       isValid = false;
