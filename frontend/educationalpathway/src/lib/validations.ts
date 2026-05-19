@@ -12,7 +12,8 @@ const PHONE_MESSAGE = "Please enter a valid phone number including country code 
 export const signupSchema = z.object({
   name: z.string()
     .min(2, "Full Name is required and must be at least 2 characters long.")
-    .max(100, "Full Name must not exceed 100 characters."),
+    .max(100, "Full Name must not exceed 100 characters.")
+    .regex(/^[^0-9]*$/, "Name cannot contain numbers."),
   email: z.string()
     .email("Please enter a valid email address (e.g., user@example.com)."),
   password: z.string()

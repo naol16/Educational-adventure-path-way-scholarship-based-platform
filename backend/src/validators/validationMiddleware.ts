@@ -47,7 +47,8 @@ export const registerValidation = [
   body('name')
     .trim()
     .notEmpty().withMessage('Full Name is required. Please enter your legal name as it appears on your documents.')
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters long.'),
+    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters long.')
+    .custom((value) => !/\d/.test(value)).withMessage('Name cannot contain numbers.'),
 
   body('email')
     .trim()
@@ -134,6 +135,7 @@ export const updateProfileValidation = [
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 }).withMessage('Your name should be between 2 and 100 characters long.')
+    .custom((value) => !/\d/.test(value)).withMessage('Name cannot contain numbers.')
 ];
 
 export const googleLoginValidation = [
