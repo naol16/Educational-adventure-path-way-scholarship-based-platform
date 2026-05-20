@@ -353,12 +353,16 @@ class CustomDropdownField extends StatelessWidget {
   final String label;
   final String hint;
   final VoidCallback onTap;
+  final bool hasError;
+  final String? errorText;
 
   const CustomDropdownField({
     super.key,
     required this.label,
     required this.hint,
     required this.onTap,
+    this.hasError = false,
+    this.errorText,
   });
 
   @override
@@ -378,6 +382,10 @@ class CustomDropdownField extends StatelessWidget {
             decoration: BoxDecoration(
               color: DesignSystem.inputBackground,
               borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: hasError ? Colors.red.shade400 : Colors.transparent,
+                width: 1.5,
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
@@ -389,7 +397,9 @@ class CustomDropdownField extends StatelessWidget {
                     style: DesignSystem.bodyStyle(
                       buildContext: context,
                       color: hint.contains('Select') || hint.contains('/')
-                          ? DesignSystem.labelText(context)
+                          ? (hasError
+                              ? Colors.red.shade300
+                              : DesignSystem.labelText(context))
                           : DesignSystem.mainText(context),
                       fontSize: 14,
                     ),
@@ -398,14 +408,29 @@ class CustomDropdownField extends StatelessWidget {
                 ),
                 Icon(
                   LucideIcons.chevronDown,
-                  color: DesignSystem.labelText(context),
+                  color: hasError
+                      ? Colors.red.shade400
+                      : DesignSystem.labelText(context),
                   size: 20,
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        if (hasError && errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 6, bottom: 8),
+            child: Text(
+              errorText!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 16),
       ],
     );
   }

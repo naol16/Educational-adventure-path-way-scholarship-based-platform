@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -11,9 +12,9 @@ class CustomTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final int maxLines;
   final Iterable<String>? autofillHints;
-
   final String? errorText;
   final bool hasError;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomTextField({
     super.key,
@@ -27,6 +28,7 @@ class CustomTextField extends StatefulWidget {
     this.autofillHints,
     this.errorText,
     this.hasError = false,
+    this.inputFormatters,
   });
 
   @override
@@ -66,6 +68,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             keyboardType: widget.keyboardType,
             maxLines: widget.maxLines,
             autofillHints: widget.autofillHints,
+            inputFormatters: widget.inputFormatters,
             style: DesignSystem.bodyStyle(
               buildContext: context,
               fontSize: 15,

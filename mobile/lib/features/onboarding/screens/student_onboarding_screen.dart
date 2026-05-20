@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:country_picker/country_picker.dart';
@@ -45,6 +46,119 @@ class _StudentOnboardingScreenState
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _uniController = TextEditingController();
 
+  // Validation error messages keyed by field name
+  final Map<String, String?> _errors = {};
+
+  // ── Input formatters ──────────────────────────────────────────────────────
+  /// Letters, spaces, hyphens and apostrophes only (names, cities)
+  static final _nameFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r"[a-zA-ZÀ-ÿ\s'\-]"),
+  );
+
+  /// Digits, +, -, spaces only (phone numbers)
+  static final _phoneFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[\d\+\-\s]'),
+  );
+
+  /// Digits and a single decimal point (GPA)
+  static final _decimalFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[\d\.]'),
+  );
+
+  /// Digits only (graduation year)
+  static final _intFormatter =
+      FilteringTextInputFormatter.digitsOnly;
+
+  /// Alphanumeric + common score chars (test scores like 7.5, 110, C1)
+  static final _scoreFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[\d\.\w]'),
+  );
+
+  /// Letters, digits, spaces, hyphens (duration like "2021 - Present")
+  static final _durationFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[a-zA-Z0-9\s\-]'),
+  );
+
+  // ── Validation ────────────────────────────────────────────────────────────
+  bool _validateCurrentStep() {
+    final state = ref.read(onboardingProvider);
+    final newErrors = <String, String?>{};
+
+    if (_currentPage == 0) {
+      // Full Name
+      if (state.fullName == null || state.fullName!.trim().isEmpty) {
+        newErrors['fullName'] = 'Full name is required';
+      } else if (RegExp(r'\d').hasMatch(state.fullName!)) {
+        newErrors['fullName'] = 'Name cannot contain numbers';
+      }
+
+      // Email
+      if (state.email == null || state.email!.trim().isEmpty) {
+        newErrors['email'] = 'Email is required';
+      } else if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.\w{2,}$')
+          .hasMatch(state.email!)) {
+        newErrors['email'] = 'Enter a valid email address';
+      }
+
+      // Phone (optional but must be valid if filled)
+      if (state.phoneNumber != null && state.phoneNumber!.isNotEmpty) {
+        if (RegExp(r'[a-zA-Z]').hasMatch(state.phoneNumber!)) {
+          newErrors['phoneNumber'] = 'Phone number cannot contain letters';
+        } else if (state.phoneNumber!.replaceAll(RegExp(r'[\+\-\s]'), '').length < 6) {
+          newErrors['phoneNumber'] = 'Enter a valid phone number';
+        }
+      }
+
+      // City
+      if (state.city == null || state.city!.trim().isEmpty) {
+        newErrors['city'] = 'City is required';
+      } else if (RegExp(r'\d').hasMatch(state.city!)) {
+        newErrors['city'] = 'City name cannot contain numbers';
+      }
+
+      // Date of birth
+      if (state.dateOfBirth == null) {
+        newErrors['dateOfBirth'] = 'Date of birth is required';
+      }
+
+      // Gender
+      if (state.gender == null) {
+        newErrors['gender'] = 'Please select a gender';
+      }
+
+      // Nationality
+      if (state.nationality == null) {
+        newErrors['nationality'] = 'Please select your nationality';
+      }
+    }
+
+    if (_currentPage == 1) {
+      // GPA (optional but must be 0.0–4.0 if filled)
+      if (_gpaController.text.isNotEmpty) {
+        final gpa = double.tryParse(_gpaController.text);
+        if (gpa == null) {
+          newErrors['gpa'] = 'Enter a valid GPA (e.g. 3.8)';
+        } else if (gpa < 0 || gpa > 4.0) {
+          newErrors['gpa'] = 'GPA must be between 0.0 and 4.0';
+        }
+      }
+
+      // Graduation year (optional but must be 4 digits if filled)
+      if (_gradYearController.text.isNotEmpty) {
+        final year = int.tryParse(_gradYearController.text);
+        if (year == null || year < 1950 || year > 2100) {
+          newErrors['graduationYear'] = 'Enter a valid year (e.g. 2024)';
+        }
+      }
+    }
+
+    setState(() => _errors
+      ..clear()
+      ..addAll(newErrors));
+
+    return newErrors.isEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +187,7 @@ class _StudentOnboardingScreenState
   }
 
   void _nextPage() {
+    if (!_validateCurrentStep()) return;
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -279,12 +394,19 @@ class _StudentOnboardingScreenState
                 hintText: "As per your passport",
                 prefixIcon: LucideIcons.user,
                 autofillHints: const [AutofillHints.name],
+                inputFormatters: [_nameFormatter],
+                hasError: _errors.containsKey('fullName'),
+                errorText: _errors['fullName'],
                 controller: TextEditingController(text: state.fullName)
                   ..selection = TextSelection.collapsed(
                     offset: (state.fullName ?? '').length,
                   ),
-                onChanged: (val) =>
-                    notifier.updateField((s) => s.copyWith(fullName: val)),
+                onChanged: (val) {
+                  notifier.updateField((s) => s.copyWith(fullName: val));
+                  if (_errors.containsKey('fullName')) {
+                    setState(() => _errors.remove('fullName'));
+                  }
+                },
               ),
     
               _buildFieldLabel("Email Address *"),
@@ -293,12 +415,18 @@ class _StudentOnboardingScreenState
                 prefixIcon: LucideIcons.mail,
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.email],
+                hasError: _errors.containsKey('email'),
+                errorText: _errors['email'],
                 controller: TextEditingController(text: state.email)
                   ..selection = TextSelection.collapsed(
                     offset: (state.email ?? '').length,
                   ),
-                onChanged: (val) =>
-                    notifier.updateField((s) => s.copyWith(email: val)),
+                onChanged: (val) {
+                  notifier.updateField((s) => s.copyWith(email: val));
+                  if (_errors.containsKey('email')) {
+                    setState(() => _errors.remove('email'));
+                  }
+                },
               ),
     
               _buildFieldLabel("Phone Number"),
@@ -307,17 +435,26 @@ class _StudentOnboardingScreenState
                 prefixIcon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
                 autofillHints: const [AutofillHints.telephoneNumber],
+                inputFormatters: [_phoneFormatter],
+                hasError: _errors.containsKey('phoneNumber'),
+                errorText: _errors['phoneNumber'],
                 controller: TextEditingController(text: state.phoneNumber)
                   ..selection = TextSelection.collapsed(
                     offset: (state.phoneNumber ?? '').length,
                   ),
-                onChanged: (val) =>
-                    notifier.updateField((s) => s.copyWith(phoneNumber: val)),
+                onChanged: (val) {
+                  notifier.updateField((s) => s.copyWith(phoneNumber: val));
+                  if (_errors.containsKey('phoneNumber')) {
+                    setState(() => _errors.remove('phoneNumber'));
+                  }
+                },
               ),
     
               CustomDropdownField(
                 label: "Date of Birth *",
                 hint: state.dateOfBirth ?? "Select date",
+                hasError: _errors.containsKey('dateOfBirth'),
+                errorText: _errors['dateOfBirth'],
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -344,6 +481,7 @@ class _StudentOnboardingScreenState
                         dateOfBirth: DateFormat('yyyy-MM-dd').format(picked),
                       ),
                     );
+                    setState(() => _errors.remove('dateOfBirth'));
                   }
                 },
               ),
@@ -351,21 +489,31 @@ class _StudentOnboardingScreenState
               CustomDropdownField(
                 label: "Gender *",
                 hint: state.gender ?? "Select gender",
+                hasError: _errors.containsKey('gender'),
+                errorText: _errors['gender'],
                 onTap: () => _showOptionsSelector(
                   "Select Gender",
                   ['Male', 'Female'],
-                  (val) => notifier.updateField((s) => s.copyWith(gender: val)),
+                  (val) {
+                    notifier.updateField((s) => s.copyWith(gender: val));
+                    setState(() => _errors.remove('gender'));
+                  },
                 ),
               ),
     
               CustomDropdownField(
                 label: "Nationality *",
                 hint: state.nationality ?? "Select country",
+                hasError: _errors.containsKey('nationality'),
+                errorText: _errors['nationality'],
                 onTap: () => showCountryPicker(
                   context: context,
-                  onSelect: (country) => notifier.updateField(
-                    (s) => s.copyWith(nationality: country.name),
-                  ),
+                  onSelect: (country) {
+                    notifier.updateField(
+                      (s) => s.copyWith(nationality: country.name),
+                    );
+                    setState(() => _errors.remove('nationality'));
+                  },
                 ),
               ),
     
@@ -374,9 +522,16 @@ class _StudentOnboardingScreenState
                 hintText: "Enter your city",
                 prefixIcon: LucideIcons.mapPin,
                 autofillHints: const [AutofillHints.addressCity],
+                inputFormatters: [_nameFormatter],
+                hasError: _errors.containsKey('city'),
+                errorText: _errors['city'],
                 controller: _cityController,
-                onChanged: (val) =>
-                    notifier.updateField((s) => s.copyWith(city: val)),
+                onChanged: (val) {
+                  notifier.updateField((s) => s.copyWith(city: val));
+                  if (_errors.containsKey('city')) {
+                    setState(() => _errors.remove('city'));
+                  }
+                },
               ),
     
               const SizedBox(height: 20),
@@ -536,10 +691,18 @@ class _StudentOnboardingScreenState
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
+                        inputFormatters: [_decimalFormatter],
+                        hasError: _errors.containsKey('gpa'),
+                        errorText: _errors['gpa'],
                         controller: _gpaController,
-                        onChanged: (val) => notifier.updateField(
-                          (s) => s.copyWith(gpa: double.tryParse(val)),
-                        ),
+                        onChanged: (val) {
+                          notifier.updateField(
+                            (s) => s.copyWith(gpa: double.tryParse(val)),
+                          );
+                          if (_errors.containsKey('gpa')) {
+                            setState(() => _errors.remove('gpa'));
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -553,10 +716,21 @@ class _StudentOnboardingScreenState
                       CustomTextField(
                         hintText: "e.g. 2024",
                         keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          _intFormatter,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        hasError: _errors.containsKey('graduationYear'),
+                        errorText: _errors['graduationYear'],
                         controller: _gradYearController,
-                        onChanged: (val) => notifier.updateField(
-                          (s) => s.copyWith(graduationYear: int.tryParse(val)),
-                        ),
+                        onChanged: (val) {
+                          notifier.updateField(
+                            (s) => s.copyWith(graduationYear: int.tryParse(val)),
+                          );
+                          if (_errors.containsKey('graduationYear')) {
+                            setState(() => _errors.remove('graduationYear'));
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -589,6 +763,7 @@ class _StudentOnboardingScreenState
               CustomTextField(
                 hintText: "Enter Score",
                 prefixIcon: LucideIcons.award,
+                inputFormatters: [_scoreFormatter],
                 controller: TextEditingController(text: state.testScore ?? '')
                   ..selection = TextSelection.collapsed(
                     offset: (state.testScore ?? '').length,
@@ -1167,18 +1342,21 @@ class _StudentOnboardingScreenState
                   hintText: "e.g. Google",
                   controller: companyController,
                   prefixIcon: LucideIcons.building2,
+                  inputFormatters: [_nameFormatter],
                 ),
                 _buildFieldLabel("Your Role"),
                 CustomTextField(
                   hintText: "e.g. Software Engineer",
                   controller: roleController,
                   prefixIcon: LucideIcons.user,
+                  inputFormatters: [_nameFormatter],
                 ),
                 _buildFieldLabel("Duration"),
                 CustomTextField(
                   hintText: "e.g. 2021 - Present",
                   controller: durationController,
                   prefixIcon: LucideIcons.calendar,
+                  inputFormatters: [_durationFormatter],
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
