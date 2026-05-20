@@ -31,8 +31,23 @@
 
   <title>mobile</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Google Sign-In: required for google_sign_in Flutter web plugin -->
+  <meta name="google-signin-client_id" content="57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 </head>
 <body>
+  <script src='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs' type='module'></script>
+  <script type='module'>
+  var { pdfjsLib } = globalThis;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.mjs';
+
+  var pdfRenderOptions = {
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/cmaps/',
+    cMapPacked: true,
+  }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

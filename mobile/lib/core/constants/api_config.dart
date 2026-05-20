@@ -7,7 +7,7 @@
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.232.248.91:5000',
+    defaultValue: 'https://capable-famished-shallot.ngrok-free.dev',
   );
 
   static String apiPath(String path) {

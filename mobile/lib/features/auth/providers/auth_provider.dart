@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -56,42 +57,29 @@ class AuthNotifier extends AsyncNotifier<User?> {
   Future<void> loginWithGoogle({String? role}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      print('[AuthNotifier] Starting Google Sign-In...');
       final googleSignIn = GoogleSignIn(
-        serverClientId: '57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com', // Web Client ID
-        scopes: [
-          'email',
-          'profile',
-        ],
+        clientId: '57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
       );
 
       try {
-        // Sign out first so the account picker always shows
         await googleSignIn.signOut();
-        print('[AuthNotifier] Signed out from previous Google session');
-        
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) {
-          print('[AuthNotifier] Google Sign-In canceled by user');
-          return state.valueOrNull;
-        }
-        print('[AuthNotifier] Google User obtained: ${googleUser.email}');
+        if (googleUser == null) return state.valueOrNull;
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
         final String? idToken = googleAuth.idToken;
 
         if (idToken == null) {
-          print('[AuthNotifier] Error: idToken is null');
           throw Exception('Failed to obtain Google ID Token');
         }
-        print('[AuthNotifier] ID Token obtained, sending to backend...');
 
-        final session = await _authService.googleLogin(idToken: idToken, role: role);
-        print('[AuthNotifier] Backend login successful: ${session.user.email}');
+        final session =
+            await _authService.googleLogin(idToken: idToken, role: role);
         return session.user;
       } catch (e, stack) {
-        print('[AuthNotifier] Google Sign-In Error: $e');
-        print('[AuthNotifier] Stack Trace: $stack');
+        debugPrint('[AuthNotifier] Google Sign-In Error: $e\n$stack');
         rethrow;
       }
     });

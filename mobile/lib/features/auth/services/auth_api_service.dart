@@ -74,6 +74,7 @@ class AuthApiService {
     final headers = const {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
     final body = {
       'name': name,
@@ -101,6 +102,7 @@ class AuthApiService {
     final headers = const {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
     final body = {'email': email, 'password': password};
     logRequest('POST', uri, headers: headers, body: body);
@@ -120,11 +122,12 @@ class AuthApiService {
     final headers = const {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
     final body = {
       'credential': idToken,
-      if (role != null) 'role': role,
-    };
+      'role': role,
+    }..removeWhere((_, v) => v == null);
     logRequest('POST', uri, headers: headers, body: body);
     final response = await _http.post(
       uri,

@@ -24,6 +24,7 @@ class ApiClient {
     final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     };
     if (withAuth) {
       final t = accessToken ?? await _tokens.readAccessToken();
