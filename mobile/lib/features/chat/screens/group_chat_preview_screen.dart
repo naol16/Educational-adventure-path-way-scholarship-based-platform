@@ -10,6 +10,7 @@ import 'package:mobile/features/chat/providers/chat_state_notifier.dart';
 import 'package:mobile/features/chat/providers/group_chat_providers.dart';
 import 'package:mobile/features/chat/screens/mentor_chat_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile/models/user.dart';
 
 /// Telegram-style group preview: user can read messages, then join at the bottom.
 class GroupChatPreviewScreen extends ConsumerStatefulWidget {

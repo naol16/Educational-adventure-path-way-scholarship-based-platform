@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatUser, Conversation, Message } from "../types";
-import { X, User, Bell, Shield, Trash2, LogOut, ChevronRight } from "lucide-react";
+import { X, User, Bell, Shield, Trash2, LogOut, ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { getConversationMembers, getDirectChatPeer } from "../conversation-utils";
@@ -60,11 +60,21 @@ export const ChatDetails = ({
     >
       {/* Header */}
       <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-border bg-background/95 px-3 py-3 backdrop-blur-md">
-        <h3 className="pl-1 text-[17px] font-semibold text-foreground">Info</h3>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-primary transition-colors hover:bg-muted md:hidden"
+            aria-label="Close info panel"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <h3 className="pl-1 text-[17px] font-semibold text-foreground">Info</h3>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="hidden md:flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X size={20} />
         </button>

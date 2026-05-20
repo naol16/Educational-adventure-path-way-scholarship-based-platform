@@ -13,6 +13,7 @@ import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/models/user.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MentorChatScreen extends ConsumerStatefulWidget {
   final int conversationId;
@@ -40,6 +41,10 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
   Timer? _typingTimer;
   bool _showScrollToBottom = false;
   bool _isComposing = false;
+
+  // Reply / Edit state
+  ChatMessage? _replyingTo;
+  ChatMessage? _editingMessage;
 
   @override
   void initState() {
@@ -88,17 +93,24 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    setState(() => _isComposing = false);
+    setState(() {
+      _isComposing = false;
+    });
     _typingTimer?.cancel();
     ref.read(chatStateProvider(widget.conversationId).notifier).sendTyping(false);
-    ref
-        .read(chatStateProvider(widget.conversationId).notifier)
-        .sendMessage(
-          widget.isGroup ? 0 : widget.otherUser.id, 
-          text,
-          conversationId: widget.isGroup ? widget.conversationId : null,
-        );
-    Future.microtask(() => _scrollToBottom());
+
+    if (_editingMessage != null) {
+      ref
+          .read(chatStateProvider(widget.conversationId).notifier)
+          .editMessage(_editingMessage!.id, text);
+      setState(() => _editingMessage = null);
+    } else {
+      ref
+          .read(chatStateProvider(widget.conversationId).notifier)
+          .sendMessage(text, replyToId: _replyingTo?.id);
+      setState(() => _replyingTo = null);
+    }
+    Future.microtask(_scrollToBottom);
   }
 
   void _attachFile() async {
@@ -109,7 +121,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
       if (url != null && mounted) {
         ref
             .read(chatStateProvider(widget.conversationId).notifier)
-            .sendMessage(widget.otherUser.id, 'Shared a file: $url');
+            .sendMessage('[Attached File]($url)');
       }
     }
   }
@@ -126,7 +138,6 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -160,6 +171,13 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                     bottom: 12,
                     right: 16,
                     child: _buildScrollToBottomButton(),
+                  ),
+                // Typing indicator overlay
+                if (chatState.isTyping)
+                  Positioned(
+                    bottom: 8,
+                    left: 16,
+                    child: _buildTypingIndicator(),
                   ),
               ],
             ),
@@ -197,7 +215,11 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                     ? NetworkImage(widget.otherUser.avatarUrl!)
                     : null,
                 child: (widget.isGroup || widget.otherUser.avatarUrl == null)
-                    ? Icon(widget.isGroup ? LucideIcons.users : LucideIcons.user, size: 18, color: DesignSystem.labelText(context))
+                    ? Icon(
+                        widget.isGroup ? LucideIcons.users : LucideIcons.user,
+                        size: 18,
+                        color: DesignSystem.labelText(context),
+                      )
                     : null,
               ),
               if (!widget.isGroup)
@@ -210,7 +232,8 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981),
                       shape: BoxShape.circle,
-                      border: Border.all(color: DesignSystem.themeBackground(context), width: 2),
+                      border: Border.all(
+                          color: DesignSystem.themeBackground(context), width: 2),
                     ),
                   ),
                 ),
@@ -222,7 +245,9 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.isGroup ? (widget.groupName ?? 'Community Group') : widget.otherUser.name,
+                  widget.isGroup
+                      ? (widget.groupName ?? 'Community Group')
+                      : widget.otherUser.name,
                   style: GoogleFonts.plusJakartaSans(
                     color: DesignSystem.mainText(context),
                     fontWeight: FontWeight.bold,
@@ -230,55 +255,65 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (!widget.isGroup)
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      isTyping ? 'typing...' : 'Online',
-                      key: ValueKey(isTyping),
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF10B981),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    'Community',
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Text(
+                    isTyping ? 'typing...' : (widget.isGroup ? 'Community' : 'Online'),
+                    key: ValueKey(isTyping),
                     style: GoogleFonts.inter(
-                      color: DesignSystem.primary(context),
+                      color: isTyping
+                          ? DesignSystem.primary(context)
+                          : const Color(0xFF10B981),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
               ],
             ),
           ),
         ],
       ),
-      actions: [
-        if (!widget.isGroup) ...[
-          IconButton(
-            icon: Icon(LucideIcons.video, color: DesignSystem.labelText(context), size: 20),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: Icon(LucideIcons.phone, color: DesignSystem.labelText(context), size: 20),
-            onPressed: () {},
-          ),
-        ],
-        const SizedBox(width: 4),
-      ],
     );
   }
 
+  Widget _buildTypingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: DesignSystem.surface(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: DesignSystem.glassBorder(context)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TypingDot(delay: 0),
+          const SizedBox(width: 4),
+          _TypingDot(delay: 200),
+          const SizedBox(width: 4),
+          _TypingDot(delay: 400),
+          const SizedBox(width: 8),
+          Text(
+            widget.isGroup ? 'Someone is typing…' : '${widget.otherUser.name.split(' ').first} is typing…',
+            style: GoogleFonts.inter(
+              color: DesignSystem.labelText(context),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildMessageList(ChatState chatState, int currentUserId) {
     if (chatState.isLoading && chatState.messages.isEmpty) {
-      return Center(child: CircularProgressIndicator(color: DesignSystem.primary(context)));
+      return Center(
+          child: CircularProgressIndicator(color: DesignSystem.primary(context)));
     }
-
     if (chatState.error != null && chatState.messages.isEmpty) {
       return Center(
         child: Column(
@@ -287,7 +322,8 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
             Icon(LucideIcons.wifiOff, color: DesignSystem.labelText(context), size: 48),
             const SizedBox(height: 12),
             Text('Could not load messages',
-                style: GoogleFonts.inter(color: DesignSystem.labelText(context), fontSize: 15)),
+                style: GoogleFonts.inter(
+                    color: DesignSystem.labelText(context), fontSize: 15)),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => ref.invalidate(chatStateProvider(widget.conversationId)),
@@ -297,13 +333,13 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
         ),
       );
     }
-
     if (chatState.messages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.messageCircle, color: DesignSystem.labelText(context), size: 56),
+            Icon(LucideIcons.messageCircle,
+                color: DesignSystem.labelText(context), size: 56),
             const SizedBox(height: 12),
             Text('No messages yet',
                 style: GoogleFonts.plusJakartaSans(
@@ -311,10 +347,12 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                     fontSize: 16,
                     fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text('Say hello to ${widget.otherUser.name.split(' ').first}!',
-                style: GoogleFonts.inter(
-                    color: DesignSystem.labelText(context).withValues(alpha: 0.6),
-                    fontSize: 13)),
+            Text(
+              'Say hello to ${widget.isGroup ? (widget.groupName ?? "the group") : widget.otherUser.name.split(" ").first}!',
+              style: GoogleFonts.inter(
+                  color: DesignSystem.labelText(context).withValues(alpha: 0.6),
+                  fontSize: 13),
+            ),
           ],
         ),
       );
@@ -322,7 +360,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
       itemCount: chatState.messages.length + (chatState.isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == 0 && chatState.isLoading) {
@@ -330,7 +368,9 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
             padding: EdgeInsets.only(bottom: 8),
             child: Center(
               child: SizedBox(
-                  width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
             ),
           );
         }
@@ -348,7 +388,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
         return Column(
           children: [
             if (showDate) _buildDateSeparator(msg.createdAt),
-            _buildMessageBubble(msg, isMe, isFirstInGroup, isLastInGroup, chatState),
+            _buildMessageBubble(msg, isMe, isFirstInGroup, isLastInGroup, currentUserId),
           ],
         );
       },
@@ -363,7 +403,7 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     } else if (_isSameDay(date, now.subtract(const Duration(days: 1)))) {
       label = 'Yesterday';
     } else {
-      label = DateFormat('MMM d, yyyy').format(date);
+      label = DateFormat('MMMM d, yyyy').format(date);
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -372,11 +412,19 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
           Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(label,
-                style: GoogleFonts.inter(
-                    color: DesignSystem.labelText(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: DesignSystem.surface(context),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: DesignSystem.glassBorder(context)),
+              ),
+              child: Text(label,
+                  style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
+            ),
           ),
           Expanded(child: Divider(color: DesignSystem.glassBorder(context))),
         ],
@@ -384,11 +432,10 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     );
   }
 
-  Widget _buildMessageBubble(
-      ChatMessage msg, bool isMe, bool isFirstInGroup, bool isLastInGroup, ChatState state) {
+  Widget _buildMessageBubble(ChatMessage msg, bool isMe, bool isFirstInGroup,
+      bool isLastInGroup, int currentUserId) {
     final primaryColor = DesignSystem.primary(context);
-    final timeStr = DateFormat('h:mm a').format(msg.createdAt);
-    final isFile = msg.content.startsWith('Shared a file: ');
+    final timeStr = DateFormat('HH:mm').format(msg.createdAt);
 
     final bubbleRadius = BorderRadius.only(
       topLeft: Radius.circular(isMe || !isFirstInGroup ? 18 : 4),
@@ -398,21 +445,32 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: isLastInGroup ? 8 : 2, top: isFirstInGroup ? 4 : 0),
+      padding: EdgeInsets.only(
+          bottom: isLastInGroup ? 8 : 2, top: isFirstInGroup ? 4 : 0),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Avatar for other user
           if (!isMe) ...[
             if (isLastInGroup)
               CircleAvatar(
                 radius: 14,
                 backgroundColor: DesignSystem.surfaceMediumColor(context),
-                backgroundImage: widget.otherUser.avatarUrl != null
+                backgroundImage: (!widget.isGroup && widget.otherUser.avatarUrl != null)
                     ? NetworkImage(widget.otherUser.avatarUrl!)
                     : null,
-                child: widget.otherUser.avatarUrl == null
-                    ? Icon(LucideIcons.user, size: 12, color: DesignSystem.labelText(context))
+                child: (widget.isGroup || widget.otherUser.avatarUrl == null)
+                    ? Text(
+                        (msg.senderName ?? widget.otherUser.name)
+                            .substring(0, 1)
+                            .toUpperCase(),
+                        style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: DesignSystem.labelText(context)),
+                      )
                     : null,
               )
             else
@@ -421,11 +479,12 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
           ],
           Flexible(
             child: GestureDetector(
-              onLongPress: () => _showMessageOptions(context, msg),
+              onLongPress: () => _showMessageOptions(context, msg, isMe),
               child: Column(
                 crossAxisAlignment:
                     isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
+                  // Group sender name
                   if (widget.isGroup && !isMe && isFirstInGroup)
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 4),
@@ -433,62 +492,38 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                         msg.senderName ?? 'Member',
                         style: GoogleFonts.inter(
                           color: DesignSystem.primary(context),
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                  // Reply context
+                  if (msg.repliedTo != null)
+                    _buildReplyPreview(msg.repliedTo!, isMe),
+                  // Bubble
                   Container(
-                    constraints:
-                        BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.72),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isMe ? primaryColor : DesignSystem.surface(context),
+                      color: isMe
+                          ? primaryColor
+                          : DesignSystem.surface(context),
                       borderRadius: bubbleRadius,
                       boxShadow: isMe
-                          ? [BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3))]
+                          ? [
+                              BoxShadow(
+                                  color: primaryColor.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3))
+                            ]
                           : null,
                     ),
-                    child: isFile
-                        ? _buildFileContent(msg.content.substring(15), isMe)
-                        : Text(
-                            msg.content,
-                            style: GoogleFonts.inter(
-                              color: isMe
-                                  ? (Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.black
-                                      : Colors.white)
-                                  : DesignSystem.mainText(context),
-                              height: 1.45,
-                              fontSize: 14,
-                            ),
-                          ),
+                    child: msg.isAttachment
+                        ? _buildAttachmentContent(msg.attachmentUrl!, isMe)
+                        : _buildTextContent(msg, isMe, timeStr),
                   ),
-                  if (isLastInGroup)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(timeStr,
-                              style: GoogleFonts.inter(
-                                  color: DesignSystem.labelText(context), fontSize: 10)),
-                          if (isMe) ...[
-                            const SizedBox(width: 3),
-                            Icon(
-                              msg.isPending
-                                  ? LucideIcons.clock
-                                  : (msg.isRead ? LucideIcons.checkCheck : LucideIcons.check),
-                              color: msg.isRead ? Colors.blue : DesignSystem.labelText(context),
-                              size: 11,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -499,33 +534,153 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     );
   }
 
-  Widget _buildFileContent(String url, bool isMe) {
-    final isImage = url.toLowerCase().endsWith('.jpg') ||
-        url.toLowerCase().endsWith('.png') ||
-        url.toLowerCase().endsWith('.jpeg') ||
-        url.toLowerCase().endsWith('.gif');
+  Widget _buildReplyPreview(ChatMessage replied, bool isMe) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      constraints:
+          BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+      decoration: BoxDecoration(
+        color: isMe
+            ? Colors.black.withValues(alpha: 0.15)
+            : DesignSystem.surfaceMediumColor(context),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(color: DesignSystem.primary(context), width: 3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            replied.senderName ?? 'User',
+            style: GoogleFonts.inter(
+              color: DesignSystem.primary(context),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            replied.isAttachment ? '📎 Attachment' : replied.content,
+            style: GoogleFonts.inter(
+              color: isMe
+                  ? Colors.white.withValues(alpha: 0.7)
+                  : DesignSystem.labelText(context),
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextContent(ChatMessage msg, bool isMe, String timeStr) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isMe ? (isDark ? Colors.black : Colors.white) : DesignSystem.mainText(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          msg.content,
+          style: GoogleFonts.inter(color: textColor, height: 1.45, fontSize: 14),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (msg.isEdited)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text('edited',
+                    style: GoogleFonts.inter(
+                        color: textColor.withValues(alpha: 0.5),
+                        fontSize: 9,
+                        fontStyle: FontStyle.italic)),
+              ),
+            Text(timeStr,
+                style: GoogleFonts.inter(
+                    color: textColor.withValues(alpha: 0.6), fontSize: 10)),
+            if (isMe) ...[
+              const SizedBox(width: 4),
+              _buildReadReceipt(msg, textColor),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadReceipt(ChatMessage msg, Color textColor) {
+    if (msg.isPending) {
+      return Icon(LucideIcons.clock, size: 11, color: textColor.withValues(alpha: 0.5));
+    }
+    if (msg.isRead) {
+      return Icon(LucideIcons.checkCheck, size: 12, color: Colors.blue.shade300);
+    }
+    if (msg.isDelivered) {
+      return Icon(LucideIcons.checkCheck, size: 12, color: textColor.withValues(alpha: 0.5));
+    }
+    return Icon(LucideIcons.check, size: 12, color: textColor.withValues(alpha: 0.5));
+  }
+
+  Widget _buildAttachmentContent(String url, bool isMe) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isMe ? (isDark ? Colors.black : Colors.white) : DesignSystem.mainText(context);
+    final isImage = RegExp(r'\.(jpg|jpeg|png|gif|webp)$', caseSensitive: false).hasMatch(url);
+
     if (isImage) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Image.network(url,
             fit: BoxFit.cover,
             width: 200,
-            errorBuilder: (_, __, ___) => const Icon(LucideIcons.imageOff, size: 40)),
+            errorBuilder: (_, __, ___) =>
+                Icon(LucideIcons.imageOff, size: 40, color: textColor)),
       );
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(LucideIcons.file,
-            color: isMe ? Colors.white : DesignSystem.primary(context), size: 20),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(url.split('/').last,
-              style: TextStyle(
-                  color: isMe ? Colors.white : DesignSystem.mainText(context), fontSize: 13),
-              overflow: TextOverflow.ellipsis),
-        ),
-      ],
+
+    final fileName = url.split('/').last;
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) launchUrl(uri);
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isMe
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : DesignSystem.primary(context).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(LucideIcons.file,
+                color: isMe ? textColor : DesignSystem.primary(context), size: 20),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(fileName,
+                    style: GoogleFonts.inter(
+                        color: textColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis),
+                Text('Tap to open',
+                    style: GoogleFonts.inter(
+                        color: textColor.withValues(alpha: 0.6), fontSize: 10)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -538,102 +693,221 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
           color: DesignSystem.surface(context),
           shape: BoxShape.circle,
           border: Border.all(color: DesignSystem.glassBorder(context)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)
+          ],
         ),
-        child: Icon(LucideIcons.chevronDown, color: DesignSystem.mainText(context), size: 18),
+        child: Icon(LucideIcons.chevronDown,
+            color: DesignSystem.mainText(context), size: 18),
       ),
     );
   }
 
   Widget _buildInputArea(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
+      padding: EdgeInsets.fromLTRB(
+          12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
       decoration: BoxDecoration(
         color: DesignSystem.themeBackground(context),
-        border: Border(top: BorderSide(color: DesignSystem.glassBorder(context), width: 0.5)),
+        border: Border(
+            top: BorderSide(
+                color: DesignSystem.glassBorder(context), width: 0.5)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: _attachFile,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 4),
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                  color: DesignSystem.surface(context), shape: BoxShape.circle),
-              child: Icon(LucideIcons.paperclip,
-                  color: DesignSystem.labelText(context), size: 18),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              constraints: const BoxConstraints(maxHeight: 120),
-              decoration: BoxDecoration(
-                color: DesignSystem.surface(context),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: DesignSystem.glassBorder(context)),
-              ),
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                onChanged: _onTextChanged,
-                style: GoogleFonts.inter(color: DesignSystem.mainText(context), fontSize: 14),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Message...',
-                  hintStyle: GoogleFonts.inter(
-                      color: DesignSystem.labelText(context), fontSize: 14),
-                  border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          // Reply banner
+          if (_replyingTo != null) _buildReplyBanner(),
+          // Edit banner
+          if (_editingMessage != null) _buildEditBanner(),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Attach button
+              GestureDetector(
+                onTap: _attachFile,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                      color: DesignSystem.surface(context),
+                      shape: BoxShape.circle),
+                  child: Icon(LucideIcons.paperclip,
+                      color: DesignSystem.labelText(context), size: 18),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _isComposing ? _sendMessage : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 2),
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: _isComposing
-                    ? DesignSystem.primary(context)
-                    : DesignSystem.surface(context),
-                shape: BoxShape.circle,
+              const SizedBox(width: 8),
+              // Text field
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  decoration: BoxDecoration(
+                    color: DesignSystem.surface(context),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: DesignSystem.glassBorder(context)),
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    onChanged: _onTextChanged,
+                    style: GoogleFonts.inter(
+                        color: DesignSystem.mainText(context), fontSize: 14),
+                    maxLines: null,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      hintText: _editingMessage != null
+                          ? 'Edit message…'
+                          : 'Message…',
+                      hintStyle: GoogleFonts.inter(
+                          color: DesignSystem.labelText(context), fontSize: 14),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
               ),
-              child: Icon(
-                LucideIcons.send,
-                color: _isComposing
-                    ? (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.black
-                        : Colors.white)
-                    : DesignSystem.labelText(context),
-                size: 18,
+              const SizedBox(width: 8),
+              // Send button
+              GestureDetector(
+                onTap: _isComposing ? _sendMessage : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(bottom: 2),
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: _isComposing
+                        ? DesignSystem.primary(context)
+                        : DesignSystem.surface(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _editingMessage != null ? LucideIcons.check : LucideIcons.send,
+                    color: _isComposing
+                        ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white)
+                        : DesignSystem.labelText(context),
+                    size: 18,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _showMessageOptions(BuildContext context, ChatMessage msg) {
+  Widget _buildReplyBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: DesignSystem.primary(context).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+            left: BorderSide(color: DesignSystem.primary(context), width: 3)),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.cornerUpLeft,
+              size: 14, color: DesignSystem.primary(context)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to ${_replyingTo!.senderName ?? "User"}',
+                  style: GoogleFonts.inter(
+                      color: DesignSystem.primary(context),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  _replyingTo!.isAttachment
+                      ? '📎 Attachment'
+                      : _replyingTo!.content,
+                  style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context), fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _replyingTo = null),
+            child: Icon(LucideIcons.x,
+                size: 16, color: DesignSystem.labelText(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: DesignSystem.primary(context).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+            left: BorderSide(color: DesignSystem.primary(context), width: 3)),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.pencil,
+              size: 14, color: DesignSystem.primary(context)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Editing message',
+                    style: GoogleFonts.inter(
+                        color: DesignSystem.primary(context),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold)),
+                Text(
+                  _editingMessage!.content,
+                  style: GoogleFonts.inter(
+                      color: DesignSystem.labelText(context), fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() => _editingMessage = null);
+              _controller.clear();
+            },
+            child: Icon(LucideIcons.x,
+                size: 16, color: DesignSystem.labelText(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMessageOptions(BuildContext context, ChatMessage msg, bool isMe) {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
       backgroundColor: DesignSystem.surface(context),
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag handle
             Container(
               width: 36,
               height: 4,
@@ -642,20 +916,96 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
                   color: DesignSystem.glassBorder(context),
                   borderRadius: BorderRadius.circular(2)),
             ),
-            ListTile(
-              leading: Icon(LucideIcons.copy, color: DesignSystem.mainText(context)),
-              title: Text('Copy',
-                  style: GoogleFonts.inter(color: DesignSystem.mainText(context))),
+            // Reply — always available
+            _OptionTile(
+              icon: LucideIcons.cornerUpLeft,
+              label: 'Reply',
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _replyingTo = msg;
+                  _editingMessage = null;
+                });
+                _focusNode.requestFocus();
+              },
+            ),
+            // Copy — always available
+            _OptionTile(
+              icon: LucideIcons.copy,
+              label: 'Copy',
               onTap: () {
                 Clipboard.setData(ClipboardData(text: msg.content));
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Copied'), duration: Duration(seconds: 1)));
+                    content: Text('Copied'),
+                    duration: Duration(seconds: 1)));
               },
             ),
+            // Edit — only own messages, not attachments
+            if (isMe && !msg.isAttachment)
+              _OptionTile(
+                icon: LucideIcons.pencil,
+                label: 'Edit',
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _editingMessage = msg;
+                    _replyingTo = null;
+                    _controller.text = msg.content;
+                    _isComposing = true;
+                  });
+                  _focusNode.requestFocus();
+                },
+              ),
+            // Delete — only own messages
+            if (isMe)
+              _OptionTile(
+                icon: LucideIcons.trash2,
+                label: 'Delete',
+                isDestructive: true,
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDelete(context, msg.id);
+                },
+              ),
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, int messageId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DesignSystem.surface(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Delete Message?',
+            style: GoogleFonts.plusJakartaSans(
+                color: DesignSystem.mainText(context),
+                fontWeight: FontWeight.bold)),
+        content: Text(
+            'This will remove the message for everyone.',
+            style: GoogleFonts.inter(
+                color: DesignSystem.labelText(context), fontSize: 13)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(color: DesignSystem.labelText(context))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref
+                  .read(chatStateProvider(widget.conversationId).notifier)
+                  .deleteMessage(messageId);
+            },
+            child: const Text('Delete',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -670,6 +1020,82 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
+    super.dispose();
+  }
+}
+
+// ─── Helper widgets ──────────────────────────────────────────────────────────
+
+class _OptionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  const _OptionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? Colors.red : DesignSystem.mainText(context);
+    return ListTile(
+      leading: Icon(icon, color: color, size: 20),
+      title: Text(label,
+          style: GoogleFonts.inter(color: color, fontSize: 15)),
+      onTap: onTap,
+      dense: true,
+    );
+  }
+}
+
+class _TypingDot extends StatefulWidget {
+  final int delay;
+  const _TypingDot({required this.delay});
+
+  @override
+  State<_TypingDot> createState() => _TypingDotState();
+}
+
+class _TypingDotState extends State<_TypingDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600))
+      ..repeat(reverse: true);
+    _anim = Tween(begin: 0.3, end: 1.0).animate(CurvedAnimation(
+        parent: _ctrl, curve: Curves.easeInOut));
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _anim,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          color: DesignSystem.primary(context),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
     super.dispose();
   }
 }

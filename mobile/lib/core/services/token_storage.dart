@@ -42,6 +42,14 @@ class TokenStorage {
 
   Future<String?> readSelectedExam() =>
       _storage.read(key: 'selected_exam');
+
+  // AI chatbot session ID — mirrors website's localStorage "ai_chat_session_id"
+  static const _kAiSession = 'ai_chat_session_id';
+
+  Future<String?> readSessionId() => _storage.read(key: _kAiSession);
+
+  Future<void> writeSessionId(String sessionId) =>
+      _storage.write(key: _kAiSession, value: sessionId);
 }
 
 

@@ -17,9 +17,7 @@ export default function CounselorChatPage() {
   }
 
   return (
-    <div className="space-y-6">
-
-
+    <div className="h-full">
       <Suspense fallback={<div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin" /></div>}>
         <ChatPage currentUser={{ id: user.id, name: user.name, role: user.role }} />
       </Suspense>

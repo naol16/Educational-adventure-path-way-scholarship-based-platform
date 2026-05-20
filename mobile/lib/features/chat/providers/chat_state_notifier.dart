@@ -12,6 +12,7 @@ class ChatState {
   final bool isTyping;
   final bool isSending;
   final bool hasMore;
+  final int currentPage;
   final String? error;
 
   const ChatState({
@@ -20,6 +21,7 @@ class ChatState {
     this.isTyping = false,
     this.isSending = false,
     this.hasMore = true,
+    this.currentPage = 1,
     this.error,
   });
 
@@ -29,6 +31,7 @@ class ChatState {
     bool? isTyping,
     bool? isSending,
     bool? hasMore,
+    int? currentPage,
     String? error,
   }) {
     return ChatState(
@@ -37,6 +40,7 @@ class ChatState {
       isTyping: isTyping ?? this.isTyping,
       isSending: isSending ?? this.isSending,
       hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
       error: error,
     );
   }
@@ -50,6 +54,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   StreamSubscription? _messageSub;
   StreamSubscription? _typingSub;
+  StreamSubscription? _editSub;
+  StreamSubscription? _deleteSub;
+  StreamSubscription? _readSub;
 
   static const int _pageSize = 50;
 
@@ -64,31 +71,29 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   Future<void> _init() async {
     try {
-      final messages = await _chatService.getMessages(conversationId, limit: _pageSize);
+      final messages =
+          await _chatService.getMessages(conversationId, page: 1, limit: _pageSize);
       state = state.copyWith(
         messages: messages,
         isLoading: false,
         hasMore: messages.length >= _pageSize,
+        currentPage: 1,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Failed to load messages');
       return;
     }
 
-    // Connect socket and join room
     await _socketService.connect();
     _socketService.joinConversation(conversationId);
 
-    // Listen for incoming messages via socket
+    // Incoming messages from other users
     _messageSub = _socketService.messageStream.listen((data) {
       final msgConvId = data['conversationId'] ?? data['conversation_id'];
       if (msgConvId == conversationId) {
         try {
           final incoming = ChatMessage.fromJson(Map<String, dynamic>.from(data));
-          // Only add messages from the OTHER user — our own messages are
-          // already shown optimistically and confirmed via HTTP response.
           if (incoming.senderId == currentUserId) return;
-          // Also guard against duplicates by real id
           final exists = state.messages.any((m) => m.id == incoming.id);
           if (!exists) {
             state = state.copyWith(messages: [...state.messages, incoming]);
@@ -97,71 +102,141 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
     });
 
-    // Listen for typing indicator
+    // Typing indicator
     _typingSub = _socketService.typingStream.listen((data) {
       final msgConvId = data['conversationId'] ?? data['conversation_id'];
       if (msgConvId == conversationId) {
         state = state.copyWith(isTyping: data['isTyping'] == true);
       }
     });
+
+    // Message edited
+    _editSub = _socketService.editStream.listen((data) {
+      final msgConvId = data['conversationId'] ?? data['conversation_id'];
+      if (msgConvId == conversationId) {
+        final msgId = data['messageId'];
+        final newContent = data['content'] as String?;
+        if (msgId != null && newContent != null) {
+          state = state.copyWith(
+            messages: state.messages
+                .map((m) => m.id == msgId
+                    ? m.copyWith(content: newContent, isEdited: true)
+                    : m)
+                .toList(),
+          );
+        }
+      }
+    });
+
+    // Message deleted
+    _deleteSub = _socketService.deleteStream.listen((data) {
+      final msgConvId = data['conversationId'] ?? data['conversation_id'];
+      if (msgConvId == conversationId) {
+        final msgId = data['messageId'];
+        if (msgId != null) {
+          state = state.copyWith(
+            messages: state.messages.where((m) => m.id != msgId).toList(),
+          );
+        }
+      }
+    });
+
+    // Read receipts
+    _readSub = _socketService.readStream.listen((data) {
+      final msgConvId = data['conversationId'] ?? data['conversation_id'];
+      if (msgConvId == conversationId) {
+        final readerId = data['readerId'];
+        if (readerId != null && readerId != currentUserId) {
+          state = state.copyWith(
+            messages: state.messages
+                .map((m) =>
+                    m.senderId == currentUserId ? m.copyWith(isRead: true) : m)
+                .toList(),
+          );
+        }
+      }
+    });
   }
 
-  /// Load older messages (pagination)
+  /// Load older messages (pagination — prepend to list)
   Future<void> loadMore() async {
     if (!state.hasMore || state.isLoading) return;
     state = state.copyWith(isLoading: true);
     try {
+      final nextPage = state.currentPage + 1;
       final older = await _chatService.getMessages(
         conversationId,
+        page: nextPage,
         limit: _pageSize,
-        offset: state.messages.length,
       );
       state = state.copyWith(
         messages: [...older, ...state.messages],
         isLoading: false,
         hasMore: older.length >= _pageSize,
+        currentPage: nextPage,
       );
     } catch (_) {
       state = state.copyWith(isLoading: false);
     }
   }
 
-  /// Send with optimistic UI — shows message instantly, persists via HTTP.
-  Future<void> sendMessage(int receiverId, String content, {int? conversationId}) async {
+  /// Send with optimistic UI
+  Future<void> sendMessage(String content, {int? replyToId}) async {
     if (content.trim().isEmpty) return;
 
-    // 1. Show optimistic message immediately (instant feel)
     final tempId = -DateTime.now().millisecondsSinceEpoch;
     final optimistic = ChatMessage(
       id: tempId,
-      conversationId: this.conversationId,
+      conversationId: conversationId,
       senderId: currentUserId,
       content: content.trim(),
       isRead: false,
       createdAt: DateTime.now(),
       isPending: true,
+      replyToId: replyToId,
     );
     state = state.copyWith(messages: [...state.messages, optimistic]);
 
-    // 2. Persist via HTTP
-    final saved = conversationId != null
-        ? await _chatService.sendMessageToConversation(conversationId, content.trim())
-        : await _chatService.sendMessage(receiverId, content.trim());
+    final saved = await _chatService.sendMessage(
+      conversationId,
+      content.trim(),
+      replyToId: replyToId,
+    );
 
     if (saved != null) {
-      final confirmed = saved;
-      // Replace optimistic bubble with the confirmed server message
-      final updated = state.messages
-          .map((m) => m.id == tempId ? confirmed : m)
-          .toList();
-      state = state.copyWith(messages: updated);
+      state = state.copyWith(
+        messages: state.messages
+            .map((m) => m.id == tempId ? saved : m)
+            .toList(),
+      );
     } else {
-      // HTTP failed — mark as failed but keep visible
-      final updated = state.messages
-          .map((m) => m.id == tempId ? m.copyWith(isPending: false) : m)
-          .toList();
-      state = state.copyWith(messages: updated);
+      // Mark as failed (keep visible, no pending spinner)
+      state = state.copyWith(
+        messages: state.messages
+            .map((m) => m.id == tempId ? m.copyWith(isPending: false) : m)
+            .toList(),
+      );
     }
+  }
+
+  Future<void> editMessage(int messageId, String newContent) async {
+    // Optimistic update
+    state = state.copyWith(
+      messages: state.messages
+          .map((m) => m.id == messageId
+              ? m.copyWith(content: newContent, isEdited: true)
+              : m)
+          .toList(),
+    );
+    await _chatService.editMessage(messageId, newContent);
+  }
+
+  Future<void> deleteMessage(int messageId) async {
+    // Optimistic remove
+    state = state.copyWith(
+      messages: state.messages.where((m) => m.id != messageId).toList(),
+    );
+    await _chatService.deleteMessage(messageId);
   }
 
   void sendTyping(bool isTyping) {
@@ -172,11 +247,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void dispose() {
     _messageSub?.cancel();
     _typingSub?.cancel();
+    _editSub?.cancel();
+    _deleteSub?.cancel();
+    _readSub?.cancel();
     super.dispose();
   }
 }
 
-final chatStateProvider = StateNotifierProvider.family<ChatNotifier, ChatState, int>(
+final chatStateProvider =
+    StateNotifierProvider.family<ChatNotifier, ChatState, int>(
   (ref, conversationId) {
     final chatService = ref.watch(chatServiceProvider);
     final socketService = ref.watch(socketServiceProvider);

@@ -32,15 +32,18 @@ class ChatService {
   }
 
   /// Fetches messages oldest-first (backend returns newest-first, we reverse).
-  Future<List<ChatMessage>> getMessages(int conversationId, {int limit = 50, int offset = 0}) async {
+  Future<List<ChatMessage>> getMessages(int conversationId,
+      {int page = 1, int limit = 50}) async {
     try {
       final response = await _apiClient.get(
         '/api/chat/$conversationId',
-        query: {'limit': '$limit', 'offset': '$offset'},
+        query: {'page': '$page', 'limit': '$limit'},
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        final List raw = body['data'] ?? [];
+        // Support both paginated { data: { data: [...] } } and flat array
+        final dataObj = body['data'] is Map ? body['data'] : null;
+        final List raw = dataObj?['data'] ?? (body['data'] is List ? body['data'] : []);
         final msgs = raw
             .map((json) {
               try {
@@ -62,10 +65,11 @@ class ChatService {
 
   Future<Conversation?> startChat(int userId) async {
     try {
-      final response = await _apiClient.post('/api/chat/start', body: {'receiverId': userId});
+      final response =
+          await _apiClient.post('/api/chat/start', body: {'receiverId': userId});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
-        final data = body['data'];
+        final data = body['data'] ?? body;
         if (data != null) {
           return Conversation.fromJson(Map<String, dynamic>.from(data));
         }
@@ -76,16 +80,20 @@ class ChatService {
     }
   }
 
-  /// Sends via HTTP (reliable fallback). Returns the saved message.
-  Future<ChatMessage?> sendMessage(int receiverId, String content) async {
+  /// Send a message to a conversation (works for both DMs and groups).
+  Future<ChatMessage?> sendMessage(int conversationId, String content,
+      {int? replyToId}) async {
     try {
-      final response = await _apiClient.post('/api/chat/send', body: {
-        'receiverId': receiverId,
+      final Map<String, dynamic> body = {
+        'conversationId': conversationId,
         'content': content,
-      });
-      if (response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        final msgJson = body['data']?['message'];
+      };
+      if (replyToId != null) body['replyToId'] = replyToId;
+
+      final response = await _apiClient.post('/api/chat/send', body: body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final respBody = jsonDecode(response.body);
+        final msgJson = respBody['data']?['message'] ?? respBody['message'];
         if (msgJson != null) {
           return ChatMessage.fromJson(Map<String, dynamic>.from(msgJson));
         }
@@ -93,6 +101,27 @@ class ChatService {
       return null;
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<bool> editMessage(int messageId, String content) async {
+    try {
+      final response = await _apiClient.patch(
+        '/api/chat/messages/$messageId',
+        body: {'content': content},
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteMessage(int messageId) async {
+    try {
+      final response = await _apiClient.delete('/api/chat/messages/$messageId');
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -155,30 +184,10 @@ class ChatService {
 
   Future<bool> leaveGroup(int groupId) async {
     try {
-      final response = await _apiClient.post('/api/groups/$groupId/leave');
+      final response = await _apiClient.delete('/api/groups/$groupId/leave');
       return response.statusCode == 200;
     } catch (_) {
       return false;
-    }
-  }
-
-  /// Sends a message to a specific conversation ID (required for groups).
-  Future<ChatMessage?> sendMessageToConversation(int conversationId, String content) async {
-    try {
-      final response = await _apiClient.post('/api/chat/send', body: {
-        'conversationId': conversationId,
-        'content': content,
-      });
-      if (response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        final msgJson = body['data']?['message'];
-        if (msgJson != null) {
-          return ChatMessage.fromJson(Map<String, dynamic>.from(msgJson));
-        }
-      }
-      return null;
-    } catch (_) {
-      return null;
     }
   }
 }

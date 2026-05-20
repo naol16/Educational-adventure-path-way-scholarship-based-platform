@@ -192,6 +192,8 @@ export const ChatList = ({
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 shrink-0 border-b border-border bg-background/95 px-3 pb-2 pt-3 backdrop-blur-md">
         <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          {/* Spacer for mobile hamburger button (fixed top-4 left-4 = 56px wide) */}
+          <div className="w-10 shrink-0 lg:hidden" />
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -290,4 +292,4 @@ export const ChatList = ({
     </div>
   );
 };
-
+

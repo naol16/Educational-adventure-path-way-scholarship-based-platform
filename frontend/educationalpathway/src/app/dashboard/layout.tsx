@@ -80,11 +80,15 @@ export default function DashboardLayout({
 
         <div className="flex-1 flex flex-col min-w-0 h-screen">
 
-          {!isCounselorOnboarding && <DashboardHeader />}
+          {!isCounselorOnboarding && (
+            <div className={pathname.startsWith('/dashboard/counselor/chat') ? 'hidden md:block' : ''}>
+              <DashboardHeader />
+            </div>
+          )}
 
-          <main className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${isCounselorOnboarding ? '' : 'px-6 py-8'}`}>
+          <main className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${isCounselorOnboarding ? '' : pathname.startsWith('/dashboard/counselor/chat') ? '' : 'px-6 py-8'}`}>
 
-            <div className="max-w-[1600px] mx-auto h-full">
+            <div className={`${pathname.startsWith('/dashboard/counselor/chat') ? 'h-full' : 'max-w-[1600px] mx-auto h-full'}`}>
               {children}
             </div>
 
@@ -105,15 +109,19 @@ export default function DashboardLayout({
 
       <div className="flex-1 flex flex-col min-w-0 h-screen">
 
-        {!isStudentOnboarding && <DashboardHeader />}
+        {!isStudentOnboarding && (
+            <div className={pathname.startsWith('/dashboard/student/chat') ? 'hidden md:block' : ''}>
+              <DashboardHeader />
+            </div>
+          )}
 
         <main
           className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${
-            isStudentOnboarding ? '' : pathname.startsWith('/dashboard/learning-path') ? 'px-2 py-4' : 'px-6 py-8'
+            isStudentOnboarding ? '' : pathname.startsWith('/dashboard/student/chat') ? '' : pathname.startsWith('/dashboard/learning-path') ? 'px-2 py-4' : 'px-6 py-8'
           }`}
         >
 
-          <div className={`${pathname.startsWith('/dashboard/learning-path') ? 'max-w-[1800px]' : 'max-w-[1600px]'} mx-auto h-full`}>
+          <div className={`${pathname.startsWith('/dashboard/student/chat') ? 'h-full' : pathname.startsWith('/dashboard/learning-path') ? 'max-w-[1800px]' : 'max-w-[1600px]'} mx-auto h-full`}>
             {children}
           </div>
 

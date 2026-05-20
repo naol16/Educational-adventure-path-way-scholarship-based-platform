@@ -67,6 +67,7 @@ export const ChatWindow = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: Message } | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -111,6 +112,21 @@ export const ChatWindow = ({
     navigator.clipboard.writeText(content);
     toast.success("Copied to clipboard");
     setContextMenu(null);
+  };
+
+  // Long-press for mobile (touch devices don't have right-click)
+  const handleTouchStart = (message: Message) => {
+    longPressTimer.current = setTimeout(() => {
+      // Center the bottom sheet — x/y not used for mobile sheet
+      setContextMenu({ x: 0, y: 0, message });
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   useEffect(() => {
@@ -160,44 +176,45 @@ export const ChatWindow = ({
 
 
       {/* Header */}
-      <div className="relative z-20 flex h-[52px] shrink-0 items-center justify-between border-b border-border bg-card/95 px-2 backdrop-blur-md md:px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/95 px-2 backdrop-blur-md md:h-[52px] md:px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-1">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
               className="shrink-0 rounded-full p-2 text-primary hover:bg-muted md:hidden"
+              aria-label="Back to conversations"
             >
               <ChevronLeft size={22} />
             </button>
           )}
           <button
             type="button"
-            className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors ${isGroup ? "hover:bg-muted/60" : ""}`}
+            className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 pr-2 text-left transition-colors ${isGroup ? "hover:bg-muted/60" : "hover:bg-muted/40"}`}
             onClick={isGroup ? onShowMembers : undefined}
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white shadow-sm">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white shadow-sm md:h-10 md:w-10">
               {isGroup
                 ? <span>{groupName?.substring(0, 1).toUpperCase() || "G"}</span>
                 : <span>{otherUser?.name?.substring(0, 1).toUpperCase() || "U"}</span>
               }
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">
+              <h3 className="truncate text-[14px] font-semibold leading-tight text-foreground md:text-[15px]">
                 {isGroup ? groupName || "Group" : otherUser?.name || "Chat"}
               </h3>
-              <p className="truncate text-[12px] text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground md:text-[12px]">
                 {isGroup ? (
                   <>
                     {typeof groupMemberCount === "number"
                       ? `${groupMemberCount} member${groupMemberCount === 1 ? "" : "s"}`
                       : "Group"}
                     {" · "}
-                    <span className="opacity-60">info</span>
+                    <span className="opacity-60">tap for info</span>
                   </>
                 ) : otherUser ? (
                   <span className={onlineUsers.has(otherUser.id) ? "text-primary" : ""}>
-                    {onlineUsers.has(otherUser.id) ? "online" : "offline"}
+                    {onlineUsers.has(otherUser.id) ? "● online" : "offline"}
                   </span>
                 ) : " "}
               </p>
@@ -205,6 +222,20 @@ export const ChatWindow = ({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
+          {!isGroup && onBookSession && (
+            <button
+              type="button"
+              onClick={onBookSession}
+              disabled={bookingLoading}
+              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-40"
+              title="Book a session"
+            >
+              {bookingLoading
+                ? <Loader2 size={18} className="animate-spin" />
+                : <MessageCircle size={18} />
+              }
+            </button>
+          )}
           {isGroup && (
             <button
               type="button"
@@ -301,6 +332,9 @@ export const ChatWindow = ({
                               >
                                 <div
                                   onContextMenu={(e) => handleContextMenu(e, m)}
+                                  onTouchStart={() => handleTouchStart(m)}
+                                  onTouchEnd={handleTouchEnd}
+                                  onTouchMove={handleTouchEnd}
                                   className={`
                                     relative max-w-full cursor-default select-none px-3 py-1.5 text-[15px] leading-snug shadow-sm transition-transform
                                     ${isMe
@@ -425,14 +459,16 @@ export const ChatWindow = ({
                                      </button>
                                    )}
 
-                                   <button
-                                     type="button"
-                                     onClick={() => onDeleteMessage?.(m.id)}
-                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5 active:scale-90"
-                                     title="Delete"
-                                   >
-                                     <Trash2 size={15} />
-                                   </button>
+                                   {isMe && (
+                                     <button
+                                       type="button"
+                                       onClick={() => onDeleteMessage?.(m.id)}
+                                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5 active:scale-90"
+                                       title="Delete"
+                                     >
+                                       <Trash2 size={15} />
+                                     </button>
+                                   )}
                                  </div>
                               </div>
                             );
@@ -456,7 +492,7 @@ export const ChatWindow = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="pointer-events-none absolute bottom-19 left-1/2 z-30 -translate-x-1/2 md:bottom-20"
+            className="pointer-events-none absolute bottom-20 left-1/2 z-30 -translate-x-1/2"
           >
             <div className="flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1.5 text-[12px] text-muted-foreground shadow-md backdrop-blur-md">
               <div className="flex gap-1">
@@ -509,57 +545,63 @@ export const ChatWindow = ({
         )}
       </AnimatePresence>
 
-      {/* Context Menu */}
+      {/* Context Menu — bottom sheet on mobile, floating on desktop */}
       <AnimatePresence>
         {contextMenu && (
           <>
+            {/* Backdrop — always shown */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setContextMenu(null)}
-              className="fixed inset-0 z-998 bg-black/40 backdrop-blur-sm sm:hidden"
+              className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm"
             />
+
+            {/* Mobile: bottom sheet */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, left: contextMenu.x, top: contextMenu.y }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
-              className="absolute z-999 w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-[999] sm:hidden rounded-t-3xl border-t border-border bg-card pb-safe shadow-2xl"
             >
-              <button
-                onClick={() => { onReplyMessage?.(contextMenu.message); setContextMenu(null); }}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors"
-              >
+              <div className="mx-auto mt-3 mb-4 h-1 w-10 rounded-full bg-border" />
+              <div className="px-2 pb-4 flex flex-col gap-1">
+                <BottomSheetAction icon={Reply} label="Reply" onClick={() => { onReplyMessage?.(contextMenu.message); setContextMenu(null); }} />
+                <BottomSheetAction icon={Copy} label="Copy Text" onClick={() => handleCopy(contextMenu.message.content)} />
+                {contextMenu.message.senderId === currentUserId && (
+                  <BottomSheetAction icon={Edit2} label="Edit" onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }} />
+                )}
+                <BottomSheetAction icon={Trash2} label="Delete" variant="destructive" onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }} />
+              </div>
+            </motion.div>
+
+            {/* Desktop: floating menu */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1, left: contextMenu.x, top: contextMenu.y }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.1 }}
+              className="absolute z-[999] hidden sm:block w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl"
+            >
+              <button onClick={() => { onReplyMessage?.(contextMenu.message); setContextMenu(null); }} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors">
                 <Reply size={16} className="text-primary" /> Reply
               </button>
-              <button
-                onClick={() => handleCopy(contextMenu.message.content)}
-                className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors"
-              >
+              <button onClick={() => handleCopy(contextMenu.message.content)} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors">
                 <Copy size={16} className="text-primary" /> Copy Text
               </button>
-              {/* Message Actions */}
               {contextMenu.message.senderId === currentUserId ? (
                 <>
-                  <button
-                    onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }}
-                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors"
-                  >
+                  <button onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-foreground/90 transition-colors">
                     <Edit2 size={16} className="text-primary" /> Edit
                   </button>
-                  <button
-                    onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }}
-                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors"
-                  >
+                  <button onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors">
                     <Trash2 size={16} className="text-destructive" /> Delete
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }}
-                  className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors"
-                >
+                <button onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }} className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors">
                   <Trash2 size={16} className="text-destructive" /> Delete
                 </button>
               )}
@@ -570,3 +612,28 @@ export const ChatWindow = ({
     </div>
   );
 };
+
+// Bottom sheet action row for mobile context menu
+const BottomSheetAction = ({
+  icon: Icon,
+  label,
+  onClick,
+  variant,
+}: {
+  icon: any;
+  label: string;
+  onClick: () => void;
+  variant?: "destructive";
+}) => (
+  <button
+    onClick={onClick}
+    className={`flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-[15px] font-medium transition-colors active:scale-[0.98] ${
+      variant === "destructive"
+        ? "text-destructive hover:bg-destructive/10"
+        : "text-foreground hover:bg-muted"
+    }`}
+  >
+    <Icon size={20} className={variant === "destructive" ? "text-destructive" : "text-primary"} />
+    {label}
+  </button>
+);

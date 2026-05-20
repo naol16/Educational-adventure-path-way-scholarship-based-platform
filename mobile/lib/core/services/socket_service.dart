@@ -6,16 +6,33 @@ import 'dart:async';
 class SocketService {
   final TokenStorage _tokenStorage;
   IO.Socket? _socket;
-  
-  final _messageController = StreamController<Map<String, dynamic>>.broadcast();
-  final _typingController = StreamController<Map<String, dynamic>>.broadcast();
-  final _alertController = StreamController<Map<String, dynamic>>.broadcast();
+
+  final _messageController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _typingController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _alertController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _editController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _deleteController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _readController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _onlineController =
+      StreamController<List<int>>.broadcast();
 
   SocketService(this._tokenStorage);
 
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
   Stream<Map<String, dynamic>> get typingStream => _typingController.stream;
   Stream<Map<String, dynamic>> get alertStream => _alertController.stream;
+  Stream<Map<String, dynamic>> get editStream => _editController.stream;
+  Stream<Map<String, dynamic>> get deleteStream => _deleteController.stream;
+  Stream<Map<String, dynamic>> get readStream => _readController.stream;
+  Stream<List<int>> get onlineUsersStream => _onlineController.stream;
+
+  bool get isConnected => _socket?.connected == true;
 
   Future<void> connect() async {
     if (_socket?.connected == true) return;
@@ -23,14 +40,19 @@ class SocketService {
     final token = await _tokenStorage.readAccessToken();
     if (token == null) return;
 
-    _socket = IO.io(ApiConfig.baseUrl, IO.OptionBuilder()
-      .setTransports(['websocket'])
-      .setAuth({'token': token})
-      .enableAutoConnect()
-      .build());
+    _socket = IO.io(
+      ApiConfig.baseUrl,
+      IO.OptionBuilder()
+          .setTransports(['websocket', 'polling'])
+          .setAuth({'token': token})
+          .setReconnectionAttempts(5)
+          .setReconnectionDelay(1000)
+          .enableAutoConnect()
+          .build(),
+    );
 
     _socket!.onConnect((_) {
-      print('[Socket] Connected to backend');
+      print('[Socket] Connected: ${_socket?.id}');
     });
 
     _socket!.on('receive_message', (data) {
@@ -45,20 +67,34 @@ class SocketService {
       _alertController.add(Map<String, dynamic>.from(data));
     });
 
+    _socket!.on('message_edited', (data) {
+      _editController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('message_deleted', (data) {
+      _deleteController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('messages_read', (data) {
+      _readController.add(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('onlineUsers', (data) {
+      if (data is List) {
+        _onlineController.add(data.map((e) => e as int).toList());
+      }
+    });
+
     _socket!.onDisconnect((_) => print('[Socket] Disconnected'));
-    _socket!.onConnectError((err) => print('[Socket] Connection Error: $err'));
+    _socket!.onConnectError((err) => print('[Socket] Error: $err'));
   }
 
   void joinConversation(int conversationId) {
     _socket?.emit('join_conversation', conversationId);
   }
 
-  void sendMessage(int conversationId, int receiverId, String content) {
-    _socket?.emit('send_message', {
-      'conversationId': conversationId,
-      'receiverId': receiverId,
-      'content': content,
-    });
+  void leaveConversation(int conversationId) {
+    _socket?.emit('leave_conversation', conversationId);
   }
 
   void sendTyping(int conversationId, bool isTyping) {
@@ -78,5 +114,9 @@ class SocketService {
     _messageController.close();
     _typingController.close();
     _alertController.close();
+    _editController.close();
+    _deleteController.close();
+    _readController.close();
+    _onlineController.close();
   }
 }

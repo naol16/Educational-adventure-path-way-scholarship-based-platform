@@ -582,7 +582,7 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
 
   if (loading && conversations.length === 0) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">
@@ -594,7 +594,7 @@ export const ChatPage = ({ currentUser }: ChatPageProps) => {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-full w-full overflow-hidden bg-background">
       {/* Sidebar List */}
       <div className={`
         ${isMobileListVisible ? 'flex' : 'hidden md:flex'}

@@ -141,15 +141,15 @@ export const ChatInput = ({
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="absolute bottom-[calc(100%-8px)] left-4 z-50 mb-4 overflow-hidden rounded-2xl border border-border shadow-2xl"
+            className="absolute bottom-[calc(100%-8px)] left-0 z-50 mb-4 overflow-hidden rounded-2xl border border-border shadow-2xl sm:left-4"
           >
             <EmojiPicker
               onEmojiClick={onEmojiClick}
               theme={Theme.AUTO}
               lazyLoadEmojis={true}
               searchPlaceholder="Search emojis..."
-              width={350}
-              height={400}
+              width={Math.min(320, typeof window !== "undefined" ? window.innerWidth - 16 : 320)}
+              height={380}
               skinTonesDisabled
             />
           </motion.div>
@@ -175,7 +175,7 @@ export const ChatInput = ({
                     <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                       Editing Message
                     </span>
-                    <span className="text-xs text-muted-foreground truncate max-w-[400px]">
+                    <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[400px]">
                       {editingMessage.content}
                     </span>
                   </div>
@@ -200,7 +200,7 @@ export const ChatInput = ({
                     <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                       Replying to {replyingTo.senderName}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate max-w-[400px]">
+                    <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-[400px]">
                       {replyingTo.content}
                     </span>
                   </div>
