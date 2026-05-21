@@ -24,9 +24,11 @@ import {
   TrendingDown,
   Sparkles,
   Globe2,
+  MessageSquare,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AIChatBot } from "@/components/AIChatBot";
+import { ShareModal } from "./ShareModal";
 
 interface CriteriaMatch {
   label: string;
@@ -70,6 +72,7 @@ export default function ScholarshipDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -610,13 +613,21 @@ export default function ScholarshipDetailsPage() {
                   </p>
                 </div>
 
-                <div className="relative z-10 space-y-4 pt-2">
+                <div className="relative z-10 space-y-3 pt-2">
                   <Button
                     onClick={handleBeginApplication}
                     className="flex items-center justify-center gap-4 w-full h-16 primary-gradient text-white font-black text-sm rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all border-none"
                   >
                     APPLY NOW
                     <ExternalLink size={18} />
+                  </Button>
+                  <Button
+                    onClick={() => setShowShareModal(true)}
+                    variant="outline"
+                    className="flex items-center justify-center gap-4 w-full h-14 bg-card/60 backdrop-blur-md hover:bg-muted text-foreground border border-border/80 font-black text-sm rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    SHARE TO CHAT
+                    <MessageSquare size={18} />
                   </Button>
                 </div>
 
@@ -632,6 +643,11 @@ export default function ScholarshipDetailsPage() {
         </div>
       </div>
       <AIChatBot scholarshipId={scholarship.id} />
+      <ShareModal
+        scholarship={scholarship}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
     </div>
   );
 }

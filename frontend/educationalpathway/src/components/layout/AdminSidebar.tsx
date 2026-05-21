@@ -99,14 +99,10 @@ export const AdminSidebar = () => {
       </div>
 
       {/* Navigation Groups */}
-      <div className="flex-1 p-3 space-y-8 overflow-y-auto scrollbar-hide">
+      <div className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
         {menuItems.map((group, idx) => (
-          <div key={idx} className="space-y-2">
-            {(!collapsed || mobile) && (
-              <p className="px-4 text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.25em]">
-                {group.group}
-              </p>
-            )}
+          <div key={idx}>
+            {/* Group section labels removed intentionally */}
             <nav className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
