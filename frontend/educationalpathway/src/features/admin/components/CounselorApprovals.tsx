@@ -115,9 +115,10 @@ export const CounselorApprovals = () => {
     );
   }
 
-  if (selectedCounselor) {
-    return (
-      <div className="space-y-12 pb-24 max-w-6xl mx-auto px-4">
+  return (
+    <>
+      {selectedCounselor ? (
+        <div className="space-y-12 pb-24 max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between border-b border-border pb-8">
            <Button 
              variant="ghost" 
@@ -178,6 +179,45 @@ export const CounselorApprovals = () => {
             </div>
 
             <section className="space-y-6">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Professional Profile</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Organization</p>
+                     <p className="text-sm font-bold text-foreground">{selectedCounselor.organization || 'Independent'}</p>
+                  </div>
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Position</p>
+                     <p className="text-sm font-bold text-foreground">{selectedCounselor.currentPosition || 'N/A'}</p>
+                  </div>
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Highest Degree</p>
+                     <p className="text-sm font-bold text-foreground">{selectedCounselor.highestEducationLevel || 'N/A'}</p>
+                  </div>
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Hourly Rate</p>
+                     <p className="text-sm font-bold text-foreground">${selectedCounselor.hourlyRate || 0} / hr</p>
+                  </div>
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Location</p>
+                     <p className="text-sm font-bold text-foreground">{[selectedCounselor.city, selectedCounselor.countryOfResidence].filter(Boolean).join(', ') || 'N/A'}</p>
+                  </div>
+                  <div className="p-4 bg-card border border-border rounded-xl">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Phone Number</p>
+                     <p className="text-sm font-bold text-foreground">{selectedCounselor.phoneNumber || 'N/A'}</p>
+                  </div>
+               </div>
+            </section>
+
+            {selectedCounselor.bio && (
+            <section className="space-y-6">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Biography</h3>
+               <div className="p-6 bg-card border border-border rounded-xl">
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{selectedCounselor.bio}</p>
+               </div>
+            </section>
+            )}
+
+            <section className="space-y-6">
                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Identity Documents</h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
@@ -199,13 +239,10 @@ export const CounselorApprovals = () => {
             </section>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-12 max-w-7xl mx-auto px-4">
-      <div className="flex flex-col gap-4 border-b border-border pb-10">
+        </div>
+      ) : (
+        <div className="space-y-12 max-w-7xl mx-auto px-4">
+          <div className="flex flex-col gap-4 border-b border-border pb-10">
         <h2 className="text-5xl font-black text-foreground uppercase tracking-tighter">Pending Approvals</h2>
         <p className="text-muted-foreground text-xs font-black uppercase tracking-widest opacity-60">
            Review and verify {pendingCounselors.length} new counselor applications
@@ -253,6 +290,8 @@ export const CounselorApprovals = () => {
           </div>
         )}
       </div>
+      </div>
+      )}
 
       <ConfirmModal
         isOpen={isRejectModalOpen}
@@ -280,6 +319,6 @@ export const CounselorApprovals = () => {
         description="Are you sure you want to approve this counselor and grant them full platform access?"
         confirmText="Yes, Approve Counselor"
       />
-    </div>
+    </>
   );
 };

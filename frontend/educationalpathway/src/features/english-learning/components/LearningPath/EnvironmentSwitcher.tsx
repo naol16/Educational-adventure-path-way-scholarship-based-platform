@@ -13,7 +13,7 @@ export function EnvironmentSwitcher({ mode, onChange }: EnvironmentSwitcherProps
       <button
         onClick={() => onChange("IELTS")}
         className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all duration-500 z-10 ${
-          mode === "IELTS" ? "text-white shadow-xl" : "text-muted-foreground hover:text-foreground"
+          mode === "IELTS" ? "text-foreground shadow-xl" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         {mode === "IELTS" && (
@@ -33,7 +33,7 @@ export function EnvironmentSwitcher({ mode, onChange }: EnvironmentSwitcherProps
       <button
         onClick={() => onChange("TOEFL")}
         className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all duration-500 z-10 ${
-          mode === "TOEFL" ? "text-white shadow-xl" : "text-muted-foreground hover:text-foreground"
+          mode === "TOEFL" ? "text-foreground shadow-xl" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         {mode === "TOEFL" && (

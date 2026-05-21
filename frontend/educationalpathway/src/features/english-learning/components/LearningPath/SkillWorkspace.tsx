@@ -233,7 +233,7 @@ export function SkillWorkspace() {
                 className={`flex flex-col gap-4 p-8 rounded-2xl transition-all duration-700 ${isActive ? 'bg-muted/20 border border-border/40 shadow-sm' : 'border border-transparent'}`}
               >
                 <div className="flex items-start gap-10">
-                  <div className={`size-20 rounded-2xl shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-2xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-2xl shadow-foreground/20' : 'bg-muted border-border text-muted-foreground'}`}>
+                  <div className={`size-20 rounded-2xl shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-foreground shadow-2xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-2xl shadow-foreground/20' : 'bg-muted border-border text-muted-foreground'}`}>
                     {isLocked ? <Lock size={28} /> : isDone ? <CheckCircle2 size={32} /> : <span className="text-2xl font-black">{i + 1}</span>}
                   </div>
                   
@@ -315,8 +315,8 @@ export function SkillWorkspace() {
                               <div className="size-28 rounded-xl overflow-hidden bg-muted relative shrink-0 shadow-lg">
                                 <img src={v.thubnail} className="size-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-60 group-hover:opacity-100" />
                                 {v.videolink && (
-                                  <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all">
-                                    <PlayCircle size={28} className="text-white" fill="currentColor" />
+                                  <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 group-hover:opacity-100 transition-all">
+                                    <PlayCircle size={28} className="text-foreground" fill="currentColor" />
                                   </a>
                                 )}
                               </div>
@@ -419,7 +419,7 @@ export function SkillWorkspace() {
             <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"}>
               <Button 
                 disabled={!canLevelUp} 
-                className={`rounded-lg h-11 px-10 font-black uppercase tracking-widest text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-primary text-white hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
+                className={`rounded-lg h-11 px-10 font-black uppercase tracking-widest text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-primary text-foreground hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
               >
                 {canLevelUp ? "Start Final Exam" : "Locked"}
               </Button>
