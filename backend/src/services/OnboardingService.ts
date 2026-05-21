@@ -221,7 +221,7 @@ export class OnboardingService {
                     // Trigger match notifications
                     setTimeout(async () => {
                         try {
-                            const matchesData = await MatchingService.getTopMatches(userId);
+                            const matchesData = await MatchingService.getTopMatches(userId, 50);
                             if (matchesData.rows.length > 0) {
                                 await ScholarshipNotificationService.notifyMultipleMatches(user, updatedStudent, matchesData.rows);
                             }
