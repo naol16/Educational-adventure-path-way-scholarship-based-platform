@@ -56,7 +56,6 @@ import {
   getAssessmentProgress,
   generateAssessment
 } from "@/features/assessments/api/assessment-api";
-import Link from "next/link";
 import { UnitTestOverlay, DynamicMissionOverlay } from "./LearningPathOverlays";
 import { EnvironmentSwitcher } from "./EnvironmentSwitcher";
 import { AssessmentDashboard } from "@/features/assessments/components/AssessmentDashboard";

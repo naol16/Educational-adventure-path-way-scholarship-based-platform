@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles, X, ChevronDown, BookOpen } from "lucide-react";
