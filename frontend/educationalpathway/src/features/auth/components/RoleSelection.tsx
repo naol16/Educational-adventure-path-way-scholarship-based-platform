@@ -5,11 +5,11 @@ import { GraduationCap, Briefcase, Check } from "lucide-react";
 
 export function RoleSelection() {
   return (
-    <div className="min-h-screen bg-muted dark:bg-zinc-950 flex items-center justify-center px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-background mesh-gradient flex items-center justify-center px-4 py-12 relative overflow-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 dark:bg-primary/5 rounded-full blur-3xl animate-pulse-soft" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl animate-pulse-soft" />
       </div>
       
       <div className="w-full max-w-5xl relative z-10">
@@ -28,11 +28,11 @@ export function RoleSelection() {
 
           {/* STUDENT */}
           <Link href="/register?role=student" className="group">
-            <div className="h-full bg-card dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2 relative overflow-hidden">
+            <div className="h-full bg-card/80 backdrop-blur-sm rounded-2xl border border-border/80 p-10 shadow-md transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               
               {/* Icon */}
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-8 shadow-inner">
+              <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-8 shadow-inner">
                 <GraduationCap className="h-8 w-8 text-primary" />
               </div>
 
@@ -64,7 +64,7 @@ export function RoleSelection() {
               </ul>
 
               {/* Action */}
-              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-card text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-primary group-hover:text-white">
+              <div className="flex items-center justify-center w-full h-14 rounded-lg bg-zinc-950 dark:bg-zinc-800 text-white dark:text-zinc-100 font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-primary group-hover:text-white shadow-md">
                 Enter as Student
               </div>
             </div>
@@ -72,11 +72,11 @@ export function RoleSelection() {
 
           {/* COUNSELOR */}
           <Link href="/register?role=counselor" className="group">
-            <div className="h-full bg-card dark:bg-zinc-900 rounded-[2.5rem] border border-border/60 p-10 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5 hover:-translate-y-2 relative overflow-hidden">
+            <div className="h-full bg-card/80 backdrop-blur-sm rounded-2xl border border-border/80 p-10 shadow-md transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-2 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               
               {/* Icon */}
-              <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-8 shadow-inner">
+              <div className="w-16 h-16 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-8 shadow-inner">
                 <Briefcase className="h-8 w-8 text-indigo-500" />
               </div>
 
@@ -85,32 +85,30 @@ export function RoleSelection() {
                 I'm a Counselor
               </h2>
 
-              {/* Description - Low Opacity until hover */}
-              <div className="opacity-20 group-hover:opacity-100 transition-opacity duration-300">
-                <p className="text-muted-foreground leading-relaxed text-sm mb-8 font-medium">
-                  Empower students, manage resources, and oversee the scholarship pipeline with precision tools.
-                </p>
+              {/* Description */}
+              <p className="text-muted-foreground leading-relaxed text-sm mb-8 font-medium">
+                Empower students, manage resources, and oversee the scholarship pipeline with precision tools.
+              </p>
 
-                {/* Features */}
-                <ul className="space-y-4 mb-10">
-                  {[
-                    "Student Management Hub",
-                    "Application Oversight",
-                    "Advanced Analytics",
-                    "Resource Library",
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center gap-3 text-xs font-bold text-foreground/70 uppercase tracking-wider">
-                      <div className="h-5 w-5 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
-                        <Check className="h-3 w-3 text-indigo-500" strokeWidth={4} />
-                      </div>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Features */}
+              <ul className="space-y-4 mb-10">
+                {[
+                  "Student Management Hub",
+                  "Application Oversight",
+                  "Advanced Analytics",
+                  "Resource Library",
+                ].map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-xs font-bold text-foreground/70 uppercase tracking-wider">
+                    <div className="h-5 w-5 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
+                      <Check className="h-3 w-3 text-indigo-500" strokeWidth={4} />
+                    </div>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
 
               {/* Action */}
-              <div className="flex items-center justify-center w-full h-14 rounded-2xl bg-zinc-900 dark:bg-card text-white dark:text-black font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-indigo-500 group-hover:text-white">
+              <div className="flex items-center justify-center w-full h-14 rounded-lg bg-zinc-950 dark:bg-zinc-800 text-white dark:text-zinc-100 font-black text-xs uppercase tracking-[0.2em] transition-all group-hover:bg-indigo-500 group-hover:text-white shadow-md">
                 Enter as Counselor
               </div>
             </div>
