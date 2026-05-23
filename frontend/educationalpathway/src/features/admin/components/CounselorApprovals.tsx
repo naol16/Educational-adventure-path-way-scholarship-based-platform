@@ -154,62 +154,148 @@ export const CounselorApprovals = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-8 space-y-12">
+
+            {/* ── Candidate Overview ── */}
             <section className="space-y-6">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Candidate Overview</h3>
               <div className="flex items-center gap-6">
-                 <div className="h-24 w-24 rounded-2xl bg-muted overflow-hidden border-2 border-border">
-                    {selectedCounselor.avatarUrl ? <img src={selectedCounselor.avatarUrl} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-3xl font-black">{selectedCounselor.name?.charAt(0)}</div>}
+                 <div className="h-24 w-24 rounded-2xl bg-muted overflow-hidden border-2 border-border flex-shrink-0">
+                    {(selectedCounselor.profileImageUrl || selectedCounselor.avatarUrl)
+                      ? <img src={selectedCounselor.profileImageUrl || selectedCounselor.avatarUrl} className="h-full w-full object-cover" />
+                      : <div className="h-full w-full flex items-center justify-center text-3xl font-black">{selectedCounselor.name?.charAt(0)}</div>}
                  </div>
                  <div>
                     <h2 className="text-4xl font-black text-foreground uppercase tracking-tighter">{selectedCounselor.name}</h2>
                     <p className="text-muted-foreground font-medium mt-1">{selectedCounselor.email}</p>
+                    {selectedCounselor.phoneNumber && (
+                      <p className="text-muted-foreground text-sm mt-0.5">{selectedCounselor.phoneNumber}</p>
+                    )}
                  </div>
               </div>
             </section>
 
-            <div className="grid grid-cols-2 gap-8">
+            {/* ── Quick Stats ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                <div className="p-6 bg-muted/30 rounded-2xl border border-border/50">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Experience</p>
-                  <p className="text-2xl font-black text-foreground">{selectedCounselor.yearsOfExperience || 0} Years</p>
+                  <p className="text-2xl font-black text-foreground">{selectedCounselor.yearsOfExperience ?? 0} yrs</p>
                </div>
                <div className="p-6 bg-muted/30 rounded-2xl border border-border/50">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Specialization</p>
-                  <p className="text-lg font-black text-foreground truncate">{selectedCounselor.areasOfExpertise || 'General Counseling'}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Hourly Rate</p>
+                  <p className="text-2xl font-black text-foreground">${selectedCounselor.hourlyRate ?? 0}<span className="text-sm font-normal">/hr</span></p>
+               </div>
+               <div className="p-6 bg-muted/30 rounded-2xl border border-border/50">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Session</p>
+                  <p className="text-2xl font-black text-foreground">{selectedCounselor.sessionDuration ?? 60}<span className="text-sm font-normal"> min</span></p>
                </div>
             </div>
 
-            <section className="space-y-6">
+            {/* ── Professional Profile ── */}
+            <section className="space-y-4">
                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Professional Profile</h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Organization</p>
-                     <p className="text-sm font-bold text-foreground">{selectedCounselor.organization || 'Independent'}</p>
-                  </div>
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Position</p>
-                     <p className="text-sm font-bold text-foreground">{selectedCounselor.currentPosition || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Highest Degree</p>
-                     <p className="text-sm font-bold text-foreground">{selectedCounselor.highestEducationLevel || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Hourly Rate</p>
-                     <p className="text-sm font-bold text-foreground">${selectedCounselor.hourlyRate || 0} / hr</p>
-                  </div>
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Location</p>
-                     <p className="text-sm font-bold text-foreground">{[selectedCounselor.city, selectedCounselor.countryOfResidence].filter(Boolean).join(', ') || 'N/A'}</p>
-                  </div>
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Phone Number</p>
-                     <p className="text-sm font-bold text-foreground">{selectedCounselor.phoneNumber || 'N/A'}</p>
-                  </div>
+                  {[
+                    { label: 'Organization', value: selectedCounselor.organization || 'Independent' },
+                    { label: 'Current Position', value: selectedCounselor.currentPosition || 'N/A' },
+                    { label: 'Highest Degree', value: selectedCounselor.highestEducationLevel || 'N/A' },
+                    { label: 'Areas of Expertise', value: selectedCounselor.areasOfExpertise || 'N/A' },
+                    { label: 'City', value: selectedCounselor.city || 'N/A' },
+                    { label: 'Country of Residence', value: selectedCounselor.countryOfResidence || 'N/A' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="p-4 bg-card border border-border rounded-xl">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+                       <p className="text-sm font-bold text-foreground break-words">{value}</p>
+                    </div>
+                  ))}
                </div>
             </section>
 
+            {/* ── Academic Background ── */}
+            {(selectedCounselor.universityName || selectedCounselor.studyCountry || selectedCounselor.fieldsOfStudy) && (
+            <section className="space-y-4">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Academic Background</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedCounselor.universityName && (
+                    <div className="p-4 bg-card border border-border rounded-xl">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">University / Institution</p>
+                       <p className="text-sm font-bold text-foreground">{selectedCounselor.universityName}</p>
+                    </div>
+                  )}
+                  {selectedCounselor.studyCountry && (
+                    <div className="p-4 bg-card border border-border rounded-xl">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Country of Study</p>
+                       <p className="text-sm font-bold text-foreground">{selectedCounselor.studyCountry}</p>
+                    </div>
+                  )}
+                  {selectedCounselor.fieldsOfStudy && (
+                    <div className="p-4 bg-card border border-border rounded-xl md:col-span-2">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Fields of Study</p>
+                       <p className="text-sm font-bold text-foreground break-words">{selectedCounselor.fieldsOfStudy}</p>
+                    </div>
+                  )}
+               </div>
+            </section>
+            )}
+
+            {/* ── Consultation Preferences ── */}
+            {(selectedCounselor.consultationModes || selectedCounselor.specializedCountries) && (
+            <section className="space-y-4">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Consultation Preferences</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedCounselor.consultationModes && (
+                    <div className="p-4 bg-card border border-border rounded-xl">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Consultation Modes</p>
+                       <div className="flex flex-wrap gap-2">
+                         {(typeof selectedCounselor.consultationModes === 'string'
+                           ? selectedCounselor.consultationModes.replace(/[\[\]"]/g, '').split(',')
+                           : selectedCounselor.consultationModes
+                         ).map((mode: string, i: number) => (
+                           <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                             {mode.trim()}
+                           </span>
+                         ))}
+                       </div>
+                    </div>
+                  )}
+                  {selectedCounselor.specializedCountries && (
+                    <div className="p-4 bg-card border border-border rounded-xl">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Specialized Countries</p>
+                       <div className="flex flex-wrap gap-2">
+                         {(typeof selectedCounselor.specializedCountries === 'string'
+                           ? selectedCounselor.specializedCountries.replace(/[\[\]"]/g, '').split(',')
+                           : selectedCounselor.specializedCountries
+                         ).map((country: string, i: number) => (
+                           <span key={i} className="px-3 py-1 rounded-full bg-muted text-foreground text-[10px] font-black uppercase tracking-widest">
+                             {country.trim()}
+                           </span>
+                         ))}
+                       </div>
+                    </div>
+                  )}
+               </div>
+            </section>
+            )}
+
+            {/* ── Languages ── */}
+            {selectedCounselor.languages && (
+            <section className="space-y-4">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Languages</h3>
+               <div className="p-4 bg-card border border-border rounded-xl flex flex-wrap gap-2">
+                 {(typeof selectedCounselor.languages === 'string'
+                   ? selectedCounselor.languages.replace(/[\[\]"]/g, '').split(',')
+                   : selectedCounselor.languages
+                 ).map((lang: string, i: number) => (
+                   <span key={i} className="px-3 py-1 rounded-full bg-muted text-foreground text-[10px] font-black uppercase tracking-widest">
+                     {lang.trim()}
+                   </span>
+                 ))}
+               </div>
+            </section>
+            )}
+
+            {/* ── Biography ── */}
             {selectedCounselor.bio && (
-            <section className="space-y-6">
+            <section className="space-y-4">
                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Biography</h3>
                <div className="p-6 bg-card border border-border rounded-xl">
                   <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{selectedCounselor.bio}</p>
@@ -217,16 +303,32 @@ export const CounselorApprovals = () => {
             </section>
             )}
 
-            <section className="space-y-6">
-               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Identity Documents</h3>
+            {/* ── Weekly Schedule ── */}
+            {selectedCounselor.weeklySchedule && (
+            <section className="space-y-4">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Weekly Availability</h3>
+               <div className="p-4 bg-card border border-border rounded-xl">
+                  <pre className="text-xs text-foreground/80 font-mono whitespace-pre-wrap break-all">
+                    {typeof selectedCounselor.weeklySchedule === 'string'
+                      ? (() => { try { return JSON.stringify(JSON.parse(selectedCounselor.weeklySchedule), null, 2); } catch { return selectedCounselor.weeklySchedule; } })()
+                      : JSON.stringify(selectedCounselor.weeklySchedule, null, 2)}
+                  </pre>
+               </div>
+            </section>
+            )}
+
+            {/* ── Identity Documents ── */}
+            <section className="space-y-4">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Submitted Documents</h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { label: 'CV / Resume', url: selectedCounselor.cvUrl, icon: FileText },
+                    { label: 'Certificates', url: selectedCounselor.certificateUrls, icon: Award },
                     { label: 'ID Card / Passport', url: selectedCounselor.idCardUrl, icon: ShieldCheck },
                     { label: 'Live Selfie', url: selectedCounselor.selfieUrl, icon: UserIcon },
                   ].map((doc, i) => (
                     doc.url && (
-                      <a key={i} href={doc.url} target="_blank" className="flex items-center justify-between p-6 bg-card border border-border rounded-xl hover:border-primary transition-colors group">
+                      <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-6 bg-card border border-border rounded-xl hover:border-primary transition-colors group">
                         <div className="flex items-center gap-4">
                           <doc.icon size={20} className="text-primary" />
                           <span className="text-xs font-black uppercase tracking-widest">{doc.label}</span>
