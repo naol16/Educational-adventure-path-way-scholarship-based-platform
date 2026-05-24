@@ -400,7 +400,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
               ),
             ),
             GestureDetector(
-              onTap: () => _showAddGoalDialog(context, ref),
+              onTap: () => context.push('/counselor-tasks'),
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -448,7 +448,7 @@ class CounselorDashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Center(
               child: TextButton(
-                onPressed: () => _showAllGoals(context, ref),
+                onPressed: () => context.push('/counselor-tasks'),
                 child: Text('View All Goals', style: GoogleFonts.inter(color: primary, fontSize: 12, fontWeight: FontWeight.w700)),
               ),
             ),
@@ -495,81 +495,6 @@ class CounselorDashboardScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddGoalDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: DesignSystem.overlayBackground(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('New Milestone', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: GoogleFonts.inter(color: DesignSystem.mainText(context)),
-          decoration: InputDecoration(
-            hintText: 'e.g., Review 5 student SOPs...',
-            hintStyle: GoogleFonts.inter(color: DesignSystem.labelText(context).withValues(alpha: 0.5)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: DesignSystem.labelText(context)))),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref.read(counselorGoalsProvider.notifier).addGoal(controller.text);
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: DesignSystem.primary(context), foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: const Text('Add Goal'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAllGoals(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: DesignSystem.themeBackground(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 24),
-              Text('Professional Milestones', style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: DesignSystem.mainText(context))),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final goals = ref.watch(counselorGoalsProvider);
-                    return ListView.builder(
-                      controller: scrollController,
-                      itemCount: goals.length,
-                      itemBuilder: (context, index) => _buildGoalItem(context, ref, goals[index]),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
 
   Widget _buildPendingScreen(BuildContext context, WidgetRef ref) {

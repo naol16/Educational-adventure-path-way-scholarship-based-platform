@@ -42,7 +42,7 @@ class _CounselorMessagesScreenState
   }
 
   @override
-  Widget build(BuildContext context, ) {
+  Widget build(BuildContext context) {
     final convsAsync = ref.watch(conversationsProvider);
     final groupsAsync = ref.watch(availableGroupsProvider);
     final currentUser = ref.watch(currentUserProvider);

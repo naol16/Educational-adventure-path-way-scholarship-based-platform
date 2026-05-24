@@ -6,6 +6,7 @@ import 'package:mobile/features/dashboard/screens/dashboard_screen.dart';
 import 'package:mobile/features/interview/screens/interview_screen.dart';
 import 'package:mobile/features/scholarships/screens/discover_screen.dart';
 import 'package:mobile/features/core/theme/design_system.dart';
+import 'package:mobile/features/chat/screens/chat_list_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/providers/navigation_provider.dart';
@@ -25,6 +26,7 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
     const DashboardScreen(),
     const DiscoverScreen(),
     const MasteryHubScreen(),
+    const ChatListScreen(),
     const MentorsHubScreen(),
     const InterviewScreen(),
   ];
@@ -70,8 +72,9 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
                 Expanded(child: _buildNavItem(LucideIcons.home, Icons.home_rounded, "Home", 0, currentIndex)),
                 Expanded(child: _buildNavItem(LucideIcons.compass, Icons.explore_rounded, "Discover", 1, currentIndex)),
                 Expanded(child: _buildNavItem(LucideIcons.graduationCap, Icons.school_rounded, "Learn", 2, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.users, Icons.groups_rounded, "Counselors", 3, currentIndex)),
-                Expanded(child: _buildNavItem(LucideIcons.mic, Icons.mic_rounded, "Interview", 4, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.messageSquare, Icons.chat_bubble_rounded, "Chat", 3, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.users, Icons.groups_rounded, "Mentors", 4, currentIndex)),
+                Expanded(child: _buildNavItem(LucideIcons.mic, Icons.mic_rounded, "Interview", 5, currentIndex)),
               ],
             ),
           ),

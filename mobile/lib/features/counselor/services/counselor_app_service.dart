@@ -187,7 +187,11 @@ class CounselorAppService {
   }) async {
     final res = await _api.post(
       '/api/counselors/dashboard/documents/share',
-      body: {'title': title, 'url': url, 'studentId': ?studentId},
+      body: {
+        'title': title,
+        'url': url,
+        if (studentId != null) 'studentId': studentId,
+      },
     );
     return res.statusCode == 201 || res.statusCode == 200;
   }
@@ -229,5 +233,16 @@ class CounselorAppService {
       body: {'notes': notes},
     );
     return res.statusCode == 200;
+  }
+
+  Future<bool> proposeSession(int studentUserId, int slotId) async {
+    final res = await _api.post(
+      '/api/counselors/initiate-booking',
+      body: {
+        'studentUserId': studentUserId,
+        'slotId': slotId,
+      },
+    );
+    return res.statusCode == 201 || res.statusCode == 200;
   }
 }

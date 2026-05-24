@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/features/counselor/models/counselor_models.dart';
 import 'package:mobile/features/counselor/services/counselor_app_service.dart';
@@ -86,14 +87,25 @@ class CounselorGoalsNotifier extends StateNotifier<List<CounselorGoal>> {
   }
 
   static const _storageKey = 'counselor_goals';
+  // Use platform-specific storage: FlutterSecureStorage for mobile/desktop, SharedPreferences for web.
   final _storage = const FlutterSecureStorage();
 
   Future<void> _loadGoals() async {
     try {
-      final data = await _storage.read(key: _storageKey);
-      if (data != null) {
-        final List decoded = jsonDecode(data);
-        state = decoded.map((e) => CounselorGoal.fromJson(e)).toList();
+      // Load goals depending on platform
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        final data = prefs.getString(_storageKey);
+        if (data != null) {
+          final List decoded = jsonDecode(data);
+          state = decoded.map((e) => CounselorGoal.fromJson(e)).toList();
+        }
+      } else {
+        final data = await _storage.read(key: _storageKey);
+        if (data != null) {
+          final List decoded = jsonDecode(data);
+          state = decoded.map((e) => CounselorGoal.fromJson(e)).toList();
+        }
       }
     } catch (e) {
       debugPrint('Error loading goals: $e');
@@ -102,8 +114,14 @@ class CounselorGoalsNotifier extends StateNotifier<List<CounselorGoal>> {
 
   Future<void> _saveGoals() async {
     try {
+      // Save goals depending on platform
       final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
-      await _storage.write(key: _storageKey, value: encoded);
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_storageKey, encoded);
+      } else {
+        await _storage.write(key: _storageKey, value: encoded);
+      }
     } catch (e) {
       debugPrint('Error saving goals: $e');
     }
