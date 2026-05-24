@@ -8,14 +8,12 @@ final chatServiceProvider = Provider<ChatService>((ref) {
   return ChatService(ref.watch(apiClientProvider));
 });
 
+/// All conversations for the current user (DMs only — groups fetched separately).
 final conversationsProvider = FutureProvider<List<Conversation>>((ref) async {
   return ref.watch(chatServiceProvider).getConversations();
 });
 
-final messagesProvider = FutureProvider.family<List<ChatMessage>, int>((ref, conversationId) async {
-  return ref.watch(chatServiceProvider).getMessages(conversationId);
-});
-
+/// Current authenticated user shortcut.
 final currentUserProvider = Provider((ref) {
   return ref.watch(authProvider).valueOrNull;
 });

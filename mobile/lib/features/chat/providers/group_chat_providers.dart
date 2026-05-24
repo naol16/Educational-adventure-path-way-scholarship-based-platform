@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
 import 'package:mobile/features/chat/providers/chat_providers.dart';
+import 'package:mobile/models/user.dart';
 
 /// Fetches available community groups.
 final availableGroupsProvider = FutureProvider<List<Conversation>>((ref) async {
@@ -48,4 +49,9 @@ class GroupChatNotifier extends StateNotifier<AsyncValue<void>> {
 final groupChatActionProvider =
     StateNotifierProvider<GroupChatNotifier, AsyncValue<void>>((ref) {
   return GroupChatNotifier(ref);
+});
+
+final groupMembersProvider = FutureProvider.family<List<User>, int>((ref, groupId) async {
+  final chatService = ref.watch(chatServiceProvider);
+  return chatService.getGroupMembers(groupId);
 });

@@ -9,6 +9,11 @@ import 'package:mobile/features/core/theme/design_system.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
 import 'package:mobile/features/chat/providers/chat_providers.dart';
 import 'package:mobile/features/chat/providers/chat_state_notifier.dart';
+import 'package:mobile/features/chat/widgets/chat_info_bottom_sheet.dart';
+import 'package:mobile/features/counselor/providers/counselor_providers.dart';
+import 'package:mobile/features/counselor/widgets/propose_session_bottom_sheet.dart';
+import 'package:mobile/features/mentors/providers/mentors_providers.dart';
+import 'package:mobile/features/mentors/widgets/booking_bottom_sheet.dart';
 import 'package:mobile/core/providers/dependencies.dart';
 import 'package:mobile/models/user.dart';
 import 'package:intl/intl.dart';
@@ -204,77 +209,200 @@ class _MentorChatScreenState extends ConsumerState<MentorChatScreen>
         onPressed: () => Navigator.pop(context),
       ),
       titleSpacing: 0,
-      title: Row(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: DesignSystem.surfaceMediumColor(context),
-                backgroundImage: (!widget.isGroup && widget.otherUser.avatarUrl != null)
-                    ? NetworkImage(widget.otherUser.avatarUrl!)
-                    : null,
-                child: (widget.isGroup || widget.otherUser.avatarUrl == null)
-                    ? Icon(
-                        widget.isGroup ? LucideIcons.users : LucideIcons.user,
-                        size: 18,
-                        color: DesignSystem.labelText(context),
-                      )
-                    : null,
-              ),
-              if (!widget.isGroup)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: DesignSystem.themeBackground(context), width: 2),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      title: GestureDetector(
+        onTap: _openChatInfoSheet,
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          children: [
+            Stack(
               children: [
-                Text(
-                  widget.isGroup
-                      ? (widget.groupName ?? 'Community Group')
-                      : widget.otherUser.name,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: DesignSystem.mainText(context),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: DesignSystem.surfaceMediumColor(context),
+                  backgroundImage: (!widget.isGroup && widget.otherUser.avatarUrl != null)
+                      ? NetworkImage(widget.otherUser.avatarUrl!)
+                      : null,
+                  child: (widget.isGroup || widget.otherUser.avatarUrl == null)
+                      ? Icon(
+                          widget.isGroup ? LucideIcons.users : LucideIcons.user,
+                          size: 18,
+                          color: DesignSystem.labelText(context),
+                        )
+                      : null,
                 ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Text(
-                    isTyping ? 'typing...' : (widget.isGroup ? 'Community' : 'Online'),
-                    key: ValueKey(isTyping),
-                    style: GoogleFonts.inter(
-                      color: isTyping
-                          ? DesignSystem.primary(context)
-                          : const Color(0xFF10B981),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                if (!widget.isGroup)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: DesignSystem.themeBackground(context), width: 2),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isGroup
+                        ? (widget.groupName ?? 'Community Group')
+                        : widget.otherUser.name,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: DesignSystem.mainText(context),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      isTyping ? 'typing...' : (widget.isGroup ? 'Community' : 'Online'),
+                      key: ValueKey(isTyping),
+                      style: GoogleFonts.inter(
+                        color: isTyping
+                            ? DesignSystem.primary(context)
+                            : const Color(0xFF10B981),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: _buildAppBarActions(context),
+    );
+  }
+
+  List<Widget> _buildAppBarActions(BuildContext context) {
+    final currentUser = ref.read(currentUserProvider);
+    final actions = <Widget>[];
+
+    // Show calendar/session action for DM chats between students and counselors
+    if (!widget.isGroup && currentUser != null) {
+      final isStudentToCounselor =
+          currentUser.isStudent && widget.otherUser.isCounselor;
+      final isCounselorToStudent =
+          currentUser.isCounselor && widget.otherUser.isStudent;
+
+      if (isStudentToCounselor || isCounselorToStudent) {
+        actions.add(
+          IconButton(
+            icon: Icon(
+              LucideIcons.calendarPlus,
+              color: DesignSystem.primary(context),
+              size: 22,
+            ),
+            tooltip: isStudentToCounselor ? 'Book Session' : 'Propose Session',
+            onPressed: () => _handleCalendarAction(
+              context,
+              isStudentToCounselor: isStudentToCounselor,
+            ),
           ),
-        ],
+        );
+      }
+    }
+
+    // Info button
+    actions.add(
+      IconButton(
+        icon: Icon(
+          LucideIcons.info,
+          color: DesignSystem.labelText(context),
+          size: 20,
+        ),
+        tooltip: 'Info',
+        onPressed: _openChatInfoSheet,
       ),
     );
+
+    return actions;
+  }
+
+  void _openChatInfoSheet() {
+    final conversation = Conversation(
+      id: widget.conversationId,
+      participants: [widget.otherUser],
+      updatedAt: DateTime.now(),
+      isGroup: widget.isGroup,
+      name: widget.groupName,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ChatInfoBottomSheet(
+        conversation: conversation,
+        otherUser: widget.otherUser,
+      ),
+    );
+  }
+
+  Future<void> _handleCalendarAction(
+    BuildContext context, {
+    required bool isStudentToCounselor,
+  }) async {
+    if (isStudentToCounselor) {
+      // Student wants to book a session with the counselor
+      // Show loading while we fetch the counselor profile
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final counselor = await ref
+          .read(counselorServiceProvider)
+          .getCounselorById(widget.otherUser.id);
+
+      if (mounted) Navigator.pop(context); // close loading
+
+      if (counselor != null && mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => BookingBottomSheet(
+            counselorId: counselor.id,
+            counselorName: counselor.name.isNotEmpty
+                ? counselor.name
+                : widget.otherUser.name,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not load counselor details.'),
+            backgroundColor: DesignSystem.error(context),
+          ),
+        );
+      }
+    } else {
+      // Counselor wants to propose a session to the student
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ProposeSessionBottomSheet(
+          studentUserId: widget.otherUser.id,
+          studentName: widget.otherUser.name,
+        ),
+      );
+    }
   }
 
   Widget _buildTypingIndicator() {

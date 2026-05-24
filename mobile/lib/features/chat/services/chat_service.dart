@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/services/api_client.dart';
 import 'package:mobile/features/chat/models/chat_models.dart';
+import 'package:mobile/models/user.dart';
 
 class ChatService {
   final ApiClient _apiClient;
@@ -188,6 +189,29 @@ class ChatService {
       return response.statusCode == 200;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<List<User>> getGroupMembers(int groupId) async {
+    try {
+      final response = await _apiClient.get('/api/groups/$groupId/members');
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List raw = body['data'] ?? body ?? [];
+        return raw
+            .map((json) {
+              try {
+                return User.fromJson(Map<String, dynamic>.from(json));
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<User>()
+            .toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 }

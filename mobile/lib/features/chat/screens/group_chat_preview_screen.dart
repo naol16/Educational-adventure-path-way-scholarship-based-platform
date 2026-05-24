@@ -27,7 +27,7 @@ class _GroupChatPreviewScreenState extends ConsumerState<GroupChatPreviewScreen>
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(chatStateProvider(widget.group.id));
+    final chatState = ref.watch(chatStateProvider(widget.group.numericId));
     final currentUser = ref.watch(currentUserProvider);
     final isJoined = widget.group.isJoined;
 
@@ -350,7 +350,7 @@ class _GroupChatPreviewScreenState extends ConsumerState<GroupChatPreviewScreen>
             context,
             MaterialPageRoute(
               builder: (_) => MentorChatScreen(
-                conversationId: widget.group.id,
+                conversationId: widget.group.numericId,
                 otherUser: widget.group.getOtherParticipant(currentUser.id),
                 isGroup: true,
                 groupName: widget.group.name,
@@ -390,7 +390,7 @@ class _GroupChatPreviewScreenState extends ConsumerState<GroupChatPreviewScreen>
 
   Future<void> _handleJoin() async {
     setState(() => _isJoining = true);
-    final success = await ref.read(groupChatActionProvider.notifier).joinGroup(widget.group.id);
+    final success = await ref.read(groupChatActionProvider.notifier).joinGroup(widget.group.numericId);
     if (mounted) {
       setState(() => _isJoining = false);
       if (success) {
@@ -400,7 +400,7 @@ class _GroupChatPreviewScreenState extends ConsumerState<GroupChatPreviewScreen>
             context,
             MaterialPageRoute(
               builder: (_) => MentorChatScreen(
-                conversationId: widget.group.id,
+                conversationId: widget.group.numericId,
                 otherUser: widget.group.getOtherParticipant(currentUser.id),
                 isGroup: true,
                 groupName: widget.group.name,
