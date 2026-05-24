@@ -160,12 +160,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
 
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () => context.pop(),
@@ -272,8 +278,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   if (mounted) setState(() => _submitting = false);
                                 }
                               },
-                              icon: Image.network(
-                                'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
+                              icon: Image.asset(
+                                'assets/icons/google.png',
                                 height: 24,
                                 errorBuilder: (context, error, stackTrace) => Icon(
                                   LucideIcons.logIn,
@@ -298,10 +304,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 40),
+                  
+                  const Spacer(),
+                  const SizedBox(height: 24),
                   Center(
                     child: GestureDetector(
-                      onTap: () => context.push('/login'),
+                      onTap: () => context.push('/login', extra: widget.role),
                       child: RichText(
                         text: TextSpan(
                           text: "Already have an account? ",
@@ -319,11 +327,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
+        ),
+      );
+      },
+    ),
+  ),
         ],
       ),
           );

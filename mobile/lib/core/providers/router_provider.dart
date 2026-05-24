@@ -19,6 +19,7 @@ import 'package:mobile/features/counselor/screens/counselor_layout_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_profile_screen.dart';
 import 'package:mobile/features/counselor/screens/counselor_wallet_screen.dart';
 import 'package:mobile/features/mentors/screens/student_payment_history_screen.dart';
+import 'package:mobile/features/counselor/screens/counselor_tasks_screen.dart';
 
 /// Notifies [GoRouter] when [authProvider] changes so top-level [redirect] runs again.
 final authRouterRefreshProvider = Provider<AuthRouterRefresh>((ref) {
@@ -74,7 +75,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const LandingScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) {
+          final expectedRole = state.extra as String?;
+          return LoginScreen(expectedRole: expectedRole);
+        },
+      ),
       GoRoute(
         path: '/role-selection',
         builder: (context, state) => const RoleSelectionScreen(),
@@ -133,6 +140,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/student-payment-history',
         builder: (context, state) => const StudentPaymentHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/counselor-tasks',
+        builder: (context, state) => const CounselorTasksScreen(),
       ),
     ],
   );

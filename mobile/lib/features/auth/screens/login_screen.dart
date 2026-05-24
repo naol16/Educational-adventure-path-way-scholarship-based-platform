@@ -14,7 +14,8 @@ import 'package:mobile/features/core/widgets/glass_container.dart';
 import 'package:mobile/features/core/widgets/primary_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  final String? expectedRole;
+  const LoginScreen({super.key, this.expectedRole});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -82,6 +83,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       
       final authState = ref.read(authProvider);
+      
+      if (authState.valueOrNull != null) {
+        final loggedInRole = authState.valueOrNull!.role;
+        if (widget.expectedRole != null && loggedInRole != widget.expectedRole) {
+          await ref.read(authProvider.notifier).logout();
+          if (mounted) {
+            setState(() => _emailError = 'Please login with a ${widget.expectedRole} account.');
+          }
+          return;
+        }
+      }
+
       if (authState.hasError) {
         final errorMsg = _messageForError(authState.error);
         if (errorMsg.toLowerCase().contains('email') || errorMsg.toLowerCase().contains('user')) {
@@ -132,12 +145,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
 
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                   const SizedBox(height: 20),
                   // App Bar / Back button
                   GestureDetector(
@@ -235,6 +254,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 setState(() => _submitting = true);
                                 try {
                                   await ref.read(authProvider.notifier).loginWithGoogle();
+                                  if (!mounted) return;
+                                  
+                                  final authState = ref.read(authProvider);
+                                  if (authState.valueOrNull != null) {
+                                    final loggedInRole = authState.valueOrNull!.role;
+                                    if (widget.expectedRole != null && loggedInRole != widget.expectedRole) {
+                                      await ref.read(authProvider.notifier).logout();
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Please login with a ${widget.expectedRole} account.'),
+                                            backgroundColor: DesignSystem.error(context),
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
+                                  }
                                 } catch (e) {
                                   if (mounted) {
                                     // ignore: use_build_context_synchronously
@@ -246,8 +283,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   if (mounted) setState(() => _submitting = false);
                                 }
                               },
-                              icon: Image.network(
-                                'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
+                              icon: Image.asset(
+                                'assets/icons/google.png',
                                 height: 24,
                                 errorBuilder: (context, error, stackTrace) => Icon(
                                   LucideIcons.logIn,
@@ -272,7 +309,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 40),
+                  
+                  const Spacer(),
+                  const SizedBox(height: 24),
                   Center(
                     child: GestureDetector(
                       onTap: () => context.push('/register'),
@@ -293,11 +332,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
+        ),
+      );
+      },
+    ),
+  ),
         ],
       ),
           );
