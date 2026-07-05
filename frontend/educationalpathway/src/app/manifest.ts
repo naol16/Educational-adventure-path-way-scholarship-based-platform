@@ -2,8 +2,8 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Admas",
-    short_name: "Admas",
+    name: "Path Finder",
+    short_name: "Path Finder",
     description: "Your journey to academic success starts here.",
     start_url: "/",
     display: "standalone",

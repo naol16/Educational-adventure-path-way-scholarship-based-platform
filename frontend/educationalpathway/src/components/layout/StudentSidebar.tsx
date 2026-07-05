@@ -63,7 +63,7 @@ export function StudentSidebar() {
               />
             </div>
             <span className="text-sm font-bold text-foreground tracking-tight">
-              አድማስ
+              Path Finder
             </span>
           </div>
         )}

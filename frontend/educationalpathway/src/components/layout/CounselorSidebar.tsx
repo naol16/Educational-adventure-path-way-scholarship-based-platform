@@ -49,7 +49,7 @@ export function CounselorSidebar() {
             <div className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
               <Image src="/admas.png" alt="Logo" width={36} height={36} className="h-full w-full object-cover" />
             </div>
-            <span className="text-sm font-bold text-foreground tracking-tight">አድማስ</span>
+            <span className="text-sm font-bold text-foreground tracking-tight">Path Finder</span>
           </div>
         )}
         

@@ -216,7 +216,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
                 <div className="relative overflow-hidden rounded-lg">
                   <Image 
                     src="/admas.png" 
-                    alt="አድማስ Logo" 
+                    alt="Path Finder Logo"
                     width={32} 
                     height={32} 
                     className="h-8 w-8 object-contain"
@@ -224,7 +224,7 @@ export function Navbar({ simplified = false }: NavbarProps) {
                 </div>
               </div>
               <span className="text-xl font-semibold bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent hidden sm:block">
-                አድማስ
+                Path Finder
               </span>
             </Link>
 

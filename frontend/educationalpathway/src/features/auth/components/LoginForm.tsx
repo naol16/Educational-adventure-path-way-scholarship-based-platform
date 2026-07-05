@@ -135,7 +135,7 @@ export function LoginForm() {
             </div>
 
             {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
-              <div className="w-full flex justify-center [&>div]:w-full">
+              <div className="w-full flex justify-center overflow-hidden rounded-full">
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -146,8 +146,8 @@ export function LoginForm() {
                   use_fedcm_for_prompt={false}
                   theme="outline"
                   shape="pill"
-                  width="100%"
-                  text="signin_with"
+                  width="400"
+                  text="continue_with"
                 />
               </div>
             ) : (
