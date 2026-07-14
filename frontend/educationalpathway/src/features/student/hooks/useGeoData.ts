@@ -34,8 +34,16 @@ export const useGeoData = () => {
         
         formatted.sort((a, b) => a.name.localeCompare(b.name));
         setCountries(formatted);
-      } catch (error) {
-        console.error("Error fetching countries:", error);
+      } catch (error: any) {
+        console.warn("Could not fetch countries (API might be down or blocked):", error.message);
+        // Fallback so the dropdown isn't totally empty if the API fails
+        setCountries([
+          { name: "United States", flag: "🇺🇸", code: "US" },
+          { name: "United Kingdom", flag: "🇬🇧", code: "GB" },
+          { name: "Canada", flag: "🇨🇦", code: "CA" },
+          { name: "Australia", flag: "🇦🇺", code: "AU" },
+          { name: "Ethiopia", flag: "🇪🇹", code: "ET" }
+        ]);
       } finally {
         setLoadingCountries(false);
       }
