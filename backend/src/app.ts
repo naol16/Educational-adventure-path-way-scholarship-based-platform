@@ -106,6 +106,16 @@ app.use("/api/moderation", routes.moderationRouter);
 app.use("/api/ai-chat", routes.aiChatRouter);
 app.use("/api/mock-exam", routes.mockExamRouter);
 app.use("/api/debug", debugRoutes);
+
+// Root Welcome Route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Educational Adventure Pathway API is running.",
+    version: "1.0.0",
+  });
+});
+
 // Health Check
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
