@@ -34,7 +34,7 @@ export const SettingsForm = () => {
   const tabs = user?.role === 'counselor' ? counselorTabs : defaultTabs;
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-20 mt-4 px-4 sm:px-6">
+    <div className="max-w-350 mx-auto pb-20 mt-4 px-4 sm:px-6">
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         {/* Sidebar */}
         <aside className="lg:w-64 shrink-0">
