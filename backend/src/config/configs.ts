@@ -93,6 +93,7 @@ function setConfigs() {
       process.env.GOOGLE_CLIENT_ID?.trim().replace(/\/+$/, ""),
       process.env.GOOGLE_ANDROID_CLIENT_ID?.trim().replace(/\/+$/, ""),
       // Bulletproof IDs as requested by Senior Architect
+      "542665219970-l6vp6ni23jurqv9i7voreppc479p8t74.apps.googleusercontent.com",
       "57881811503-fim5ubb5p4kulbcedbcmkvjr0vkmchhm.apps.googleusercontent.com",
       "57881811503-5jfr0udb8k82cc9qg5nat4dntbdmjvsf.apps.googleusercontent.com",
       "57881811503-pphhpvffu8uhv517cj40a51f5qtrl4ue.apps.googleusercontent.com",
