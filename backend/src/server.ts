@@ -45,9 +45,9 @@ async function start() {
       console.log(`🔔 Notification worker started: ${notificationWorker.name}`);
     }
 
-    // Initialize Scholarship Ingestion System
-    // await seedScholarshipSources();
-    // startScholarshipCron();
+  // Initialize Scholarship Ingestion System
+    await seedScholarshipSources();
+    startScholarshipCron();
 
     console.log(`
 ===================================================
