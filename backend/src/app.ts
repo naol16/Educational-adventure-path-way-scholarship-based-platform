@@ -15,36 +15,25 @@ const app: Application = express();
 
 // 1. CORS MUST BE FIRST to ensure all responses (including errors/rate-limits) have headers
 const allowedOrigins = [
+  configs.FRONTEND_URL,
+  configs.PRODUCTION_URL,
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
-  "http://localhost:3001",
   "http://127.0.0.1:3001",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "http://localhost:4000",
-  "http://127.0.0.1:4000",
-  "http://localhost:5000",
-  "http://127.0.0.1:5000",
-];
+].filter((origin): origin is string => !!origin);
 
-if (configs.PRODUCTION_URL) {
-  allowedOrigins.push(configs.PRODUCTION_URL);
-}
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000", 
-      "http://localhost:3001", 
-      "http://localhost:3002",
-      "http://127.0.0.1:3000", 
-      "http://127.0.0.1:3001",
-      "http://127.0.0.1:3002",
-      "http://[::1]:3000",
-      "http://[::1]:3001",
-      "http://localhost:5173",
-      "http://127.0.0.1:5173"
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, server-to-server, curl)
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [

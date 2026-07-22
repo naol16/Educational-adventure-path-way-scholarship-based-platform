@@ -8,10 +8,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Play, FileText, BookOpen, Maximize2 } from "lucide-react";
 
 interface ToeflMission {
@@ -60,7 +60,7 @@ export default function ToeflMissionsResources() {
     error,
   } = useSWR<ToeflMissionsResponse>(
     `/learning-path/toefl-missions?level=${selectedLevel}&skill=${selectedSkill === "all" ? "" : selectedSkill}`,
-    async (url) => {
+    async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch TOEFL missions");
       return res.json();
@@ -73,7 +73,7 @@ export default function ToeflMissionsResources() {
     <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           TOEFL iBT Learning Resources
         </h1>
         <p className="text-gray-600">
@@ -95,7 +95,7 @@ export default function ToeflMissionsResources() {
               <Button
                 key={level}
                 onClick={() => setSelectedLevel(level)}
-                variant={selectedLevel === level ? "default" : "outline"}
+                variant={selectedLevel === level ? "primary" : "outline"}
                 className="w-full"
               >
                 {levelLabels[level]}
@@ -117,7 +117,7 @@ export default function ToeflMissionsResources() {
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => setSelectedSkill("all")}
-              variant={selectedSkill === "all" ? "default" : "outline"}
+              variant={selectedSkill === "all" ? "primary" : "outline"}
               className="px-4"
             >
               All Skills
@@ -127,10 +127,10 @@ export default function ToeflMissionsResources() {
                 <Button
                   key={skill}
                   onClick={() => setSelectedSkill(skill)}
-                  variant={selectedSkill === skill ? "default" : "outline"}
+                  variant={selectedSkill === skill ? "primary" : "outline"}
                   className={`px-4 ${
                     selectedSkill === skill
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-foreground"
+                      ? "bg-linear-to-r from-blue-500 to-purple-500 text-foreground"
                       : skillColors[skill]
                   }`}
                 >
@@ -231,7 +231,7 @@ export default function ToeflMissionsResources() {
                               {mission.objective}
                             </CardDescription>
                           </div>
-                          <Maximize2 className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                          <Maximize2 className="w-5 h-5 text-gray-400 shrink-0 mt-1" />
                         </div>
                       </CardHeader>
 
@@ -297,7 +297,7 @@ export default function ToeflMissionsResources() {
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors group"
                                     >
-                                      <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                      <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
                                           PDF Resource {idx + 1}
@@ -307,18 +307,15 @@ export default function ToeflMissionsResources() {
                                         </p>
                                       </div>
                                       <Button
+                                        as="a"
                                         size="sm"
                                         variant="ghost"
-                                        asChild
-                                        className="ml-2 flex-shrink-0"
+                                        href={pdf}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 shrink-0"
                                       >
-                                        <a
-                                          href={pdf}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          Open
-                                        </a>
+                                        Open
                                       </Button>
                                     </a>
                                   ),
@@ -330,7 +327,7 @@ export default function ToeflMissionsResources() {
                           </div>
 
                           {/* Summary */}
-                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+                          <div className="bg-linear-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
                             <p className="text-sm text-gray-700">
                               <span className="font-semibold">
                                 Total Resources:
@@ -351,7 +348,7 @@ export default function ToeflMissionsResources() {
       )}
 
       {/* Summary Stats */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <Card className="bg-linear-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
           <CardTitle>Resources Summary</CardTitle>
         </CardHeader>

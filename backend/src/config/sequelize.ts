@@ -39,6 +39,7 @@ import {
 import configs from "./configs.js";
 
 const dbOptions: SequelizeOptions = {
+  ...(configs.DATABASE_URL ? { url: configs.DATABASE_URL } : {}),
   host: configs.DB_HOST,
   port: configs.DB_PORT,
   username: configs.DB_USER,
@@ -62,7 +63,6 @@ const dbOptions: SequelizeOptions = {
             rejectUnauthorized: false,
           },
         },
-
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 export const sequelize = new Sequelize({
