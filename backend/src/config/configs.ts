@@ -27,7 +27,26 @@ function isUpstashHost(host?: string) {
   }
 }
 
+function parseDatabaseUrl(urlStr?: string) {
+  if (!urlStr) return null;
+  try {
+    const parsed = new URL(urlStr);
+    return {
+      DB_HOST: parsed.hostname,
+      DB_PORT: parsed.port ? parseInt(parsed.port) : 5432,
+      DB_USER: decodeURIComponent(parsed.username),
+      DB_PASSWORD: decodeURIComponent(parsed.password),
+      DB_NAME: parsed.pathname.replace(/^\//, ""),
+      DB_SSL: parsed.searchParams.get("sslmode") === "require" || urlStr.includes("sslmode=require"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function setConfigs() {
+  const dbFromUrl = parseDatabaseUrl(process.env.DATABASE_URL);
+
   return {
     // Server Config
     NODE_ENV: process.env.NODE_ENV || "development",
@@ -46,13 +65,14 @@ function setConfigs() {
       "https://educational-adventure-path-way.onrender.com",
 
     // Database Config
-    DB_HOST: process.env.DB_HOST || "localhost",
-    DB_PORT: parseInt(process.env.DB_PORT || "5432"),
-    DB_USER: process.env.DB_USER || "postgres",
-    DB_PASSWORD: String(process.env.DB_PASSWORD || ""),
-    DB_NAME: process.env.DB_NAME || "auth_system",
+    DATABASE_URL: process.env.DATABASE_URL,
+    DB_HOST: process.env.DB_HOST || dbFromUrl?.DB_HOST || "localhost",
+    DB_PORT: parseInt(process.env.DB_PORT || (dbFromUrl ? String(dbFromUrl.DB_PORT) : "5432")),
+    DB_USER: process.env.DB_USER || dbFromUrl?.DB_USER || "postgres",
+    DB_PASSWORD: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : (dbFromUrl?.DB_PASSWORD !== undefined ? dbFromUrl.DB_PASSWORD : ""),
+    DB_NAME: process.env.DB_NAME || dbFromUrl?.DB_NAME || "auth_system",
     DB_LOGGING: process.env.DB_LOGGING === "true",
-    DB_SSL: process.env.DB_SSL === "true",
+    DB_SSL: process.env.DB_SSL ? process.env.DB_SSL === "true" : (dbFromUrl?.DB_SSL ?? false),
     DB_SYNC: process.env.DB_SYNC
       ? process.env.DB_SYNC === "true"
       : process.env.NODE_ENV !== "production",
