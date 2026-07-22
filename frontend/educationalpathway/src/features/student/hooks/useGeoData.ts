@@ -26,7 +26,7 @@ export const useGeoData = () => {
         if (!res.ok) throw new Error("Failed to fetch countries");
         const data = await res.json();
         
-        const formatted: CountryData[] = data.map((c: any) => ({
+        const formatted: CountryData[] = data.map((c: { name: { common: string }; flags: { svg?: string; png?: string }; cca2: string }) => ({
           name: c.name.common,
           flag: c.flags.svg || c.flags.png || "",
           code: c.cca2,
@@ -34,8 +34,9 @@ export const useGeoData = () => {
         
         formatted.sort((a, b) => a.name.localeCompare(b.name));
         setCountries(formatted);
-      } catch (error: any) {
-        console.warn("Could not fetch countries (API might be down or blocked):", error.message);
+      } catch (error) {
+        const errMessage = error instanceof Error ? error.message : String(error);
+        console.warn("Could not fetch countries (API might be down or blocked):", errMessage);
         // Fallback so the dropdown isn't totally empty if the API fails
         setCountries([
           { name: "United States", flag: "🇺🇸", code: "US" },
@@ -82,7 +83,7 @@ export const useGeoData = () => {
       if (!res.ok) throw new Error(`Failed to fetch universities for ${countryName}`);
       
       const data = await res.json();
-      const unis: UniversityData[] = data.map((u: any) => ({
+      const unis: UniversityData[] = data.map((u: { name: string; country: string }) => ({
         name: u.name,
         country: u.country,
       }));

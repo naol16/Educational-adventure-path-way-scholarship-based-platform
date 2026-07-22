@@ -3,10 +3,8 @@
 import { useState } from "react";
 import {
   Palette,
-  User,
   Briefcase,
   CalendarCheck,
-  Wallet
 } from "lucide-react";
 
 import { useTheme } from "@/providers/theme-context";
