@@ -200,10 +200,16 @@ export class AuthService {
     console.log(`[Diagnostic] GOOGLE_ANDROID_CLIENT_ID length: ${process.env.GOOGLE_ANDROID_CLIENT_ID?.length || 0}`);
     console.log(`[Diagnostic] Active Audiences array:`, configs.GOOGLE_AUTH_AUDIENCES);
 
-    const ticket = await client.verifyIdToken({
-      idToken,
-      audience: configs.GOOGLE_AUTH_AUDIENCES,
-    });
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken,
+        audience: configs.GOOGLE_AUTH_AUDIENCES,
+      });
+    } catch (verifyError: any) {
+      console.error("[GoogleAuth] Token verification failed:", verifyError.message);
+      throw new AppError(`Google token verification failed: ${verifyError.message}`, 400);
+    }
 
     const payload = ticket.getPayload() as GoogleTokenPayload | undefined;
     if (!payload || !payload.email) throw new AppError("We couldn't verify your Google account. Please try again.", 400);
