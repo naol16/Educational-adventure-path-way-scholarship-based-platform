@@ -69,6 +69,16 @@ export const Counselors = () => {
 
   useEffect(() => {
     fetchCounselors();
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.href === '/dashboard/admin/counselors') {
+        setSelectedCounselor(null);
+      }
+    };
+
+    window.addEventListener('admin-nav-click', handleNavClick);
+    return () => window.removeEventListener('admin-nav-click', handleNavClick);
   }, []);
 
   const handleAccept = async (id: number) => {
@@ -237,7 +247,7 @@ export const Counselors = () => {
                     Reject Application
                   </Button>
                   <Button 
-                    className="primary-gradient text-white font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg shadow-xl shadow-primary/20 hover:translate-y-[-2px] transition-all"
+                    className="primary-gradient text-white font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-lg shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-all"
                     onClick={() => handleAccept(selectedCounselor.id)}
                   >
                     Verify & Approve

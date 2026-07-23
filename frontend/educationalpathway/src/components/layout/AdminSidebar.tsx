@@ -110,7 +110,10 @@ export const AdminSidebar = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => mobile && setMobileOpen(false)}
+                    onClick={() => {
+                      if (mobile) setMobileOpen(false);
+                      window.dispatchEvent(new CustomEvent('admin-nav-click', { detail: { href: item.href } }));
+                    }}
                     title={collapsed && !mobile ? item.name : ""}
                     className={cn(
                       "group flex items-center px-4 py-3 rounded-xl transition-all duration-300",
@@ -187,12 +190,6 @@ export const AdminSidebar = () => {
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase group-hover:scale-110 transition-transform shrink-0">
                   {user?.name?.charAt(0) || 'A'}
                 </div>
-                {(!collapsed || mobile) && (
-                  <div className="min-w-0 text-left">
-                    <p className="text-[10px] font-black text-foreground truncate uppercase">{user?.name || 'Admin User'}</p>
-                    <p className="text-[8px] font-bold text-muted-foreground truncate uppercase opacity-50">Administrator</p>
-                  </div>
-                )}
             </div>
             {(!collapsed || mobile) && (
               <ChevronDown size={14} className={cn("text-muted-foreground transition-transform", showDropdown && "rotate-180")} />

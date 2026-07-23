@@ -461,87 +461,117 @@ export function Navbar({ simplified = false }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Right Side Drawer */}
       {!simplified && (
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="lg:hidden border-t border-border bg-card overflow-hidden"
-            >
-              <div className="px-4 py-3 space-y-1">
-                {/* Mobile Search */}
-                <form onSubmit={handleSearch} className="mb-4">
-                  <div className="relative">
-                    <Input
-                      type="search"
-                      placeholder="Search..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 bg-muted/50 border-border"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </form>
-
-                {/* Mobile Navigation Links */}
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = pathname === link.href;
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        isActive
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "text-foreground/80 hover:bg-muted"
-                      }`}
-                    >
-                      <Icon
-                        className={`h-5 w-5 ${isActive ? "text-blue-400" : "text-muted-foreground"}`}
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
+              />
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-card border-l border-border z-50 p-6 flex flex-col justify-between shadow-2xl lg:hidden overflow-y-auto"
+              >
+                <div>
+                  <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
+                    <div className="flex items-center gap-2">
+                      <Image 
+                        src="/admas.png" 
+                        alt="Path Finder Logo"
+                        width={24} 
+                        height={24} 
+                        className="h-6 w-6 object-contain"
                       />
-                      <div>
-                        <p className="font-medium">{link.name}</p>
-                        {link.description && (
-                          <p className="text-xs text-muted-foreground">
-                            {link.description}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                      <span className="font-semibold text-foreground">Menu</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="h-8 w-8 p-0 rounded-lg"
+                    >
+                      <X className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                  </div>
 
-                {/* Mobile Divider removed */}
+                  {/* Mobile Search */}
+                  <form onSubmit={handleSearch} className="mb-4">
+                    <div className="relative">
+                      <Input
+                        type="search"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 bg-muted/50 border-border text-sm"
+                      />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </form>
 
-                {/* Mobile Divider */}
-                <div className="my-3 border-t border-border/50" />
-
-                {/* Mobile User Info */}
-                <div className="px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">
-                    {user?.name || "User"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  {/* Mobile Navigation Links */}
+                  <div className="space-y-1">
+                    {navLinks.map((link) => {
+                      const Icon = link.icon;
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          onClick={() => setIsMenuOpen(false)}
+                          className={`flex items-center gap-3 px-3.5 py-3 rounded-lg transition-colors ${
+                            isActive
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                              : "text-foreground/80 hover:bg-muted"
+                          }`}
+                        >
+                          <Icon
+                            className={`h-5 w-5 ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
+                          />
+                          <div>
+                            <p className="font-medium text-sm">{link.name}</p>
+                            {link.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {link.description}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Mobile Logout */}
-                <button
-                  onClick={() => {
-                    logout();
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="font-medium">Sign Out</span>
-                </button>
-              </div>
-            </motion.div>
+                <div className="pt-4 border-t border-border mt-auto">
+                  {/* Mobile User Info */}
+                  <div className="px-2 py-2 mb-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+
+                  {/* Mobile Logout */}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-3.5 py-2.5 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span className="font-medium">Sign Out</span>
+                  </button>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       )}
