@@ -23,6 +23,7 @@ export interface CreateUserDto {
   password?: string;
   googleId?: string;
   role?: UserRole;
+  isActive?: boolean;
   isVerified?: boolean;
 }
 
