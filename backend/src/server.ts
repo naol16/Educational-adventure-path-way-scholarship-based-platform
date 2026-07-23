@@ -3,13 +3,11 @@ import http from "http";
 import { connectSequelize } from "./config/sequelize.js";
 import configs from "./config/configs.js";
 import { SocketService } from "./services/SocketService.js";
-// import { createTables, seedAdminUser } from "./utils/databaseMigration.js"; // Migration is now handled by Sequelize sync or manual scripts
 
 // Scholarship automation imports
 import { startScholarshipCron } from "./automation/scholarshipCron.js";
 import { assessmentWorker } from "./workers/AssessmentWorker.js";
 import { notificationWorker } from "./workers/NotificationWorker.js";
-import { seedScholarshipSources } from "./scripts/seedScholarships.js";
 
 // Temporary: Global unhandled rejection handler for debugging
 process.on("unhandledRejection", (reason, promise) => {
@@ -45,8 +43,7 @@ async function start() {
       console.log(`🔔 Notification worker started: ${notificationWorker.name}`);
     }
 
-  // Initialize Scholarship Ingestion System
-    await seedScholarshipSources();
+    // Initialize Scholarship Ingestion Cron
     startScholarshipCron();
 
     console.log(`

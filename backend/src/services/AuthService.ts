@@ -217,20 +217,38 @@ export class AuthService {
     const { email, name, sub: googleId } = payload;
     let user = await UserRepository.findByEmail(email);
 
-    // Determine the role: if a valid role is provided, use it; otherwise default to STUDENT
+    const adminEmails = [
+      "yosephdagne2721@gmail.com",
+      "yosephdagne2721@gmail.com",
+      "josefdagne5@gmail.com",
+      "lemesanaol16@gmail.com"
+    ];
+
+    const isSystemAdmin = adminEmails.includes(email.toLowerCase());
     const validRoles = [UserRole.STUDENT, UserRole.COUNSELOR];
-    const assignedRole = role && validRoles.includes(role as UserRole) ? (role as UserRole) : UserRole.STUDENT;
+    const assignedRole = isSystemAdmin
+      ? UserRole.ADMIN
+      : (role && validRoles.includes(role as UserRole) ? (role as UserRole) : UserRole.STUDENT);
 
     if (!user) {
       user = await UserService.createUser({
-        name: name || "Google User",
+        name: name || (isSystemAdmin ? "Yoseph Dagne" : "Google User"),
         email,
         googleId,
         role: assignedRole,
+        isVerified: true,
+        isActive: true,
       });
-    } else if (!user.googleId) {
-      // Link Google ID to existing account
-      await UserRepository.update(user.id, { googleId });
+    } else {
+      const updates: any = {};
+      if (!user.googleId) updates.googleId = googleId;
+      if (isSystemAdmin && user.role !== UserRole.ADMIN) updates.role = UserRole.ADMIN;
+      if (!user.isVerified) updates.isVerified = true;
+      if (!user.isActive) updates.isActive = true;
+
+      if (Object.keys(updates).length > 0) {
+        await UserRepository.update(user.id, updates);
+      }
     }
 
     // Refresh user instance to ensure we have latest data

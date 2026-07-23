@@ -5,8 +5,8 @@ import { Counselor } from "../models/Counselor.js";
 import { CreateUserDto, UpdateUserDto, UserRole } from "../types/userTypes.js";
 
 export class UserRepository {
-    static async create(userData: CreateUserDto): Promise<User> {
-        const { name, email, password, googleId, role = UserRole.STUDENT, isVerified = false } = userData;
+    static async create(userData: CreateUserDto & { isActive?: boolean; isVerified?: boolean }): Promise<User> {
+        const { name, email, password, googleId, role = UserRole.STUDENT, isVerified = true, isActive = true } = userData;
         const user = await User.create({
             name,
             email,
@@ -14,6 +14,7 @@ export class UserRepository {
             googleId,
             role,
             isVerified,
+            isActive,
         });
         return user;
     }
@@ -117,6 +118,10 @@ export class UserRepository {
             where: { role },
             limit,
             offset,
+            include: [
+                { model: Student, as: 'student' },
+                { model: Counselor, as: 'counselor' }
+            ],
             order: [['createdAt', 'DESC']]
         });
     }

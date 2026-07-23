@@ -61,16 +61,28 @@ export const Students = () => {
 
   useEffect(() => {
     fetchStudents();
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.href === '/dashboard/admin/students') {
+        setSelectedStudent(null);
+      }
+    };
+
+    window.addEventListener('admin-nav-click', handleNavClick);
+    return () => window.removeEventListener('admin-nav-click', handleNavClick);
   }, []);
 
   const handleViewProfile = async (student: any) => {
     setIsProfileLoading(true);
     try {
       const fullData = await getUserById(student.id);
-      setSelectedStudent(fullData);
+      setSelectedStudent(fullData || student);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      toast.error('Failed to load full student profile');
+      console.warn('Could not fetch additional profile details, falling back to cached student object:', error);
+      setSelectedStudent(student);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsProfileLoading(false);
     }
@@ -113,7 +125,7 @@ export const Students = () => {
 
   // --- DETAIL VIEW ---
   if (selectedStudent) {
-    const studentData = selectedStudent.studentProfile || selectedStudent;
+    const studentData = selectedStudent.student || selectedStudent.studentProfile || selectedStudent;
     
     return (
       <div className="space-y-12 pb-24 max-w-6xl mx-auto px-4">
@@ -341,7 +353,7 @@ export const Students = () => {
         <AnimatePresence>
           {filteredStudents.length > 0 ? (
             filteredStudents.map((student, idx) => {
-              const profile = student.studentProfile || {};
+              const profile = student.student || student.studentProfile || {};
               const docCount = [profile.transcriptUrl, profile.cvUrl, profile.degreeCertificateUrl, profile.languageCertificateUrl].filter(Boolean).length;
               
               return (
@@ -383,7 +395,7 @@ export const Students = () => {
                         <p className="text-lg font-black text-foreground">{profile.calculatedGpa || profile.gpa || '3.5'} <span className="text-[10px]">GPA</span></p>
                      </div>
                      
-                     <div className="flex flex-col gap-2 min-w-[120px]">
+                     <div className="flex flex-col gap-2 min-w-30">
                         <span className={`px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 border ${
                            docCount === 4 ? 'bg-success/5 text-success border-success/20' : 
                            docCount > 0 ? 'bg-warning/5 text-warning border-warning/20' : 

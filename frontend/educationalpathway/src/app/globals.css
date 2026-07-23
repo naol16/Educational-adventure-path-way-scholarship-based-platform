@@ -54,46 +54,46 @@
 
 :root {
   /* Base */
-  --background: #ffffff;
-  --foreground: #09090b;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   /* Surfaces */
   --card: #ffffff;
-  --card-foreground: #09090b;
+  --card-foreground: #0f172a;
 
   /* Popover */
   --popover: #ffffff;
-  --popover-foreground: #09090b;
+  --popover-foreground: #0f172a;
 
-  /* Primary - High-end Blue */
-  --primary: #3390ec;
+  /* Primary - Scholarship Academic Emerald */
+  --primary: #059669;
   --primary-foreground: #ffffff;
 
   /* Secondary UI */
-  --secondary: #f4f4f5;
-  --secondary-foreground: #09090b;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
 
   /* Muted Surfaces */
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
   /* Accent / Hover */
-  --accent: #f4f4f5;
-  --accent-foreground: #09090b;
+  --accent: #e2e8f0;
+  --accent-foreground: #0f172a;
 
   /* Semantics */
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --success: #3390ec;
+  --success: #10b981;
   --warning: #f59e0b;
   --info: #0ea5e9;
 
   /* Borders */
-  --border: #e4e4e7;
+  --border: #e2e8f0;
   --input: transparent;
-  --input-bg: #f4f4f5;
-  --ring: #3390ec;
+  --input-bg: #f1f5f9;
+  --ring: #059669;
 
   --radius: 0.5rem;
 }
@@ -101,23 +101,23 @@
 /* ---------------- DARK MODE ---------------- */
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #18181b;
-  --card-foreground: #fafafa;
-  --popover: #18181b;
-  --popover-foreground: #fafafa;
-  --primary: #3390ec;
-  --primary-foreground: #ffffff;
-  --secondary: #18181b;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
-  --border: #27272a;
-  --input-bg: #27272a;
-  --ring: #3390ec;
+  --background: #080c14;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #10b981;
+  --primary-foreground: #090d16;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --border: #1e293b;
+  --input-bg: #1e293b;
+  --ring: #10b981;
 }
 
 /* ---------------- BASE STYLES ---------------- */
