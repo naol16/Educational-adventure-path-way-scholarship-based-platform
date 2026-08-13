@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, StopCircle, Loader2, Sparkles, X, ChevronDown, BookOpen } from "lucide-react";
@@ -66,7 +68,7 @@ export const UnitTestOverlay = ({
                     <p className="text-xl font-bold uppercase tracking-widest">{unitTestResults.passed ? 'Passed' : 'Needs Review'}</p>
                     <p className="text-muted-foreground font-medium max-w-md mx-auto leading-relaxed italic">"{unitTestResults.feedback}"</p>
                   </div>
-                  <Button onClick={onClose} className="h-11 px-10 rounded-lg primary-gradient text-white font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all">
+                  <Button onClick={onClose} className="h-11 px-10 rounded-lg primary-gradient text-foreground font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all">
                     Close
                   </Button>
                 </div>
@@ -120,7 +122,7 @@ export const UnitTestOverlay = ({
                               className={`group text-left p-8 rounded-2xl border transition-all text-sm font-bold duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'border-primary bg-primary/10 text-primary shadow-xl shadow-primary/5' : 'border-border/50 bg-muted/20 hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
                             >
                               <div className="flex items-center gap-4">
-                                <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'bg-primary text-white' : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
+                                <div className={`size-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black transition-all duration-500 ${unitTestContent.userResponses?.[qi]?.selected === oi ? 'bg-primary text-foreground' : 'bg-muted-foreground/10 group-hover:bg-primary/20 group-hover:text-primary text-muted-foreground'}`}>
                                   {String.fromCharCode(65 + oi)}
                                 </div>
                                 <span>{opt}</span>
@@ -136,7 +138,7 @@ export const UnitTestOverlay = ({
                     <Button 
                       onClick={() => onSubmit(unitTestContent.userResponses || [])}
                       disabled={isSubmitting || (unitTestContent?.questions?.length !== unitTestContent?.userResponses?.filter(Boolean).length)}
-                      className="h-11 px-10 rounded-lg primary-gradient text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                      className="h-11 px-10 rounded-lg primary-gradient text-foreground font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:scale-110 active:scale-95 transition-all"
                     >
                       {isSubmitting ? <Loader2 className="animate-spin" /> : 'Submit Answers'}
                     </Button>
@@ -211,7 +213,7 @@ export const DynamicMissionOverlay = ({
                   if (topic) onGenerate(topic);
                 }}
                 disabled={isGenerating}
-                className="flex-1 primary-gradient text-white rounded-lg h-11 font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all"
+                className="flex-1 primary-gradient text-foreground rounded-lg h-11 font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all"
               >
                 {isGenerating ? <Loader2 className="animate-spin" /> : 'Generate'}
               </Button>

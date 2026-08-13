@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Open_Sans, Playfair_Display } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/providers/auth-context";
 import { ThemeProvider } from "@/providers/theme-context";
@@ -7,11 +7,11 @@ import { Toaster } from "react-hot-toast";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const openSans = Open_Sans({ subsets: ["latin"], variable: "--font-open-sans" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", weight: ["400", "600", "700", "800", "900"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-plus-jakarta", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "Admas",
+  title: "Path Finder",
   description: "Your journey to academic success starts here.",
   icons: {
     icon: "/admas.png",
@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${openSans.variable} ${playfair.variable} font-sans antialiased text-foreground bg-background`}
+        className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased text-foreground bg-background`}
       >
         <SWRProvider>
           {googleClientId ? (

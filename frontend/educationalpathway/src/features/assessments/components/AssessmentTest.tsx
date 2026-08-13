@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { submitAssessment, getAssessmentResult, submitSection } from "@/features/assessments/api/assessment-api";
+import Link from "next/link";
 
 interface AssessmentQuestion {
   id: string | number;
@@ -56,39 +57,6 @@ interface Props {
 }
 
 type SectionKey = "reading" | "listening" | "writing" | "speaking";
-
-const SECTION_ORDER: SectionKey[] = [
-  "reading",
-  "listening",
-  "writing",
-  "speaking",
-];
-
-const SECTION_META: Record<
-  SectionKey,
-  { label: string; icon: React.ReactNode; timeMinutes: number }
-> = {
-  reading: {
-    label: "Reading",
-    icon: <BookOpen className="size-4" />,
-    timeMinutes: 20,
-  },
-  listening: {
-    label: "Listening",
-    icon: <Headphones className="size-4" />,
-    timeMinutes: 15,
-  },
-  writing: {
-    label: "Writing",
-    icon: <PenLine className="size-4" />,
-    timeMinutes: 40,
-  },
-  speaking: {
-    label: "Speaking",
-    icon: <Mic className="size-4" />,
-    timeMinutes: 15,
-  },
-};
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -124,6 +92,37 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   const examType = blueprint.exam_summary?.type || "IELTS";
 
   const isTOEFL = examType === "TOEFL";
+
+  const SECTION_ORDER: SectionKey[] = isTOEFL 
+    ? ["reading", "listening", "speaking", "writing"]
+    : ["listening", "reading", "writing", "speaking"];
+
+  const SECTION_META: Record<
+    SectionKey,
+    { label: string; icon: React.ReactNode; timeMinutes: number }
+  > = {
+    reading: {
+      label: "Reading",
+      icon: <BookOpen className="size-4" />,
+      timeMinutes: isTOEFL ? 35 : 60,
+    },
+    listening: {
+      label: "Listening",
+      icon: <Headphones className="size-4" />,
+      timeMinutes: isTOEFL ? 36 : 30,
+    },
+    writing: {
+      label: "Writing",
+      icon: <PenLine className="size-4" />,
+      timeMinutes: isTOEFL ? 29 : 60,
+    },
+    speaking: {
+      label: "Speaking",
+      icon: <Mic className="size-4" />,
+      timeMinutes: isTOEFL ? 16 : 14,
+    },
+  };
+
   const theme = {
     primary: isTOEFL ? "bg-blue-600" : "bg-emerald-500",
     text: isTOEFL ? "text-blue-600 dark:text-blue-400" : "text-emerald-600 dark:text-emerald-400",
@@ -134,7 +133,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     optionSelected: isTOEFL ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400" : "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
   };
 
-  const [currentSection, setCurrentSection] = useState<SectionKey>("reading");
+  const [currentSection, setCurrentSection] = useState<SectionKey>(SECTION_ORDER[0]);
   const [responses, setResponses] = useState<any>({
     reading: {},
     listening: {},
@@ -142,9 +141,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
     speaking: "",
   });
 
-  const [timeLeft, setTimeLeft] = useState(
-    SECTION_META.reading.timeMinutes * 60,
-  );
+  const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
@@ -337,6 +334,18 @@ export function AssessmentTest({ examData, onComplete }: Props) {
   if (result) {
     const evaluation = result.evaluation || result;
     const subs = evaluation.score_breakdown || {};
+    
+    const band = parseFloat(evaluation.overall_band || evaluation.overallBand || "0.0");
+    let level = "medium";
+    if (isTOEFL) {
+      if (band < 60) level = "easy";
+      else if (band < 90) level = "medium";
+      else level = "hard";
+    } else {
+      if (band < 5.0) level = "easy";
+      else if (band < 6.5) level = "medium";
+      else level = "hard";
+    }
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4">
         <div className="text-center space-y-2 mb-8">
@@ -356,7 +365,29 @@ export function AssessmentTest({ examData, onComplete }: Props) {
           </CardBody></Card>
         </div>
         <Card><CardBody className="p-6"><h3 className="font-bold mb-4">AI Feedback</h3><p className="text-sm text-muted-foreground whitespace-pre-wrap">{evaluation.feedback_report}</p></CardBody></Card>
-        <div className="text-center"><Button onClick={onComplete} variant="outline">Back to Dashboard</Button></div>
+        
+        <Card className={`border border-primary/20 ${theme.bg}`}>
+          <CardBody className="p-6 text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
+              <Sparkles size={14} /> Mission Update
+            </div>
+            <p className="text-sm text-foreground/80 font-medium">
+              Assessment Complete! You are at an <strong className="text-primary">{level.toUpperCase()}</strong> level. 
+              Your missions have been updated to focus on your specific improvement areas.
+            </p>
+          </CardBody>
+        </Card>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+          <Link href={`/dashboard/learning-path`}>
+            <Button className="h-16 px-12 rounded-xl bg-foreground text-background font-black uppercase tracking-[0.2em] text-[10px] hover:bg-foreground/90 transition-all shadow-2xl hover:scale-[1.02] active:scale-95">
+              GO TO MY LEARNING PATH
+            </Button>
+          </Link>
+          <Button onClick={onComplete} variant="outline" className="h-16 px-10 rounded-xl font-black uppercase tracking-widest text-[10px] border-border/40 hover:bg-muted shadow-sm">
+            Close Result
+          </Button>
+        </div>
       </div>
     );
   }
@@ -366,8 +397,8 @@ export function AssessmentTest({ examData, onComplete }: Props) {
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-6">
         <Loader2 className="animate-spin text-primary size-14" />
         <div className="text-center space-y-2">
-          <h2 className="h3">AI Evaluator is grading your exam</h2>
-          <p className="text-sm text-muted-foreground animate-pulse">This typically takes 30-60 seconds...</p>
+          <h2 className="h3">Calculating your band scores...</h2>
+          <p className="text-sm text-muted-foreground animate-pulse">Analyzing your response structure and grammar...</p>
         </div>
       </div>
     );
@@ -405,7 +436,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.3em] ${theme.bg} ${theme.text} ${theme.border}`}>
-                Live Assessment Protocol
+                Your Level Check
               </div>
               <div className="h-4 w-px bg-border/40" />
               <div className="flex items-center gap-2">
@@ -416,7 +447,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
             
             <div className="space-y-4">
               <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter uppercase leading-none">
-                Exam <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">In Progress</span>
+                Your <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Test</span>
               </h1>
             </div>
           </div>
@@ -450,12 +481,13 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               </div>
               
               <div className="space-y-4">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">{SECTION_META[currentSection].label} Complete</h2>
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Section Score</span>
-                  <div className="text-6xl font-black tabular-nums tracking-tighter">
-                    {sectionScores[currentSection] !== undefined ? sectionScores[currentSection] : "--"}
-                    <span className="text-xl text-muted-foreground/40 ml-1">/{isTOEFL ? "30" : "9.0"}</span>
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">Section Complete</h2>
+                <div className="flex flex-col items-center gap-4 mt-6">
+                  <div className="flex items-center gap-3 px-6 py-3 bg-muted/20 rounded-full border border-border/10">
+                    <Loader2 className="animate-spin text-primary size-4" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                      Your {currentSection} result is being analyzed
+                    </span>
                   </div>
                 </div>
               </div>
@@ -463,29 +495,29 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               {currentIdx < SECTION_ORDER.length - 1 ? (
                 <>
                   <div className="p-10 bg-card rounded-2xl border border-border/40 shadow-sm space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Next Objective</p>
-                    <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Analysis</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Coming Up Next</p>
+                    <h3 className="text-3xl font-black uppercase tracking-tight">{SECTION_ORDER[currentIdx + 1]} Section</h3>
                   </div>
 
                   <Button 
                     onClick={() => handleSectionChange(SECTION_ORDER[currentIdx + 1])}
                     className={`rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 primary-gradient text-white w-full`}
                   >
-                    Execute {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} Protocol <ArrowRight className="ml-4" />
+                    Continue to {SECTION_META[SECTION_ORDER[currentIdx + 1]]?.label} <ArrowRight className="ml-4" />
                   </Button>
                 </>
               ) : (
                 <div className="space-y-6">
                   <div className="p-10 bg-success/5 rounded-2xl border border-success/20 shadow-sm space-y-4">
                     <Sparkles className="mx-auto text-success size-8" />
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Diagnostic Concluded</h3>
-                    <p className="text-sm text-muted-foreground font-medium">Your full performance matrix and adaptive learning path are being synthesized.</p>
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Test Finished</h3>
+                    <p className="text-sm text-muted-foreground font-medium">Your results and study plan are being generated.</p>
                   </div>
                   <Button 
                     onClick={handleSubmit}
                     className="rounded-lg px-16 h-20 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 bg-foreground text-background w-full"
                   >
-                    Finalize Diagnostic & View Performance <BarChart3 className="ml-4" />
+                    Submit Assessment & View Results <BarChart3 className="ml-4" />
                   </Button>
                 </div>
               )}
@@ -512,7 +544,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 <CardBody className="p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Active Phase</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Current Section</p>
                       <h4 className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
                         <span className={theme.text}>{SECTION_META[currentSection].icon}</span>
                         {SECTION_META[currentSection].label}
@@ -590,8 +622,8 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                           <Headphones size={32} />
                         </div>
                         <div className="space-y-2">
-                          <h3 className="text-xl font-black uppercase tracking-tight">Audio Diagnostic</h3>
-                          <p className="text-sm text-muted-foreground font-medium">Verify audio fidelity before proceeding to synthesis.</p>
+                          <h3 className="text-xl font-black uppercase tracking-tight">Listening Test</h3>
+                          <p className="text-sm text-muted-foreground font-medium">Please listen to the audio carefully before answering.</p>
                         </div>
                         <div className="max-w-md mx-auto p-4 bg-muted/20 rounded-2xl border border-border/10">
                           <audio controls className="w-full h-10" src={`data:audio/mp3;base64,${sections.listening?.audio_base64}`} />
@@ -635,9 +667,9 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 {currentSection === "writing" && (
                   <div className="space-y-8 pb-12">
                     <div className="flex items-center justify-between px-2">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Module Synthesis: Task 01</span>
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Writing Task</span>
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                        <PenLine size={12} /> Live Composition
+                        <PenLine size={12} /> Live Writing
                       </div>
                     </div>
                     <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner">
@@ -648,7 +680,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                     <textarea 
                       value={responses.writing} 
                       onChange={(e) => setResponses({ ...responses, writing: e.target.value })} 
-                      placeholder="Begin composition synthesis here..." 
+                      placeholder="Type your response here..." 
                       className="w-full h-[500px] p-12 rounded-2xl border-2 border-border/40 bg-card text-lg font-medium text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none shadow-xl custom-scrollbar"
                     />
                   </div>
@@ -657,8 +689,8 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 {currentSection === "speaking" && (
                   <div className="space-y-12 py-12 flex flex-col items-center">
                     <div className="space-y-2 text-center">
-                      <span className="text-[10px] font-black text-muted-foreground tracking-[0.3em]">Aural Diagnostic: Task 01</span>
-                      <h3 className="text-3xl font-black tracking-tight">Vocal Analysis</h3>
+                      <span className="text-[10px] font-black text-muted-foreground tracking-[0.3em]">Speaking Section</span>
+                      <h3 className="text-3xl font-black tracking-tight">Vocal Performance</h3>
                     </div>
                     
                     <Card className="border border-border/40 rounded-2xl bg-muted/10 shadow-inner max-w-2xl w-full">
@@ -693,7 +725,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                               className={`size-full rounded-full ${theme.primary} text-white flex flex-col items-center justify-center gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all`}
                             >
                               <Mic size={48} />
-                              <span className="text-[10px] font-black uppercase tracking-widest">Initiate Stream</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest">Start Speaking</span>
                             </motion.button>
                           )}
                         </AnimatePresence>
@@ -703,7 +735,7 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                     {audioBlob && (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 px-6 py-3 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full">
                         <CheckCircle2 size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Audio Stream Captured & Encrypted</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Recording Saved</span>
                       </motion.div>
                     )}
                   </div>
@@ -721,10 +753,10 @@ export function AssessmentTest({ examData, onComplete }: Props) {
               onClick={() => {
                 if (currentIdx > 0) handleSectionChange(SECTION_ORDER[currentIdx - 1]);
               }}
-              disabled={currentIdx === 0 || isEvaluatingSection}
+              disabled={currentIdx === 0 || isEvaluatingSection || currentSection === "listening"}
               className="h-16 px-10 rounded-lg font-black uppercase tracking-widest text-[10px] border-border/60 hover:bg-muted transition-all shadow-sm bg-card disabled:opacity-20"
             >
-              <ArrowLeft className="mr-3 size-4" /> Previous Module
+              <ArrowLeft className="mr-3 size-4" /> Previous Section
             </Button>
             
             <div className="flex gap-3">
@@ -741,14 +773,14 @@ export function AssessmentTest({ examData, onComplete }: Props) {
                 onClick={() => setShowSectionSummary(true)} 
                 className={`h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] shadow-xl hover:shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 ${theme.btn} text-white`}
               >
-                Proceed <ArrowRight className="ml-3 size-4" />
+                Next Section <ArrowRight className="ml-3 size-4" />
               </Button>
             ) : (
               <Button 
                 onClick={handleSubmit} 
                 className="h-16 px-16 rounded-lg font-black uppercase tracking-widest text-[10px] bg-foreground text-background shadow-xl hover:scale-[1.05] active:scale-95 transition-all"
               >
-                Finalize Diagnostic <CheckCircle2 className="ml-3 size-4" />
+                Submit Assessment <CheckCircle2 className="ml-3 size-4" />
               </Button>
             )}
           </div>

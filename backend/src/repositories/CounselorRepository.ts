@@ -44,7 +44,7 @@ export class CounselorRepository {
         vectorStr?: string | undefined;
     }): Promise<{ rows: Counselor[]; count: number }> {
         const whereClause: any = {
-            verificationStatus: "verified",
+            verificationStatus: "approved",
             isActive: true,
         };
 
@@ -114,7 +114,7 @@ export class CounselorRepository {
     static async findRecommendedCounselors(student: Student, vectorStr: string): Promise<any[]> {
         const matches = await Counselor.findAll({
             where: {
-                verificationStatus: "verified",
+                verificationStatus: "approved",
                 isActive: true,
                 embedding: { [Op.ne]: null } as any
             },

@@ -42,6 +42,13 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
         await _player.setAudioSource(MyCustomSource(bytes));
       } else if (widget.url != null) {
         await _player.setUrl(widget.url!);
+      } else {
+        // If no audio is provided, complete immediately to avoid locking the UI
+        setState(() {
+          _hasPlayedOnce = true;
+        });
+        widget.onComplete?.call();
+        return;
       }
 
       _player.durationStream.listen((d) {
@@ -169,14 +176,17 @@ class _IELTSRestrictedAudioPlayerState extends State<IELTSRestrictedAudioPlayer>
   }
 }
 
+// ignore: experimental_member_use
 class MyCustomSource extends StreamAudioSource {
   final List<int> bytes;
   MyCustomSource(this.bytes);
 
   @override
+  // ignore: experimental_member_use
   Future<StreamAudioResponse> request([int? start, int? end]) async {
     start ??= 0;
     end ??= bytes.length;
+    // ignore: experimental_member_use
     return StreamAudioResponse(
       sourceLength: bytes.length,
       contentLength: end - start,

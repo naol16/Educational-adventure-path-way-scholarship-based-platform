@@ -1,0 +1,17 @@
+{
+  "name": "eap-root",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend/educationalpathway"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend/educationalpathway",
+    "dev": "npm run dev --workspaces --parallel"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.0.0",
+    "lightningcss-linux-x64-gnu": "^1.29.0"
+  }
+}

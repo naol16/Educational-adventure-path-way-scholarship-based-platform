@@ -179,7 +179,9 @@ export class AuthService {
 
   static async login(loginData: any) {
     const { email, password } = loginData;
+    console.log(`[Login Attempt] Email: ${email}`);
     const user = await UserRepository.findByEmail(email);
+    console.log(`[Login Attempt] User found: ${!!user}, Role: ${user?.role}, Verified: ${user?.isVerified}`);
 
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new AppError("The email or password you entered is incorrect. Please try again.", 401);
@@ -191,6 +193,18 @@ export class AuthService {
 
     if (!user.isVerified && !configs.DISABLE_EMAIL_VERIFICATION) {
       throw new AppError("Your account is not yet activated. Please activate your account using the code sent to your email.", 403);
+    }
+
+    // Check counselor approval status
+    if (user.role === UserRole.COUNSELOR) {
+      const counselor = await CounselorRepository.findByUserId(user.id);
+      if (counselor && counselor.verificationStatus !== 'approved') {
+        if (counselor.verificationStatus === 'pending') {
+          throw new AppError("Your account is awaiting admin approval.", 403);
+        } else if (counselor.verificationStatus === 'rejected') {
+          throw new AppError("Your account application has been rejected. Please contact support for more information.", 403);
+        }
+      }
     }
 
     return this.generateAuthResponse(user);
@@ -206,10 +220,16 @@ export class AuthService {
     console.log(`[Diagnostic] GOOGLE_ANDROID_CLIENT_ID length: ${process.env.GOOGLE_ANDROID_CLIENT_ID?.length || 0}`);
     console.log(`[Diagnostic] Active Audiences array:`, configs.GOOGLE_AUTH_AUDIENCES);
 
-    const ticket = await client.verifyIdToken({
-      idToken,
-      audience: configs.GOOGLE_AUTH_AUDIENCES,
-    });
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken,
+        audience: configs.GOOGLE_AUTH_AUDIENCES,
+      });
+    } catch (verifyError: any) {
+      console.error("[GoogleAuth] Token verification failed:", verifyError.message);
+      throw new AppError(`Google token verification failed: ${verifyError.message}`, 400);
+    }
 
     const payload = ticket.getPayload() as GoogleTokenPayload | undefined;
     if (!payload || !payload.email) throw new AppError("We couldn't verify your Google account. Please try again.", 400);
@@ -217,26 +237,56 @@ export class AuthService {
     const { email, name, sub: googleId } = payload;
     let user = await UserRepository.findByEmail(email);
 
-    // Determine the role: if a valid role is provided, use it; otherwise default to STUDENT
+    const adminEmails = [
+      "yosephdagne2721@gmail.com",
+      "yosephdagne2721@gmail.com",
+      "josefdagne5@gmail.com",
+      "lemesanaol16@gmail.com"
+    ];
+
+    const isSystemAdmin = adminEmails.includes(email.toLowerCase());
     const validRoles = [UserRole.STUDENT, UserRole.COUNSELOR];
-    const assignedRole = role && validRoles.includes(role as UserRole) ? (role as UserRole) : UserRole.STUDENT;
+    const assignedRole = isSystemAdmin
+      ? UserRole.ADMIN
+      : (role && validRoles.includes(role as UserRole) ? (role as UserRole) : UserRole.STUDENT);
 
     if (!user) {
       user = await UserService.createUser({
-        name: name || "Google User",
+        name: name || (isSystemAdmin ? "Yoseph Dagne" : "Google User"),
         email,
         googleId,
         role: assignedRole,
+        isVerified: true,
+        isActive: true,
       });
-    } else if (!user.googleId) {
-      // Link Google ID to existing account
-      await UserRepository.update(user.id, { googleId });
+    } else {
+      const updates: any = {};
+      if (!user.googleId) updates.googleId = googleId;
+      if (isSystemAdmin && user.role !== UserRole.ADMIN) updates.role = UserRole.ADMIN;
+      if (!user.isVerified) updates.isVerified = true;
+      if (!user.isActive) updates.isActive = true;
+
+      if (Object.keys(updates).length > 0) {
+        await UserRepository.update(user.id, updates);
+      }
     }
 
     // Refresh user instance to ensure we have latest data
     const refreshedUser = await UserRepository.findById(user.id);
     if (!refreshedUser) throw new AppError("We encountered an issue verifying your account. Please try logging in again.", 500);
     if (!refreshedUser.isActive) throw new AppError("Your account has been deactivated. Please contact support for assistance.", 403);
+
+    // Check counselor approval status for Google login as well
+    if (refreshedUser.role === UserRole.COUNSELOR) {
+      const counselor = await CounselorRepository.findByUserId(refreshedUser.id);
+      if (counselor && counselor.verificationStatus !== 'approved') {
+        if (counselor.verificationStatus === 'pending') {
+          throw new AppError("Your account is awaiting admin approval.", 403);
+        } else if (counselor.verificationStatus === 'rejected') {
+          throw new AppError("Your account application has been rejected. Please contact support for more information.", 403);
+        }
+      }
+    }
 
     return this.generateAuthResponse(refreshedUser);
   }
@@ -253,17 +303,39 @@ export class AuthService {
     const storedToken = await AuthRepository.findRefreshToken(token);
     if (!storedToken) throw new AppError("Your session has expired. Please log in again.", 401);
 
+    // 1. Check if token is physically expired (7 days)
     if (new Date() > storedToken.expiresAt) {
       await AuthRepository.deleteRefreshToken(token);
       throw new AppError("Your session has expired. Please log in again.", 401);
     }
 
+    // 2. Check for Grace Period if already revoked
+    if (storedToken.revokedAt) {
+      const gracePeriodMs = 60 * 1000; // 60 seconds
+      const timeSinceRevocation = Date.now() - new Date(storedToken.revokedAt).getTime();
+      
+      if (timeSinceRevocation > gracePeriodMs) {
+        throw new AppError("Your session has expired. Please log in again.", 401);
+      }
+      
+      // If within grace period, we still need to return a valid response.
+      // However, we don't want to keep rotating and creating new tokens for every concurrent request.
+      // We'll return the user info, but the browser should ideally use the NEW token from the first successful rotation.
+      const payload = jwt.verify(token, configs.REFRESH_TOKEN_SECRET!) as any;
+      const user = await UserRepository.findById(payload.id);
+      if (!user) throw new AppError("We couldn't verify your account. Please log in again.", 401);
+      
+      return this.generateAuthResponse(user);
+    }
+
+    // 3. Normal Rotation (First time using this token)
     const payload = jwt.verify(token, configs.REFRESH_TOKEN_SECRET!) as any;
     const user = await UserRepository.findById(payload.id);
     if (!user) throw new AppError("We couldn't verify your account. Please log in again.", 401);
 
-    // Rotate tokens
-    await AuthRepository.deleteRefreshToken(token);
+    // Mark as revoked instead of deleting immediately to allow concurrent requests
+    await AuthRepository.revokeRefreshToken(token);
+    
     return this.generateAuthResponse(user);
   }
 

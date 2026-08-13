@@ -39,6 +39,7 @@ import {
 import configs from "./configs.js";
 
 const dbOptions: SequelizeOptions = {
+  ...(configs.DATABASE_URL ? { url: configs.DATABASE_URL } : {}),
   host: configs.DB_HOST,
   port: configs.DB_PORT,
   username: configs.DB_USER,
@@ -48,9 +49,9 @@ const dbOptions: SequelizeOptions = {
   logging: configs.DB_LOGGING ? console.log : false,
   pool: {
     max: 10,
-    min: 0,
-    acquire: 30000,// Maximum time (ms) to try getting a connection before throwing error
-    idle: 10000    // Maximum time (ms) a connection can be idle before being released
+    min: 2,
+    acquire: 30000,
+    idle: 10000
   },
 
   dialectOptions:
@@ -62,7 +63,6 @@ const dbOptions: SequelizeOptions = {
             rejectUnauthorized: false,
           },
         },
-
 };
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 export const sequelize = new Sequelize({

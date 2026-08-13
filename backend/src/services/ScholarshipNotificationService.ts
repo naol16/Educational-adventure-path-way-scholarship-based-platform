@@ -77,12 +77,8 @@ export class ScholarshipNotificationService {
     student: Student,
     matches: MatchedScholarship[]
   ): Promise<void> {
-    // For batch matches, we might want to send one summary or a few top ones
-    // Requirement says "immediately after a match is detected"
-    // To avoid spamming, we notify only the top 3 best new matches if it's a batch
-    const topNewMatches = matches.slice(0, 3);
-
-    for (const match of topNewMatches) {
+    // Notify all recommended scholarships to ensure they exist in the student's notifications
+    for (const match of matches) {
       await this.notifyMatch(user, student, match);
     }
   }

@@ -12,7 +12,8 @@ import {
   Circle, 
   Zap, 
   Loader2,
-  Unlock
+  Unlock,
+  RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +40,27 @@ const isCorrectOption = (answer: unknown, option: string, options: string[]) => 
       return normalizeChoiceText(expectedOption) === normalizedOption;
    }
    return false;
+};
+
+// ✅ CHANGE 1: Helper to calculate true mission completion (all videos + PDFs)
+const calculateMissionCompletion = (mission: any): {
+  isFullyComplete: boolean;
+  completedResources: number;
+  totalResources: number;
+} => {
+  const videos = mission.videos || [];
+  const pdfs = mission.pdfs || [];
+  const totalResources = videos.length + pdfs.length;
+  
+  const completedVideos = videos.filter((v: any) => v.isCompleted).length;
+  const completedPdfs = pdfs.filter((p: any) => p.isCompleted).length;
+  const completedResources = completedVideos + completedPdfs;
+  
+  return {
+    isFullyComplete: completedResources === totalResources && totalResources > 0,
+    completedResources,
+    totalResources
+  };
 };
 
 export function SkillWorkspace() {
@@ -108,14 +130,26 @@ export function SkillWorkspace() {
     <main className="w-full space-y-24 pb-32">
       {/* Header Section */}
       <section className="space-y-12">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Activity className="text-emerald-500 size-4 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Learning Path / Current Module</span>
+        <div className="flex items-center justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Activity className="text-emerald-500 size-4 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground">Learning Path / Current Module</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">
+              {activeTab} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Mastery</span>
+            </h2>
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">
-            {activeTab} <span className="text-muted-foreground/20 dark:text-zinc-800 ml-4">Mastery</span>
-          </h2>
+          
+          {/* ✅ CHANGE 4: Add retake assessment button */}
+          <Link href={`/dashboard/learning-path/diagnostic/assessment?force=true&exam=${envMode}`}>
+            <Button 
+              className="h-10 px-4 rounded-lg font-black uppercase tracking-widest text-[8px] bg-background border border-border/60 text-foreground hover:bg-muted/30 shadow-sm transition-all hover:scale-105"
+              title="Retake the diagnostic assessment to refresh your learning path"
+            >
+              <RefreshCw size={14} className="mr-2" /> RETAKE
+            </Button>
+          </Link>
         </div>
 
         <div className="flex flex-wrap items-center gap-12 pt-4">
@@ -125,7 +159,7 @@ export function SkillWorkspace() {
             </div>
             <div>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Video Lessons</p>
-              <p className="text-lg font-black text-foreground uppercase tracking-tight">Completed Lessons</p>
+              <p className="text-lg font-black text-foreground uppercase tracking-tight">{vComp} / {vTotal} Completed</p>
             </div>
           </div>
           <div className="h-12 w-px bg-border/40" />
@@ -183,9 +217,14 @@ export function SkillWorkspace() {
           <div className="absolute left-[40px] top-0 bottom-0 w-px bg-linear-to-b from-border/80 via-border/20 to-transparent hidden md:block" />
 
           {currentSkill.missions?.map((m: any, i: number) => {
-            const isLocked = i > 0 && !currentSkill.missions[i - 1].isCompleted;
+            // ✅ CHANGE 1: Check if ALL resources in previous mission are complete
+            const prevMissionStatus = i > 0 ? calculateMissionCompletion(currentSkill.missions[i - 1]) : null;
+            const isLocked = i > 0 && !prevMissionStatus?.isFullyComplete;
             const isActive = activeMission === i && !isLocked;
             const isDone = m.isCompleted;
+            
+            // ✅ CHANGE 2: Calculate mission completion status
+            const missionStatus = calculateMissionCompletion(m);
             
             return (
               <motion.div 
@@ -194,7 +233,7 @@ export function SkillWorkspace() {
                 className={`flex flex-col gap-4 p-8 rounded-2xl transition-all duration-700 ${isActive ? 'bg-muted/20 border border-border/40 shadow-sm' : 'border border-transparent'}`}
               >
                 <div className="flex items-start gap-10">
-                  <div className={`size-20 rounded-2xl shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-2xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-2xl shadow-foreground/20' : 'bg-muted border-border text-muted-foreground'}`}>
+                  <div className={`size-20 rounded-2xl shrink-0 flex items-center justify-center relative z-10 border transition-all duration-700 ${isDone ? 'bg-emerald-500 border-emerald-400 text-foreground shadow-2xl shadow-emerald-500/20' : isActive ? 'bg-foreground border-foreground text-background shadow-2xl shadow-foreground/20' : 'bg-muted border-border text-muted-foreground'}`}>
                     {isLocked ? <Lock size={28} /> : isDone ? <CheckCircle2 size={32} /> : <span className="text-2xl font-black">{i + 1}</span>}
                   </div>
                   
@@ -206,6 +245,14 @@ export function SkillWorkspace() {
                       </div>
                       <h4 className="text-4xl md:text-5xl font-black text-foreground uppercase tracking-tighter leading-none">{m.title}</h4>
                       <p className="text-base text-muted-foreground font-medium leading-relaxed max-w-3xl">{m.objective}</p>
+                      
+                      {/* Show progress for locked mission */}
+                      {isLocked && prevMissionStatus && (
+                        <div className="flex items-center gap-2 mt-2 p-2 bg-muted/20 rounded-lg border border-border/20">
+                          <Lock size={12} className="text-muted-foreground/60" />
+                          <span className="text-[9px] text-muted-foreground/70">Complete {prevMissionStatus.totalResources - prevMissionStatus.completedResources} more resource(s) to unlock</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-3">
@@ -216,19 +263,34 @@ export function SkillWorkspace() {
                       >
                         {isActive ? 'Minimize' : isDone ? 'Review' : 'Start'}
                       </Button>
-                      {!isLocked && (
-                        <Button 
-                          onClick={() => handleTakeUnitTest(i)}
-                          disabled={m.isUnitTestCompleted || isSubmittingTest}
-                          className={`h-11 px-6 rounded-lg font-black uppercase tracking-widest text-[9px] border transition-all duration-500 ${m.isUnitTestCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-inner' : 'bg-background border-border text-muted-foreground hover:border-border/80 shadow-sm'}`}
-                        >
-                          {m.isUnitTestCompleted ? 'Passed' : loadingUnitTestIndex === i ? <Loader2 size={16} className="animate-spin" /> : 'Take Quiz'}
-                        </Button>
-                      )}
+                      
+                      {/* ✅ CHANGE 2: Unit test disabled until mission is fully complete */}
+                      <Button 
+                        onClick={() => handleTakeUnitTest(i)}
+                        disabled={!missionStatus.isFullyComplete || m.isUnitTestCompleted || isSubmittingTest}
+                        className={`h-11 px-6 rounded-lg font-black uppercase tracking-widest text-[9px] border transition-all duration-500 ${
+                          !missionStatus.isFullyComplete
+                            ? 'bg-muted/20 border-border/30 text-muted-foreground/50 cursor-not-allowed' 
+                            : m.isUnitTestCompleted 
+                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-inner' 
+                              : 'bg-background border-border text-muted-foreground hover:border-border/80 shadow-sm'
+                        }`}
+                        title={!missionStatus.isFullyComplete ? `Complete all ${missionStatus.totalResources} resources to unlock the quiz` : ''}
+                      >
+                        {!missionStatus.isFullyComplete 
+                          ? `Quiz Locked (${missionStatus.completedResources}/${missionStatus.totalResources})`
+                          : m.isUnitTestCompleted 
+                            ? 'Passed' 
+                            : loadingUnitTestIndex === i 
+                              ? <Loader2 size={16} className="animate-spin" /> 
+                              : 'Take Quiz'
+                        }
+                      </Button>
                     </div>
                   </div>
                 </div>
 
+                {/* Rest of the mission content remains the same */}
                 <AnimatePresence>
                   {isActive && (
                     <motion.div 
@@ -239,6 +301,7 @@ export function SkillWorkspace() {
                     >
                       <div className="h-px w-full bg-border/40" />
                       
+                      {/* Videos section */}
                       <div className="space-y-10">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -252,8 +315,8 @@ export function SkillWorkspace() {
                               <div className="size-28 rounded-xl overflow-hidden bg-muted relative shrink-0 shadow-lg">
                                 <img src={v.thubnail} className="size-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-60 group-hover:opacity-100" />
                                 {v.videolink && (
-                                  <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all">
-                                    <PlayCircle size={28} className="text-white" fill="currentColor" />
+                                  <a href={v.videolink} target="_blank" className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 group-hover:opacity-100 transition-all">
+                                    <PlayCircle size={28} className="text-foreground" fill="currentColor" />
                                   </a>
                                 )}
                               </div>
@@ -271,6 +334,7 @@ export function SkillWorkspace() {
                         </div>
                       </div>
 
+                      {/* Practice questions section - same as before */}
                       <div className="space-y-12 pb-16">
                          <div className="flex items-center gap-3">
                            <Zap size={18} className="text-amber-500" />
@@ -317,7 +381,7 @@ export function SkillWorkspace() {
         </div>
       </section>
 
-      {/* Sector Finalization */}
+      {/* Sector Finalization - same as before */}
       <section className="flex flex-col items-center gap-24 py-48 border-t border-border/40">
         <div className="flex flex-col items-center gap-10 text-center">
           <div className="size-32 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-2xl shadow-emerald-500/10">
@@ -336,7 +400,7 @@ export function SkillWorkspace() {
           </Button>
         </div>
 
-        {/* Neural Graduation Section - Card Background Removed */}
+        {/* Final Exam section - same as before */}
         <div className={`w-full py-20 transition-all duration-1000 ${canLevelUp ? 'text-primary' : 'text-muted-foreground'}`}>
           <div className="flex flex-col xl:flex-row items-center justify-between gap-12">
             <div className="space-y-8 flex-1">
@@ -355,7 +419,7 @@ export function SkillWorkspace() {
             <Link href={canLevelUp ? "/dashboard/learning-path/final/assessment" : "#"}>
               <Button 
                 disabled={!canLevelUp} 
-                className={`rounded-lg h-11 px-10 font-black uppercase tracking-[0.1em] text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-primary text-white hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
+                className={`rounded-lg h-11 px-10 font-black uppercase tracking-widest text-[11px] transition-all duration-700 ${canLevelUp ? 'bg-primary text-foreground hover:scale-105 shadow-2xl' : 'bg-muted/50 border border-border/20 text-muted/20'}`}
               >
                 {canLevelUp ? "Start Final Exam" : "Locked"}
               </Button>

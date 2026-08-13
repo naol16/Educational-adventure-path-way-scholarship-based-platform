@@ -9,7 +9,7 @@ const standardRedisOptions: RedisOptions = {
   password: configs.REDIS_PASSWORD || undefined,
   family: 4, // Enforce IPv4 to avoid IPv6 timeout bugs on Node 18+ with cloud redis
   maxRetriesPerRequest: 0, // Fail fast for standard connections to avoid blocking
-  connectTimeout: 5000,
+  connectTimeout: 10000,
   tls: configs.REDIS_TLS ? { rejectUnauthorized: false } : undefined,
   retryStrategy(times) {
     if (times > 2) {

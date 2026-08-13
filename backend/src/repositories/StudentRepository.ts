@@ -1,4 +1,4 @@
-import { Student } from "../models/Student.js";
+import { Student } from "../models/index.js";
 
 export class StudentRepository {
     static async findByUserId(userId: number): Promise<Student | null> {

@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { getAssessmentResult } from "@/features/assessments/api/assessment-api";
+import Link from "next/link";
 
 interface AssessmentResultViewProps {
   testId: string;
@@ -426,9 +427,11 @@ export function AssessmentResultView({
                   <h4 className="text-2xl font-black uppercase tracking-tight">Ready for Peak?</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed font-medium">Your current trajectory suggests an optimal window for high-stakes preparation. Optimize your learning path now.</p>
                 </div>
-                <Button className="w-full h-14 rounded-lg bg-foreground text-background font-black uppercase tracking-widest text-[9px] hover:bg-foreground/90 transition-all">
-                  Optimize Roadmap
-                </Button>
+                <Link href={`/dashboard/learning-path?exam=${isTOEFL ? 'TOEFL' : 'IELTS'}&level=${band < (isTOEFL ? 60 : 5.0) ? 'easy' : band < (isTOEFL ? 90 : 6.5) ? 'medium' : 'hard'}`} className="block w-full">
+                  <Button className="w-full h-14 rounded-lg bg-foreground text-background font-black uppercase tracking-widest text-[9px] hover:bg-foreground/90 transition-all">
+                    {evaluation.isDiagnostic ? "Enter Mastery Hub" : "Optimize Roadmap"}
+                  </Button>
+                </Link>
               </div>
             </Card>
           </div>

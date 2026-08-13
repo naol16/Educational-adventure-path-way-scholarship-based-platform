@@ -75,12 +75,12 @@ export const CommunityGroups: React.FC = () => {
           <p className="text-sm text-muted-foreground dark:text-[#8eb2c0]">No groups yet. Check back later.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-black/[0.06] bg-white shadow-sm dark:border-white/10 dark:bg-[#17212b]">
+        <div className="overflow-hidden rounded-xl border border-black/60 bg-white shadow-sm dark:border-white/10 dark:bg-[#17212b]">
           {groups.map((group, i) => (
             <div
               key={group.id}
               className={`flex items-stretch gap-3 px-3 py-3 md:gap-4 md:px-4 ${
-                i > 0 ? "border-t border-black/[0.06] dark:border-white/[0.06]" : ""
+                i > 0 ? "border-t border-black/60 dark:border-white/10" : ""
               }`}
             >
               <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#3390ec] text-lg font-semibold text-white shadow-inner dark:bg-[#5288c1]">

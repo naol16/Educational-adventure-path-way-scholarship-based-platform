@@ -4,6 +4,8 @@ import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../errors/AppError.js";
 
 export class ChatController {
+    private static metadataCache = new Map<string, any>();
+
     /**
      * POST /messages - Send a message to a user (starts conversation if doesn't exist)
      */
@@ -31,11 +33,24 @@ export class ChatController {
             conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
         }
 
+        if (!conversation) {
+            throw new AppError("Failed to access or create conversation", 404);
+        }
+
         const message = await ChatService.sendMessage({ 
             conversationId: conversation.id, 
             senderId, 
             content 
         });
+
+        // Emit via Socket for real-time updates
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${conversation.id}`).emit("receive_message", message);
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
 
         res.status(201).json({
             status: "success",
@@ -56,8 +71,12 @@ export class ChatController {
 
         const conversation = await ChatService.getOrCreateConversation(senderId, Number(receiverId));
         
+        if (!conversation) {
+            throw new AppError("Failed to start conversation", 500);
+        }
+
         // Fetch the conversation with participants to be consistent with getConversations
-        const fullConversation = await ChatService.getConversations(senderId).then(convs => convs.find(c => c.id === conversation.id));
+        const fullConversation = await ChatService.getConversations(senderId).then(convs => convs.data.find(c => c.id === conversation.id));
 
         res.status(200).json({
             status: "success",
@@ -70,11 +89,20 @@ export class ChatController {
      */
     static getConversations = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user.id;
-        const conversations = await ChatService.getConversations(userId);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+
+        const { data, total, hasMore } = await ChatService.getConversations(userId, page, limit);
 
         res.status(200).json({
             status: "success",
-            data: conversations
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                hasMore
+            }
         });
     });
 
@@ -128,6 +156,19 @@ export class ChatController {
         const userId = (req as any).user.id;
 
         await ChatService.markAsRead(Number(conversationId), userId);
+
+        // Emit via Socket
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${conversationId}`).emit("messages_read", {
+                conversationId: Number(conversationId),
+                readerId: userId,
+                readAt: new Date()
+            });
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
 
         res.status(200).json({
             status: "success",
@@ -192,6 +233,109 @@ export class ChatController {
         } catch (error: any) {
             console.error("[ChatController] Upload failed:", error);
             throw new AppError(error.message || "File upload failed", 500);
+        }
+    });
+
+    /**
+     * GET /url-metadata - Scrape webpage OpenGraph metadata for rich preview cards
+     */
+    static getUrlMetadata = catchAsync(async (req: Request, res: Response) => {
+        const { url } = req.query;
+        if (!url || typeof url !== "string") {
+            throw new AppError("Invalid URL query parameter", 400);
+        }
+
+        // Check cache first
+        if (ChatController.metadataCache.has(url)) {
+            return res.status(200).json({
+                status: "success",
+                data: ChatController.metadataCache.get(url)
+            });
+        }
+
+        try {
+            const axiosInstance = (await import("axios")).default;
+            const cheerio = await import("cheerio");
+
+            const response = await axiosInstance.get(url, {
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                },
+                timeout: 4000
+            });
+
+            const html = response.data;
+            const $ = cheerio.load(html);
+
+            const title = $('meta[property="og:title"]').attr("content") ||
+                          $('meta[name="twitter:title"]').attr("content") ||
+                          $("title").text() || "";
+
+            const description = $('meta[property="og:description"]').attr("content") ||
+                                $('meta[name="twitter:description"]').attr("content") ||
+                                $('meta[name="description"]').attr("content") || "";
+
+            let image = $('meta[property="og:image"]').attr("content") ||
+                        $('meta[name="twitter:image"]').attr("content") || "";
+
+            // Resolve relative image URLs
+            if (image && !image.startsWith("http")) {
+                const origin = new URL(url).origin;
+                image = new URL(image, origin).href;
+            }
+
+            const siteName = $('meta[property="og:site_name"]').attr("content") || "";
+
+            // Try fetching favicon
+            let favicon = $('link[rel="icon"]').attr("href") || 
+                          $('link[rel="shortcut icon"]').attr("href") || 
+                          $('link[rel="apple-touch-icon"]').attr("href") || "/favicon.ico";
+
+            if (favicon && !favicon.startsWith("http")) {
+                const origin = new URL(url).origin;
+                favicon = new URL(favicon, origin).href;
+            }
+
+            const parsedUrl = new URL(url);
+            const domain = parsedUrl.hostname;
+
+            const metadata = {
+                title: title.trim(),
+                description: description.trim(),
+                image,
+                siteName: siteName.trim(),
+                favicon,
+                domain,
+                url
+            };
+
+            ChatController.metadataCache.set(url, metadata);
+
+            res.status(200).json({
+                status: "success",
+                data: metadata
+            });
+        } catch (err: any) {
+            console.error(`[LinkPreview] Failed to parse metadata for ${url}:`, err.message);
+            try {
+                const parsedUrl = new URL(url);
+                const fallbackMetadata = {
+                    title: parsedUrl.hostname,
+                    description: "",
+                    image: "",
+                    siteName: "",
+                    favicon: `${parsedUrl.origin}/favicon.ico`,
+                    domain: parsedUrl.hostname,
+                    url
+                };
+                res.status(200).json({
+                    status: "success",
+                    data: fallbackMetadata
+                });
+            } catch (e) {
+                throw new AppError("Failed to parse URL", 400);
+            }
         }
     });
 
@@ -264,6 +408,19 @@ export class ChatController {
 
         const message = await ChatService.editMessage(Number(messageId), userId, content);
 
+        // Emit via Socket
+        try {
+            const { SocketService } = await import("../services/SocketService.js");
+            const io = SocketService.getIO();
+            io.to(`conversation_${message.conversationId}`).emit("message_edited", {
+                messageId: Number(messageId),
+                conversationId: message.conversationId,
+                content: content
+            });
+        } catch (err) {
+            console.error("[ChatController] Socket emission failed:", err);
+        }
+
         res.status(200).json({
             status: "success",
             data: message
@@ -276,8 +433,27 @@ export class ChatController {
     static deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
         const userId = (req as any).user.id;
+        console.log(`[ChatController] Deleting message: ${messageId} by user: ${userId}`);
+        
+        // Find the message first to get its conversationId for socket emission
+        const msg = await (await import("../models/ChatMessage.js")).ChatMessage.findByPk(Number(messageId));
+        const conversationId = msg?.conversationId;
 
         await ChatService.deleteMessage(Number(messageId), userId);
+
+        // Emit via Socket
+        if (conversationId) {
+            try {
+                const { SocketService } = await import("../services/SocketService.js");
+                const io = SocketService.getIO();
+                io.to(`conversation_${conversationId}`).emit("message_deleted", {
+                    messageId: Number(messageId),
+                    conversationId: conversationId
+                });
+            } catch (err) {
+                console.error("[ChatController] Socket emission failed:", err);
+            }
+        }
 
         res.status(200).json({
             status: "success",

@@ -268,7 +268,7 @@ export class EmailService {
             </div>
           </div>
           <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 12px; color: #64748b;">
-            This email was sent via the Admas Platform contact form.
+            This email was sent via the Path Finder Platform contact form.
           </div>
         </div>
       `,

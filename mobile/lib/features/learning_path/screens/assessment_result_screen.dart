@@ -7,6 +7,7 @@ import 'package:mobile/features/core/widgets/primary_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/learning_path/providers/learning_path_provider.dart';
 import 'package:mobile/features/learning_path/providers/assessment_provider.dart';
+import 'package:mobile/core/providers/navigation_provider.dart';
 
 import 'package:mobile/features/learning_path/screens/pathfinder_loading_screen.dart';
 
@@ -90,7 +91,8 @@ class AssessmentResultScreen extends ConsumerWidget {
                     onPressed: () {
                       ref.read(learningPathProvider.notifier).reload();
                       ref.read(assessmentProvider.notifier).reset();
-                      Navigator.pop(context);
+                      ref.read(navigationIndexProvider.notifier).state = 1;
+                      Navigator.popUntil(context, (route) => route.isFirst);
                     },
                   ),
                 ],

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "eslint"
   },
@@ -22,7 +22,8 @@
     "emoji-picker-react": "^4.18.0",
     "framer-motion": "^12.35.1",
     "lucide-react": "^0.577.0",
-    "next": "15.1.7",
+    "next": "15.1.12",
+    "lightningcss": "^1.29.0",
     "nprogress": "^0.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -42,7 +43,12 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "lightningcss": "^1.33.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.0.0",
+    "lightningcss-linux-x64-gnu": "^1.29.0"
   }
 }

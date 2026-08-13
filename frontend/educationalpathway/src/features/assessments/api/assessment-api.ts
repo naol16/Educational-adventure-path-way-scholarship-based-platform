@@ -21,10 +21,18 @@ export interface StandardExamReport {
 export interface AssessmentOptions {
   examType: string;
   difficulty: string;
+  isDiagnostic?: boolean;
+  /** Pass true to bypass the 100% learning-path completion gate (mirrors mobile behaviour). */
+  force?: boolean;
 }
 
 export const generateAssessment = async (options: AssessmentOptions) => {
-  const response = await api.post('/assessment/generate', options);
+  const response = await api.post('/assessment/generate', {
+    examType: options.examType,
+    difficulty: options.difficulty,
+    isDiagnostic: options.isDiagnostic ?? false,
+    force: options.force ?? false,
+  });
   return response.data;
 };
 

@@ -137,3 +137,17 @@ export const reviewAndConfirmBooking = async (bookingId: number, payload: { rati
   return response.data;
 };
 
+export const deleteCounselorSlot = async (id: number) => {
+  const response = await api.delete(`/counselors/slots/${id}`);
+  return response.data;
+};
+
+export const updateCounselorSlot = async (id: number, payload: any) => {
+  const response = await api.put(`/counselors/slots/${id}`, payload);
+  return response.data;
+};
+
+export const joinSession = async (bookingId: number) => {
+  const response = await api.post(`/counselors/bookings/${bookingId}/join`);
+  return response.data;
+};

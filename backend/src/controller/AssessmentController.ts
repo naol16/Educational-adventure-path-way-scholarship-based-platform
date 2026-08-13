@@ -46,14 +46,9 @@ export class AssessmentController {
           
           if (!path) {
             isDiagnostic = true;
-          } else if (path.currentProgressPercentage !== null && path.currentProgressPercentage < 100 && !req.body?.force) {
-            res.status(403).json({
-              error: "Learning path completion required.",
-              message: "You must complete 100% of your learning path before generating a mock exam.",
-              currentProgress: path.currentProgressPercentage
-            });
-            return;
           }
+          // The gate for learning path completion has been removed to allow retakes (mock exams)
+          // at any time, just like the mobile app.
         }
       }
 
@@ -208,20 +203,38 @@ export class AssessmentController {
   static async getProgress(req: Request, res: Response, next: NextFunction) {
     try {
       const examType = req.query.examType as string | undefined;
-      const student = await StudentRepository.findByUserId(req.user!.id);
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        console.error("[AssessmentController] No user ID found in request");
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      console.log(`[AssessmentController] Fetching progress for UserID: ${userId}, ExamType: ${examType}`);
+      
+      const student = await StudentRepository.findByUserId(userId);
       if (!student) {
+        console.warn(`[AssessmentController] Student profile not found for UserID: ${userId}`);
         res.status(404).json({ error: "Student profile not found" });
         return;
       }
+
+      console.log(`[AssessmentController] Found StudentID: ${student.id}. Fetching assessment progress...`);
+      
       const progress = await AssessmentService.getStudentProgress(
         student.id as number,
         examType,
       );
+      
+      console.log(`[AssessmentController] Successfully fetched ${progress?.length || 0} progress items for StudentID: ${student.id}`);
+      
       res.json({
         status: "success",
-        data: progress,
+        data: progress || [],
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("[AssessmentController] Error in getProgress:", error);
       next(error);
     }
   }

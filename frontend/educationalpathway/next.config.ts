@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+    ],
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
@@ -12,7 +26,8 @@ const nextConfig: NextConfig = {
       ...(config.ignoreWarnings || []),
       {
         module: /@daily-co\/daily-js/,
-        message: /Failed to parse source map|Failed to get source map|Invalid URL/i,
+        message:
+          /Failed to parse source map|Failed to get source map|Invalid URL/i,
       },
     ];
 

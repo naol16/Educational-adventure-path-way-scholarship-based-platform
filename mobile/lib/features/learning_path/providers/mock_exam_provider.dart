@@ -238,15 +238,10 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
   Future<void> generateExam() async {
     state = state.copyWith(isGenerating: true, clearError: true, clearLearningPathError: true);
     try {
-      final blueprint = await _api.generate(examType: state.examType, difficulty: state.difficulty);
+      final blueprint = await _api.generateMockExam(examType: state.examType, difficulty: state.difficulty);
       state = state.copyWith(isGenerating: false, blueprint: blueprint, view: MockExamView.overview);
     } catch (e) {
-      final msg = e.toString();
-      if (msg.contains('403') || msg.contains('learning path')) {
-        state = state.copyWith(isGenerating: false, learningPathError: "Complete 100% of your learning path to unlock.");
-      } else {
-        state = state.copyWith(isGenerating: false, error: "Failed to generate exam.");
-      }
+      state = state.copyWith(isGenerating: false, error: "Failed to generate assessment. Please try again.");
     }
   }
 
@@ -395,14 +390,14 @@ class MockExamNotifier extends StateNotifier<MockExamState> {
       };
       
       // 1. Initial Submission
-      final initialResponse = await _api.submit(testId: state.blueprint!.testId, responses: responses);
-      final testId = initialResponse['testId'] ?? state.blueprint!.testId;
+      final initialResponse = await _api.submitMockExam(testId: state.blueprint!.testId, responses: responses);
+      final testId = initialResponse['data']?['examId'] ?? state.blueprint!.testId;
       
       // 2. Poll for results (Max 30 attempts = 150 seconds)
       int attempts = 0;
       while (attempts < 30) {
         attempts++;
-        final poll = await _api.getResult(testId);
+        final poll = await _api.getMockExamResult(testId);
         final status = poll['status'];
 
         if (status == 'success') {

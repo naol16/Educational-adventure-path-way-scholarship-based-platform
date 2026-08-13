@@ -580,7 +580,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          color: DesignSystem.surface(context),
+          color: DesignSystem.overlayBackground(context),
           elevation: 8,
           offset: const Offset(0, 48),
           onSelected: (value) {
@@ -740,7 +740,8 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DesignSystem.surface(ctx),
+        backgroundColor: DesignSystem.overlayBackground(ctx),
+        elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -775,7 +776,7 @@ class _MasteryHubScreenState extends ConsumerState<MasteryHubScreen> with Ticker
             ),
             onPressed: () async {
               try {
-                await ref.read(assessmentApiServiceProvider).reset();
+                await ref.read(assessmentApiServiceProvider).reset(examType: activeExam);
                 ref.invalidate(learningPathProvider);
 
                 if (ctx.mounted) {

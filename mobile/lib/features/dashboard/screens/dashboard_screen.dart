@@ -120,7 +120,7 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
                         const SizedBox(height: 25),
-                        _buildSectionHeader(context, ref, "Expert Mentors"),
+                        _buildSectionHeader(context, ref, "Expert Counselors"),
                         _buildMentorsRow(context),
                         const SizedBox(height: 100), // Space for bottom nav
                       ],
@@ -732,7 +732,7 @@ class DashboardScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final counselor = recommendations[index];
                   final name = counselor['name'] ?? 'Unknown';
-                  final avatarUrl = counselor['avatarUrl'];
+                  final avatarUrl = counselor['profileImageUrl'] ?? counselor['user']?['avatarUrl'] ?? counselor['avatarUrl'];
                   return _buildMentorItem(context, name, avatarUrl);
                 },
               );
@@ -765,8 +765,10 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: DesignSystem.surface(context),
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+            backgroundColor: DesignSystem.primary(context).withValues(alpha: 0.1),
+            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty 
+                ? NetworkImage(avatarUrl) 
+                : NetworkImage('https://api.dicebear.com/7.x/avataaars/png?seed=${name.replaceAll(' ', '')}') as ImageProvider,
           ),
           const SizedBox(height: 8),
           Text(

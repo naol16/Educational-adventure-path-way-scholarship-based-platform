@@ -82,7 +82,7 @@ export const CounselorReviews = ({ counselorId }: CounselorReviewsProps) => {
   return (
     <div className="space-y-10">
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-card border border-border p-8 rounded-3xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-card p-8 rounded-3xl">
         <div className="text-center md:text-left space-y-2">
           <div className="text-5xl font-black text-foreground">{averageRating.toFixed(1)}</div>
           <div className="flex items-center justify-center md:justify-start gap-1">
@@ -123,7 +123,7 @@ export const CounselorReviews = ({ counselorId }: CounselorReviewsProps) => {
         <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Recent Feedback</h3>
         <div className="grid grid-cols-1 gap-4">
           {reviews.map((review) => (
-            <div key={review.id} className="bg-muted/30 border border-border p-6 rounded-2xl space-y-4">
+            <div key={review.id} className="bg-muted/30 p-6 rounded-2xl space-y-4">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">

@@ -501,6 +501,28 @@ export class AssessmentService {
 
     if (!blueprint) throw new Error("Assessment not found or expired.");
 
+    // 🔑 KEY FIX: Clear old learning path for this exam type before storing new assessment
+    // This ensures retakes generate a fresh path based on new results
+    try {
+      const examType = blueprint.data?.exam_summary?.type || 'IELTS';
+      
+      // Delete old path and progress for this exam type
+      const { LearningPath } = await import("../models/LearningPath.js");
+      const { LearningPathProgress } = await import("../models/LearningPathProgress.js");
+      
+      await LearningPathProgress.destroy({ 
+        where: { studentId, examType } 
+      });
+      await LearningPath.destroy({ 
+        where: { studentId, examType } 
+      });
+      
+      console.log(`[AssessmentService] 🧹 Cleared old ${examType} path for student ${studentId}`);
+    } catch (err) {
+      console.error(`[AssessmentService] ⚠️ Failed to clear old path:`, err);
+      // Don't fail the submission if cleanup fails
+    }
+
     if (isRedisAvailable()) {
       const job = await assessmentQueue.add(
         "assessment-queue",
@@ -1301,7 +1323,7 @@ private static async evaluateSingleSkill(
       "You are a strict JSON generator. Return ONLY one valid JSON object. NO markdown fences, NO preamble.",
     );
 
-    const groqChain = groq70b.pipe(new StringOutputParser());
+    const groqChain = groq8b.pipe(new StringOutputParser());
     let response: string;
     try {
       console.log(

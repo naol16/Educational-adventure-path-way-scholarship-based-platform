@@ -43,7 +43,7 @@ class _MockExamOverviewState extends ConsumerState<MockExamOverview> {
             const SizedBox(height: 40),
             _buildTestTypeSelector(state, notifier, accent),
             const SizedBox(height: 24),
-            _buildCandidateForm(accent),
+            _buildCandidateForm(state, accent),
             const SizedBox(height: 32),
             _buildRulesAccordion(accent),
             const SizedBox(height: 32),
@@ -108,7 +108,7 @@ class _MockExamOverviewState extends ConsumerState<MockExamOverview> {
     );
   }
 
-  Widget _buildCandidateForm(Color accent) {
+  Widget _buildCandidateForm(MockExamState state, Color accent) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -129,7 +129,7 @@ class _MockExamOverviewState extends ConsumerState<MockExamOverview> {
               _InputField(
                 controller: _idController,
                 label: "Candidate ID",
-                hint: "e.g. TOEFL-882901",
+                hint: "e.g. ${state.examType}-882901",
                 icon: LucideIcons.contact,
                 accent: accent,
               ),

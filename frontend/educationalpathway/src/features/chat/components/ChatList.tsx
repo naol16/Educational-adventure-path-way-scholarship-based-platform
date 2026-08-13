@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Conversation } from "../types";
 import { isToday, isYesterday, format } from "date-fns";
-import { Search, Plus, Users, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { Search, Plus, Users, Loader2, MessageSquareDashed } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  getConversationLastMessage, 
-  getDirectChatPeer, 
-  getConversationMembers 
+import {
+  getConversationLastMessage,
+  getDirectChatPeer,
+  getConversationMembers
 } from "../conversation-utils";
 
 interface ChatListProps {
@@ -19,8 +18,11 @@ interface ChatListProps {
   currentUserId: number;
   currentUserRole?: string;
   onNewChat?: () => void;
-  onBookSession?: (userId: number) => void;
   onlineUsers?: Set<number>;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  initialLoading?: boolean;
 }
 
 export const ChatList = ({
@@ -28,21 +30,57 @@ export const ChatList = ({
   activeConversationId,
   onSelect,
   currentUserId,
+  currentUserRole,
   onNewChat,
   onlineUsers,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+  initialLoading = false,
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "direct" | "groups">("all");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const filteredConversations = conversations.filter((conv) => {
-    const isGroup = !!conv.isGroup;
-    if (activeTab === "direct" && isGroup) return false;
-    if (activeTab === "groups" && !isGroup) return false;
+  // IntersectionObserver: fires onLoadMore when sentinel enters viewport
+  useEffect(() => {
+    if (!sentinelRef.current || !onLoadMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, onLoadMore, initialLoading]);
 
-    const otherUser = getDirectChatPeer(conv, currentUserId);
-    const title = isGroup ? conv.name || "Group" : otherUser?.name || "Chat";
-    return title.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((conv) => {
+      const isGroup = !!conv.isGroup;
+      if (activeTab === "direct") {
+        if (isGroup) return false;
+        const isCounselor = currentUserRole?.toLowerCase() === "counselor";
+        if (isCounselor && !(conv as any).isStudentChat) return false;
+        if (!isCounselor && !(conv as any).isCounselorChat) return false;
+      }
+      if (activeTab === "groups" && !isGroup) return false;
+
+      const otherUser = getDirectChatPeer(conv, currentUserId);
+      const title = isGroup ? conv.name || "Group" : otherUser?.name || "Chat";
+      return title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [conversations, activeTab, currentUserRole, currentUserId, searchQuery]);
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "";
+    if (isToday(date)) return format(date, "HH:mm");
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "d.MM.yy");
+  };
 
   const renderConversation = (conv: Conversation, index: number) => {
     const isGroup = !!conv.isGroup;
@@ -54,21 +92,13 @@ export const ChatList = ({
     const chatTitle = isGroup ? conv.name || "Group" : otherUser?.name || "Chat";
     const peerOnline = !isGroup && otherUser && onlineUsers?.has(otherUser.id);
 
-    const formatTime = (dateStr: string) => {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return "";
-      if (isToday(date)) return format(date, "HH:mm");
-      if (isYesterday(date)) return "Yesterday";
-      return format(date, "d.MM.yy");
-    };
-
     return (
       <motion.button
         type="button"
         key={conv.id}
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.02 }}
+        transition={{ delay: Math.min(index * 0.02, 0.3) }}
         onClick={() => onSelect(conv)}
         className={`mx-2 mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
           isActive
@@ -101,6 +131,7 @@ export const ChatList = ({
             </span>
           )}
         </div>
+
         <div className="min-w-0 flex-1 py-0.5">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate text-[15px] font-semibold text-foreground">{chatTitle}</span>
@@ -141,8 +172,24 @@ export const ChatList = ({
     );
   };
 
+  // Skeleton loader for initial load
+  const renderSkeleton = () => (
+    <div className="flex flex-col gap-1 px-2 py-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2.5 animate-pulse">
+          <div className="h-[52px] w-[52px] shrink-0 rounded-full bg-muted" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 w-3/5 rounded-full bg-muted" />
+            <div className="h-3 w-4/5 rounded-full bg-muted/70" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-full flex-col bg-background">
+      {/* Sticky Header */}
       <div className="sticky top-0 z-10 shrink-0 border-b border-border bg-background/95 px-3 pb-2 pt-3 backdrop-blur-md">
         <div className="mb-3 flex items-center justify-between gap-3 px-1">
           <div className="relative flex-1">
@@ -178,15 +225,24 @@ export const ChatList = ({
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {tab === "all" ? "All" : tab === "direct" ? "Personal" : "Groups"}
+              {tab === "all"
+                ? "All"
+                : tab === "direct"
+                ? currentUserRole?.toLowerCase() === "student"
+                  ? "Counselors"
+                  : "Students"
+                : "Groups"}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Scrollable list */}
       <div className="custom-scrollbar flex-1 overflow-y-auto">
         <AnimatePresence mode="popLayout">
-          {filteredConversations.length === 0 ? (
+          {initialLoading ? (
+            renderSkeleton()
+          ) : filteredConversations.length === 0 ? (
             <motion.div
               key="empty"
               initial={{ opacity: 0 }}
@@ -196,29 +252,37 @@ export const ChatList = ({
             >
               <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-1">
-                  <Users className="text-muted-foreground opacity-40" size={24} />
+                  <MessageSquareDashed className="text-muted-foreground opacity-40" size={24} />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {searchQuery ? "No chats match your search." : 
-                     activeTab === 'groups' ? "You haven't joined any groups yet." : 
-                     "No active conversations yet."}
-                  </p>
-                  {activeTab === 'groups' && !searchQuery && (
-                    <Link 
-                      href="/dashboard/student/community"
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-                    >
-                      Discover Communities
-                      <ChevronRight size={16} />
-                    </Link>
-                  )}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? "No chats match your search."
+                    : activeTab === "groups"
+                    ? "You haven't joined any groups yet."
+                    : "No active conversations yet."}
+                </p>
               </div>
             </motion.div>
           ) : (
-            <div className="flex flex-col bg-background">
+            <div className="flex flex-col bg-background pb-2">
               {filteredConversations.map((conv, idx) => renderConversation(conv, idx))}
+
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-4 w-full" />
+
+              {/* Loading more spinner */}
+              {isLoadingMore && (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )}
+
+              {/* No more chats indicator */}
+              {!hasMore && conversations.length > 0 && !searchQuery && (
+                <p className="py-3 text-center text-[11px] text-muted-foreground/50 font-medium uppercase tracking-widest">
+                  All chats loaded
+                </p>
+              )}
             </div>
           )}
         </AnimatePresence>
@@ -226,3 +290,4 @@ export const ChatList = ({
     </div>
   );
 };
+

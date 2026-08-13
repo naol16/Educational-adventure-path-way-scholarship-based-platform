@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS counselors (
     areas_of_expertise TEXT,
     hourly_rate DECIMAL(10, 2),
     years_of_experience INTEGER,
-    verification_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
     is_active BOOLEAN NOT NULL DEFAULT true,
     rating DECIMAL(3, 2) DEFAULT 0,
     total_sessions INTEGER DEFAULT 0,

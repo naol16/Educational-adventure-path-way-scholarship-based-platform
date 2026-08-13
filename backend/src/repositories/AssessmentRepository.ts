@@ -1,4 +1,4 @@
-import { AssessmentResult } from "../models/AssessmentResult.js";
+import { AssessmentResult } from "../models/index.js";
 import { WhereOptions } from "sequelize";
 
 export class AssessmentRepository {

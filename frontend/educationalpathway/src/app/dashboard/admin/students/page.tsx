@@ -1,6 +1,6 @@
-import { StudentManagement } from '@/features/admin/components/StudentManagement';
+import { Students } from '@/features/admin/components/Students';
 
 export default function AdminStudentsPage() {
-  return <StudentManagement />;
+  return <Students />;
 }
 

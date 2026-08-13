@@ -15,18 +15,15 @@ const app: Application = express();
 
 // 1. CORS MUST BE FIRST to ensure all responses (including errors/rate-limits) have headers
 const allowedOrigins = [
+  configs.FRONTEND_URL,
+  configs.PRODUCTION_URL,
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
-  "http://localhost:3001",
   "http://127.0.0.1:3001",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "http://localhost:4000",
-  "http://127.0.0.1:4000",
-  "http://localhost:5000",
-  "http://127.0.0.1:5000",
-];
+].filter((origin): origin is string => !!origin);
 
 // Add configured URLs
 if (configs.PRODUCTION_URL) {
@@ -41,7 +38,13 @@ if (configs.BACKEND_URL && configs.BACKEND_URL !== configs.SERVER_URL) {
 
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, server-to-server, curl)
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -84,8 +87,7 @@ app.use(cookieParser());
 app.use(
   expressupload({
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
+    useTempFiles: false,
     createParentPath: true,
     parseNested: true,
   }),
@@ -113,7 +115,18 @@ app.use("/api/marketing", routes.marketingRouter);
 app.use("/api/groups", routes.chatGroupRouter);
 app.use("/api/moderation", routes.moderationRouter);
 app.use("/api/ai-chat", routes.aiChatRouter);
+app.use("/api/mock-exam", routes.mockExamRouter);
 app.use("/api/debug", debugRoutes);
+
+// Root Welcome Route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Educational Adventure Pathway API is running.",
+    version: "1.0.0",
+  });
+});
+
 // Health Check
 app.get("/health", (req, res) => {
   res.status(200).send("OK");

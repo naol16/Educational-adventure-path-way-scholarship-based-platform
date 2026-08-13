@@ -5,9 +5,12 @@ export const getNotifications = async (): Promise<Notification[]> => {
   try {
     const response = await api.get("/notifications");
     // Handle different response structures if necessary
-    return response.data.data || response.data || [];
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
+    return response.data?.data || response.data || [];
+  } catch (error: any) {
+    // Suppress network errors during background polling to prevent console spam
+    if (error?.message !== 'Network Error') {
+      console.error("Error fetching notifications:", error);
+    }
     // Return empty array on error to prevent app crash
     return [];
   }

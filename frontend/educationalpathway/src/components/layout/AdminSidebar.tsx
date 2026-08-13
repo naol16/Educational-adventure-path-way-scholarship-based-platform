@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
+  User as UserIcon,
   Settings, 
   ShieldAlert, 
   BarChart3, 
@@ -19,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquare,
+  GraduationCap,
   Menu,
   X
 } from 'lucide-react';
@@ -36,7 +38,9 @@ const menuItems = [
   {
     group: "MANAGEMENT",
     items: [
-      { name: 'Users', icon: ShieldAlert, href: '/dashboard/admin/users' },
+      { name: 'Students', icon: GraduationCap, href: '/dashboard/admin/students' },
+      { name: 'Counselors', icon: ShieldCheck, href: '/dashboard/admin/counselors' },
+      { name: 'Approval Queue', icon: UserIcon, href: '/dashboard/admin/counselors/approvals' },
       { name: 'Chat Groups', icon: MessageSquare, href: '/dashboard/admin/groups' },
     ]
   },
@@ -44,13 +48,11 @@ const menuItems = [
     group: "FINANCIAL",
     items: [
       { name: 'Payouts', icon: Banknote, href: '/dashboard/admin/payouts' },
-      { name: 'Payments', icon: TrendingUp, href: '/dashboard/admin/transactions' },
     ]
   },
   {
     group: "PLATFORM",
     items: [
-      { name: 'Logs', icon: Database, href: '/dashboard/admin/logs' },
       { name: 'Settings', icon: Settings, href: '/dashboard/admin/settings' },
     ]
   }
@@ -97,14 +99,10 @@ export const AdminSidebar = () => {
       </div>
 
       {/* Navigation Groups */}
-      <div className="flex-1 p-3 space-y-8 overflow-y-auto scrollbar-hide">
+      <div className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
         {menuItems.map((group, idx) => (
-          <div key={idx} className="space-y-2">
-            {(!collapsed || mobile) && (
-              <p className="px-4 text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.25em]">
-                {group.group}
-              </p>
-            )}
+          <div key={idx}>
+            {/* Group section labels removed intentionally */}
             <nav className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
@@ -112,7 +110,10 @@ export const AdminSidebar = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => mobile && setMobileOpen(false)}
+                    onClick={() => {
+                      if (mobile) setMobileOpen(false);
+                      window.dispatchEvent(new CustomEvent('admin-nav-click', { detail: { href: item.href } }));
+                    }}
                     title={collapsed && !mobile ? item.name : ""}
                     className={cn(
                       "group flex items-center px-4 py-3 rounded-xl transition-all duration-300",
@@ -189,12 +190,6 @@ export const AdminSidebar = () => {
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase group-hover:scale-110 transition-transform shrink-0">
                   {user?.name?.charAt(0) || 'A'}
                 </div>
-                {(!collapsed || mobile) && (
-                  <div className="min-w-0 text-left">
-                    <p className="text-[10px] font-black text-foreground truncate uppercase">{user?.name || 'Admin User'}</p>
-                    <p className="text-[8px] font-bold text-muted-foreground truncate uppercase opacity-50">Administrator</p>
-                  </div>
-                )}
             </div>
             {(!collapsed || mobile) && (
               <ChevronDown size={14} className={cn("text-muted-foreground transition-transform", showDropdown && "rotate-180")} />

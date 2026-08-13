@@ -5,8 +5,8 @@ import { Counselor } from "../models/Counselor.js";
 import { CreateUserDto, UpdateUserDto, UserRole } from "../types/userTypes.js";
 
 export class UserRepository {
-    static async create(userData: CreateUserDto): Promise<User> {
-        const { name, email, password, googleId, role = UserRole.STUDENT, isVerified = false } = userData;
+    static async create(userData: CreateUserDto & { isActive?: boolean; isVerified?: boolean }): Promise<User> {
+        const { name, email, password, googleId, role = UserRole.STUDENT, isVerified = true, isActive = true } = userData;
         const user = await User.create({
             name,
             email,
@@ -14,19 +14,21 @@ export class UserRepository {
             googleId,
             role,
             isVerified,
+            isActive,
         });
         return user;
     }
 
     static async createIfNotExists(
-        userData: CreateUserDto & { is_active?: boolean },
+        userData: CreateUserDto & { isActive?: boolean; isVerified?: boolean },
     ): Promise<void> {
         const {
             name,
             email,
             password,
             role = UserRole.STUDENT,
-            is_active = true,
+            isActive = true,
+            isVerified = true,
         } = userData;
 
         await User.findOrCreate({
@@ -35,7 +37,8 @@ export class UserRepository {
                 name,
                 password,
                 role,
-                isActive: is_active,
+                isActive,
+                isVerified,
             } as any
         });
     }
@@ -115,6 +118,10 @@ export class UserRepository {
             where: { role },
             limit,
             offset,
+            include: [
+                { model: Student, as: 'student' },
+                { model: Counselor, as: 'counselor' }
+            ],
             order: [['createdAt', 'DESC']]
         });
     }

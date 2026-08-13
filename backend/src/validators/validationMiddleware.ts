@@ -4,38 +4,40 @@ import { UserRole } from '../types/userTypes.js';
 
 // Shared validation constants
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-const PASSWORD_MESSAGE = 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character';
+const PASSWORD_MESSAGE = 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g., @, $, !, %, *, ?, &) for security.';
+const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
+const PHONE_MESSAGE = 'Please enter a valid phone number including country code (e.g., +2519XXXXXXXX).';
 const VALID_ROLES = Object.values(UserRole) as string[];
 
 export const validate = (validations: any[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    console.log(`[validate] middleware executing for path: ${req.path}`);
-    console.log('[validate] starting validation run...');
     try {
-      // Run each validation sequentially to isolate any that might hang
       for (let i = 0; i < validations.length; i++) {
-        const validation = validations[i];
-        console.log(`[validate] running validation #${i + 1}:`, validation.name || 'anonymous');
-        await validation.run(req);
-        console.log(`[validate] validation #${i + 1} completed`);
+        await validations[i].run(req);
       }
-      console.log('[validate] all validations completed');
     } catch (error) {
-      console.error('[validate] error in validation run:', error);
-      return res.status(500).json({ success: false, error: 'Validation error' });
+      return res.status(500).json({ 
+        success: false, 
+        error: 'A system error occurred during validation. Please try again later.' 
+      });
     }
 
     const errors = validationResult(req);
     if (errors.isEmpty()) {
-      console.log('[validate] validation passed, calling next()');
       return next();
     }
 
-    console.log('[validate] validation failed, sending 400');
-    console.log('[validate] validation errors:', JSON.stringify(errors.array(), null, 2));
+    // Format errors to be more user-friendly
+    const formattedErrors = errors.array().map(err => ({
+      field: (err as any).path,
+      message: err.msg,
+      suggestion: 'Please review this field and try again.'
+    }));
+
     res.status(400).json({
       success: false,
-      errors: errors.array()
+      message: 'Some information you provided is incorrect. Please fix the errors highlighted below.',
+      errors: formattedErrors
     });
   };
 };
@@ -44,59 +46,58 @@ export const validate = (validations: any[]) => {
 export const registerValidation = [
   body('name')
     .trim()
-    .notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+    .notEmpty().withMessage('Full Name is required. Please enter your legal name as it appears on your documents.')
+    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters long.'),
 
   body('email')
     .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email address')
+    .notEmpty().withMessage('Email address is required to create your account.')
+    .isEmail().withMessage('Please enter a valid email address (e.g., user@example.com).')
     .normalizeEmail(),
 
   body('password')
-    .notEmpty().withMessage('Password is required')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .notEmpty().withMessage('A secure password is required for your account.')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long.')
     .matches(PASSWORD_REGEX)
     .withMessage(PASSWORD_MESSAGE),
 
   body('role')
     .optional()
-    .isIn(VALID_ROLES).withMessage(`Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`)
+    .isIn(VALID_ROLES).withMessage(`Please select a valid role. Allowed roles are: ${VALID_ROLES.join(', ')}.`)
 ];
 
 export const loginValidation = [
   body('email')
     .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email address'),
+    .notEmpty().withMessage('Please enter your registered email address.')
+    .isEmail().withMessage('The email address format is invalid. Please use a format like user@example.com.'),
 
   body('password')
-    .notEmpty().withMessage('Password is required')
+    .notEmpty().withMessage('Please enter your account password.')
 ];
 
 export const forgotPasswordValidation = [
   body('email')
     .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email address')
+    .notEmpty().withMessage('Please enter the email address associated with your account.')
+    .isEmail().withMessage('Please enter a valid email address to receive the reset link.')
 ];
 
 export const resetPasswordValidation = [
   body('token')
-    .notEmpty().withMessage('Token is required'),
+    .notEmpty().withMessage('A valid password reset token is required. If your link has expired, please request a new one.'),
 
   body('newPassword')
-    .notEmpty().withMessage('New password is required')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .notEmpty().withMessage('Please enter a new, secure password.')
+    .isLength({ min: 8 }).withMessage('Your new password must be at least 8 characters long.')
     .matches(PASSWORD_REGEX)
     .withMessage(PASSWORD_MESSAGE),
 
   body('confirmPassword')
-    .notEmpty().withMessage('Confirm password is required')
+    .notEmpty().withMessage('Please re-enter your new password to confirm.')
     .custom((value, { req }) => {
-      console.log('[resetPasswordValidation] checking password match');
       if (req.body && value !== req.body.newPassword) {
-        throw new Error('Passwords do not match');
+        throw new Error('The confirmation password does not match the new password. Please type them carefully.');
       }
       return true;
     })
@@ -104,27 +105,25 @@ export const resetPasswordValidation = [
 
 export const changePasswordValidation = [
   body('currentPassword')
-    .notEmpty().withMessage('Current password is required'),
+    .notEmpty().withMessage('Please enter your current account password.'),
 
   body('newPassword')
-    .notEmpty().withMessage('New password is required')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .notEmpty().withMessage('Please enter a new, secure password.')
+    .isLength({ min: 8 }).withMessage('Your new password must be at least 8 characters long.')
     .matches(PASSWORD_REGEX)
     .withMessage(PASSWORD_MESSAGE)
     .custom((value, { req }) => {
-      console.log('[changePasswordValidation] checking new password != current');
       if (req.body && value === req.body.currentPassword) {
-        throw new Error('New password must be different from current password');
+        throw new Error('Your new password cannot be the same as your current password. Please choose a different one for better security.');
       }
       return true;
     }),
 
   body('confirmPassword')
-    .notEmpty().withMessage('Confirm password is required')
+    .notEmpty().withMessage('Please confirm your new password by re-typing it.')
     .custom((value, { req }) => {
-      console.log('[changePasswordValidation] checking password match');
       if (req.body && value !== req.body.newPassword) {
-        throw new Error('Passwords do not match');
+        throw new Error('The confirmation password does not match. Please ensure both fields are identical.');
       }
       return true;
     })
@@ -134,14 +133,13 @@ export const updateProfileValidation = [
   body('name')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
+    .isLength({ min: 2, max: 100 }).withMessage('Your name should be between 2 and 100 characters long.')
 ];
 
 export const googleLoginValidation = [
   body().custom((value, { req }) => {
-    console.log('[googleLoginValidation] checking for token');
     if (!req.body.credential && !req.body.idToken && !req.body.id_token) {
-      throw new Error('Google ID Token is required (credential, idToken, or id_token)');
+      throw new Error('Google authentication failed: missing ID token. Please try signing in with Google again.');
     }
     return true;
   })
@@ -153,17 +151,26 @@ export const googleLoginValidation = [
 
 export const createSlotsValidation = [
   body('slots')
-    .isArray({ min: 1 }).withMessage('Slots array is required'),
+    .isArray({ min: 1 }).withMessage('Please provide at least one time slot to share your availability.'),
+  body('slots.*.date')
+    .optional()
+    .isISO8601().withMessage('The date format is invalid. Please use a valid calendar date.'),
   body('slots.*.dayOfWeek')
-    .notEmpty().withMessage('Day of week is required for each slot')
+    .optional()
     .isIn(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    .withMessage('Invalid day of week'),
+    .withMessage('Invalid day of week selected. Please choose a standard day (e.g., Monday).'),
+  body('slots.*').custom((slot) => {
+    if (!slot.date && !slot.dayOfWeek) {
+      throw new Error('Each availability entry must specify either a specific date or a recurring day of the week.');
+    }
+    return true;
+  }),
   body('slots.*.startTime')
-    .notEmpty().withMessage('Start time is required for each slot')
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Invalid start time format (HH:mm)'),
+    .notEmpty().withMessage('Please specify a start time for your availability.')
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Start time must be in HH:mm format (e.g., 09:00 or 14:30).'),
   body('slots.*.endTime')
-    .notEmpty().withMessage('End time is required for each slot')
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Invalid end time format (HH:mm)')
+    .notEmpty().withMessage('Please specify an end time for your availability.')
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('End time must be in HH:mm format (e.g., 10:00 or 15:30).')
     .custom((value, { req, path }) => {
       const index = parseInt(path.match(/\d+/)![0]);
       const slots = req.body.slots;
@@ -176,7 +183,7 @@ export const createSlotsValidation = [
         const endTotal = endHours * 60 + endMinutes;
         
         if (endTotal <= startTotal) {
-          throw new Error('End time must be after start time');
+          throw new Error('End time must be after the start time. Please adjust the duration of your slot.');
         }
       }
       return true;
@@ -186,14 +193,13 @@ export const createSlotsValidation = [
 export const updateSlotValidation = [
   body('startTime')
     .optional()
-    .isISO8601().withMessage('Invalid start time format'),
+    .isISO8601().withMessage('Invalid start time format. Please provide a valid ISO date-time string.'),
   body('endTime')
     .optional()
-    .isISO8601().withMessage('Invalid end time format')
+    .isISO8601().withMessage('Invalid end time format. Please provide a valid ISO date-time string.')
     .custom((value, { req }) => {
-      console.log('[updateSlotValidation] validating endTime after startTime');
       if (value && req.body.startTime && new Date(value) <= new Date(req.body.startTime)) {
-        throw new Error('End time must be after start time');
+        throw new Error('The end time must be scheduled after the start time. Please review your input.');
       }
       return true;
     })
@@ -201,46 +207,50 @@ export const updateSlotValidation = [
 
 export const updateBookingStatusValidation = [
   body('status')
-    .notEmpty().withMessage('Status is required')
-    .isIn(['confirmed', 'started', 'completed', 'cancelled', 'disputed', 'awaiting_confirmation']).withMessage('Invalid status value')
+    .notEmpty().withMessage('A status update is required.')
+    .isIn(['confirmed', 'started', 'completed', 'cancelled', 'disputed', 'awaiting_confirmation']).withMessage('Invalid status selected. Please choose a supported status from the list.'),
 ];
 
 export const studentReviewAndConfirmValidation = [
   body('rating')
-    .notEmpty().withMessage('Rating is required')
-    .isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5')
+    .notEmpty().withMessage('Please provide a rating for your session.')
+    .isInt({ min: 1, max: 5 }).withMessage('Your rating must be between 1 and 5 stars.')
     .toInt(),
   body('comment')
     .optional()
-    .isString().withMessage('Comment must be text')
-    .isLength({ max: 2000 }).withMessage('Comment must not exceed 2000 characters')
+    .isString().withMessage('Review comments should be text.')
+    .isLength({ max: 2000 }).withMessage('Your comment is too long. Please keep it under 2000 characters.')
 ];
 
 export const applyAsCounselorValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
+    .isLength({ max: 5000 }).withMessage('Your bio is too long. Please limit it to 5000 characters.'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise should not exceed 2000 characters.'),
   body('hourlyRate')
     .optional()
-    .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')
+    .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number. If you are offering free sessions, enter 0.')
     .toFloat(),
   body('yearsOfExperience')
     .optional()
-    .isInt({ min: 0 }).withMessage('Years of experience must be a non-negative integer')
+    .isInt({ min: 0 }).withMessage('Years of experience should be a non-negative number.')
     .toInt(),
-  body('phoneNumber').optional().trim(),
-  body('countryOfResidence').optional().trim(),
-  body('city').optional().trim(),
+  body('phoneNumber')
+    .optional()
+    .trim()
+    .matches(PHONE_REGEX).withMessage(PHONE_MESSAGE),
+  body('countryOfResidence').optional().trim().notEmpty().withMessage('Please specify your current country of residence.'),
+  body('city').optional().trim().notEmpty().withMessage('Please enter your current city.'),
   body('currentPosition').optional().trim(),
   body('organization').optional().trim(),
   body('highestEducationLevel').optional().trim(),
   body('universityName').optional().trim(),
   body('studyCountry').optional().trim(),
-  body('fieldsOfStudy').optional().trim(),
-  body('languages').optional().trim(),
+  body('specializedCountries').optional(),
+  body('fieldsOfStudy').optional(),
+  body('languages').optional(),
   body('weeklySchedule').optional().isString(),
   body('consultationModes').optional()
 ];
@@ -248,19 +258,22 @@ export const applyAsCounselorValidation = [
 export const updateCounselorProfileValidation = [
   body('bio')
     .optional()
-    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters'),
+    .isLength({ max: 5000 }).withMessage('Bio must not exceed 5000 characters.'),
   body('areasOfExpertise')
     .optional()
-    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters'),
+    .isLength({ max: 2000 }).withMessage('Areas of expertise must not exceed 2000 characters.'),
   body('hourlyRate')
     .optional()
-    .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number')
+    .isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number.')
     .toFloat(),
   body('yearsOfExperience')
     .optional()
-    .isInt({ min: 0 }).withMessage('Years of experience must be a non-negative integer')
+    .isInt({ min: 0 }).withMessage('Years of experience must be a non-negative integer.')
     .toInt(),
-  body('phoneNumber').optional().trim(),
+  body('phoneNumber')
+    .optional()
+    .trim()
+    .matches(PHONE_REGEX).withMessage(PHONE_MESSAGE),
   body('countryOfResidence').optional().trim(),
   body('city').optional().trim(),
   body('currentPosition').optional().trim(),
@@ -268,8 +281,9 @@ export const updateCounselorProfileValidation = [
   body('highestEducationLevel').optional().trim(),
   body('universityName').optional().trim(),
   body('studyCountry').optional().trim(),
-  body('fieldsOfStudy').optional().trim(),
-  body('languages').optional().trim(),
+  body('specializedCountries').optional(),
+  body('fieldsOfStudy').optional(),
+  body('languages').optional(),
   body('weeklySchedule').optional().isString(),
   body('consultationModes').optional()
 ];
@@ -277,14 +291,14 @@ export const updateCounselorProfileValidation = [
 export const counselorDirectoryValidation = [
   query("specialization").optional().isString(),
   query("language").optional().isString(),
-  query("mode").optional().isIn(["chat", "audio", "video"]),
-  query("minRating").optional().isFloat({ min: 0, max: 5 }).toFloat(),
-  query("fromDate").optional().isISO8601().withMessage("fromDate must be a valid ISO date"),
-  query("toDate").optional().isISO8601().withMessage("toDate must be a valid ISO date")
+  query("mode").optional().isIn(["chat", "audio", "video"]).withMessage('Please select a valid consultation mode (chat, audio, or video).'),
+  query("minRating").optional().isFloat({ min: 0, max: 5 }).withMessage('Rating filter must be between 0 and 5.').toFloat(),
+  query("fromDate").optional().isISO8601().withMessage("fromDate must be a valid calendar date."),
+  query("toDate").optional().isISO8601().withMessage("toDate must be a valid calendar date.")
     .custom((value, { req }) => {
       const fromDate = req.query?.fromDate as string | undefined;
       if (fromDate && new Date(value) < new Date(fromDate)) {
-        throw new Error("toDate must be greater than or equal to fromDate");
+        throw new Error("The 'To Date' must be scheduled after the 'From Date'. Please adjust your search range.");
       }
       return true;
     }),
@@ -294,38 +308,64 @@ export const counselorDirectoryValidation = [
 ];
 
 export const createBookingValidation = [
-  body("slotId").isInt({ min: 1 }).withMessage("slotId is required").toInt(),
-  body("notes").optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  body("slotId")
+    .notEmpty().withMessage('Please select a valid time slot to book your session.')
+    .isInt({ min: 1 }).withMessage("The selected slot is invalid. Please choose another available slot.")
+    .toInt(),
+  body("notes")
+    .optional({ nullable: true })
+    .isString()
+    .isLength({ max: 2000 }).withMessage('Session notes should not exceed 2000 characters.'),
 ];
 
 export const rescheduleBookingValidation = [
-  body("slotId").isInt({ min: 1 }).withMessage("slotId is required").toInt(),
+  body("slotId")
+    .notEmpty().withMessage('Please select a new time slot for your session.')
+    .isInt({ min: 1 }).withMessage("The selected slot is invalid. Please choose an available time.")
+    .toInt(),
 ];
 
 export const adminVerificationValidation = [
   body("verificationStatus")
-    .isIn(["verified", "rejected"])
-    .withMessage("verificationStatus must be verified or rejected"),
+    .isIn(["approved", "rejected"])
+    .withMessage("Please choose whether to approve or reject this application."),
 ];
 
 export const adminVisibilityValidation = [
-  body("isActive").isBoolean().withMessage("isActive must be boolean"),
+  body("isActive")
+    .isBoolean().withMessage("Visibility status must be either active or inactive (true/false)."),
 ];
 
 export const shareDocumentValidation = [
-  body("studentId").isInt({ min: 1 }).withMessage("studentId is required").toInt(),
+  body("studentId").isInt({ min: 1 }).withMessage("Please select a valid student to share the document with.").toInt(),
   body("documentType")
     .isIn(["sop", "cv", "lor", "transcript", "other"])
-    .withMessage("Invalid document type"),
-  body("fileUrl").optional().isString().isLength({ max: 500 }),
-  body("counselorFeedback").optional().isString(),
+    .withMessage("Please select a valid document category (SOP, CV, LOR, etc.)."),
+  body("fileUrl").optional().isString().isLength({ max: 500 }).withMessage('File URL is too long. Please use a shorter link.'),
+  body("counselorFeedback").optional().isString().isLength({ max: 5000 }).withMessage('Feedback should not exceed 5000 characters.'),
 ];
 
 export const sendMessageValidation = [
-  body("recipientUserId").isInt({ min: 1 }).withMessage("recipientUserId is required").toInt(),
-  body("body").isString().isLength({ min: 1, max: 5000 }),
+  body("recipientUserId").isInt({ min: 1 }).withMessage("Recipient user ID is missing or invalid.").toInt(),
+  body("body")
+    .notEmpty().withMessage('Message content cannot be empty.')
+    .isString()
+    .isLength({ min: 1, max: 5000 }).withMessage('Message must be between 1 and 5000 characters.'),
+];
+
+export const sendChatMessageValidation = [
+  body("conversationId").isInt({ min: 1 }).withMessage("Please specify a valid conversation to send your message to.").toInt(),
+  body("content")
+    .notEmpty().withMessage('Your message cannot be empty. Please type something to send.')
+    .isString()
+    .isLength({ min: 1, max: 5000 }).withMessage('Your message is too long. Please limit it to 5000 characters.'),
+];
+
+export const initiateBookingValidation = [
+  body("studentUserId").isInt({ min: 1 }).withMessage("A valid student ID is required to initiate a booking.").toInt(),
+  body("slotId").isInt({ min: 1 }).withMessage("Please select an available time slot for this booking.").toInt(),
 ];
 
 export const idParamValidation = [
-  param("id").isInt({ min: 1 }).withMessage("id must be a positive integer").toInt(),
+  param("id").isInt({ min: 1 }).withMessage("The requested resource ID must be a positive number.").toInt(),
 ];

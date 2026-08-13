@@ -26,8 +26,14 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    // Redirect counselor to onboarding if profile is incomplete
+    if (!loading && user && user.role === 'counselor' && !user.isOnboarded && !pathname.startsWith('/dashboard/counselor/profile')) {
+      router.replace('/dashboard/counselor/profile');
+    }
+  }, [user, loading, router, pathname]);
 
   if (loading || !user) {
     return (
@@ -103,11 +109,11 @@ export default function DashboardLayout({
 
         <main
           className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${
-            isStudentOnboarding ? '' : 'px-6 py-8'
+            isStudentOnboarding ? '' : pathname.startsWith('/dashboard/learning-path') ? 'px-2 py-4' : 'px-6 py-8'
           }`}
         >
 
-          <div className="max-w-[1600px] mx-auto h-full">
+          <div className={`${pathname.startsWith('/dashboard/learning-path') ? 'max-w-[1800px]' : 'max-w-[1600px]'} mx-auto h-full`}>
             {children}
           </div>
 

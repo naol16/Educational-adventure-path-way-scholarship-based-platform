@@ -9,11 +9,9 @@ import 'package:mobile/features/scholarships/providers/scholarship_providers.dar
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 
 import 'package:mobile/features/core/widgets/glass_container.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
-
-const bool kScholarshipMapsEnabled = false;
 
 class ScholarshipDetailScreen extends ConsumerStatefulWidget {
   final int scholarshipId;
@@ -55,10 +53,6 @@ class _ScholarshipDetailScreenState
           LucideIcons.arrowLeft,
           () => Navigator.pop(context),
         ),
-        actions: [
-          _buildRoundIconButton(LucideIcons.share2, () {}),
-          const SizedBox(width: 15),
-        ],
       ),
       body: detailAsync.when(
         data: (scholarship) {
@@ -110,8 +104,6 @@ class _ScholarshipDetailScreenState
               _buildAboutSection(s.description, s.requirements),
               const SizedBox(height: 30),
               _buildGeographicMap(s),
-              const SizedBox(height: 30),
-              _buildUniversityImage(),
               const SizedBox(height: 150), // Padding for bottom bar
             ],
           ),
@@ -463,115 +455,47 @@ class _ScholarshipDetailScreenState
     );
   }
 
-  // --- GEOGRAPHIC CONTEXT (Map) ---
+  // --- GEOGRAPHIC CONTEXT (Map via free OpenStreetMap) ---
   Widget _buildGeographicMap(MatchedScholarship s) {
     final hasCoords = s.latitude != null && s.longitude != null;
-
-    // Fallback logic for countries if coordinates are missing
-    // In a real app, this would be a larger map or an API call.
     final LatLng position = hasCoords
         ? LatLng(s.latitude!, s.longitude!)
         : _getCountryFallback(s.country);
 
-    if (!kScholarshipMapsEnabled) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: DesignSystem.primary(context),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  "GEOGRAPHIC CONTEXT",
-                  style: DesignSystem.labelStyle(
-                    buildContext: context,
-                    fontSize: 11,
-                    color: DesignSystem.labelText(
-                      context,
-                    ).withValues(alpha: 0.6),
-                  ).copyWith(letterSpacing: 2, fontWeight: FontWeight.w900),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Container(
-                height: 240,
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                color: DesignSystem.surface(context),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      LucideIcons.mapPin,
-                      size: 42,
-                      color: DesignSystem.primary(context),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Map preview disabled",
-                      textAlign: TextAlign.center,
-                      style: DesignSystem.headingStyle(
-                        buildContext: context,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      s.university ?? s.country ?? "Location unavailable",
-                      textAlign: TextAlign.center,
-                      style: DesignSystem.bodyStyle(
-                        buildContext: context,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Google Maps is disabled in this build to avoid billing-dependent crashes.",
-                      textAlign: TextAlign.center,
-                      style: DesignSystem.labelStyle(
-                        buildContext: context,
-                        fontSize: 12,
-                      ).copyWith(color: DesignSystem.subText(context)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  LucideIcons.mapPin,
-                  size: 12,
-                  color: DesignSystem.primary(context),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  s.university ?? s.country ?? "Global Location",
-                  style: DesignSystem.labelStyle(
-                    buildContext: context,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
+    final lat = position.latitude;
+    final lng = position.longitude;
+    final zoom = hasCoords ? 10 : 4;
+    final locationLabel = s.university ?? s.country ?? "Global Location";
+
+    // Free OpenStreetMap via Leaflet.js in a WebView — no API key needed
+    final html = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; background: #0f172a; }
+    .leaflet-tile-pane { filter: brightness(0.85) saturate(0.8); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map', { zoomControl: false, attributionControl: false })
+               .setView([$lat, $lng], $zoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var icon = L.divIcon({
+      html: '<div style="width:24px;height:24px;background:#10B981;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
+      className: '', iconAnchor: [12, 12]
+    });
+    L.marker([$lat, $lng], {icon: icon}).addTo(map);
+  </script>
+</body>
+</html>
+''';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -602,38 +526,13 @@ class _ScholarshipDetailScreenState
           const SizedBox(height: 20),
           ClipRRect(
             borderRadius: BorderRadius.circular(28),
-            child: Container(
+            child: SizedBox(
               height: 240,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: DesignSystem.surface(context),
-                border: Border.all(
-                  color: DesignSystem.surfaceMediumColor(context),
-                  width: 1,
-                ),
-              ),
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: position,
-                  zoom: hasCoords ? 10 : 4,
-                ),
-                onMapCreated: (controller) {
-                  controller.setMapStyle(_darkMapStyle);
-                },
-                markers: {
-                  Marker(
-                    markerId: const MarkerId("selected"),
-                    position: position,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueGreen,
-                    ),
-                  ),
-                },
-                liteModeEnabled: Platform
-                    .isAndroid, // Use lite mode for performance in details
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                mapToolbarEnabled: false,
+              child: WebViewWidget(
+                controller: WebViewController()
+                  ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                  ..loadHtmlString(html),
               ),
             ),
           ),
@@ -647,7 +546,7 @@ class _ScholarshipDetailScreenState
               ),
               const SizedBox(width: 6),
               Text(
-                s.university ?? s.country ?? "Global Location",
+                locationLabel,
                 style: DesignSystem.labelStyle(
                   buildContext: context,
                   fontSize: 12,
@@ -673,23 +572,6 @@ class _ScholarshipDetailScreenState
     return LatLng(20, 0);
   }
 
-  static const String _darkMapStyle = '''
-[
-  { "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] },
-  { "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
-  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#0f172a" }] },
-  { "featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
-  { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
-  { "featureType": "landscape.natural", "elementType": "geometry", "stylers": [{ "color": "#0b1120" }] },
-  { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
-  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#0f172a" }] },
-  { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
-  { "featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{ "color": "#0f172a" }] },
-  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#020617" }] },
-  { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#1e293b" }] }
-]
-''';
 
   // --- BOTTOM ACTION BAR ---
   Widget _buildBottomActionBar(String? applicationUrl, bool isTracked) {
@@ -843,17 +725,4 @@ class _ScholarshipDetailScreenState
     );
   }
 
-  Widget _buildUniversityImage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(25),
-        child: Image.network(
-          "https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&w=800",
-          height: 200,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
 }

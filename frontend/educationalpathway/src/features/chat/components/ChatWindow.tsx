@@ -4,12 +4,15 @@ import { Message, ChatUser } from "../types";
 import { format, isToday, isYesterday } from "date-fns";
 import {
   User, CheckCheck, Edit2, Trash2, ChevronLeft, Info,
-  MessageCircle, Reply, Copy, CornerUpLeft, File, Download, Loader2, MessageSquare
+  MessageCircle, Reply, Copy, CornerUpLeft, File, Download, Loader2, MessageSquare,
+  GraduationCap
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AudioPlayer } from "./AudioPlayer";
+import { LinkPreview } from "./LinkPreview";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -67,6 +70,12 @@ export const ChatWindow = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: Message } | null>(null);
+
+  const extractUrl = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = text.match(urlRegex);
+    return matches && matches.length > 0 ? matches[0] : null;
+  };
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -205,14 +214,16 @@ export const ChatWindow = ({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onShowMembers}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            title="Chat info"
-          >
-            <Info size={20} />
-          </button>
+          {isGroup && (
+            <button
+              type="button"
+              onClick={onShowMembers}
+              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Chat info"
+            >
+              <Info size={20} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -239,7 +250,7 @@ export const ChatWindow = ({
 
         {messages.length === 0 && !loading ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/[0.06]">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/6">
               <MessageCircle size={28} className="text-muted-foreground" />
             </div>
             <p className="text-[15px] font-medium text-foreground">No messages yet</p>
@@ -329,7 +340,13 @@ export const ChatWindow = ({
                                         {repliedTo.sender?.name || "User"}
                                       </p>
                                       <p className="line-clamp-1 truncate text-xs italic text-muted-foreground">
-                                        {repliedTo.content.startsWith("[Attached File]") ? "📎 Attachment" : repliedTo.content}
+                                        {repliedTo.content.startsWith("[Attached File]")
+                                          ? "📎 Attachment"
+                                          : repliedTo.content.startsWith("[Attached Voice]")
+                                          ? "🎙️ Voice message"
+                                          : repliedTo.content.startsWith("[Scholarship Share]")
+                                          ? "🎓 Scholarship Match Opportunity"
+                                          : repliedTo.content}
                                       </p>
                                     </div>
                                   )}
@@ -341,74 +358,228 @@ export const ChatWindow = ({
                                     const rawUrl = match[1];
                                     return (
                                       <div className="min-w-[200px]">
-                                        <div className="group/file flex items-center gap-3 rounded-xl border border-border bg-background/50 p-2.5">
+                                        <div
+                                          onClick={() => window.open(rawUrl, "_blank")}
+                                          className="group/file flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background/50 p-2.5 transition-colors hover:bg-background/80"
+                                        >
                                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
                                             <File size={18} />
                                           </div>
                                           <div className="min-w-0 flex-1">
                                             <p className="truncate text-sm font-semibold text-foreground">File</p>
-                                            <p className="text-[10px] text-muted-foreground">Tap to download</p>
+                                            <p className="text-[10px] text-muted-foreground">Tap to view</p>
                                           </div>
                                           <button
                                             type="button"
                                             onClick={async (e) => {
-                                              e.preventDefault();
-                                              const toastId = toast.loading("Syncing...");
+                                              e.stopPropagation();
+                                              const toastId = toast.loading("Downloading...");
                                               try {
                                                 const res = await api.get(`/chat/download?url=${encodeURIComponent(rawUrl)}`, { responseType: "blob" });
-                                                const url = window.URL.createObjectURL(new Blob([res.data]));
+                                                const blob = res.data instanceof Blob ? res.data : new Blob([res.data]);
+                                                const url = window.URL.createObjectURL(blob);
                                                 const a = document.createElement("a");
                                                 a.href = url;
-                                                a.download = rawUrl.split("/").pop() || "file";
+                                                const baseName = rawUrl.split("/").pop()?.split("?")[0] || "file";
+                                                a.download = baseName;
+                                                document.body.appendChild(a);
                                                 a.click();
+                                                document.body.removeChild(a);
+                                                window.URL.revokeObjectURL(url);
                                                 toast.success("Downloaded", { id: toastId });
-                                              } catch {
-                                                toast.error("Failed", { id: toastId });
+                                              } catch (err) {
+                                                console.error(err);
+                                                toast.error("Download failed", { id: toastId });
                                               }
                                             }}
                                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                                            title="Download to disk"
                                           >
                                             <Download size={16} />
                                           </button>
                                         </div>
                                       </div>
                                     );
-                                  })() : (
-                                    <div className="flex flex-col gap-1">
-                                      <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
-                                      <div className={`mt-0.5 flex flex-wrap items-center gap-1.5 ${isMe ? "justify-end" : ""} text-muted-foreground`}>
-                                        {m.isEdited && (
-                                          <span className="text-[9px] font-black uppercase tracking-tighter italic opacity-60">Edited</span>
-                                        )}
-                                        <span className="text-[10px] font-bold tracking-tight">
-                                          {format(new Date(m.createdAt), "HH:mm")}
-                                        </span>
-                                        {isMe && (
-                                          <div className="flex items-center">
-                                            {m.isRead ? (
-                                              <CheckCheck size={14} className="text-primary" />
-                                            ) : m.isDelivered ? (
-                                              <CheckCheck size={14} className="opacity-40" />
-                                            ) : (
-                                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
-                                                <polyline points="20 6 9 17 4 12" />
-                                              </svg>
-                                            )}
-                                          </div>
-                                        )}
+                                  })() : m.content.startsWith("[Attached Voice]") ? (() => {
+                                    const match = m.content.match(/^\[Attached Voice\]\((.*?)\)$/);
+                                    if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
+                                    const rawUrl = match[1];
+                                    return (
+                                      <div className="flex flex-col gap-1 min-w-[280px]">
+                                        <AudioPlayer url={rawUrl} />
+                                        <div className={`mt-0.5 flex flex-wrap items-center gap-1.5 ${isMe ? "justify-end" : ""} text-muted-foreground`}>
+                                          <span className="text-[10px] font-bold tracking-tight">
+                                            {format(new Date(m.createdAt), "HH:mm")}
+                                          </span>
+                                          {isMe && (
+                                            <div className="flex items-center">
+                                              {m.isRead ? (
+                                                <CheckCheck size={14} className="text-primary" />
+                                              ) : m.isDelivered ? (
+                                                <CheckCheck size={14} className="opacity-40" />
+                                              ) : (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
+                                                  <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })() : m.content.startsWith("[Scholarship Share]") ? (() => {
+                                    const match = m.content.match(/^\[Scholarship Share\]\((.*?)\)$/);
+                                    if (!match) return <span className="whitespace-pre-wrap">{m.content}</span>;
+                                    let data: any = {};
+                                    try {
+                                      data = JSON.parse(match[1]);
+                                    } catch (err) {
+                                      return <span className="whitespace-pre-wrap">{m.content}</span>;
+                                    }
+                                    const score = data.matchScore || 0;
+                                    // Build role-aware URL: counselors go to student scholarship page (read-only view)
+                                    // since there's no separate counselor scholarship detail page
+                                    const scholarshipUrl = `/dashboard/student/scholarships/${data.id}`;
+                                    return (
+                                      <div className="flex flex-col gap-3 min-w-[280px] max-w-sm rounded-2xl bg-card p-4 border border-border/80 shadow-md">
+                                        <div className="flex justify-between items-start gap-3">
+                                          <div className="min-w-0 flex-1">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase mb-1.5">
+                                              {data.fundType || "Scholarship"}
+                                            </span>
+                                            <h4 className="font-extrabold text-sm text-foreground tracking-tight leading-snug line-clamp-2">
+                                              {data.title}
+                                            </h4>
+                                            <p className="text-[10px] text-muted-foreground/80 font-bold mt-1">
+                                              {data.country || "Global"}
+                                            </p>
+                                          </div>
+                                          <div className="relative shrink-0 w-12 h-12 flex items-center justify-center">
+                                            <svg className="w-12 h-12 transform -rotate-90 absolute">
+                                              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-muted/10" />
+                                              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3" fill="transparent" strokeDasharray={125.6} strokeDashoffset={125.6 - (125.6 * score) / 100} className="text-primary" strokeLinecap="round" />
+                                            </svg>
+                                            <span className="text-xs font-black text-foreground">{score}%</span>
+                                          </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3">
+                                          <div>
+                                            <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest">
+                                              Award Value
+                                            </p>
+                                            <p className="text-xs font-black text-foreground truncate">
+                                              {data.amount}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest text-right">
+                                              Deadline
+                                            </p>
+                                            <p className="text-xs font-black text-emerald-600 truncate text-right">
+                                              {data.deadline}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {/* Use <a> tag for reliable cross-browser navigation.
+                                            pointer-events-auto + cursor-pointer override the
+                                            parent bubble's cursor-default / select-none styles. */}
+                                        <a
+                                          href={scholarshipUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="pointer-events-auto cursor-pointer w-full mt-1.5 h-10 flex items-center justify-center gap-1.5 rounded-xl bg-primary text-white font-black text-[10px] uppercase tracking-wider transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-primary/10 no-underline"
+                                          style={{ pointerEvents: "auto" }}
+                                        >
+                                          <GraduationCap size={14} />
+                                          View Opportunity
+                                        </a>
+
+                                        <div className={`mt-0.5 flex flex-wrap items-center gap-1.5 ${isMe ? "justify-end" : ""} text-muted-foreground`}>
+                                          <span className="text-[10px] font-bold tracking-tight">
+                                            {format(new Date(m.createdAt), "HH:mm")}
+                                          </span>
+                                          {isMe && (
+                                            <div className="flex items-center">
+                                              {m.isRead ? (
+                                                <CheckCheck size={14} className="text-primary" />
+                                              ) : m.isDelivered ? (
+                                                <CheckCheck size={14} className="opacity-40" />
+                                              ) : (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
+                                                  <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })() : (() => {
+                                    const url = extractUrl(m.content);
+                                    return (
+                                      <div className="flex flex-col gap-1">
+                                        <p className="whitespace-pre-wrap wrap-break-word">{m.content}</p>
+                                        {url && <LinkPreview url={url} />}
+                                        <div className={`mt-0.5 flex flex-wrap items-center gap-1.5 ${isMe ? "justify-end" : ""} text-muted-foreground`}>
+                                          {m.isEdited && (
+                                            <span className="text-[9px] font-black uppercase tracking-tighter italic opacity-60">Edited</span>
+                                          )}
+                                          <span className="text-[10px] font-bold tracking-tight">
+                                            {format(new Date(m.createdAt), "HH:mm")}
+                                          </span>
+                                          {isMe && (
+                                            <div className="flex items-center">
+                                              {m.isRead ? (
+                                                <CheckCheck size={14} className="text-primary" />
+                                              ) : m.isDelivered ? (
+                                                <CheckCheck size={14} className="opacity-40" />
+                                              ) : (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
+                                                  <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
 
-                                {/* Quick Reply Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => onReplyMessage?.(m)}
-                                  className={`mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-primary hover:text-primary group-hover:opacity-100 ${isMe ? "mr-0.5" : "ml-0.5"}`}
-                                >
-                                  <CornerUpLeft size={14} />
-                                </button>
+                                 {/* Quick Action Buttons */}
+                                 <div className={`mb-0.5 flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-all ${isMe ? "flex-row-reverse mr-1" : "flex-row ml-1"}`}>
+                                   <button
+                                     type="button"
+                                     onClick={() => onReplyMessage?.(m)}
+                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-primary hover:text-primary hover:bg-primary/5 active:scale-90"
+                                     title="Reply"
+                                   >
+                                     <Reply size={15} />
+                                   </button>
+                                   
+                                   {isMe && (
+                                     <button
+                                       type="button"
+                                       onClick={() => onEditMessage?.(m.id, m.content)}
+                                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-primary hover:text-primary hover:bg-primary/5 active:scale-90"
+                                       title="Edit"
+                                     >
+                                       <Edit2 size={15} />
+                                     </button>
+                                   )}
+
+                                   <button
+                                     type="button"
+                                     onClick={() => onDeleteMessage?.(m.id)}
+                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:border-destructive hover:text-destructive hover:bg-destructive/5 active:scale-90"
+                                     title="Delete"
+                                   >
+                                     <Trash2 size={15} />
+                                   </button>
+                                 </div>
                               </div>
                             );
                           })}
@@ -514,7 +685,8 @@ export const ChatWindow = ({
               >
                 <Copy size={16} className="text-primary" /> Copy Text
               </button>
-              {contextMenu.message.senderId === currentUserId && (
+              {/* Message Actions */}
+              {contextMenu.message.senderId === currentUserId ? (
                 <>
                   <button
                     onClick={() => { onEditMessage?.(contextMenu.message.id, contextMenu.message.content); setContextMenu(null); }}
@@ -529,6 +701,13 @@ export const ChatWindow = ({
                     <Trash2 size={16} className="text-destructive" /> Delete
                   </button>
                 </>
+              ) : (
+                <button
+                  onClick={() => { onDeleteMessage?.(contextMenu.message.id); setContextMenu(null); }}
+                  className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted text-[13px] text-destructive transition-colors"
+                >
+                  <Trash2 size={16} className="text-destructive" /> Delete
+                </button>
               )}
             </motion.div>
           </>

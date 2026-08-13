@@ -48,15 +48,15 @@ export const StudentList = () => {
           students.map((student, index) => (
             <motion.div
               key={student.studentId}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
+              className="group border-b border-border/40 last:border-0 hover:bg-muted/20 transition-all duration-300"
             >
-              <Card className="group rounded-2xl border-border bg-card hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden">
-                <CardBody className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-5">
                     <div className="relative">
-                      <div className="h-16 w-16 primary-gradient rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-primary/20 group-hover:scale-105 transition-transform duration-500">
+                      <div className="h-16 w-16 primary-gradient rounded-2xl flex items-center justify-center text-white font-black text-2xl group-hover:scale-105 transition-transform duration-500">
                         {student.name.charAt(0)}
                       </div>
                       <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 border-4 border-card rounded-full" />
@@ -95,15 +95,14 @@ export const StudentList = () => {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => router.push(`/dashboard/counselor/chat?userId=${student.studentId}`)}
+                        onClick={() => router.push(`/dashboard/counselor/chat?userId=${student.userId}`)}
                         className="h-12 w-12 rounded-2xl hover:bg-primary/5 hover:text-primary transition-all group-hover:bg-primary/5"
                       >
                         <MessageCircle className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
-                </CardBody>
-              </Card>
+                </div>
             </motion.div>
           ))
         ) : (

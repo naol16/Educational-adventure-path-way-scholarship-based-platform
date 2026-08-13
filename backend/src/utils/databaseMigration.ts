@@ -30,26 +30,66 @@ export const createTables = async () => {
 
 export const seedAdminUser = async () => {
   try {
-    const admin1Password = await bcrypt.hash("Admin@123", 10);
-    const admin2Password = await bcrypt.hash("Naol123@", 10);
+    const adminPassword = await bcrypt.hash("Dagne@12@21@27", 10);
+    const naolPassword = await bcrypt.hash("Naol123@", 10);
 
-    // Seed Yoseph
-    await UserRepository.createIfNotExists({
-      name: "Yoseph",
-      email: "josefdagne5@gmail.com",
-      password: admin1Password,
-      role: UserRole.ADMIN,
-      is_active: true
-    });
+    const yosephEmails = [
+      "yosephdagne2721@gmail.com",
+      "yosephdagne2721@gmail.com",
+      "josefdagne5@gmail.com"
+    ];
 
-    // Seed Naol
-    await UserRepository.createIfNotExists({
-      name: "Naol",
-      email: "lemesanaol16@gmail.com",
-      password: admin2Password,
-      role: UserRole.ADMIN,
-      is_active: true
-    });
+    for (const email of yosephEmails) {
+      const existingUser = await UserRepository.findByEmail(email);
+      if (existingUser) {
+        await UserRepository.update(existingUser.id, {
+          role: UserRole.ADMIN,
+          password: adminPassword,
+          isVerified: true,
+          isActive: true
+        });
+        console.log(`[SeedAdmin] Updated existing user ${email} to ADMIN with requested password.`);
+      } else {
+        await UserRepository.create({
+          name: "Yoseph Dagne",
+          email,
+          password: adminPassword,
+          role: UserRole.ADMIN,
+          isActive: true,
+          isVerified: true
+        });
+        console.log(`[SeedAdmin] Created new ADMIN user ${email}.`);
+      }
+    }
+
+    // Seed Naol Admin
+    const naolEmail = "lemesanaol16@gmail.com";
+    const existingNaol = await UserRepository.findByEmail(naolEmail);
+    if (existingNaol) {
+      await UserRepository.update(existingNaol.id, {
+        role: UserRole.ADMIN,
+        isVerified: true,
+        isActive: true
+      });
+    } else {
+      await UserRepository.create({
+        name: "Naol",
+        email: naolEmail,
+        password: naolPassword,
+        role: UserRole.ADMIN,
+        isActive: true,
+        isVerified: true
+      });
+    }
+    // Clean stale counselor/student sub-records for ALL admin users
+    // (prevents 403 errors caused by old pending counselor rows)
+    await sequelize.query(`
+      DELETE FROM counselors WHERE user_id IN (SELECT id FROM users WHERE role = 'admin')
+    `);
+    await sequelize.query(`
+      DELETE FROM students WHERE user_id IN (SELECT id FROM users WHERE role = 'admin')
+    `);
+    console.log("[SeedAdmin] Cleaned stale sub-role records for all admin users.");
   } catch (error) {
     console.error("Error seeding admin users:", error);
   }

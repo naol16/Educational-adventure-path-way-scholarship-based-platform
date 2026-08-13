@@ -51,11 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
 
-      if (user.role === 'admin') {
+      const userRole = user.role.toLowerCase();
+      if (userRole === 'admin') {
         router.push("/dashboard/admin");
-      } else if (user.role === 'counselor') {
+      } else if (userRole === 'counselor') {
         router.push("/dashboard/counselor");
-      } else if (user.role === 'student') {
+      } else if (userRole === 'student') {
         router.push("/dashboard/student");
       } else {
         router.push("/dashboard/student/profile");
@@ -73,11 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
 
-      if (user.role === 'admin') {
+      const userRole = user.role.toLowerCase();
+      if (userRole === 'admin') {
         router.push("/dashboard/admin");
-      } else if (user.role === 'counselor') {
+      } else if (userRole === 'counselor') {
         router.push("/dashboard/counselor");
-      } else if (user.role === 'student') {
+      } else if (userRole === 'student') {
         router.push("/dashboard/student");
       } else {
         router.push("/dashboard/student/profile");
@@ -156,11 +158,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(user);
       
-      if (user.role === 'admin') {
+      const userRole = user.role.toLowerCase();
+      if (userRole === 'admin') {
         router.push("/dashboard/admin");
-      } else if (user.role === 'counselor') {
+      } else if (userRole === 'counselor') {
         router.push("/dashboard/counselor");
-      } else if (user.role === 'student') {
+      } else if (userRole === 'student') {
         router.push("/dashboard/student");
       } else {
         router.push("/dashboard/student/profile");

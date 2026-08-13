@@ -1,12 +1,13 @@
 import 'package:mobile/core/constants/api_config.dart';
 import 'package:mobile/core/services/token_storage.dart';
+// ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'dart:async';
 
 class SocketService {
   final TokenStorage _tokenStorage;
   IO.Socket? _socket;
-  
+
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _alertController = StreamController<Map<String, dynamic>>.broadcast();
@@ -23,13 +24,17 @@ class SocketService {
     final token = await _tokenStorage.readAccessToken();
     if (token == null) return;
 
-    _socket = IO.io(ApiConfig.baseUrl, IO.OptionBuilder()
-      .setTransports(['websocket'])
-      .setAuth({'token': token})
-      .enableAutoConnect()
-      .build());
+    _socket = IO.io(
+      ApiConfig.baseUrl,
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .setAuth({'token': token})
+          .enableAutoConnect()
+          .build(),
+    );
 
     _socket!.onConnect((_) {
+      // ignore: avoid_print
       print('[Socket] Connected to backend');
     });
 
@@ -45,6 +50,7 @@ class SocketService {
       _alertController.add(Map<String, dynamic>.from(data));
     });
 
+    // ignore: avoid_print
     _socket!.onDisconnect((_) => print('[Socket] Disconnected'));
     _socket!.onConnectError((err) => print('[Socket] Connection Error: $err'));
   }
